@@ -1,18 +1,57 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
-import { AlertCircleIcon, AlertTriangle } from "lucide-react";
+import { AlertCircleIcon, AlertTriangle, X, Info } from "lucide-react";
+import { Button } from "../ui/button";
 
 interface CliWarningsProps {
   selectedModel: string;
   isCliInstalled: boolean | null;
+  selectedBackend: string;
 }
 
 export const CliWarnings: React.FC<CliWarningsProps> = ({
   selectedModel,
   isCliInstalled,
+  selectedBackend,
 }) => {
+  const [isQwenLoginAlertDismissed, setIsQwenLoginAlertDismissed] = useState(false);
+
+  useEffect(() => {
+    const dismissed = localStorage.getItem('qwen-login-alert-dismissed');
+    setIsQwenLoginAlertDismissed(dismissed === 'true');
+  }, []);
+
+  const dismissQwenLoginAlert = () => {
+    setIsQwenLoginAlertDismissed(true);
+    localStorage.setItem('qwen-login-alert-dismissed', 'true');
+  };
   return (
     <>
+      {selectedBackend === "qwen" && !isQwenLoginAlertDismissed && (
+        <div className="p-4">
+          <Alert className="bg-blue-50 border-blue-300 dark:bg-blue-950 dark:border-blue-700">
+            <Info className="!text-blue-500 dark:!text-blue-300" />
+            <AlertTitle className="text-blue-800 dark:text-blue-300 flex items-center justify-between">
+              <span>Login not supported in Gemini Desktop</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0 text-blue-500 hover:text-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/70"
+                onClick={dismissQwenLoginAlert}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </AlertTitle>
+            <AlertDescription className="text-blue-800 dark:text-blue-300">
+              <p>
+                Currently, authentication through Gemini Desktop isn't supported when using the Qwen backend. 
+                To login, please use the CLI directly for authentication.
+              </p>
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
+
       {selectedModel === "gemini-2.5-flash-lite" && (
         <div className="p-4">
           <Alert className="bg-yellow-50 border-yellow-300 dark:bg-yellow-950 dark:border-yellow-700">

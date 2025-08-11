@@ -205,6 +205,7 @@ function RootLayout() {
           <CliWarnings
             selectedModel={selectedModel}
             isCliInstalled={isCliInstalled}
+            selectedBackend={selectedBackend}
           />
 
           <ConversationContext.Provider
