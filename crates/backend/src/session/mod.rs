@@ -6,6 +6,13 @@ use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader as AsyncBufReader};
 use tokio::process::{Child, ChildStdin, ChildStdout, Command};
 use tokio::sync::mpsc;
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct QwenConfig {
+    pub api_key: String,
+    pub base_url: String,
+    pub model: String,
+}
+
 use crate::cli::{
     PushToolCallParams, RequestToolCallConfirmationParams, StreamAssistantMessageChunkParams,
     UpdateToolCallParams,
@@ -159,12 +166,15 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
     session_id: String,
     working_directory: String,
     model: String,
+    backend_config: Option<QwenConfig>,
     emitter: E,
     session_manager: &SessionManager,
 ) -> BackendResult<(mpsc::UnboundedSender<String>, Arc<dyn RpcLogger>)> {
-    println!("🚀 Initializing persistent Gemini session for: {session_id}");
+    let is_qwen = backend_config.is_some();
+    let cli_name = if is_qwen { "Qwen Code" } else { "Gemini" };
+    println!("🚀 Initializing persistent {} session for: {session_id}", cli_name);
 
-    let rpc_logger: Arc<dyn RpcLogger> = match FileRpcLogger::new(Some(&working_directory)) {
+    let rpc_logger: Arc<dyn RpcLogger> = match FileRpcLogger::new(Some(&working_directory), Some(&cli_name)) {
         Ok(logger) => {
             println!("📝 RPC logging enabled for session: {session_id}");
             let _ = logger.cleanup_old_logs();
@@ -179,18 +189,41 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
     let (message_tx, message_rx) = mpsc::unbounded_channel::<String>();
 
     let mut cmd = {
-        #[cfg(target_os = "windows")]
-        {
-            let mut c = Command::new("cmd");
-            c.args(["/C", "gemini", "--model", &model, "--experimental-acp"]);
-            c
-        }
-        #[cfg(not(target_os = "windows"))]
-        {
-            let mut c = Command::new("sh");
-            let gemini_command = format!("gemini --model {model} --experimental-acp");
-            c.args(["-c", &gemini_command]);
-            c
+        if let Some(config) = &backend_config {
+            // Set environment variables for Qwen Code (OpenAI-compatible API)
+            unsafe {
+                std::env::set_var("OPENAI_API_KEY", &config.api_key);
+                std::env::set_var("OPENAI_BASE_URL", &config.base_url);
+                std::env::set_var("OPENAI_MODEL", &config.model);
+            }
+            
+            #[cfg(target_os = "windows")]
+            {
+                let mut c = Command::new("cmd");
+                c.args(["/C", "qwen", "--experimental-acp"]);
+                c
+            }
+            #[cfg(not(target_os = "windows"))]
+            {
+                let mut c = Command::new("sh");
+                let qwen_command = "qwen --experimental-acp".to_string();
+                c.args(["-c", &qwen_command]);
+                c
+            }
+        } else {
+            #[cfg(target_os = "windows")]
+            {
+                let mut c = Command::new("cmd");
+                c.args(["/C", "gemini", "--model", &model, "--experimental-acp"]);
+                c
+            }
+            #[cfg(not(target_os = "windows"))]
+            {
+                let mut c = Command::new("sh");
+                let gemini_command = format!("gemini --model {model} --experimental-acp");
+                c.args(["-c", &gemini_command]);
+                c
+            }
         }
     };
 
@@ -204,13 +237,14 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
     }
 
     let mut child = cmd.spawn().map_err(|e| {
+        let cmd_name = if is_qwen { "qwen" } else { "gemini" };
         #[cfg(target_os = "windows")]
         {
-            BackendError::SessionInitFailed(format!("Failed to run gemini command via cmd: {e}"))
+            BackendError::SessionInitFailed(format!("Failed to run {} command via cmd: {e}", cmd_name))
         }
         #[cfg(not(target_os = "windows"))]
         {
-            BackendError::SessionInitFailed(format!("Failed to run gemini command via shell: {e}"))
+            BackendError::SessionInitFailed(format!("Failed to run {} command via shell: {e}", cmd_name))
         }
     })?;
 
@@ -280,7 +314,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
         Ok(response) => {
             if let Some(error) = &response.error {
                 return Err(BackendError::SessionInitFailed(format!(
-                    "Gemini CLI Error: {error:?}"
+                    "{} CLI Error: {error:?}", cli_name
                 )));
             }
             println!("✅ Session initialized successfully for: {session_id}");
@@ -332,43 +366,43 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
                     session_id,
                     payload,
                 } => {
-                    let _ = emitter.emit(&format!("gemini-output-{session_id}"), payload.text);
+                    let _ = emitter.emit(&format!("ai-output-{session_id}"), payload.text);
                 }
                 InternalEvent::GeminiThought {
                     session_id,
                     payload,
                 } => {
-                    let _ = emitter.emit(&format!("gemini-thought-{session_id}"), payload.thought);
+                    let _ = emitter.emit(&format!("ai-thought-{session_id}"), payload.thought);
                 }
                 InternalEvent::ToolCall {
                     session_id,
                     payload,
                 } => {
-                    let _ = emitter.emit(&format!("gemini-tool-call-{session_id}"), payload);
+                    let _ = emitter.emit(&format!("ai-tool-call-{session_id}"), payload);
                 }
                 InternalEvent::ToolCallUpdate {
                     session_id,
                     payload,
                 } => {
-                    let _ = emitter.emit(&format!("gemini-tool-call-update-{session_id}"), payload);
+                    let _ = emitter.emit(&format!("ai-tool-call-update-{session_id}"), payload);
                 }
                 InternalEvent::ToolCallConfirmation {
                     session_id,
                     payload,
                 } => {
                     let _ = emitter.emit(
-                        &format!("gemini-tool-call-confirmation-{session_id}"),
+                        &format!("ai-tool-call-confirmation-{session_id}"),
                         payload,
                     );
                 }
                 InternalEvent::GeminiTurnFinished { session_id } => {
-                    let _ = emitter.emit(&format!("gemini-turn-finished-{session_id}"), true);
+                    let _ = emitter.emit(&format!("ai-turn-finished-{session_id}"), true);
                 }
                 InternalEvent::Error {
                     session_id,
                     payload,
                 } => {
-                    let _ = emitter.emit(&format!("gemini-error-{session_id}"), payload.error);
+                    let _ = emitter.emit(&format!("ai-error-{session_id}"), payload.error);
                 }
             }
         }
@@ -1186,6 +1220,7 @@ mod tests {
             "test-session-123".to_string(),
             working_dir.to_string_lossy().to_string(),
             "gemini-2.5-flash".to_string(),
+            None,
             emitter.clone(),
             &session_manager,
         ).await;

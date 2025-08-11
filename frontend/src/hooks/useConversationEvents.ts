@@ -77,7 +77,7 @@ export const useConversationEvents = (
         );
 
         // Listen for streaming text chunks.
-        await api.listen<string>(`gemini-output-${conversationId}`, (event) => {
+        await api.listen<string>(`ai-output-${conversationId}`, (event) => {
           updateConversation(conversationId, (conv, lastMsg) => {
             conv.isStreaming = true;
             if (lastMsg.sender === "assistant") {
@@ -110,7 +110,7 @@ export const useConversationEvents = (
 
         // Listen for thinking chunks.
         await api.listen<string>(
-          `gemini-thought-${conversationId}`,
+          `ai-thought-${conversationId}`,
           (event) => {
             updateConversation(conversationId, (conv, lastMsg) => {
               conv.isStreaming = true;
@@ -144,7 +144,7 @@ export const useConversationEvents = (
 
         // Listen for new tool calls being sent.
         await api.listen<ToolCallEvent>(
-          `gemini-tool-call-${conversationId}`,
+          `ai-tool-call-${conversationId}`,
           ({ payload: { id, name, locations, label, icon } }) => {
             updateConversation(conversationId, (conv, lastMsg) => {
               const newToolCall: ToolCall = {
@@ -181,7 +181,7 @@ export const useConversationEvents = (
 
         // Listen for updates to existing tool calls.
         await api.listen<ToolCallUpdateEvent>(
-          `gemini-tool-call-update-${conversationId}`,
+          `ai-tool-call-update-${conversationId}`,
           ({ payload: { toolCallId, status, content } }) => {
             updateConversation(conversationId, (conv) => {
               let updated = false;
@@ -284,7 +284,7 @@ export const useConversationEvents = (
         );
 
         // Also listen for errors
-        await api.listen<string>(`gemini-error-${conversationId}`, (event) => {
+        await api.listen<string>(`ai-error-${conversationId}`, (event) => {
           updateConversation(conversationId, (conv) => {
             conv.isStreaming = false;
             conv.messages.push({
@@ -303,7 +303,7 @@ export const useConversationEvents = (
 
         // Listen for tool call confirmation requests
         await api.listen<ToolCallConfirmationRequest>(
-          `gemini-tool-call-confirmation-${conversationId}`,
+          `ai-tool-call-confirmation-${conversationId}`,
           (event) => {
             const toolCallId =
               event.payload.toolCallId || event.payload.requestId.toString();
@@ -372,7 +372,7 @@ export const useConversationEvents = (
 
         // Listen for turn finished events to stop streaming indicator
         await api.listen<boolean>(
-          `gemini-turn-finished-${conversationId}`,
+          `ai-turn-finished-${conversationId}`,
           () => {
             updateConversation(conversationId, (conv) => {
               conv.isStreaming = false;

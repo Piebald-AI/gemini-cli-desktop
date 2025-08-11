@@ -1,10 +1,9 @@
-export function GeminiLogo() {
+export function GeminiWordmark({ height }: { height: number }) {
   return (
     <svg
       className="_logoImage_l9x19_152"
-      width="80"
-      height="18"
       viewBox="0 0 288 65"
+      height={height}
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >

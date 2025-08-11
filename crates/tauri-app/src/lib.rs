@@ -33,6 +33,7 @@ pub fn run() {
             commands::get_process_statuses,
             commands::kill_process,
             commands::test_gemini_command,
+            commands::test_cli_command,
             commands::send_tool_call_confirmation_response,
             commands::execute_confirmed_command,
             commands::generate_conversation_title,

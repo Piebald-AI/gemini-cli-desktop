@@ -1,5 +1,5 @@
 import React from "react";
-import { GeminiLogo } from "../branding/GeminiLogo";
+import { SmartLogo } from "../branding/SmartLogo";
 import { UserRound } from "lucide-react";
 
 interface MessageHeaderProps {
@@ -15,7 +15,7 @@ export const MessageHeader: React.FC<MessageHeaderProps> = ({
     <div className="flex items-center gap-2 mb-4">
       <div>
         {sender === "assistant" ? (
-          <GeminiLogo />
+          <SmartLogo />
         ) : (
           <div className="flex items-center gap-2">
             <div

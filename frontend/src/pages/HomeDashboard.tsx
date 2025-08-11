@@ -4,9 +4,9 @@ import { useConversation } from "../contexts/ConversationContext";
 import { MessageContent } from "../components/conversation/MessageContent";
 import { ThinkingBlock } from "../components/conversation/ThinkingBlock";
 import { ToolCallDisplay } from "../components/common/ToolCallDisplay";
-import { GeminiLogo } from "../components/branding/GeminiLogo";
-import { GeminiIcon } from "../components/branding/GeminiIcon";
-import { GeminiText } from "../components/branding/GeminiText";
+import { SmartLogo } from "../components/branding/SmartLogo";
+import { SmartLogoCenter } from "../components/branding/SmartLogoCenter";
+import { DesktopText } from "../components/branding/DesktopText";
 import { Button } from "../components/ui/button";
 import {
   Dialog,
@@ -29,11 +29,9 @@ export const HomeDashboard: React.FC = () => {
   const navigate = useNavigate();
   const {
     currentConversation,
-    isCliInstalled,
     messagesContainerRef,
     handleConfirmToolCall,
     confirmationRequests,
-    selectedModel,
   } = useConversation();
 
   return (
@@ -56,7 +54,7 @@ export const HomeDashboard: React.FC = () => {
                   <div className="flex items-center gap-2 mb-4">
                     {message.sender === "assistant" ? (
                       <div>
-                        <GeminiLogo />
+                        <SmartLogo />
                       </div>
                     ) : (
                       <div>
@@ -207,13 +205,8 @@ export const HomeDashboard: React.FC = () => {
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
           <div className="flex flex-row items-center mb-4 gap-2">
-            <div className="flex flex-row items-center gap-2">
-              <GeminiIcon />
-              <GeminiText />
-            </div>
-            <span className="text-4xl font-medium gradient-text-desktop">
-              Desktop
-            </span>
+            <SmartLogoCenter />
+            <DesktopText size="large" />
           </div>
 
           <p className="text-muted-foreground mb-6">

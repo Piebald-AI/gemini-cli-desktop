@@ -142,4 +142,11 @@
     -webkit-text-fill-color: transparent;
     color: transparent;
   }
+  .gradient-text-desktop-purple {
+    background: linear-gradient(to right, #8b7cf6, #615ced, #9d8df1);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
 }

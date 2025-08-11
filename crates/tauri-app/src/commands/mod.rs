@@ -1,6 +1,6 @@
 use tauri::{AppHandle, State};
 use backend::{ProcessStatus, DirEntry, RecentChat, ProjectsResponse, EnrichedProject, 
-              SearchResult, SearchFilters};
+              SearchResult, SearchFilters, QwenConfig};
 use crate::state::AppState;
 
 #[tauri::command]
@@ -13,18 +13,24 @@ pub async fn start_session(
     session_id: String, 
     working_directory: Option<String>,
     model: Option<String>,
+    backend_config: Option<QwenConfig>,
     state: State<'_, AppState>
 ) -> Result<(), String> {
     if let Some(working_directory) = working_directory {
         let model = model.unwrap_or_else(|| "gemini-2.0-flash-exp".to_string());
-        state.backend.initialize_session(session_id, working_directory, model).await
+        state.backend.initialize_session(session_id, working_directory, model, backend_config).await
             .map_err(|e| e.to_string())
     } else {
-        let available = state.backend.check_cli_installed().await.map_err(|e| e.to_string())?;
-        if available {
+        // Skip CLI check if using Qwen backend
+        if backend_config.is_some() {
             Ok(())
         } else {
-            Err("Gemini CLI not available".to_string())
+            let available = state.backend.check_cli_installed().await.map_err(|e| e.to_string())?;
+            if available {
+                Ok(())
+            } else {
+                Err("CLI not available".to_string())
+            }
         }
     }
 }
@@ -46,26 +52,32 @@ pub async fn send_message(
 
 #[tauri::command]
 pub async fn test_gemini_command() -> Result<String, String> {
+    test_cli_command("gemini".to_string()).await
+}
+
+#[tauri::command]
+pub async fn test_cli_command(cli_name: String) -> Result<String, String> {
     use tokio::process::Command;
     let output = if cfg!(target_os = "windows") {
         Command::new("cmd")
-            .args(["/C", "gemini", "--help"])
+            .args(["/C", &cli_name, "--help"])
             .output()
             .await
-            .map_err(|e| format!("Failed to run gemini --help via cmd: {e}"))?
+            .map_err(|e| format!("Failed to run {} --help via cmd: {e}", cli_name))?
     } else {
         Command::new("sh")
-            .args(["-c", "gemini --help"])
+            .args(["-c", &format!("{} --help", cli_name)])
             .output()
             .await
-            .map_err(|e| format!("Failed to run gemini --help via shell: {e}"))?
+            .map_err(|e| format!("Failed to run {} --help via shell: {e}", cli_name))?
     };
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     let stderr = String::from_utf8_lossy(&output.stderr);
 
     Ok(format!(
-        "Running 'gemini --help' via shell\nExit code: {}\nSTDOUT:\n{}\nSTDERR:\n{}",
+        "Running '{} --help' via shell\nExit code: {}\nSTDOUT:\n{}\nSTDERR:\n{}",
+        cli_name,
         output.status.code().unwrap_or(-1),
         stdout,
         stderr
@@ -189,47 +201,56 @@ pub async fn debug_environment() -> Result<String, String> {
         std::env::var("USERPROFILE").unwrap_or_else(|_| "HOME not found".to_string())
     });
 
-    let gemini_result = if cfg!(target_os = "windows") {
-        match tokio::process::Command::new("cmd")
-            .args(["/C", "gemini", "--version"])
-            .output()
-            .await
-        {
-            Ok(output) if output.status.success() => {
-                format!(
-                    "Available via shell: {}",
-                    String::from_utf8_lossy(&output.stdout).trim()
-                )
+    async fn test_cli_version(cli_name: &str) -> String {
+        if cfg!(target_os = "windows") {
+            match tokio::process::Command::new("cmd")
+                .args(["/C", cli_name, "--version"])
+                .output()
+                .await
+            {
+                Ok(output) if output.status.success() => {
+                    format!(
+                        "{} available via shell: {}",
+                        cli_name,
+                        String::from_utf8_lossy(&output.stdout).trim()
+                    )
+                }
+                Ok(output) => {
+                    format!(
+                        "{} shell test failed: {}",
+                        cli_name,
+                        String::from_utf8_lossy(&output.stderr)
+                    )
+                }
+                Err(e) => format!("{} shell execution failed: {e}", cli_name),
             }
-            Ok(output) => {
-                format!(
-                    "Shell test failed: {}",
-                    String::from_utf8_lossy(&output.stderr)
-                )
+        } else {
+            match tokio::process::Command::new("sh")
+                .args(["-c", &format!("{} --version", cli_name)])
+                .output()
+                .await
+            {
+                Ok(output) if output.status.success() => {
+                    format!(
+                        "{} available via shell: {}",
+                        cli_name,
+                        String::from_utf8_lossy(&output.stdout).trim()
+                    )
+                }
+                Ok(output) => {
+                    format!(
+                        "{} shell test failed: {}",
+                        cli_name,
+                        String::from_utf8_lossy(&output.stderr)
+                    )
+                }
+                Err(e) => format!("{} shell execution failed: {e}", cli_name),
             }
-            Err(e) => format!("Shell execution failed: {e}"),
         }
-    } else {
-        match tokio::process::Command::new("sh")
-            .args(["-c", "gemini --version"])
-            .output()
-            .await
-        {
-            Ok(output) if output.status.success() => {
-                format!(
-                    "Available via shell: {}",
-                    String::from_utf8_lossy(&output.stdout).trim()
-                )
-            }
-            Ok(output) => {
-                format!(
-                    "Shell test failed: {}",
-                    String::from_utf8_lossy(&output.stderr)
-                )
-            }
-            Err(e) => format!("Shell execution failed: {e}"),
-        }
-    };
+    }
+
+    let gemini_result = test_cli_version("gemini").await;
+    let qwen_result = test_cli_version("qwen").await;
 
     let system_path = if cfg!(windows) {
         match tokio::process::Command::new("cmd")
@@ -245,10 +266,11 @@ pub async fn debug_environment() -> Result<String, String> {
     };
 
     Ok(format!(
-        "Current PATH (from Tauri app):\n{}\n\nSystem PATH (from cmd):\n{}\n\nHOME: {}\n\nGemini CLI test result:\n{}",
+        "Current PATH (from Tauri app):\n{}\n\nSystem PATH (from cmd):\n{}\n\nHOME: {}\n\nCLI test results:\nGemini: {}\nQwen: {}",
         path.replace(';', ";\n").replace(':', ":\n"),
         system_path.replace(';', ";\n").replace(':', ":\n"),
         home,
-        gemini_result
+        gemini_result,
+        qwen_result
     ))
 }

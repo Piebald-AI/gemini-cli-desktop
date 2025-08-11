@@ -69,10 +69,11 @@ impl ProjectHasher {
 pub struct FileRpcLogger {
     writer: Arc<Mutex<BufWriter<File>>>,
     file_path: std::path::PathBuf,
+    backend_name: String,
 }
 
 impl FileRpcLogger {
-    pub fn new(working_directory: Option<&str>) -> BackendResult<Self> {
+    pub fn new(working_directory: Option<&str>, backend_name: Option<&str>) -> BackendResult<Self> {
         let project_dir = working_directory.map(|s| s.to_string()).unwrap_or_else(|| {
             std::env::current_dir()
                 .unwrap_or_else(|_| std::path::PathBuf::from("."))
@@ -121,8 +122,9 @@ impl FileRpcLogger {
             .map_err(BackendError::IoError)?;
 
         let writer = Arc::new(Mutex::new(BufWriter::new(file)));
+        let backend_name = backend_name.unwrap_or("Gemini CLI").to_string();
 
-        Ok(Self { writer, file_path })
+        Ok(Self { writer, file_path, backend_name })
     }
 
     pub fn cleanup_old_logs(&self) -> Result<(), std::io::Error> {
@@ -155,7 +157,7 @@ impl FileRpcLogger {
 impl RpcLogger for FileRpcLogger {
     fn log_rpc(&self, message: &str) -> Result<(), std::io::Error> {
         let timestamp = Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true);
-        let log_line = format!("[{timestamp}] {message}\n");
+        let log_line = format!("[{timestamp}] [{}] {message}\n", self.backend_name);
 
         if let Ok(mut writer) = self.writer.lock() {
             writer.write_all(log_line.as_bytes())?;
@@ -341,7 +343,7 @@ mod tests {
         let working_dir = temp_dir.path().join("test_project");
         fs::create_dir_all(&working_dir).unwrap();
         
-        let logger = FileRpcLogger::new(Some(working_dir.to_str().unwrap()));
+        let logger = FileRpcLogger::new(Some(working_dir.to_str().unwrap()), None);
         assert!(logger.is_ok());
         
         let logger = logger.unwrap();
@@ -355,7 +357,7 @@ mod tests {
         env_guard.set("HOME", temp_dir.path().to_str().unwrap());
         
         let _current_dir = std::env::current_dir().unwrap();
-        let logger = FileRpcLogger::new(None);
+        let logger = FileRpcLogger::new(None, None);
         assert!(logger.is_ok());
     }
 
@@ -368,7 +370,7 @@ mod tests {
         let working_dir = temp_dir.path().join("test_project");
         fs::create_dir_all(&working_dir).unwrap();
         
-        let logger = FileRpcLogger::new(Some(working_dir.to_str().unwrap())).unwrap();
+        let logger = FileRpcLogger::new(Some(working_dir.to_str().unwrap()), None).unwrap();
         
         let test_message = "test RPC message";
         let result = logger.log_rpc(test_message);
@@ -389,7 +391,7 @@ mod tests {
         let working_dir = temp_dir.path().join("test_project");
         fs::create_dir_all(&working_dir).unwrap();
         
-        let logger = FileRpcLogger::new(Some(working_dir.to_str().unwrap())).unwrap();
+        let logger = FileRpcLogger::new(Some(working_dir.to_str().unwrap()), None).unwrap();
         
         let messages = vec!["message 1", "message 2", "message 3"];
         for message in &messages {
@@ -416,7 +418,7 @@ mod tests {
         let working_dir = temp_dir.path().join("test_project");
         fs::create_dir_all(&working_dir).unwrap();
         
-        let logger = FileRpcLogger::new(Some(working_dir.to_str().unwrap())).unwrap();
+        let logger = FileRpcLogger::new(Some(working_dir.to_str().unwrap()), None).unwrap();
         let log_dir = logger.file_path.parent().unwrap();
         
         // Create some old log files (simulate old files by setting modified time in the past)
@@ -449,7 +451,7 @@ mod tests {
         let working_dir = temp_dir.path().join("test_project");
         fs::create_dir_all(&working_dir).unwrap();
         
-        let logger = FileRpcLogger::new(Some(working_dir.to_str().unwrap())).unwrap();
+        let logger = FileRpcLogger::new(Some(working_dir.to_str().unwrap()), None).unwrap();
         
         // Remove all files to create empty directory scenario
         let log_dir = logger.file_path.parent().unwrap();
@@ -477,7 +479,7 @@ mod tests {
         let working_dir = temp_dir.path().join("test_project");
         fs::create_dir_all(&working_dir).unwrap();
         
-        if let Ok(file_logger) = FileRpcLogger::new(Some(working_dir.to_str().unwrap())) {
+        if let Ok(file_logger) = FileRpcLogger::new(Some(working_dir.to_str().unwrap()), None) {
             let file_logger: Box<dyn RpcLogger> = Box::new(file_logger);
             assert!(file_logger.log_rpc("test").is_ok());
         }
@@ -493,7 +495,7 @@ mod tests {
         let working_dir = temp_dir.path().join("test_project");
         fs::create_dir_all(&working_dir).unwrap();
         
-        let logger = FileRpcLogger::new(Some(working_dir.to_str().unwrap()));
+        let logger = FileRpcLogger::new(Some(working_dir.to_str().unwrap()), None);
         assert!(logger.is_ok());
     }
 
@@ -506,7 +508,7 @@ mod tests {
         let working_dir = std::env::current_dir().unwrap();
         
         // Should use "." as fallback home directory
-        let logger = FileRpcLogger::new(Some(working_dir.to_str().unwrap()));
+        let logger = FileRpcLogger::new(Some(working_dir.to_str().unwrap()), None);
         assert!(logger.is_ok());
     }
 
@@ -552,7 +554,7 @@ mod tests {
         let working_dir = temp_dir.path().join("test_project");
         fs::create_dir_all(&working_dir).unwrap();
         
-        let logger = Arc::new(FileRpcLogger::new(Some(working_dir.to_str().unwrap())).unwrap());
+        let logger = Arc::new(FileRpcLogger::new(Some(working_dir.to_str().unwrap()), None).unwrap());
         let mut handles = vec![];
         
         // Spawn multiple threads to log concurrently

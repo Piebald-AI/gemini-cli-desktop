@@ -368,7 +368,7 @@ async fn start_session(request: Json<StartSessionRequest>, state: &State<AppStat
     // If working_directory is provided, initialize a session with that directory
     if let Some(working_directory) = req.working_directory {
         let model = req.model.unwrap_or_else(|| "gemini-2.0-flash-exp".to_string());
-        match backend.initialize_session(req.session_id, working_directory, model).await {
+        match backend.initialize_session(req.session_id, working_directory, model, None).await {
             Ok(_) => Status::Ok,
             Err(_) => Status::InternalServerError,
         }

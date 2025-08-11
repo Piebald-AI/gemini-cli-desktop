@@ -82,9 +82,10 @@ export default function ProjectDetailPage() {
       navigate("/");
     } catch (error) {
       console.error("Failed to create new discussion:", error);
-      setError(
-        "Failed to create discussion. Please ensure Gemini CLI is installed."
-      );
+      const errorMessage = typeof error === 'string' ? error : 
+        (error as any)?.message || 
+        "Failed to create discussion. Please ensure the required CLI is installed.";
+      setError(errorMessage);
     } finally {
       setIsCreatingDiscussion(false);
     }

@@ -1,5 +1,6 @@
 import React from "react";
-import { GeminiLogo } from "../branding/GeminiLogo";
+import { SmartLogo } from "../branding/SmartLogo";
+import { DesktopText } from "../branding/DesktopText";
 import { PiebaldLogo } from "../branding/PiebaldLogo";
 
 type PageLayoutProps = {
@@ -18,12 +19,10 @@ export function PageLayout({ children }: PageLayoutProps) {
       <div className="border-b border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 flex-shrink-0">
         <div className="px-6 py-4">
           <div className="flex items-center w-full">
-            {/* Left section - Gemini Desktop Logo */}
+            {/* Left section - Smart Desktop Logo */}
             <div className="flex flex-1 items-center gap-1">
-              <GeminiLogo />
-              <span className="text-lg font-medium bg-gradient-to-r from-[#3186ff] via-[#346bf1] to-[#4fa0ff] bg-clip-text text-transparent">
-                Desktop
-              </span>
+              <SmartLogo />
+              <DesktopText size="small" />
             </div>
 
             {/* Right section - Piebald branding */}
