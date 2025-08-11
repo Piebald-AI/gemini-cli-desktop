@@ -44,8 +44,8 @@ export const CliWarnings: React.FC<CliWarningsProps> = ({
             </AlertTitle>
             <AlertDescription className="text-blue-800 dark:text-blue-300">
               <p>
-                Currently, authentication through Gemini Desktop isn't supported when using the Qwen backend. 
-                To login, please use the CLI directly for authentication.
+                Currently, authentication with OAuth through Gemini Desktop isn't supported when using the Qwen backend. 
+                To login, please first use the CLI directly for authentication.
               </p>
             </AlertDescription>
           </Alert>
