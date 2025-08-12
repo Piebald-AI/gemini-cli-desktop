@@ -61,14 +61,15 @@ export function McpServerSettings({ trigger }: McpServerSettingsProps) {
   const loadSettingsFromFile = async () => {
     setIsLoading(true);
     try {
-      const settings = await invoke<Record<string, unknown>>("read_settings_file");
+      const settings =
+        await invoke<Record<string, unknown>>("read_settings_file");
       const mcpServers = settings.mcpServers || {};
 
       const serverEntries: McpServerEntry[] = Object.entries(mcpServers).map(
         ([name, config], index) => ({
           id: `server-${index}-${name}`,
           name,
-          config: config as McpServerEntry['config'],
+          config: config as McpServerEntry["config"],
           enabled: true, // All servers in the file are considered enabled
         })
       );
@@ -86,7 +87,8 @@ export function McpServerSettings({ trigger }: McpServerSettingsProps) {
     setIsLoading(true);
     try {
       // Read current settings to preserve other configurations
-      const currentSettings = await invoke<Record<string, unknown>>("read_settings_file");
+      const currentSettings =
+        await invoke<Record<string, unknown>>("read_settings_file");
 
       // Update only the mcpServers section
       const mcpServersConfig: McpServersConfig = {};

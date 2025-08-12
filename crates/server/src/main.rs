@@ -16,7 +16,10 @@ use std::sync::{
 use tokio::sync::{Mutex, mpsc as tokio_mpsc};
 
 // Import backend functionality
-use backend::{DirEntry, EventEmitter, GeminiBackend, ProcessStatus, RecentChat, EnrichedProject, SearchResult, SearchFilters};
+use backend::{
+    DirEntry, EnrichedProject, EventEmitter, GeminiBackend, ProcessStatus, RecentChat,
+    SearchFilters, SearchResult,
+};
 
 static FRONTEND_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/../../frontend/dist");
 
@@ -32,6 +35,7 @@ pub struct WebSocketManager {
 }
 
 impl WebSocketManager {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Self {
             connections: Arc::new(Mutex::new(Vec::new())),
@@ -144,7 +148,7 @@ impl WebSocketsEventEmitter {
                 // Process events in order from synchronous channel
                 while let Ok(message) = event_receiver.recv() {
                     if let Err(e) = ws_manager_worker.broadcast(message).await {
-                        eprintln!("❌ Failed to broadcast WebSocket event: {}", e);
+                        eprintln!("❌ Failed to broadcast WebSocket event: {e}");
                     }
                 }
             });
@@ -265,7 +269,7 @@ fn index(path: PathBuf) -> Result<(ContentType, &'static [u8]), Status> {
     let file = FRONTEND_DIR.get_file(path).ok_or(Status::NotFound)?;
 
     Ok((
-        ContentType::from_extension(path.split('.').last().unwrap()).unwrap(),
+        ContentType::from_extension(path.split('.').next_back().unwrap()).unwrap(),
         file.contents(),
     ))
 }
@@ -278,14 +282,16 @@ fn index(path: PathBuf) -> Result<(ContentType, &'static [u8]), Status> {
 async fn list_projects(
     limit: Option<u32>,
     offset: Option<u32>,
-    state: &State<AppState>
+    state: &State<AppState>,
 ) -> Result<Json<serde_json::Value>, Status> {
     let lim = limit.unwrap_or(25);
     let off = offset.unwrap_or(0);
     let backend = state.backend.lock().await;
     match backend.list_projects(lim, off).await {
         Ok(resp) => {
-            let v = serde_json::to_value(resp).map_err(|_e| Status::InternalServerError).unwrap();
+            let v = serde_json::to_value(resp)
+                .map_err(|_e| Status::InternalServerError)
+                .unwrap();
             Ok(Json(v))
         }
         Err(_e) => Err(Status::InternalServerError),
@@ -293,7 +299,9 @@ async fn list_projects(
 }
 
 #[get("/projects-enriched")]
-async fn list_projects_enriched(state: &State<AppState>) -> Result<Json<Vec<EnrichedProject>>, Status> {
+async fn list_projects_enriched(
+    state: &State<AppState>,
+) -> Result<Json<Vec<EnrichedProject>>, Status> {
     let backend = state.backend.lock().await;
     match backend.list_enriched_projects().await {
         Ok(list) => Ok(Json(list)),
@@ -308,17 +316,19 @@ async fn get_enriched_project_http(
     external_root_path: String,
 ) -> Result<Json<EnrichedProject>, Status> {
     let backend = state.backend.lock().await;
-    match backend.get_enriched_project(sha256, external_root_path).await {
+    match backend
+        .get_enriched_project(sha256, external_root_path)
+        .await
+    {
         Ok(p) => Ok(Json(p)),
         Err(_e) => Err(Status::InternalServerError),
     }
 }
 
-
 #[get("/projects/<project_id>/discussions")]
 async fn get_project_discussions(
     project_id: &str,
-    state: &State<AppState>
+    state: &State<AppState>,
 ) -> Result<Json<Vec<RecentChat>>, Status> {
     let backend = state.backend.lock().await;
     match backend.get_project_discussions(project_id).await {
@@ -329,12 +339,12 @@ async fn get_project_discussions(
 
 #[get("/recent-chats")]
 async fn get_recent_chats(state: &State<AppState>) -> Result<Json<Vec<RecentChat>>, Status> {
-     let backend = state.backend.lock().await;
-     match backend.get_recent_chats().await {
-         Ok(chats) => Ok(Json(chats)),
-         Err(_) => Err(Status::InternalServerError),
-     }
- }
+    let backend = state.backend.lock().await;
+    match backend.get_recent_chats().await {
+        Ok(chats) => Ok(Json(chats)),
+        Err(_) => Err(Status::InternalServerError),
+    }
+}
 
 #[derive(Deserialize)]
 struct SearchChatsRequest {
@@ -343,9 +353,15 @@ struct SearchChatsRequest {
 }
 
 #[post("/search-chats", data = "<request>")]
-async fn search_chats(request: Json<SearchChatsRequest>, state: &State<AppState>) -> Result<Json<Vec<SearchResult>>, Status> {
+async fn search_chats(
+    request: Json<SearchChatsRequest>,
+    state: &State<AppState>,
+) -> Result<Json<Vec<SearchResult>>, Status> {
     let backend = state.backend.lock().await;
-    match backend.search_chats(request.query.clone(), request.filters.clone()).await {
+    match backend
+        .search_chats(request.query.clone(), request.filters.clone())
+        .await
+    {
         Ok(results) => Ok(Json(results)),
         Err(_) => Err(Status::InternalServerError),
     }
@@ -364,11 +380,16 @@ async fn check_cli_installed(state: &State<AppState>) -> Result<Json<bool>, Stat
 async fn start_session(request: Json<StartSessionRequest>, state: &State<AppState>) -> Status {
     let req = request.into_inner();
     let backend = state.backend.lock().await;
-    
+
     // If working_directory is provided, initialize a session with that directory
     if let Some(working_directory) = req.working_directory {
-        let model = req.model.unwrap_or_else(|| "gemini-2.0-flash-exp".to_string());
-        match backend.initialize_session(req.session_id, working_directory, model, None).await {
+        let model = req
+            .model
+            .unwrap_or_else(|| "gemini-2.0-flash-exp".to_string());
+        match backend
+            .initialize_session(req.session_id, working_directory, model, None)
+            .await
+        {
             Ok(_) => Status::Ok,
             Err(_) => Status::InternalServerError,
         }
@@ -573,7 +594,7 @@ fn websocket_handler(
                 }
                 // Handle server shutdown
                 _ = &mut shutdown => {
-                    println!("📡 WebSocket connection (ID: {}) received shutdown signal", connection_id);
+                    println!("📡 WebSocket connection (ID: {connection_id}) received shutdown signal");
                     break;
                 }
             }

@@ -1,13 +1,13 @@
 #![allow(clippy::used_underscore_binding)]
 
+mod commands;
 mod event_emitter;
 mod state;
-mod commands;
 
-use std::sync::Arc;
 use backend::GeminiBackend;
 use event_emitter::TauriEventEmitter;
 use state::AppState;
+use std::sync::Arc;
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -18,12 +18,12 @@ pub fn run() {
         .setup(|app| {
             let emitter = TauriEventEmitter::new(app.handle().clone());
             let backend = GeminiBackend::new(emitter);
-            
+
             let app_state = AppState {
                 backend: Arc::new(backend),
             };
             app.manage(app_state);
-            
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

@@ -7,6 +7,7 @@ default:
   just --list
 
 build-all: build build-web
+ci: lint-ci check-fmt
 
 deps:
     cd frontend ; pnpm install

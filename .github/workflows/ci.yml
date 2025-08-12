@@ -27,9 +27,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'pnpm'
-          cache-dependency-path: 'frontend/pnpm-lock.yaml'
-      
+          cache: "pnpm"
+          cache-dependency-path: "frontend/pnpm-lock.yaml"
+
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
@@ -38,8 +38,8 @@ jobs:
       - name: Install dependencies
         run: just deps
 
-      - name: Check formatting
-        run: just check-fmt
-      
       - name: Lint project
         run: just lint-ci
+
+      - name: Check formatting
+        run: just check-fmt

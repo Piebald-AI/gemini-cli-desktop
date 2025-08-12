@@ -1,6 +1,6 @@
-use tauri::{AppHandle, Emitter};
+use backend::{BackendError, BackendResult, EventEmitter};
 use serde::Serialize;
-use backend::{EventEmitter, BackendResult, BackendError};
+use tauri::{AppHandle, Emitter};
 
 #[derive(Clone)]
 pub struct TauriEventEmitter {
@@ -8,7 +8,7 @@ pub struct TauriEventEmitter {
 }
 
 impl TauriEventEmitter {
-    pub fn new(app_handle: AppHandle) -> Self {
+    pub const fn new(app_handle: AppHandle) -> Self {
         Self { app_handle }
     }
 }

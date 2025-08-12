@@ -6,6 +6,7 @@ interface BackendContextType {
 
 const BackendContext = createContext<BackendContextType | undefined>(undefined);
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useBackend = () => {
   const context = useContext(BackendContext);
   if (context === undefined) {

@@ -63,7 +63,7 @@ export function PasteJsonDialog({
         ([name, config], index) => ({
           id: `imported-server-${Date.now()}-${index}`,
           name,
-          config: config as McpServerEntry['config'],
+          config: config as McpServerEntry["config"],
           enabled: true,
         })
       );
