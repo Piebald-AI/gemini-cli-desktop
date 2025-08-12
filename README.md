@@ -24,6 +24,7 @@ A powerful, modern desktop and web UI for **Gemini CLI** and **Qwen Coder**.  Bu
 ### Planned/in progress
 
 - MCP server management and integration
+- Git repository viewing
 - Dangerous `--yolo` mode support
 - Resuming saved conversations
 - Token/cost information
