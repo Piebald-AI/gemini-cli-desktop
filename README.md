@@ -25,6 +25,7 @@ A powerful, modern desktop and web UI for **Gemini CLI** and **Qwen Coder**.  Bu
 
 - MCP server management and integration
 - Dangerous `--yolo` mode support
+- Resuming saved conversations
 - Token/cost information
 - `@`-mentioning files
 - LLxprt integration ([#24](https://github.com/Piebald-AI/gemini-desktop/issues/24))
