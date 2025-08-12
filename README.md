@@ -1,30 +1,36 @@
 # Gemini Desktop
 
-A powerful, modern desktop and web UI for Gemini CLI.  Built with Tauri and web technologies.  Cross-platform, open-source on [GitHub.](https://github.com/Piebald-AI/gemini-desktop)
+A powerful, modern desktop and web UI for **Gemini CLI** and **Qwen Coder**.  Built with Tauri and web technologies.  Cross-platform, open-source on [GitHub.](https://github.com/Piebald-AI/gemini-desktop)
 
-> [!WARNING]
-> We're working on implementing automatic saving on top of Gemini CLI, but it's ultimately a hack.  It would be more robust to have automatic recording incorporated into the Gemini CLI itself.  We've opened PR [#4401](https://github.com/google-gemini/gemini-cli/pull/4401) on the Gemini CLI repo with a complete implementation; please :+1: it to encourage it to be merged!
+**Using [Gemini CLI](https://github.com/google-gemini/gemini-cli):**
 
-![Screenshot of Gemini Desktop](./assets/screenshot.png)
+<img alt="Screenshot of Gemini Desktop" src="./assets/screenshot.png" width="600">
+
+**Using [Qwen Code](https://github.com/QwenLM/qwen-code):**
+
+<img alt="Screenshot of Gemini Desktop for Qwen Code" src="./assets/qwen-desktop.png" width="600">
 
 ## Features
 
-- Choose between models (Gemini 2.5 Pro, Gemini 2.5 Flash, Gemini 2.5 Flash-Lite)
-- Send messages to/from Gemini and receive responses
-- Handle tool call requests
-- Markdown support ([#1](https://github.com/Piebald-AI/gemini-desktop/issues/1))
-- Automatic chat history saving ([#2](https://github.com/Piebald-AI/gemini-desktop/issues/2)).  Note: See related PRs [#4401](https://github.com/google-gemini/gemini-cli/pull/4401) and [#4609](https://github.com/google-gemini/gemini-cli/pull/4609) on the Gemini CLI repo.
-- More advanced tool call support
+- Choose between Gemini models (Gemini 2.5 Pro, Gemini 2.5 Flash, Gemini 2.5 Flash-Lite)
+- Use Qwen.ai OAuth/custom OpenAI-compatible providers and models with Qwen Code
+- Send messages to/from AI and receive response; handle tool call requests; Markdown support
+- Observe Gemini's thought process
+- Advanced tool call display
+- Automatic chat history saving (Note: See related PRs [#4401](https://github.com/google-gemini/gemini-cli/pull/4401) and [#4609](https://github.com/google-gemini/gemini-cli/pull/4609) on the Gemini CLI repo.)
+- Fast search across all conversation contents
 
-### Planned
+### Planned/in progress
 
-- MCP server management
+- MCP server management and integration
 - Token/cost information
-- LLxprt/Qwen Coder integration ([#24](https://github.com/Piebald-AI/gemini-desktop/issues/24))
+- `@`-mentioning files
+- LLxprt integration ([#24](https://github.com/Piebald-AI/gemini-desktop/issues/24))
+- Multi-modal support
 
 ## How it works
 
-Gemini CLI can function as an ACP (Agent Communication Protocol) server, which enables real-time communication via JSON-RPC 2.0 between the client, Gemini Desktop, and the server, Gemini CLI.
+Gemini CLI/Qwen Code can function as an ACP (Agent Communication Protocol) server, which enables real-time communication via JSON-RPC 2.0 between the client, Gemini Desktop, and the server, Gemini CLI.
 
 ## Building from source
 
