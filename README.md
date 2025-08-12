@@ -35,6 +35,7 @@ A powerful, modern desktop and web UI for **Gemini CLI** and **Qwen Coder**.  Bu
 - `@`-mentioning files
 - LLxprt integration ([#24](https://github.com/Piebald-AI/gemini-desktop/issues/24))
 - Multi-modal support
+- Extension support
 
 ## How it works
 
