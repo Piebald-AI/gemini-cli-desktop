@@ -33,7 +33,7 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - uses: extractions/setup-just@v3
+      - uses: taiki-e/install-action@just
 
       - name: Install dependencies
         run: just deps
