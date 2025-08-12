@@ -20,6 +20,7 @@ A powerful, modern desktop and web UI for **Gemini CLI** and **Qwen Coder**.  Bu
 - Send messages to/from AI and receive response; handle tool call requests; Markdown support
 - Observe Gemini's **thought process**
 - View and handle edit requests with clear file diffs
+- Automatic light/dark mode switching
 - **Automatic chat history saving** (Note: See related PRs [#4401](https://github.com/google-gemini/gemini-cli/pull/4401) and [#4609](https://github.com/google-gemini/gemini-cli/pull/4609) on the Gemini CLI repo.)
 - Fast **search** across all conversation contents
 - Access Gemini CLI/Qwen Code running on **remote machines** with the web UI
