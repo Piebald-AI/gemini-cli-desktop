@@ -33,18 +33,13 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Install dependencies
-        working-directory: frontend
-        run: pnpm install --frozen-lockfile
+      - uses: extractions/setup-just@v3
 
-      - name: Format project
-        working-directory: frontend
-        run: pnpm format
+      - name: Install dependencies
+        run: just deps
+
+      - name: Check formatting
+        run: just check-fmt
       
       - name: Lint project
-        working-directory: frontend
-        run: pnpm lint
-      
-      - name: TypeScript and Cargo check
-        working-directory: frontend
-        run: pnpm check
+        run: just lint-ci

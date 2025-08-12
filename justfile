@@ -11,6 +11,25 @@ build-all: build build-web
 deps:
     cd frontend ; pnpm install
 
+lint:
+    cd frontend ; pnpm lint
+    cargo clippy
+
+lint-ci:
+    cd frontend ; pnpm lint:ci
+    cargo clippy -- -D warnings
+
+fmt:
+    cd frontend ; pnpm format
+    cargo fmt
+
+check-fmt:
+    cd frontend ; pnpm format:check
+    cargo fmt --check
+
+test *args:
+    cargo nextest run {{args}}
+
 ### DESKTOP
 
 [group('desktop')]
