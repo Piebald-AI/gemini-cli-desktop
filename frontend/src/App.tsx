@@ -11,6 +11,7 @@ import { BackendProvider } from "./contexts/BackendContext";
 import { HomeDashboard } from "./pages/HomeDashboard";
 import ProjectsPage from "./pages/Projects";
 import ProjectDetailPage from "./pages/ProjectDetail";
+import { McpServersPage } from "./pages/McpServersPage";
 
 // Hooks
 import { useConversationManager } from "./hooks/useConversationManager";
@@ -255,6 +256,7 @@ function App() {
         <Route index element={<HomeDashboard />} />
         <Route path="projects" element={<ProjectsPage />} />
         <Route path="projects/:id" element={<ProjectDetailPage />} />
+        <Route path="mcp" element={<McpServersPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

@@ -2,6 +2,8 @@ use tauri::{AppHandle, State};
 use backend::{ProcessStatus, DirEntry, RecentChat, ProjectsResponse, EnrichedProject, 
               SearchResult, SearchFilters, QwenConfig};
 use crate::state::AppState;
+use serde_json::Value;
+use std::collections::HashMap;
 
 #[tauri::command]
 pub async fn check_cli_installed(state: State<'_, AppState>) -> Result<bool, String> {
@@ -273,4 +275,73 @@ pub async fn debug_environment() -> Result<String, String> {
         gemini_result,
         qwen_result
     ))
+}
+
+// Settings.json File Management Commands
+
+#[tauri::command]
+pub async fn get_settings_file_path() -> Result<String, String> {
+    use std::env;
+    use std::path::PathBuf;
+    
+    // Try to get the settings file path
+    let home_dir = dirs::home_dir()
+        .ok_or_else(|| "Unable to find home directory".to_string())?;
+    
+    let settings_path = home_dir.join(".gemini").join("settings.json");
+    
+    Ok(settings_path.to_string_lossy().to_string())
+}
+
+#[tauri::command]
+pub async fn read_settings_file() -> Result<Value, String> {
+    use std::fs;
+    use std::path::PathBuf;
+    
+    let home_dir = dirs::home_dir()
+        .ok_or_else(|| "Unable to find home directory".to_string())?;
+    
+    let settings_path = home_dir.join(".gemini").join("settings.json");
+    
+    if !settings_path.exists() {
+        // Return empty settings structure if file doesn't exist
+        return Ok(serde_json::json!({
+            "mcpServers": {}
+        }));
+    }
+    
+    let content = fs::read_to_string(&settings_path)
+        .map_err(|e| format!("Failed to read settings file: {}", e))?;
+    
+    let settings: Value = serde_json::from_str(&content)
+        .map_err(|e| format!("Failed to parse settings JSON: {}", e))?;
+    
+    Ok(settings)
+}
+
+#[tauri::command]
+pub async fn write_settings_file(settings: Value) -> Result<(), String> {
+    use std::fs;
+    use std::path::PathBuf;
+    
+    let home_dir = dirs::home_dir()
+        .ok_or_else(|| "Unable to find home directory".to_string())?;
+    
+    let gemini_dir = home_dir.join(".gemini");
+    let settings_path = gemini_dir.join("settings.json");
+    
+    // Create .gemini directory if it doesn't exist
+    if !gemini_dir.exists() {
+        fs::create_dir_all(&gemini_dir)
+            .map_err(|e| format!("Failed to create .gemini directory: {}", e))?;
+    }
+    
+    // Pretty-print the JSON
+    let formatted_json = serde_json::to_string_pretty(&settings)
+        .map_err(|e| format!("Failed to serialize settings: {}", e))?;
+    
+    fs::write(&settings_path, formatted_json)
+        .map_err(|e| format!("Failed to write settings file: {}", e))?;
+    
+    Ok(())
 }

@@ -79,3 +79,6 @@ export interface ToolCallUpdateEvent {
 }
 
 export type ErrorContent = ToolCallResult | string | null | undefined;
+
+// Re-export MCP types
+export * from "./mcp";

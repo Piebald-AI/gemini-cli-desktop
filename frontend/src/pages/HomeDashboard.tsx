@@ -22,7 +22,7 @@ import {
   CardDescription,
 } from "../components/ui/card";
 import { Info, UserRound, FolderKanban } from "lucide-react";
-import { ModelContextProtocol } from "@/components/common/ModelContextProtocol";
+import { ModelContextProtocol } from "../components/common/ModelContextProtocol";
 import { ToolCallConfirmationRequest } from "../utils/toolCallParser";
 
 export const HomeDashboard: React.FC = () => {
@@ -233,21 +233,15 @@ export const HomeDashboard: React.FC = () => {
               </CardHeader>
             </Card>
             <Card
-              className="w-full opacity-60 cursor-not-allowed select-none"
-              aria-disabled="true"
-              onClick={(e) => e.preventDefault()}
+              className="cursor-pointer transition-colors hover:bg-accent w-full"
+              onClick={() => navigate("/mcp")}
             >
               <CardHeader className="flex flex-row items-center gap-3">
                 <div className="shrink-0 h-6 w-6 flex items-center justify-center">
                   <ModelContextProtocol className="h-5 w-5 text-muted-foreground" />
                 </div>
                 <div className="text-left">
-                  <div className="flex items-center gap-2">
-                    <CardTitle className="text-base">MCP Servers</CardTitle>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground uppercase tracking-wide">
-                      Coming soon
-                    </span>
-                  </div>
+                  <CardTitle className="text-base">MCP Servers</CardTitle>
                   <CardDescription>
                     Manage MCP configuration and settings.
                   </CardDescription>

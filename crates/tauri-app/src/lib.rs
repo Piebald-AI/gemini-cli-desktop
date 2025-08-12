@@ -49,7 +49,10 @@ pub fn run() {
             commands::list_projects,
             commands::list_enriched_projects,
             commands::get_project,
-            commands::get_project_discussions
+            commands::get_project_discussions,
+            commands::get_settings_file_path,
+            commands::read_settings_file,
+            commands::write_settings_file
         ]);
 
     builder
