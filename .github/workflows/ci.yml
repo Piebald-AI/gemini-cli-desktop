@@ -28,18 +28,23 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'pnpm'
+          cache-dependency-path: 'frontend/pnpm-lock.yaml'
       
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install dependencies
+        working-directory: frontend
         run: pnpm install --frozen-lockfile
 
       - name: Format project
+        working-directory: frontend
         run: pnpm format
       
       - name: Lint project
+        working-directory: frontend
         run: pnpm lint
       
       - name: TypeScript and Cargo check
+        working-directory: frontend
         run: pnpm check

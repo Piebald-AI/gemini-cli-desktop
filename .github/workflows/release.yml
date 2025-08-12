@@ -26,12 +26,15 @@ jobs:
         with:
           node-version: 22.x
           cache: pnpm
+          cache-dependency-path: 'frontend/pnpm-lock.yaml'
           registry-url: https://registry.npmjs.org
 
       - name: Install dependencies
+        working-directory: frontend
         run: pnpm install --frozen-lockfile
 
       - name: Build project
+        working-directory: frontend
         run: pnpm tauri build
 
       - name: Create GitHub Release
