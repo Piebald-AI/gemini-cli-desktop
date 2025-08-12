@@ -13,12 +13,13 @@ A powerful, modern desktop and web UI for **Gemini CLI** and **Qwen Coder**.  Bu
 ## Features
 
 - Choose between Gemini models (Gemini 2.5 Pro, Gemini 2.5 Flash, Gemini 2.5 Flash-Lite)
-- Use Qwen.ai OAuth/custom OpenAI-compatible providers and models with Qwen Code
+- Use **Qwen.ai OAuth/custom OpenAI-compatible providers** and models with Qwen Code
 - Send messages to/from AI and receive response; handle tool call requests; Markdown support
-- Observe Gemini's thought process
+- Observe Gemini's **thought process**
 - Advanced tool call display
-- Automatic chat history saving (Note: See related PRs [#4401](https://github.com/google-gemini/gemini-cli/pull/4401) and [#4609](https://github.com/google-gemini/gemini-cli/pull/4609) on the Gemini CLI repo.)
-- Fast search across all conversation contents
+- **Automatic chat history saving** (Note: See related PRs [#4401](https://github.com/google-gemini/gemini-cli/pull/4401) and [#4609](https://github.com/google-gemini/gemini-cli/pull/4609) on the Gemini CLI repo.)
+- Fast **search** across all conversation contents
+- Access Gemini CLI/Qwen Code running on **remote machines** with the web UI
 
 ### Planned/in progress
 
