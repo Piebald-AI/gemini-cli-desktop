@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -32,41 +32,46 @@ interface KeyValuePair {
   value: string;
 }
 
-export function AddMcpServerDialog({ trigger, onServerAdd }: AddMcpServerDialogProps) {
+export function AddMcpServerDialog({
+  trigger,
+  onServerAdd,
+}: AddMcpServerDialogProps) {
   const [open, setOpen] = useState(false);
   const [serverName, setServerName] = useState("");
   const [transportType, setTransportType] = useState<TransportType>("stdio");
-  
+
   // Command fields
   const [command, setCommand] = useState("");
   const [args, setArgs] = useState<string[]>([]);
-  
+
   // URL fields
   const [url, setUrl] = useState("");
   const [httpUrl, setHttpUrl] = useState("");
-  
+
   // Common fields
   const [environment, setEnvironment] = useState<KeyValuePair[]>([]);
   const [headers, setHeaders] = useState<KeyValuePair[]>([]);
   const [workingDirectory, setWorkingDirectory] = useState("");
   const [timeout, setTimeout] = useState(300000); // 5 minutes default
   const [trust, setTrust] = useState(false);
-  
+
   // Tools
   const [includeTools, setIncludeTools] = useState<string[]>([]);
   const [excludeTools, setExcludeTools] = useState<string[]>([]);
-  
+
   // Authentication
   const [requiresAuthentication, setRequiresAuthentication] = useState(false);
   const [supportsOAuthDiscovery, setSupportsOAuthDiscovery] = useState(false);
-  
+
   // OAuth fields
   const [clientId, setClientId] = useState("");
   const [clientSecret, setClientSecret] = useState("");
   const [authorizationUrl, setAuthorizationUrl] = useState("");
   const [tokenUrl, setTokenUrl] = useState("");
   const [scopes, setScopes] = useState<string[]>([]);
-  const [redirectUri, setRedirectUri] = useState("http://localhost:7777/oauth/callback");
+  const [redirectUri, setRedirectUri] = useState(
+    "http://localhost:7777/oauth/callback"
+  );
   const [tokenParameterName, setTokenParameterName] = useState("");
   const [audiences, setAudiences] = useState<string[]>([]);
 
@@ -86,10 +91,10 @@ export function AddMcpServerDialog({ trigger, onServerAdd }: AddMcpServerDialogP
 
   // Update server name when transport type changes (only if current name matches pattern)
   useEffect(() => {
-    if (serverName.endsWith('_server')) {
+    if (serverName.endsWith("_server")) {
       setServerName(`${transportType}_server`);
     }
-  }, [transportType]);
+  }, [transportType, serverName]);
 
   const resetForm = () => {
     setServerName("");
@@ -152,7 +157,10 @@ export function AddMcpServerDialog({ trigger, onServerAdd }: AddMcpServerDialogP
     }
 
     // Add headers (only for URL/HTTP URL types)
-    if ((transportType === "sse" || transportType === "http") && headers.length > 0) {
+    if (
+      (transportType === "sse" || transportType === "http") &&
+      headers.length > 0
+    ) {
       baseConfig.headers = Object.fromEntries(
         headers.map(({ key, value }) => [key, value])
       );
@@ -176,7 +184,10 @@ export function AddMcpServerDialog({ trigger, onServerAdd }: AddMcpServerDialogP
         authorizationUrl: authorizationUrl || undefined,
         tokenUrl: tokenUrl || undefined,
         scopes: scopes.length > 0 ? scopes : undefined,
-        redirectUri: redirectUri !== "http://localhost:7777/oauth/callback" ? redirectUri : undefined,
+        redirectUri:
+          redirectUri !== "http://localhost:7777/oauth/callback"
+            ? redirectUri
+            : undefined,
         tokenParamName: tokenParameterName || undefined,
         audiences: audiences.length > 0 ? audiences : undefined,
       };
@@ -197,9 +208,7 @@ export function AddMcpServerDialog({ trigger, onServerAdd }: AddMcpServerDialogP
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger}
-      </DialogTrigger>
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
@@ -208,7 +217,12 @@ export function AddMcpServerDialog({ trigger, onServerAdd }: AddMcpServerDialogP
               variant="ghost"
               size="icon"
               className="h-5 w-5 p-0 text-muted-foreground hover:text-foreground"
-              onClick={() => window.open("https://github.com/google-gemini/gemini-cli/blob/main/docs/tools/mcp-server.md", "_blank")}
+              onClick={() =>
+                window.open(
+                  "https://github.com/google-gemini/gemini-cli/blob/main/docs/tools/mcp-server.md",
+                  "_blank"
+                )
+              }
             >
               <HelpCircle className="h-4 w-4" />
             </Button>
@@ -232,7 +246,9 @@ export function AddMcpServerDialog({ trigger, onServerAdd }: AddMcpServerDialogP
             <Label>Type</Label>
             <RadioGroup
               value={transportType}
-              onValueChange={(value) => setTransportType(value as TransportType)}
+              onValueChange={(value) =>
+                setTransportType(value as TransportType)
+              }
               className="flex gap-6 mt-2"
             >
               <div className="flex items-center space-x-2">
@@ -369,7 +385,9 @@ export function AddMcpServerDialog({ trigger, onServerAdd }: AddMcpServerDialogP
               checked={trust}
               onCheckedChange={(checked) => setTrust(!!checked)}
             />
-            <Label htmlFor="trust">Trust this server (bypass tool call confirmations)</Label>
+            <Label htmlFor="trust">
+              Trust this server (bypass tool call confirmations)
+            </Label>
           </div>
 
           {/* Tools (only show for URL/HTTP URL) */}
@@ -404,7 +422,9 @@ export function AddMcpServerDialog({ trigger, onServerAdd }: AddMcpServerDialogP
                 <Checkbox
                   id="requiresAuth"
                   checked={requiresAuthentication}
-                  onCheckedChange={(checked) => setRequiresAuthentication(!!checked)}
+                  onCheckedChange={(checked) =>
+                    setRequiresAuthentication(!!checked)
+                  }
                 />
                 <Label htmlFor="requiresAuth">Requires Authentication</Label>
               </div>
@@ -413,9 +433,13 @@ export function AddMcpServerDialog({ trigger, onServerAdd }: AddMcpServerDialogP
                   <Checkbox
                     id="supportsOAuth"
                     checked={supportsOAuthDiscovery}
-                    onCheckedChange={(checked) => setSupportsOAuthDiscovery(!!checked)}
+                    onCheckedChange={(checked) =>
+                      setSupportsOAuthDiscovery(!!checked)
+                    }
                   />
-                  <Label htmlFor="supportsOAuth">Supports OAuth Discovery</Label>
+                  <Label htmlFor="supportsOAuth">
+                    Supports OAuth Discovery
+                  </Label>
                 </div>
               )}
             </div>
@@ -423,7 +447,6 @@ export function AddMcpServerDialog({ trigger, onServerAdd }: AddMcpServerDialogP
             {/* OAuth Configuration (only show if supports OAuth discovery) */}
             {requiresAuthentication && supportsOAuthDiscovery && (
               <div className="space-y-4">
-                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="clientId">Client ID</Label>
@@ -434,7 +457,8 @@ export function AddMcpServerDialog({ trigger, onServerAdd }: AddMcpServerDialogP
                       placeholder="Enter the MCP server's client ID"
                     />
                     <p className="text-sm text-muted-foreground">
-                      OAuth client identifier. Optional with dynamic registration.
+                      OAuth client identifier. Optional with dynamic
+                      registration.
                     </p>
                   </div>
 
@@ -498,12 +522,15 @@ export function AddMcpServerDialog({ trigger, onServerAdd }: AddMcpServerDialogP
                       placeholder="Enter the MCP server's redirect URI"
                     />
                     <p className="text-sm text-muted-foreground">
-                      Custom redirect URI. Defaults to http://localhost:7777/oauth/callback.
+                      Custom redirect URI. Defaults to
+                      http://localhost:7777/oauth/callback.
                     </p>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="tokenParameterName">Token Parameter Name</Label>
+                    <Label htmlFor="tokenParameterName">
+                      Token Parameter Name
+                    </Label>
                     <Input
                       id="tokenParameterName"
                       value={tokenParameterName}

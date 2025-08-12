@@ -109,38 +109,35 @@ export const useConversationEvents = (
         });
 
         // Listen for thinking chunks.
-        await api.listen<string>(
-          `ai-thought-${conversationId}`,
-          (event) => {
-            updateConversation(conversationId, (conv, lastMsg) => {
-              conv.isStreaming = true;
-              if (lastMsg.sender === "assistant") {
-                const lastPart = lastMsg.parts[lastMsg.parts.length - 1];
-                if (lastPart?.type === "thinking") {
-                  lastPart.thinking += event.payload;
-                } else {
-                  // Create a new text part.
-                  lastMsg.parts.push({
-                    type: "thinking",
-                    thinking: event.payload,
-                  });
-                }
+        await api.listen<string>(`ai-thought-${conversationId}`, (event) => {
+          updateConversation(conversationId, (conv, lastMsg) => {
+            conv.isStreaming = true;
+            if (lastMsg.sender === "assistant") {
+              const lastPart = lastMsg.parts[lastMsg.parts.length - 1];
+              if (lastPart?.type === "thinking") {
+                lastPart.thinking += event.payload;
               } else {
-                conv.messages.push({
-                  id: Date.now().toString(),
-                  sender: "assistant",
-                  timestamp: new Date(),
-                  parts: [
-                    {
-                      type: "thinking",
-                      thinking: event.payload,
-                    },
-                  ],
+                // Create a new text part.
+                lastMsg.parts.push({
+                  type: "thinking",
+                  thinking: event.payload,
                 });
               }
-            });
-          }
-        );
+            } else {
+              conv.messages.push({
+                id: Date.now().toString(),
+                sender: "assistant",
+                timestamp: new Date(),
+                parts: [
+                  {
+                    type: "thinking",
+                    thinking: event.payload,
+                  },
+                ],
+              });
+            }
+          });
+        });
 
         // Listen for new tool calls being sent.
         await api.listen<ToolCallEvent>(
@@ -371,14 +368,11 @@ export const useConversationEvents = (
         );
 
         // Listen for turn finished events to stop streaming indicator
-        await api.listen<boolean>(
-          `ai-turn-finished-${conversationId}`,
-          () => {
-            updateConversation(conversationId, (conv) => {
-              conv.isStreaming = false;
-            });
-          }
-        );
+        await api.listen<boolean>(`ai-turn-finished-${conversationId}`, () => {
+          updateConversation(conversationId, (conv) => {
+            conv.isStreaming = false;
+          });
+        });
       } catch (error) {
         console.error(
           "Failed to set up event listener for conversation:",

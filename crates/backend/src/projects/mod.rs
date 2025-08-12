@@ -105,9 +105,7 @@ fn derive_friendly_name_from_path(path: &Path) -> String {
     #[cfg(windows)]
     {
         // Normalize both backslashes and forward slashes on Windows
-        let replaced = s
-            .replace(['\\', '/'], "-")
-            .replace(':', "");
+        let replaced = s.replace(['\\', '/'], "-").replace(':', "");
         replaced
             .split('-')
             .filter(|p| !p.is_empty())
@@ -481,7 +479,7 @@ mod tests {
 
         let json = serde_json::to_string(&item).unwrap();
         let deserialized: ProjectListItem = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(item.id, deserialized.id);
         assert_eq!(item.title, deserialized.title);
         assert_eq!(item.status, deserialized.status);
@@ -510,7 +508,7 @@ mod tests {
         assert!(!json.contains("updatedAt"));
         assert!(!json.contains("lastActivityAt"));
         assert!(!json.contains("logCount"));
-        
+
         let deserialized: ProjectListItem = serde_json::from_str(&json).unwrap();
         assert_eq!(item.id, deserialized.id);
         assert!(deserialized.title.is_none());
@@ -536,7 +534,7 @@ mod tests {
 
         let json = serde_json::to_string(&response).unwrap();
         let deserialized: ProjectsResponse = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(response.total, deserialized.total);
         assert_eq!(response.limit, deserialized.limit);
         assert_eq!(response.offset, deserialized.offset);
@@ -565,7 +563,7 @@ mod tests {
 
         let json = serde_json::to_string(&view).unwrap();
         let deserialized: ProjectMetadataView = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(view.path, deserialized.path);
         assert_eq!(view.sha256, deserialized.sha256);
         assert_eq!(view.friendly_name, deserialized.friendly_name);
@@ -617,8 +615,14 @@ mod tests {
 
     #[test]
     fn test_parse_millis_from_log_name_valid() {
-        assert_eq!(parse_millis_from_log_name("rpc-log-1640995200000.log"), Some(1640995200000));
-        assert_eq!(parse_millis_from_log_name("rpc-log-1640995200000.json"), Some(1640995200000));
+        assert_eq!(
+            parse_millis_from_log_name("rpc-log-1640995200000.log"),
+            Some(1640995200000)
+        );
+        assert_eq!(
+            parse_millis_from_log_name("rpc-log-1640995200000.json"),
+            Some(1640995200000)
+        );
     }
 
     #[test]
@@ -641,7 +645,7 @@ mod tests {
     fn test_home_projects_root_with_home() {
         let mut env_guard = EnvGuard::new();
         env_guard.set("HOME", "/test/home");
-        
+
         let result = home_projects_root();
         assert!(result.is_some());
         let path = result.unwrap();
@@ -653,11 +657,14 @@ mod tests {
         let mut env_guard = EnvGuard::new();
         env_guard.remove("HOME");
         env_guard.set("USERPROFILE", "C:\\Users\\test");
-        
+
         let result = home_projects_root();
         assert!(result.is_some());
         let path = result.unwrap();
-        assert_eq!(path, Path::new("C:\\Users\\test\\.gemini-desktop\\projects"));
+        assert_eq!(
+            path,
+            Path::new("C:\\Users\\test\\.gemini-desktop\\projects")
+        );
     }
 
     #[test]
@@ -665,7 +672,7 @@ mod tests {
         let mut env_guard = EnvGuard::new();
         env_guard.remove("HOME");
         env_guard.remove("USERPROFILE");
-        
+
         let result = home_projects_root();
         // On Windows, there might be other environment variables that provide a home directory
         // The function falls back to an empty string, so result could be Some or None
@@ -677,7 +684,7 @@ mod tests {
     fn test_projects_root_dir() {
         let mut env_guard = EnvGuard::new();
         env_guard.set("HOME", "/test/home");
-        
+
         let result = projects_root_dir();
         assert!(result.is_some());
     }
@@ -686,11 +693,14 @@ mod tests {
     fn test_project_json_path() {
         let mut env_guard = EnvGuard::new();
         env_guard.set("HOME", "/test/home");
-        
+
         let result = project_json_path("abcd1234");
         assert!(result.is_some());
         let path = result.unwrap();
-        assert_eq!(path, Path::new("/test/home/.gemini-desktop/projects/abcd1234/project.json"));
+        assert_eq!(
+            path,
+            Path::new("/test/home/.gemini-desktop/projects/abcd1234/project.json")
+        );
     }
 
     #[test]
@@ -698,7 +708,7 @@ mod tests {
         let mut env_guard = EnvGuard::new();
         env_guard.remove("HOME");
         env_guard.remove("USERPROFILE");
-        
+
         let result = project_json_path("abcd1234");
         assert!(result.is_none());
     }
@@ -708,7 +718,7 @@ mod tests {
         let mut env_guard = EnvGuard::new();
         env_guard.remove("HOME");
         env_guard.remove("USERPROFILE");
-        
+
         let result = read_project_metadata("test");
         assert!(matches!(result, Err(BackendError::ProjectNotFound(_))));
     }
@@ -718,7 +728,7 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let mut env_guard = EnvGuard::new();
         env_guard.set("HOME", temp_dir.path().to_str().unwrap());
-        
+
         let result = read_project_metadata("nonexistent");
         assert!(matches!(result, Err(BackendError::ProjectNotFound(_))));
     }
@@ -728,12 +738,15 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let mut env_guard = EnvGuard::new();
         env_guard.set("HOME", temp_dir.path().to_str().unwrap());
-        
+
         let valid_sha = "a".repeat(64); // Use 64-character hex string
         // Create project directory and metadata file
-        let projects_dir = temp_dir.path().join(".gemini-desktop/projects").join(&valid_sha);
+        let projects_dir = temp_dir
+            .path()
+            .join(".gemini-desktop/projects")
+            .join(&valid_sha);
         fs::create_dir_all(&projects_dir).unwrap();
-        
+
         let test_path = temp_dir.path().join("test").join("path");
         let metadata = ProjectMetadata {
             path: test_path.clone(),
@@ -742,11 +755,11 @@ mod tests {
             first_used: None,
             updated_at: None,
         };
-        
+
         let json_path = projects_dir.join("project.json");
         let content = serde_json::to_string_pretty(&metadata).unwrap();
         fs::write(&json_path, content).unwrap();
-        
+
         let result = read_project_metadata(&valid_sha).unwrap();
         assert_eq!(result.path, test_path);
         assert_eq!(result.sha256, Some(valid_sha));
@@ -758,19 +771,22 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let mut env_guard = EnvGuard::new();
         env_guard.set("HOME", temp_dir.path().to_str().unwrap());
-        
+
         let valid_sha = "a".repeat(64); // Use 64-character hex string
         // Create project directory and invalid metadata file
-        let projects_dir = temp_dir.path().join(".gemini-desktop/projects").join(&valid_sha);
+        let projects_dir = temp_dir
+            .path()
+            .join(".gemini-desktop/projects")
+            .join(&valid_sha);
         fs::create_dir_all(&projects_dir).unwrap();
-        
+
         let json_path = projects_dir.join("project.json");
         fs::write(&json_path, "invalid json").unwrap();
-        
+
         let result = read_project_metadata(&valid_sha);
         assert!(result.is_err());
         match result {
-            Err(BackendError::JsonError(_)) => {}, // Expected
+            Err(BackendError::JsonError(_)) => {} // Expected
             Err(e) => panic!("Expected JsonError, got: {:?}", e),
             Ok(_) => panic!("Expected error, got success"),
         }
@@ -781,7 +797,7 @@ mod tests {
         let mut env_guard = EnvGuard::new();
         env_guard.remove("HOME");
         env_guard.remove("USERPROFILE");
-        
+
         let metadata = ProjectMetadata::default();
         let result = write_project_metadata("test", &metadata);
         assert!(matches!(result, Err(BackendError::ProjectNotFound(_))));
@@ -792,7 +808,7 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let mut env_guard = EnvGuard::new();
         env_guard.set("HOME", temp_dir.path().to_str().unwrap());
-        
+
         let metadata = ProjectMetadata {
             path: PathBuf::from("/test/path"),
             sha256: Some("abcd1234".to_string()),
@@ -800,15 +816,15 @@ mod tests {
             first_used: None,
             updated_at: None,
         };
-        
+
         let result = write_project_metadata("abcd1234", &metadata);
         assert!(result.is_ok());
-        
+
         // Verify the file was created
         let projects_dir = temp_dir.path().join(".gemini-desktop/projects/abcd1234");
         let json_path = projects_dir.join("project.json");
         assert!(json_path.exists());
-        
+
         // Verify content
         let content = fs::read_to_string(&json_path).unwrap();
         let read_metadata: ProjectMetadata = serde_json::from_str(&content).unwrap();
@@ -825,10 +841,10 @@ mod tests {
             first_used: Some(now_fixed_offset()),
             updated_at: Some(now_fixed_offset()),
         };
-        
+
         let canonical_root = Path::new("/canonical/path");
         let view = to_view(&metadata, canonical_root, "sha256");
-        
+
         assert_eq!(view.path, "/test/path");
         assert_eq!(view.sha256, "abcd1234");
         assert_eq!(view.friendly_name, "custom-name");
@@ -845,13 +861,16 @@ mod tests {
             first_used: None,
             updated_at: None,
         };
-        
+
         let canonical_root = Path::new("/canonical/path");
         let view = to_view(&metadata, canonical_root, "fallback_sha");
-        
+
         assert_eq!(view.path, "/test/path");
         assert_eq!(view.sha256, "fallback_sha");
-        assert_eq!(view.friendly_name, derive_friendly_name_from_path(canonical_root));
+        assert_eq!(
+            view.friendly_name,
+            derive_friendly_name_from_path(canonical_root)
+        );
         assert!(view.first_used.is_none());
         assert!(view.updated_at.is_none());
     }
@@ -861,7 +880,7 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let mut env_guard = EnvGuard::new();
         env_guard.set("HOME", temp_dir.path().to_str().unwrap());
-        
+
         let valid_sha = "e".repeat(64); // Use 64-character hex string
         // Create existing metadata
         let metadata = ProjectMetadata {
@@ -871,13 +890,16 @@ mod tests {
             first_used: None,
             updated_at: None,
         };
-        
-        let projects_dir = temp_dir.path().join(".gemini-desktop/projects").join(&valid_sha);
+
+        let projects_dir = temp_dir
+            .path()
+            .join(".gemini-desktop/projects")
+            .join(&valid_sha);
         fs::create_dir_all(&projects_dir).unwrap();
         let json_path = projects_dir.join("project.json");
         let content = serde_json::to_string_pretty(&metadata).unwrap();
         fs::write(&json_path, content).unwrap();
-        
+
         let result = ensure_project_metadata(&valid_sha, None).unwrap();
         assert_eq!(result.path, PathBuf::from("/existing/path"));
         assert_eq!(result.sha256, Some(valid_sha));
@@ -888,11 +910,11 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let mut env_guard = EnvGuard::new();
         env_guard.set("HOME", temp_dir.path().to_str().unwrap());
-        
+
         let valid_sha = "f".repeat(64); // Use 64-character hex string
         let external_root = Path::new("/new/project");
         let result = ensure_project_metadata(&valid_sha, Some(external_root)).unwrap();
-        
+
         assert_eq!(result.path, PathBuf::from("/new/project"));
         assert_eq!(result.sha256, Some(valid_sha));
         assert!(result.friendly_name.is_some());
@@ -905,7 +927,7 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let mut env_guard = EnvGuard::new();
         env_guard.set("HOME", temp_dir.path().to_str().unwrap());
-        
+
         let result = ensure_project_metadata("nonexistent", None);
         assert!(matches!(result, Err(BackendError::ProjectNotFound(_))));
     }
@@ -915,7 +937,7 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let mut env_guard = EnvGuard::new();
         env_guard.set("HOME", temp_dir.path().to_str().unwrap());
-        
+
         let throttle = TouchThrottle::new(Duration::from_millis(100));
         let result = maybe_touch_updated_at("nonexistent", &throttle);
         assert!(result.is_ok()); // Should not fail for nonexistent projects
@@ -926,7 +948,7 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let mut env_guard = EnvGuard::new();
         env_guard.set("HOME", temp_dir.path().to_str().unwrap());
-        
+
         // Create project metadata
         let metadata = ProjectMetadata {
             path: PathBuf::from("/test/path"),
@@ -935,15 +957,15 @@ mod tests {
             first_used: None,
             updated_at: None,
         };
-        
+
         write_project_metadata("test", &metadata).unwrap();
-        
+
         let throttle = TouchThrottle::new(Duration::from_secs(1));
-        
+
         // First touch should succeed
         let result1 = maybe_touch_updated_at("test", &throttle);
         assert!(result1.is_ok());
-        
+
         // Immediate second touch should be throttled (no error, just skipped)
         let result2 = maybe_touch_updated_at("test", &throttle);
         assert!(result2.is_ok());
@@ -954,7 +976,7 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let mut env_guard = EnvGuard::new();
         env_guard.set("HOME", temp_dir.path().to_str().unwrap());
-        
+
         let valid_sha = "b".repeat(64); // Use 64-character hex string
         // Create project metadata with a path that works on both Windows and Unix
         let test_path = temp_dir.path().join("existing").join("path");
@@ -965,9 +987,9 @@ mod tests {
             first_used: None,
             updated_at: None,
         };
-        
+
         write_project_metadata(&valid_sha, &metadata).unwrap();
-        
+
         let result = make_enriched_project(&valid_sha, None, false);
         assert_eq!(result.sha256, valid_sha);
         assert_eq!(result.root_path, test_path);
@@ -979,10 +1001,10 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let mut env_guard = EnvGuard::new();
         env_guard.set("HOME", temp_dir.path().to_str().unwrap());
-        
+
         let external_root = Path::new("/external/root");
         let result = make_enriched_project("newproject", Some(external_root), false);
-        
+
         assert_eq!(result.sha256, "newproject");
         assert_eq!(result.root_path, PathBuf::from("/external/root"));
     }
@@ -992,10 +1014,10 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let mut env_guard = EnvGuard::new();
         env_guard.set("HOME", temp_dir.path().to_str().unwrap());
-        
+
         let external_root = Path::new("/new/project");
         let result = make_enriched_project("newsha", Some(external_root), true);
-        
+
         assert_eq!(result.sha256, "newsha");
         assert_eq!(result.root_path, PathBuf::from("/new/project"));
         assert!(result.metadata.friendly_name.len() > 0);
@@ -1006,7 +1028,7 @@ mod tests {
         let mut env_guard = EnvGuard::new();
         env_guard.remove("HOME");
         env_guard.remove("USERPROFILE");
-        
+
         let result = list_projects(10, 0).unwrap();
         assert_eq!(result.items.len(), 0);
         assert_eq!(result.total, 0);
@@ -1019,11 +1041,11 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let mut env_guard = EnvGuard::new();
         env_guard.set("HOME", temp_dir.path().to_str().unwrap());
-        
+
         // Create projects directory but leave it empty
         let projects_dir = temp_dir.path().join(".gemini-desktop/projects");
         fs::create_dir_all(&projects_dir).unwrap();
-        
+
         let result = list_projects(10, 0).unwrap();
         assert_eq!(result.items.len(), 0);
         assert_eq!(result.total, 0);
@@ -1034,23 +1056,23 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let mut env_guard = EnvGuard::new();
         env_guard.set("HOME", temp_dir.path().to_str().unwrap());
-        
+
         let projects_dir = temp_dir.path().join(".gemini-desktop/projects");
         fs::create_dir_all(&projects_dir).unwrap();
-        
+
         // Create valid project directory (64-char hex)
         let valid_sha = "a".repeat(64);
         let project_dir = projects_dir.join(&valid_sha);
         fs::create_dir_all(&project_dir).unwrap();
-        
+
         // Create a log file
         let log_file = project_dir.join("rpc-log-1640995200000.log");
         fs::write(&log_file, "test log content").unwrap();
-        
+
         // Create invalid directory (not 64-char hex)
         let invalid_dir = projects_dir.join("invalid");
         fs::create_dir_all(&invalid_dir).unwrap();
-        
+
         let result = list_projects(10, 0).unwrap();
         assert_eq!(result.items.len(), 1);
         assert_eq!(result.total, 1);
@@ -1064,28 +1086,28 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let mut env_guard = EnvGuard::new();
         env_guard.set("HOME", temp_dir.path().to_str().unwrap());
-        
+
         let projects_dir = temp_dir.path().join(".gemini-desktop/projects");
         fs::create_dir_all(&projects_dir).unwrap();
-        
+
         // Create 3 project directories with log files
         for i in 0..3 {
             let sha = format!("{:064x}", i);
             let project_dir = projects_dir.join(&sha);
             fs::create_dir_all(&project_dir).unwrap();
-            
+
             // Create a log file to make it a valid project
             let log_file = project_dir.join(format!("rpc-log-164099520000{}.log", i));
             fs::write(&log_file, "test log content").unwrap();
         }
-        
+
         // Test first page
         let result = list_projects(2, 0).unwrap();
         assert_eq!(result.items.len(), 2);
         assert_eq!(result.total, 3);
         assert_eq!(result.limit, 2);
         assert_eq!(result.offset, 0);
-        
+
         // Test second page
         let result = list_projects(2, 2).unwrap();
         assert_eq!(result.items.len(), 1);
@@ -1099,10 +1121,10 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let mut env_guard = EnvGuard::new();
         env_guard.set("HOME", temp_dir.path().to_str().unwrap());
-        
+
         let projects_dir = temp_dir.path().join(".gemini-desktop/projects");
         fs::create_dir_all(&projects_dir).unwrap();
-        
+
         let result = list_enriched_projects().unwrap();
         assert_eq!(result.len(), 0);
     }
@@ -1112,17 +1134,17 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let mut env_guard = EnvGuard::new();
         env_guard.set("HOME", temp_dir.path().to_str().unwrap());
-        
+
         let projects_dir = temp_dir.path().join(".gemini-desktop/projects");
         fs::create_dir_all(&projects_dir).unwrap();
-        
+
         // Create project directory and add a log so it is treated as a valid project
         let sha = "a".repeat(64);
         let project_dir = projects_dir.join(&sha);
         fs::create_dir_all(&project_dir).unwrap();
         let log_file = project_dir.join("rpc-log-1640995200000.log");
         fs::write(&log_file, "{}").unwrap();
-        
+
         let result = list_enriched_projects().unwrap();
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].sha256, sha);
@@ -1133,12 +1155,12 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let mut env_guard = EnvGuard::new();
         env_guard.set("HOME", temp_dir.path().to_str().unwrap());
-        
-        let result = get_enriched_project(
-            "testsha256".to_string(),
-            "/test/external/root".to_string(),
-        ).await.unwrap();
-        
+
+        let result =
+            get_enriched_project("testsha256".to_string(), "/test/external/root".to_string())
+                .await
+                .unwrap();
+
         assert_eq!(result.sha256, "testsha256");
         assert_eq!(result.root_path, PathBuf::from("/test/external/root"));
     }
@@ -1159,7 +1181,7 @@ mod tests {
 
         let json = serde_json::to_string(&project).unwrap();
         let deserialized: EnrichedProject = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(project.sha256, deserialized.sha256);
         assert_eq!(project.root_path, deserialized.root_path);
         assert_eq!(project.metadata.path, deserialized.metadata.path);

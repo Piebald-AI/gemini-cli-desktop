@@ -30,7 +30,7 @@ function RootLayout() {
   const [qwenConfig, setQwenConfig] = useState({
     apiKey: "",
     baseUrl: "",
-    model: ""
+    model: "",
   });
   const [useOAuth, setUseOAuth] = useState<boolean>(false);
   const [cliIOLogs, setCliIOLogs] = useState<CliIO[]>([]);
@@ -40,24 +40,26 @@ function RootLayout() {
   // Load settings from localStorage on component mount
   useEffect(() => {
     try {
-      const savedBackend = localStorage.getItem('gemini-desktop-backend');
-      const savedQwenConfig = localStorage.getItem('gemini-desktop-qwen-config');
-      const savedOAuth = localStorage.getItem('gemini-desktop-use-oauth');
-      
+      const savedBackend = localStorage.getItem("gemini-desktop-backend");
+      const savedQwenConfig = localStorage.getItem(
+        "gemini-desktop-qwen-config"
+      );
+      const savedOAuth = localStorage.getItem("gemini-desktop-use-oauth");
+
       if (savedBackend) {
         setSelectedBackend(savedBackend);
       }
-      
+
       if (savedQwenConfig) {
         const parsedConfig = JSON.parse(savedQwenConfig);
         setQwenConfig(parsedConfig);
       }
-      
+
       if (savedOAuth !== null) {
-        setUseOAuth(savedOAuth === 'true');
+        setUseOAuth(savedOAuth === "true");
       }
     } catch (error) {
-      console.warn('Failed to load settings from localStorage:', error);
+      console.warn("Failed to load settings from localStorage:", error);
     }
   }, []);
 
@@ -119,27 +121,33 @@ function RootLayout() {
   const handleBackendChange = useCallback((backend: string) => {
     setSelectedBackend(backend);
     try {
-      localStorage.setItem('gemini-desktop-backend', backend);
+      localStorage.setItem("gemini-desktop-backend", backend);
     } catch (error) {
-      console.warn('Failed to save backend to localStorage:', error);
+      console.warn("Failed to save backend to localStorage:", error);
     }
   }, []);
 
-  const handleQwenConfigChange = useCallback((config: { apiKey: string; baseUrl: string; model: string }) => {
-    setQwenConfig(config);
-    try {
-      localStorage.setItem('gemini-desktop-qwen-config', JSON.stringify(config));
-    } catch (error) {
-      console.warn('Failed to save Qwen config to localStorage:', error);
-    }
-  }, []);
+  const handleQwenConfigChange = useCallback(
+    (config: { apiKey: string; baseUrl: string; model: string }) => {
+      setQwenConfig(config);
+      try {
+        localStorage.setItem(
+          "gemini-desktop-qwen-config",
+          JSON.stringify(config)
+        );
+      } catch (error) {
+        console.warn("Failed to save Qwen config to localStorage:", error);
+      }
+    },
+    []
+  );
 
   const handleOAuthChange = useCallback((useOAuth: boolean) => {
     setUseOAuth(useOAuth);
     try {
-      localStorage.setItem('gemini-desktop-use-oauth', useOAuth.toString());
+      localStorage.setItem("gemini-desktop-use-oauth", useOAuth.toString());
     } catch (error) {
-      console.warn('Failed to save OAuth setting to localStorage:', error);
+      console.warn("Failed to save OAuth setting to localStorage:", error);
     }
   }, []);
 
@@ -150,11 +158,14 @@ function RootLayout() {
       setActiveConversation(convId);
 
       if (workingDirectory) {
-        const backendConfig = selectedBackend === "qwen" ? {
-          api_key: qwenConfig.apiKey,
-          base_url: qwenConfig.baseUrl,
-          model: qwenConfig.model
-        } : null;
+        const backendConfig =
+          selectedBackend === "qwen"
+            ? {
+                api_key: qwenConfig.apiKey,
+                base_url: qwenConfig.baseUrl,
+                model: qwenConfig.model,
+              }
+            : null;
 
         console.log("Debug - selectedBackend:", selectedBackend);
         console.log("Debug - qwenConfig:", qwenConfig);
@@ -199,52 +210,53 @@ function RootLayout() {
         open={sidebarOpen}
         onOpenChange={setSidebarOpen}
       >
-      <SidebarInset>
-        <AppHeader />
+        <SidebarInset>
+          <AppHeader />
 
-        <div className="flex-1 flex flex-col bg-background min-h-0">
-          <CliWarnings
-            selectedModel={selectedModel}
-            isCliInstalled={isCliInstalled}
-            selectedBackend={selectedBackend}
-          />
+          <div className="flex-1 flex flex-col bg-background min-h-0">
+            <CliWarnings
+              selectedModel={selectedModel}
+              isCliInstalled={isCliInstalled}
+              selectedBackend={selectedBackend}
+            />
 
-          <ConversationContext.Provider
-            value={{
-              conversations,
-              activeConversation,
-              currentConversation,
-              input,
-              isCliInstalled,
-              messagesContainerRef,
-              cliIOLogs,
-              handleInputChange,
-              handleSendMessage,
-              selectedModel,
-              startNewConversation,
-              handleConfirmToolCall,
-              confirmationRequests,
-            }}
-          >
-            <Outlet />
-          </ConversationContext.Provider>
+            <ConversationContext.Provider
+              value={{
+                conversations,
+                activeConversation,
+                currentConversation,
+                input,
+                isCliInstalled,
+                messagesContainerRef,
+                cliIOLogs,
+                handleInputChange,
+                handleSendMessage,
+                selectedModel,
+                startNewConversation,
+                handleConfirmToolCall,
+                confirmationRequests,
+              }}
+            >
+              <Outlet />
+            </ConversationContext.Provider>
 
-          {activeConversation &&
-            processStatuses.find(
-              (status) =>
-                status.conversation_id === activeConversation && status.is_alive
-            ) && (
-              <MessageInputBar
-                input={input}
-                isCliInstalled={isCliInstalled}
-                cliIOLogs={cliIOLogs}
-                handleInputChange={handleInputChange}
-                handleSendMessage={handleSendMessage}
-              />
-            )}
-        </div>
-      </SidebarInset>
-    </AppSidebar>
+            {activeConversation &&
+              processStatuses.find(
+                (status) =>
+                  status.conversation_id === activeConversation &&
+                  status.is_alive
+              ) && (
+                <MessageInputBar
+                  input={input}
+                  isCliInstalled={isCliInstalled}
+                  cliIOLogs={cliIOLogs}
+                  handleInputChange={handleInputChange}
+                  handleSendMessage={handleSendMessage}
+                />
+              )}
+          </div>
+        </SidebarInset>
+      </AppSidebar>
     </BackendProvider>
   );
 }

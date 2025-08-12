@@ -1,6 +1,6 @@
 use crate::events::ToolCallLocation;
-use serde::de::{Deserializer, Error as DeError};
 use crate::rpc::deserialize_string_or_number;
+use serde::de::{Deserializer, Error as DeError};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -83,7 +83,9 @@ where
         .collect())
 }
 
-fn deserialize_content<'de, D>(deserializer: D) -> Result<Option<crate::events::ToolCallConfirmationContent>, D::Error>
+fn deserialize_content<'de, D>(
+    deserializer: D,
+) -> Result<Option<crate::events::ToolCallConfirmationContent>, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -107,7 +109,9 @@ where
     }
 }
 
-fn deserialize_confirmation<'de, D>(deserializer: D) -> Result<crate::events::ToolCallConfirmation, D::Error>
+fn deserialize_confirmation<'de, D>(
+    deserializer: D,
+) -> Result<crate::events::ToolCallConfirmation, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -157,7 +161,7 @@ mod tests {
 
         let json = serde_json::to_string(&chunk).unwrap();
         let deserialized: MessageChunk = serde_json::from_str(&json).unwrap();
-        
+
         match deserialized {
             MessageChunk::Text { text } => assert_eq!(text, "Hello, world!"),
             _ => panic!("Expected Text chunk"),
@@ -172,7 +176,7 @@ mod tests {
 
         let json = serde_json::to_string(&chunk).unwrap();
         let deserialized: MessageChunk = serde_json::from_str(&json).unwrap();
-        
+
         match deserialized {
             MessageChunk::Path { path } => assert_eq!(path, "/home/user/file.txt"),
             _ => panic!("Expected Path chunk"),
@@ -184,15 +188,15 @@ mod tests {
         // Test that the untagged enum correctly deserializes both variants
         let text_json = json!({"text": "Some text"});
         let path_json = json!({"path": "/some/path"});
-        
+
         let text_chunk: MessageChunk = serde_json::from_value(text_json).unwrap();
         let path_chunk: MessageChunk = serde_json::from_value(path_json).unwrap();
-        
+
         match text_chunk {
             MessageChunk::Text { text } => assert_eq!(text, "Some text"),
             _ => panic!("Expected Text chunk"),
         }
-        
+
         match path_chunk {
             MessageChunk::Path { path } => assert_eq!(path, "/some/path"),
             _ => panic!("Expected Path chunk"),
@@ -214,20 +218,20 @@ mod tests {
 
         let json = serde_json::to_string(&params).unwrap();
         let deserialized: SendUserMessageParams = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(params.chunks.len(), deserialized.chunks.len());
-        
+
         match (&params.chunks[0], &deserialized.chunks[0]) {
             (MessageChunk::Text { text: t1 }, MessageChunk::Text { text: t2 }) => {
                 assert_eq!(t1, t2);
-            },
+            }
             _ => panic!("Expected matching Text chunks"),
         }
-        
+
         match (&params.chunks[1], &deserialized.chunks[1]) {
             (MessageChunk::Path { path: p1 }, MessageChunk::Path { path: p2 }) => {
                 assert_eq!(p1, p2);
-            },
+            }
             _ => panic!("Expected matching Path chunks"),
         }
     }
@@ -241,7 +245,7 @@ mod tests {
 
         let json = serde_json::to_string(&chunk).unwrap();
         let deserialized: AssistantChunk = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(chunk.thought, deserialized.thought);
         assert_eq!(chunk.text, deserialized.text);
     }
@@ -252,7 +256,7 @@ mod tests {
             thought: Some("Just thinking".to_string()),
             text: None,
         };
-        
+
         let text_only = AssistantChunk {
             thought: None,
             text: Some("Just text".to_string()),
@@ -260,13 +264,16 @@ mod tests {
 
         let thought_json = serde_json::to_string(&thought_only).unwrap();
         let text_json = serde_json::to_string(&text_only).unwrap();
-        
+
         let thought_deserialized: AssistantChunk = serde_json::from_str(&thought_json).unwrap();
         let text_deserialized: AssistantChunk = serde_json::from_str(&text_json).unwrap();
-        
-        assert_eq!(thought_deserialized.thought, Some("Just thinking".to_string()));
+
+        assert_eq!(
+            thought_deserialized.thought,
+            Some("Just thinking".to_string())
+        );
         assert!(thought_deserialized.text.is_none());
-        
+
         assert!(text_deserialized.thought.is_none());
         assert_eq!(text_deserialized.text, Some("Just text".to_string()));
     }
@@ -282,7 +289,7 @@ mod tests {
 
         let json = serde_json::to_string(&params).unwrap();
         let deserialized: StreamAssistantMessageChunkParams = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(params.chunk.thought, deserialized.chunk.thought);
         assert_eq!(params.chunk.text, deserialized.chunk.text);
     }
@@ -304,7 +311,7 @@ mod tests {
 
         let json = serde_json::to_string(&params).unwrap();
         let deserialized: PushToolCallParams = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(params.icon, deserialized.icon);
         assert_eq!(params.label, deserialized.label);
         assert_eq!(params.locations.len(), deserialized.locations.len());
@@ -318,7 +325,7 @@ mod tests {
 
         let json = serde_json::to_string(&result).unwrap();
         let deserialized: PushToolCallResult = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(result.id, deserialized.id);
     }
 
@@ -332,11 +339,11 @@ mod tests {
 
         let json = serde_json::to_string(&params).unwrap();
         let deserialized: UpdateToolCallParams = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(params.tool_call_id, deserialized.tool_call_id);
         assert_eq!(params.status, deserialized.status);
         assert_eq!(params.content, deserialized.content);
-        
+
         // Test camelCase field name
         assert!(json.contains("toolCallId"));
     }
@@ -351,7 +358,7 @@ mod tests {
 
         let json = serde_json::to_string(&params).unwrap();
         let deserialized: UpdateToolCallParams = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(params.tool_call_id, deserialized.tool_call_id);
         assert_eq!(params.status, deserialized.status);
         assert!(deserialized.content.is_none());
@@ -365,7 +372,7 @@ mod tests {
             "status": "pending",
             "content": null
         });
-        
+
         let json_with_string = json!({
             "toolCallId": "456",
             "status": "running",
@@ -374,10 +381,10 @@ mod tests {
 
         let from_number: UpdateToolCallParams = serde_json::from_value(json_with_number).unwrap();
         let from_string: UpdateToolCallParams = serde_json::from_value(json_with_string).unwrap();
-        
+
         assert_eq!(from_number.tool_call_id, 123);
         assert_eq!(from_number.status, "pending");
-        
+
         assert_eq!(from_string.tool_call_id, 456);
         assert_eq!(from_string.status, "running");
     }
@@ -390,7 +397,8 @@ mod tests {
             "content": null
         });
 
-        let result: Result<UpdateToolCallParams, _> = serde_json::from_value(json_with_invalid_string);
+        let result: Result<UpdateToolCallParams, _> =
+            serde_json::from_value(json_with_invalid_string);
         assert!(result.is_err());
     }
 
@@ -422,19 +430,25 @@ mod tests {
 
         let json = serde_json::to_string(&params).unwrap();
         let deserialized: RequestToolCallConfirmationParams = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(params.label, deserialized.label);
         assert_eq!(params.icon, deserialized.icon);
         assert!(deserialized.content.is_some());
         assert_eq!(params.locations.len(), deserialized.locations.len());
-        
+
         let content = deserialized.content.unwrap();
         assert_eq!(content.content_type, "bulk_delete");
         assert_eq!(content.path, Some("/tmp/files".to_string()));
-        
+
         assert_eq!(deserialized.confirmation.confirmation_type, "dangerous");
-        assert_eq!(deserialized.confirmation.root_command, Some("rm".to_string()));
-        assert_eq!(deserialized.confirmation.command, Some("-rf /tmp/files/*".to_string()));
+        assert_eq!(
+            deserialized.confirmation.root_command,
+            Some("rm".to_string())
+        );
+        assert_eq!(
+            deserialized.confirmation.command,
+            Some("-rf /tmp/files/*".to_string())
+        );
     }
 
     #[test]
@@ -453,12 +467,12 @@ mod tests {
 
         let json = serde_json::to_string(&params).unwrap();
         let deserialized: RequestToolCallConfirmationParams = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(params.label, deserialized.label);
         assert_eq!(params.icon, deserialized.icon);
         assert!(deserialized.content.is_none());
         assert_eq!(deserialized.locations.len(), 0);
-        
+
         assert_eq!(deserialized.confirmation.confirmation_type, "simple");
         assert!(deserialized.confirmation.root_command.is_none());
         assert!(deserialized.confirmation.command.is_none());
@@ -473,7 +487,7 @@ mod tests {
 
         let json = serde_json::to_string(&result).unwrap();
         let deserialized: RequestToolCallConfirmationResult = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(result.id, deserialized.id);
         assert_eq!(result.outcome, deserialized.outcome);
     }
@@ -489,7 +503,7 @@ mod tests {
 
         let json = serde_json::to_string(&result).unwrap();
         let deserialized: CommandResult = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(result.command, deserialized.command);
         assert_eq!(result.success, deserialized.success);
         assert_eq!(result.output, deserialized.output);
@@ -507,7 +521,7 @@ mod tests {
 
         let json = serde_json::to_string(&result).unwrap();
         let deserialized: CommandResult = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(result.command, deserialized.command);
         assert!(!deserialized.success);
         assert!(deserialized.output.is_none());

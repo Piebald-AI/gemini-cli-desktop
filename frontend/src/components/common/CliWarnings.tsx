@@ -14,16 +14,17 @@ export const CliWarnings: React.FC<CliWarningsProps> = ({
   isCliInstalled,
   selectedBackend,
 }) => {
-  const [isQwenLoginAlertDismissed, setIsQwenLoginAlertDismissed] = useState(false);
+  const [isQwenLoginAlertDismissed, setIsQwenLoginAlertDismissed] =
+    useState(false);
 
   useEffect(() => {
-    const dismissed = localStorage.getItem('qwen-login-alert-dismissed');
-    setIsQwenLoginAlertDismissed(dismissed === 'true');
+    const dismissed = localStorage.getItem("qwen-login-alert-dismissed");
+    setIsQwenLoginAlertDismissed(dismissed === "true");
   }, []);
 
   const dismissQwenLoginAlert = () => {
     setIsQwenLoginAlertDismissed(true);
-    localStorage.setItem('qwen-login-alert-dismissed', 'true');
+    localStorage.setItem("qwen-login-alert-dismissed", "true");
   };
   return (
     <>
@@ -44,8 +45,9 @@ export const CliWarnings: React.FC<CliWarningsProps> = ({
             </AlertTitle>
             <AlertDescription className="text-blue-800 dark:text-blue-300">
               <p>
-                Currently, authentication with OAuth through Gemini Desktop isn't supported when using the Qwen backend. 
-                To login, please first use the CLI directly for authentication.
+                Currently, authentication with OAuth through Gemini Desktop
+                isn't supported when using the Qwen backend. To login, please
+                first use the CLI directly for authentication.
               </p>
             </AlertDescription>
           </Alert>

@@ -1,5 +1,5 @@
 //! Test utilities for safe and reliable testing
-//! 
+//!
 //! This module provides utilities to address the issues identified in the test audit:
 //! - Safe environment variable management
 //! - Test data builders and factories
@@ -14,7 +14,7 @@ use tempfile::TempDir;
 use uuid::Uuid;
 
 /// Thread-safe environment variable guard that automatically restores original values
-/// 
+///
 /// This replaces the unsafe environment variable operations identified in the audit.
 /// It uses RAII pattern to ensure cleanup even if tests panic.
 pub struct EnvGuard {
@@ -34,13 +34,13 @@ impl EnvGuard {
     /// Set an environment variable, storing the original value for restoration
     pub fn set<K: AsRef<str>, V: AsRef<str>>(&mut self, key: K, value: V) {
         let key_str = key.as_ref().to_string();
-        
+
         // Store original value if we haven't already
         if !self.original_values.contains_key(&key_str) {
             let original = env::var_os(&key_str);
             self.original_values.insert(key_str.clone(), original);
         }
-        
+
         // Set the new value
         unsafe {
             env::set_var(&key_str, value.as_ref());
@@ -50,13 +50,13 @@ impl EnvGuard {
     /// Remove an environment variable, storing the original value for restoration
     pub fn remove<K: AsRef<str>>(&mut self, key: K) {
         let key_str = key.as_ref().to_string();
-        
+
         // Store original value if we haven't already
         if !self.original_values.contains_key(&key_str) {
             let original = env::var_os(&key_str);
             self.original_values.insert(key_str.clone(), original);
         }
-        
+
         // Remove the variable
         unsafe {
             env::remove_var(&key_str);
@@ -96,7 +96,7 @@ impl Drop for EnvGuard {
 }
 
 /// Test directory manager for improved test isolation
-/// 
+///
 /// Creates unique temporary directories to prevent test interference
 pub struct TestDirManager {
     temp_dir: TempDir,
@@ -108,7 +108,10 @@ impl TestDirManager {
     pub fn new() -> std::io::Result<Self> {
         let temp_dir = TempDir::new()?;
         let unique_id = Uuid::new_v4().to_string();
-        Ok(Self { temp_dir, unique_id })
+        Ok(Self {
+            temp_dir,
+            unique_id,
+        })
     }
 
     /// Get the root temporary directory path
@@ -118,14 +121,19 @@ impl TestDirManager {
 
     /// Create a unique subdirectory for this test
     pub fn create_unique_subdir(&self, name: &str) -> std::io::Result<PathBuf> {
-        let subdir = self.temp_dir.path().join(format!("{}_{}", name, self.unique_id));
+        let subdir = self
+            .temp_dir
+            .path()
+            .join(format!("{}_{}", name, self.unique_id));
         std::fs::create_dir_all(&subdir)?;
         Ok(subdir)
     }
 
     /// Create the standard .gemini-desktop/projects structure
     pub fn create_projects_structure(&self) -> std::io::Result<PathBuf> {
-        let projects_dir = self.temp_dir.path()
+        let projects_dir = self
+            .temp_dir
+            .path()
             .join(".gemini-desktop")
             .join("projects");
         std::fs::create_dir_all(&projects_dir)?;
@@ -141,7 +149,12 @@ impl TestDirManager {
     }
 
     /// Create a log file in a project directory
-    pub fn create_log_file(&self, project_hash: &str, timestamp: u64, content: &str) -> std::io::Result<PathBuf> {
+    pub fn create_log_file(
+        &self,
+        project_hash: &str,
+        timestamp: u64,
+        content: &str,
+    ) -> std::io::Result<PathBuf> {
         let project_dir = self.create_project_dir(project_hash)?;
         let log_file = project_dir.join(format!("rpc-log-{}.log", timestamp));
         std::fs::write(&log_file, content)?;
@@ -152,8 +165,8 @@ impl TestDirManager {
 /// Test data builders for consistent test data creation
 pub mod builders {
     use crate::projects::ProjectListItem;
-    use crate::search::RecentChat;
     use crate::rpc::JsonRpcRequest;
+    use crate::search::RecentChat;
 
     /// Builder for ProjectListItem test data
     pub struct ProjectListItemBuilder {
@@ -305,13 +318,13 @@ mod tests {
     #[test]
     fn test_env_guard_set_and_restore() {
         let original_value = env::var("TEST_VAR").ok();
-        
+
         {
             let mut guard = EnvGuard::new();
             guard.set("TEST_VAR", "test_value");
             assert_eq!(env::var("TEST_VAR").unwrap(), "test_value");
         }
-        
+
         // After guard is dropped, original value should be restored
         match original_value {
             Some(val) => assert_eq!(env::var("TEST_VAR").unwrap(), val),
@@ -324,13 +337,13 @@ mod tests {
         unsafe {
             env::set_var("TEST_VAR_REMOVE", "original");
         }
-        
+
         {
             let mut guard = EnvGuard::new();
             guard.remove("TEST_VAR_REMOVE");
             assert!(env::var("TEST_VAR_REMOVE").is_err());
         }
-        
+
         // After guard is dropped, original value should be restored
         assert_eq!(env::var("TEST_VAR_REMOVE").unwrap(), "original");
     }
@@ -339,17 +352,17 @@ mod tests {
     fn test_env_guard_multiple_operations() {
         let original_var1 = env::var("TEST_VAR1").ok();
         let original_var2 = env::var("TEST_VAR2").ok();
-        
+
         {
             let mut guard = EnvGuard::new();
             guard.set("TEST_VAR1", "value1");
             guard.set("TEST_VAR2", "value2");
             guard.remove("TEST_VAR1");
-            
+
             assert!(env::var("TEST_VAR1").is_err());
             assert_eq!(env::var("TEST_VAR2").unwrap(), "value2");
         }
-        
+
         // All should be restored
         match original_var1 {
             Some(val) => assert_eq!(env::var("TEST_VAR1").unwrap(), val),
@@ -365,11 +378,11 @@ mod tests {
     fn test_test_dir_manager() {
         let manager1 = TestDirManager::new().unwrap();
         let manager2 = TestDirManager::new().unwrap();
-        
+
         // Should create unique subdirectories across different managers
         let subdir1 = manager1.create_unique_subdir("test").unwrap();
         let subdir2 = manager2.create_unique_subdir("test").unwrap();
-        
+
         assert_ne!(subdir1, subdir2);
         assert!(subdir1.exists());
         assert!(subdir2.exists());
@@ -379,7 +392,7 @@ mod tests {
     fn test_test_dir_manager_projects_structure() {
         let manager = TestDirManager::new().unwrap();
         let projects_dir = manager.create_projects_structure().unwrap();
-        
+
         assert!(projects_dir.exists());
         assert!(projects_dir.ends_with(".gemini-desktop/projects"));
     }
@@ -387,23 +400,23 @@ mod tests {
     #[test]
     fn test_builders() {
         use builders::*;
-        
+
         let project = ProjectListItemBuilder::new("test-id")
             .with_title("Test Project")
             .active()
             .with_log_count(5)
             .build();
-        
+
         assert_eq!(project.id, "test-id");
         assert_eq!(project.title, Some("Test Project".to_string()));
         assert_eq!(project.status, Some("active".to_string()));
         assert_eq!(project.log_count, Some(5));
-        
+
         let chat = RecentChatBuilder::new("chat-id")
             .with_title("Test Chat")
             .with_message_count(10)
             .build();
-        
+
         assert_eq!(chat.id, "chat-id");
         assert_eq!(chat.title, "Test Chat");
         assert_eq!(chat.message_count, 10);

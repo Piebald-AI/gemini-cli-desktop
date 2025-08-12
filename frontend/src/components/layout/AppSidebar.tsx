@@ -18,7 +18,11 @@ interface AppSidebarProps {
   selectedBackend: string;
   onBackendChange: (backend: string) => void;
   qwenConfig: { apiKey: string; baseUrl: string; model: string };
-  onQwenConfigChange: (config: { apiKey: string; baseUrl: string; model: string }) => void;
+  onQwenConfigChange: (config: {
+    apiKey: string;
+    baseUrl: string;
+    model: string;
+  }) => void;
   useOAuth: boolean;
   onOAuthChange: (useOAuth: boolean) => void;
   open: boolean;

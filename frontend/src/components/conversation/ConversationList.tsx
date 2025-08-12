@@ -38,7 +38,11 @@ interface ConversationListProps {
   selectedBackend: string;
   onBackendChange: (backend: string) => void;
   qwenConfig: { apiKey: string; baseUrl: string; model: string };
-  onQwenConfigChange: (config: { apiKey: string; baseUrl: string; model: string }) => void;
+  onQwenConfigChange: (config: {
+    apiKey: string;
+    baseUrl: string;
+    model: string;
+  }) => void;
   useOAuth: boolean;
   onOAuthChange: (useOAuth: boolean) => void;
 }
@@ -190,7 +194,7 @@ export function ConversationList({
             <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
               Qwen Code Configuration
             </h4>
-            
+
             {/* OAuth Checkbox */}
             <div className="flex items-center space-x-2">
               <Checkbox
@@ -198,52 +202,72 @@ export function ConversationList({
                 checked={useOAuth}
                 onCheckedChange={(checked) => onOAuthChange(checked === true)}
               />
-              <label htmlFor="oauth-checkbox" className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
+              <label
+                htmlFor="oauth-checkbox"
+                className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer"
+              >
                 OAuth
               </label>
             </div>
-            
+
             {!useOAuth && (
               <>
                 <div>
-              <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
-                API Key
-              </label>
-              <Input
-                type="password"
-                value={qwenConfig.apiKey}
-                onChange={(e) => onQwenConfigChange({ ...qwenConfig, apiKey: e.target.value })}
-                placeholder="API Key"
-              />
-            </div>
-            
-            <div>
-              <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
-                Base URL
-              </label>
-              <Input
-                type="text"
-                value={qwenConfig.baseUrl}
-                onChange={(e) => onQwenConfigChange({ ...qwenConfig, baseUrl: e.target.value })}
-                placeholder="https://openrouter.ai/api/v1"
-              />
-            </div>
-            
-            <div>
-              <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
-                Model
-              </label>
-              <Input
-                type="text"
-                value={qwenConfig.model}
-                onChange={(e) => {
-                  onQwenConfigChange({ ...qwenConfig, model: e.target.value });
-                  setSelectedModel(e.target.value || "qwen/qwen3-coder:free");
-                  onModelChange?.(e.target.value || "qwen/qwen3-coder:free");
-                }}
-                placeholder="qwen/qwen3-coder:free"
-              />
-            </div>
+                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
+                    API Key
+                  </label>
+                  <Input
+                    type="password"
+                    value={qwenConfig.apiKey}
+                    onChange={(e) =>
+                      onQwenConfigChange({
+                        ...qwenConfig,
+                        apiKey: e.target.value,
+                      })
+                    }
+                    placeholder="API Key"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
+                    Base URL
+                  </label>
+                  <Input
+                    type="text"
+                    value={qwenConfig.baseUrl}
+                    onChange={(e) =>
+                      onQwenConfigChange({
+                        ...qwenConfig,
+                        baseUrl: e.target.value,
+                      })
+                    }
+                    placeholder="https://openrouter.ai/api/v1"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
+                    Model
+                  </label>
+                  <Input
+                    type="text"
+                    value={qwenConfig.model}
+                    onChange={(e) => {
+                      onQwenConfigChange({
+                        ...qwenConfig,
+                        model: e.target.value,
+                      });
+                      setSelectedModel(
+                        e.target.value || "qwen/qwen3-coder:free"
+                      );
+                      onModelChange?.(
+                        e.target.value || "qwen/qwen3-coder:free"
+                      );
+                    }}
+                    placeholder="qwen/qwen3-coder:free"
+                  />
+                </div>
               </>
             )}
           </div>
@@ -268,7 +292,9 @@ export function ConversationList({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="gemini-2.5-pro">Gemini 2.5 Pro</SelectItem>
-                <SelectItem value="gemini-2.5-flash">Gemini 2.5 Flash</SelectItem>
+                <SelectItem value="gemini-2.5-flash">
+                  Gemini 2.5 Flash
+                </SelectItem>
                 <SelectItem value="gemini-2.5-flash-lite">
                   <div className="flex items-center gap-2">
                     <span>Gemini 2.5 Flash-Lite</span>
@@ -286,7 +312,6 @@ export function ConversationList({
             </Select>
           </div>
         )}
-
       </div>
 
       {/* Search Results or Conversation List */}

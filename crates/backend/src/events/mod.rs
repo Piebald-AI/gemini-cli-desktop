@@ -128,9 +128,9 @@ pub struct ToolCallConfirmation {
 }
 
 #[cfg(test)]
-use std::sync::{Arc, Mutex};
-#[cfg(test)]
 use std::collections::HashMap;
+#[cfg(test)]
+use std::sync::{Arc, Mutex};
 
 /// Enhanced MockEventEmitter for comprehensive testing
 ///
@@ -201,7 +201,7 @@ impl MockEventEmitter {
         use std::time::{Duration, Instant};
         let start = Instant::now();
         let timeout = Duration::from_millis(timeout_ms);
-        
+
         while start.elapsed() < timeout {
             if self.total_events() >= expected_count {
                 return true;
@@ -228,7 +228,7 @@ impl MockEventEmitter {
         if events.len() < expected_events.len() {
             return false;
         }
-        
+
         for (i, expected) in expected_events.iter().enumerate() {
             if &events[i].0 != expected {
                 return false;
@@ -244,14 +244,17 @@ impl EventEmitter for MockEventEmitter {
         // Serialize the payload to JSON for storage and comparison
         let json_payload = serde_json::to_value(payload)
             .map_err(|e| crate::types::BackendError::JsonError(e.to_string()))?;
-        
+
         // Store the event
-        self.events.lock().unwrap().push((event.to_string(), json_payload));
-        
+        self.events
+            .lock()
+            .unwrap()
+            .push((event.to_string(), json_payload));
+
         // Update event count
         let mut counts = self.event_counts.lock().unwrap();
         *counts.entry(event.to_string()).or_insert(0) += 1;
-        
+
         Ok(())
     }
 }
@@ -287,7 +290,7 @@ mod tests {
                 data: "test data".to_string(),
             },
         };
-        
+
         let debug_str = format!("{:?}", event);
         assert!(debug_str.contains("CliIo"));
         assert!(debug_str.contains("test-session"));
@@ -302,16 +305,22 @@ mod tests {
                 text: "Hello world".to_string(),
             },
         };
-        
+
         let cloned_event = event.clone();
         match (&event, &cloned_event) {
             (
-                InternalEvent::GeminiOutput { session_id: s1, payload: p1 },
-                InternalEvent::GeminiOutput { session_id: s2, payload: p2 }
+                InternalEvent::GeminiOutput {
+                    session_id: s1,
+                    payload: p1,
+                },
+                InternalEvent::GeminiOutput {
+                    session_id: s2,
+                    payload: p2,
+                },
             ) => {
                 assert_eq!(s1, s2);
                 assert_eq!(p1.text, p2.text);
-            },
+            }
             _ => panic!("Event types don't match"),
         }
     }
@@ -325,10 +334,10 @@ mod tests {
 
         let json = serde_json::to_string(&payload).unwrap();
         let deserialized: CliIoPayload = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(payload.data, deserialized.data);
         match (payload.io_type, deserialized.io_type) {
-            (CliIoType::Input, CliIoType::Input) => {},
+            (CliIoType::Input, CliIoType::Input) => {}
             _ => panic!("IO types don't match"),
         }
     }
@@ -337,23 +346,23 @@ mod tests {
     fn test_cli_io_type_serialization() {
         let input_type = CliIoType::Input;
         let output_type = CliIoType::Output;
-        
+
         let input_json = serde_json::to_string(&input_type).unwrap();
         let output_json = serde_json::to_string(&output_type).unwrap();
-        
+
         assert_eq!(input_json, "\"input\"");
         assert_eq!(output_json, "\"output\"");
-        
+
         let deserialized_input: CliIoType = serde_json::from_str("\"input\"").unwrap();
         let deserialized_output: CliIoType = serde_json::from_str("\"output\"").unwrap();
-        
+
         match deserialized_input {
-            CliIoType::Input => {},
+            CliIoType::Input => {}
             _ => panic!("Expected Input type"),
         }
-        
+
         match deserialized_output {
-            CliIoType::Output => {},
+            CliIoType::Output => {}
             _ => panic!("Expected Output type"),
         }
     }
@@ -366,7 +375,7 @@ mod tests {
 
         let json = serde_json::to_string(&payload).unwrap();
         let deserialized: GeminiOutputPayload = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(payload.text, deserialized.text);
     }
 
@@ -378,7 +387,7 @@ mod tests {
 
         let json = serde_json::to_string(&payload).unwrap();
         let deserialized: GeminiThoughtPayload = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(payload.thought, deserialized.thought);
     }
 
@@ -390,7 +399,7 @@ mod tests {
 
         let json = serde_json::to_string(&payload).unwrap();
         let deserialized: ErrorPayload = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(payload.error, deserialized.error);
     }
 
@@ -409,7 +418,7 @@ mod tests {
 
         let json = serde_json::to_string(&event).unwrap();
         let deserialized: ToolCallEvent = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(event.id, deserialized.id);
         assert_eq!(event.name, deserialized.name);
         assert_eq!(event.icon, deserialized.icon);
@@ -429,11 +438,11 @@ mod tests {
 
         let json = serde_json::to_string(&update).unwrap();
         let deserialized: ToolCallUpdate = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(update.tool_call_id, deserialized.tool_call_id);
         assert_eq!(update.status, deserialized.status);
         assert_eq!(update.content, deserialized.content);
-        
+
         // Test camelCase serialization
         assert!(json.contains("toolCallId"));
     }
@@ -448,7 +457,7 @@ mod tests {
 
         let json = serde_json::to_string(&update).unwrap();
         let deserialized: ToolCallUpdate = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(update.tool_call_id, deserialized.tool_call_id);
         assert_eq!(update.status, deserialized.status);
         assert!(deserialized.content.is_none());
@@ -462,7 +471,7 @@ mod tests {
 
         let json = serde_json::to_string(&location).unwrap();
         let deserialized: ToolCallLocation = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(location.path, deserialized.path);
     }
 
@@ -477,12 +486,12 @@ mod tests {
 
         let json = serde_json::to_string(&content).unwrap();
         let deserialized: ToolCallConfirmationContent = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(content.content_type, deserialized.content_type);
         assert_eq!(content.path, deserialized.path);
         assert_eq!(content.old_text, deserialized.old_text);
         assert_eq!(content.new_text, deserialized.new_text);
-        
+
         // Test field renaming
         assert!(json.contains("\"type\":"));
         assert!(json.contains("oldText"));
@@ -500,7 +509,7 @@ mod tests {
 
         let json = serde_json::to_string(&content).unwrap();
         let deserialized: ToolCallConfirmationContent = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(content.content_type, deserialized.content_type);
         assert!(deserialized.path.is_none());
         assert!(deserialized.old_text.is_none());
@@ -517,11 +526,14 @@ mod tests {
 
         let json = serde_json::to_string(&confirmation).unwrap();
         let deserialized: ToolCallConfirmation = serde_json::from_str(&json).unwrap();
-        
-        assert_eq!(confirmation.confirmation_type, deserialized.confirmation_type);
+
+        assert_eq!(
+            confirmation.confirmation_type,
+            deserialized.confirmation_type
+        );
         assert_eq!(confirmation.root_command, deserialized.root_command);
         assert_eq!(confirmation.command, deserialized.command);
-        
+
         // Test field renaming
         assert!(json.contains("\"type\":"));
         assert!(json.contains("rootCommand"));
@@ -537,8 +549,11 @@ mod tests {
 
         let json = serde_json::to_string(&confirmation).unwrap();
         let deserialized: ToolCallConfirmation = serde_json::from_str(&json).unwrap();
-        
-        assert_eq!(confirmation.confirmation_type, deserialized.confirmation_type);
+
+        assert_eq!(
+            confirmation.confirmation_type,
+            deserialized.confirmation_type
+        );
         assert!(deserialized.root_command.is_none());
         assert!(deserialized.command.is_none());
     }
@@ -561,23 +576,21 @@ mod tests {
                 root_command: None,
                 command: None,
             },
-            locations: vec![
-                ToolCallLocation {
-                    path: "/tmp/file.txt".to_string(),
-                },
-            ],
+            locations: vec![ToolCallLocation {
+                path: "/tmp/file.txt".to_string(),
+            }],
         };
 
         let json = serde_json::to_string(&request).unwrap();
         let deserialized: ToolCallConfirmationRequest = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(request.request_id, deserialized.request_id);
         assert_eq!(request.session_id, deserialized.session_id);
         assert_eq!(request.label, deserialized.label);
         assert_eq!(request.icon, deserialized.icon);
         assert!(deserialized.content.is_some());
         assert_eq!(request.locations.len(), deserialized.locations.len());
-        
+
         // Test camelCase serialization
         assert!(json.contains("requestId"));
         assert!(json.contains("sessionId"));
@@ -601,7 +614,7 @@ mod tests {
 
         let json = serde_json::to_string(&request).unwrap();
         let deserialized: ToolCallConfirmationRequest = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(request.request_id, deserialized.request_id);
         assert_eq!(request.session_id, deserialized.session_id);
         assert!(deserialized.content.is_none());
@@ -708,7 +721,9 @@ mod tests {
         }
 
         match confirmation_event {
-            InternalEvent::ToolCallConfirmation { session_id, .. } => assert_eq!(session_id, "session6"),
+            InternalEvent::ToolCallConfirmation { session_id, .. } => {
+                assert_eq!(session_id, "session6")
+            }
             _ => panic!("Expected ToolCallConfirmation event"),
         }
 
@@ -727,15 +742,15 @@ mod tests {
     fn test_mock_event_emitter() {
         let emitter = MockEventEmitter::new();
         let cloned_emitter = emitter.clone();
-        
+
         // Test that emit works without panicking
         let result = emitter.emit("test-event", "test-payload");
         assert!(result.is_ok());
-        
+
         // Test with cloned emitter
         let result = cloned_emitter.emit("test-event-2", json!({"key": "value"}));
         assert!(result.is_ok());
-        
+
         // Test with complex payload
         let payload = CliIoPayload {
             io_type: CliIoType::Output,
@@ -749,20 +764,20 @@ mod tests {
         assert_eq!(emitter.get_event_count("test-event"), 1);
         assert_eq!(emitter.get_event_count("test-event-2"), 1);
         assert_eq!(emitter.get_event_count("cli-io"), 1);
-        
+
         // Test event retrieval
         let events = emitter.get_events();
         assert_eq!(events.len(), 3);
         assert_eq!(events[0].0, "test-event");
-        
+
         // Test event filtering
         let cli_events = emitter.get_events_by_name("cli-io");
         assert_eq!(cli_events.len(), 1);
-        
+
         // Test has_event
         assert!(emitter.has_event("test-event"));
         assert!(!emitter.has_event("nonexistent-event"));
-        
+
         // Test clear functionality
         emitter.clear();
         assert_eq!(emitter.total_events(), 0);
@@ -772,25 +787,25 @@ mod tests {
     #[test]
     fn test_mock_event_emitter_advanced_features() {
         let emitter = MockEventEmitter::new();
-        
+
         // Test event sequence
         emitter.emit("event-1", "payload-1").unwrap();
         emitter.emit("event-2", "payload-2").unwrap();
         emitter.emit("event-1", "payload-3").unwrap();
-        
+
         // Test sequence verification
         assert!(emitter.verify_event_sequence(&["event-1", "event-2"]));
         assert!(!emitter.verify_event_sequence(&["event-2", "event-1"]));
-        
+
         // Test last event retrieval
         let last_event_1 = emitter.get_last_event("event-1");
         assert!(last_event_1.is_some());
         assert_eq!(last_event_1.unwrap(), json!("payload-3"));
-        
+
         let last_event_2 = emitter.get_last_event("event-2");
         assert!(last_event_2.is_some());
         assert_eq!(last_event_2.unwrap(), json!("payload-2"));
-        
+
         // Test nonexistent event
         let nonexistent = emitter.get_last_event("nonexistent");
         assert!(nonexistent.is_none());
@@ -799,11 +814,11 @@ mod tests {
     #[test]
     fn test_mock_event_emitter_wait_for_events() {
         let emitter = MockEventEmitter::new();
-        
+
         // Test immediate success
         emitter.emit("test", "payload").unwrap();
         assert!(emitter.wait_for_events(1, 100));
-        
+
         // Test timeout (should be fast since we're not actually waiting)
         assert!(!emitter.wait_for_events(10, 50));
     }
@@ -813,7 +828,7 @@ mod tests {
         fn test_emitter<T: EventEmitter>(emitter: T) -> BackendResult<()> {
             emitter.emit("test", "payload")
         }
-        
+
         let mock_emitter = MockEventEmitter::new();
         let result = test_emitter(mock_emitter);
         assert!(result.is_ok());
@@ -839,7 +854,10 @@ mod tests {
             command: None,
         };
         let cloned_confirmation = confirmation.clone();
-        assert_eq!(confirmation.confirmation_type, cloned_confirmation.confirmation_type);
+        assert_eq!(
+            confirmation.confirmation_type,
+            cloned_confirmation.confirmation_type
+        );
         assert_eq!(confirmation.root_command, cloned_confirmation.root_command);
         assert_eq!(confirmation.command, cloned_confirmation.command);
     }

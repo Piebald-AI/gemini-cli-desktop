@@ -8,14 +8,14 @@ interface CollapsibleProps {
   className?: string;
 }
 
-const Collapsible = ({ 
-  open = false, 
-  onOpenChange, 
-  children, 
-  className 
+const Collapsible = ({
+  open = false,
+  onOpenChange,
+  children,
+  className,
 }: CollapsibleProps) => {
   const [internalOpen, setInternalOpen] = React.useState(open);
-  
+
   const isOpen = onOpenChange ? open : internalOpen;
   const handleOpenChange = onOpenChange || setInternalOpen;
 
@@ -26,7 +26,7 @@ const Collapsible = ({
           if (child.type === CollapsibleTrigger) {
             return React.cloneElement(child as React.ReactElement, {
               onClick: () => handleOpenChange(!isOpen),
-              'aria-expanded': isOpen,
+              "aria-expanded": isOpen,
             });
           }
           if (child.type === CollapsibleContent) {
@@ -65,9 +65,7 @@ const CollapsibleContent = React.forwardRef<
     className={cn("overflow-hidden text-sm", className)}
     {...props}
   >
-    <div className="pb-4 pt-0">
-      {children}
-    </div>
+    <div className="pb-4 pt-0">{children}</div>
   </div>
 ));
 CollapsibleContent.displayName = "CollapsibleContent";

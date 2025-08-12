@@ -44,7 +44,10 @@ export interface McpServerConfigHTTP extends McpServerConfigBase {
   httpUrl: string;
 }
 
-export type McpServerConfig = McpServerConfigStdio | McpServerConfigSSE | McpServerConfigHTTP;
+export type McpServerConfig =
+  | McpServerConfigStdio
+  | McpServerConfigSSE
+  | McpServerConfigHTTP;
 
 export interface McpServerEntry {
   name: string;
@@ -62,16 +65,22 @@ export interface McpSettingsConfig {
 }
 
 // Helper type guards
-export function isStdioConfig(config: McpServerConfig): config is McpServerConfigStdio {
-  return 'command' in config;
+export function isStdioConfig(
+  config: McpServerConfig
+): config is McpServerConfigStdio {
+  return "command" in config;
 }
 
-export function isSSEConfig(config: McpServerConfig): config is McpServerConfigSSE {
-  return 'url' in config;
+export function isSSEConfig(
+  config: McpServerConfig
+): config is McpServerConfigSSE {
+  return "url" in config;
 }
 
-export function isHTTPConfig(config: McpServerConfig): config is McpServerConfigHTTP {
-  return 'httpUrl' in config;
+export function isHTTPConfig(
+  config: McpServerConfig
+): config is McpServerConfigHTTP {
+  return "httpUrl" in config;
 }
 
 export function getTransportType(config: McpServerConfig): TransportType {

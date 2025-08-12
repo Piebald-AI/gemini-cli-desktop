@@ -33,7 +33,9 @@ pub use projects::{
 pub use rpc::{JsonRpcError, JsonRpcRequest, JsonRpcResponse, RpcLogger};
 pub use search::{MessageMatch, RecentChat, SearchFilters, SearchResult};
 pub use security::{execute_terminal_command, is_command_safe};
-pub use session::{PersistentSession, ProcessStatus, SessionManager, QwenConfig, initialize_session};
+pub use session::{
+    PersistentSession, ProcessStatus, QwenConfig, SessionManager, initialize_session,
+};
 pub use types::{BackendError, BackendResult};
 
 // Standard library imports

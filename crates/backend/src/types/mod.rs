@@ -41,13 +41,16 @@ pub enum BackendError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::io::{Error, ErrorKind};
     use std::error::Error as StdError;
+    use std::io::{Error, ErrorKind};
 
     #[test]
     fn test_backend_error_display() {
         let error = BackendError::SessionInitFailed("test session".to_string());
-        assert_eq!(error.to_string(), "Session initialization failed: test session");
+        assert_eq!(
+            error.to_string(),
+            "Session initialization failed: test session"
+        );
     }
 
     #[test]
@@ -65,7 +68,10 @@ mod tests {
     #[test]
     fn test_command_not_allowed_error() {
         let error = BackendError::CommandNotAllowed;
-        assert_eq!(error.to_string(), "Command not allowed for security reasons");
+        assert_eq!(
+            error.to_string(),
+            "Command not allowed for security reasons"
+        );
     }
 
     #[test]
@@ -108,7 +114,10 @@ mod tests {
     #[test]
     fn test_config_error() {
         let error = BackendError::ConfigError("missing config file".to_string());
-        assert_eq!(error.to_string(), "Configuration error: missing config file");
+        assert_eq!(
+            error.to_string(),
+            "Configuration error: missing config file"
+        );
     }
 
     #[test]
@@ -137,7 +146,7 @@ mod tests {
     fn test_error_source_chain() {
         let io_error = Error::new(ErrorKind::PermissionDenied, "access denied");
         let backend_error = BackendError::IoError(io_error);
-        
+
         assert!(backend_error.source().is_some());
         let source = backend_error.source().unwrap();
         assert_eq!(source.to_string(), "access denied");

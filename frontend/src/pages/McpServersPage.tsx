@@ -28,7 +28,9 @@ export function McpServersPage() {
   const [settingsFilePath, setSettingsFilePath] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [serverToDelete, setServerToDelete] = useState<McpServerEntry | null>(null);
+  const [serverToDelete, setServerToDelete] = useState<McpServerEntry | null>(
+    null
+  );
 
   // Load settings file path on component mount
   useEffect(() => {
@@ -54,9 +56,10 @@ export function McpServersPage() {
   const loadSettingsFromFile = async () => {
     setIsLoading(true);
     try {
-      const settings = await invoke<Record<string, unknown>>("read_settings_file");
+      const settings =
+        await invoke<Record<string, unknown>>("read_settings_file");
       const mcpServers = settings.mcpServers || {};
-      
+
       const serverEntries: McpServerEntry[] = Object.entries(mcpServers).map(
         ([name, config], index) => ({
           id: `server-${index}-${name}`,
@@ -67,7 +70,7 @@ export function McpServersPage() {
       );
       setServers(serverEntries);
     } catch (error) {
-      console.error('Failed to load MCP servers from settings file:', error);
+      console.error("Failed to load MCP servers from settings file:", error);
       setServers([]);
     } finally {
       setIsLoading(false);
@@ -79,8 +82,9 @@ export function McpServersPage() {
     setIsLoading(true);
     try {
       // Read current settings to preserve other configurations
-      const currentSettings = await invoke<Record<string, unknown>>("read_settings_file");
-      
+      const currentSettings =
+        await invoke<Record<string, unknown>>("read_settings_file");
+
       // Update only the mcpServers section
       const mcpServersConfig: McpServersConfig = {};
       updatedServers.forEach((server) => {
@@ -91,13 +95,13 @@ export function McpServersPage() {
 
       const updatedSettings = {
         ...currentSettings,
-        mcpServers: mcpServersConfig
+        mcpServers: mcpServersConfig,
       };
 
       await invoke("write_settings_file", { settings: updatedSettings });
       setServers(updatedServers);
     } catch (error) {
-      console.error('Failed to save MCP servers to settings file:', error);
+      console.error("Failed to save MCP servers to settings file:", error);
     } finally {
       setIsLoading(false);
     }
@@ -120,7 +124,9 @@ export function McpServersPage() {
 
   const confirmDeleteServer = () => {
     if (serverToDelete) {
-      const updatedServers = servers.filter(server => server.id !== serverToDelete.id);
+      const updatedServers = servers.filter(
+        (server) => server.id !== serverToDelete.id
+      );
       saveServersToFile(updatedServers);
       setDeleteDialogOpen(false);
       setServerToDelete(null);
@@ -151,7 +157,11 @@ export function McpServersPage() {
     }
 
     // Add headers for HTTP servers
-    if ((isSSEConfig(config) || isHTTPConfig(config)) && config.headers && Object.keys(config.headers).length > 0) {
+    if (
+      (isSSEConfig(config) || isHTTPConfig(config)) &&
+      config.headers &&
+      Object.keys(config.headers).length > 0
+    ) {
       const headerStrings = Object.entries(config.headers)
         .map(([key, value]) => `${key} = ${value}`)
         .join(" • ");
@@ -160,20 +170,26 @@ export function McpServersPage() {
 
     // Add include tools
     if (config.includeTools && config.includeTools.length > 0) {
-      details.push({ label: "Include Tools", value: config.includeTools.join(" • ") });
+      details.push({
+        label: "Include Tools",
+        value: config.includeTools.join(" • "),
+      });
     }
 
     // Add exclude tools
     if (config.excludeTools && config.excludeTools.length > 0) {
-      details.push({ label: "Exclude Tools", value: config.excludeTools.join(" • ") });
+      details.push({
+        label: "Exclude Tools",
+        value: config.excludeTools.join(" • "),
+      });
     }
 
     // Add timeout
     if (config.timeout) {
       const minutes = Math.round(config.timeout / 60000);
-      details.push({ 
-        label: "Timeout", 
-        value: `${config.timeout.toLocaleString()}ms (${minutes} minutes)` 
+      details.push({
+        label: "Timeout",
+        value: `${config.timeout.toLocaleString()}ms (${minutes} minutes)`,
       });
     }
 
@@ -183,7 +199,10 @@ export function McpServersPage() {
   const getMainServerInfo = (server: McpServerEntry) => {
     const config = server.config;
     if (isStdioConfig(config)) {
-      const args = config.args && config.args.length > 0 ? ` ${config.args.join(" ")}` : "";
+      const args =
+        config.args && config.args.length > 0
+          ? ` ${config.args.join(" ")}`
+          : "";
       return `${config.command}${args}`;
     } else if (isSSEConfig(config)) {
       return config.url;
@@ -214,10 +233,13 @@ export function McpServersPage() {
         ) : servers.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-12 text-center">
             <ModelContextProtocol className="h-16 w-16 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No MCP servers configured</h3>
+            <h3 className="text-lg font-semibold mb-2">
+              No MCP servers configured
+            </h3>
             <p className="text-sm text-muted-foreground mb-6 max-w-md">
-              MCP servers extend Gemini's capabilities by providing access to external tools and data sources. 
-              Get started by adding your first server configuration.
+              MCP servers extend Gemini's capabilities by providing access to
+              external tools and data sources. Get started by adding your first
+              server configuration.
             </p>
             <div className="flex gap-3">
               <AddMcpServerDialog
@@ -245,7 +267,7 @@ export function McpServersPage() {
             {servers.map((server) => {
               const details = formatServerDetails(server);
               const mainInfo = getMainServerInfo(server);
-              
+
               return (
                 <Card key={server.id} className="p-4">
                   <CardContent className="p-0 space-y-2">
@@ -262,7 +284,9 @@ export function McpServersPage() {
                             <span className="text-sm font-medium">Trusted</span>
                           </div>
                         ) : (
-                          <span className="text-sm text-muted-foreground">Not Trusted</span>
+                          <span className="text-sm text-muted-foreground">
+                            Not Trusted
+                          </span>
                         )}
                       </div>
                       <div className="flex items-center gap-2">
@@ -322,8 +346,10 @@ export function McpServersPage() {
           <DialogHeader>
             <DialogTitle>Delete MCP Server</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete the MCP server <Code>{serverToDelete?.name}</Code>? 
-              This action cannot be undone and will permanently remove the server from your <Code>settings.json</Code> file.
+              Are you sure you want to delete the MCP server{" "}
+              <Code>{serverToDelete?.name}</Code>? This action cannot be undone
+              and will permanently remove the server from your{" "}
+              <Code>settings.json</Code> file.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

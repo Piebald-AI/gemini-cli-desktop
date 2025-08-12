@@ -195,10 +195,10 @@ pub async fn list_volumes() -> BackendResult<Vec<DirEntry>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::{NamedTempFile, TempDir};
     use std::fs;
     use std::io::Write;
     use std::time::{SystemTime, UNIX_EPOCH};
+    use tempfile::{NamedTempFile, TempDir};
 
     #[test]
     fn test_volume_type_serialization() {
@@ -256,7 +256,7 @@ mod tests {
 
         let json = serde_json::to_string(&entry).unwrap();
         let deserialized: DirEntry = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(entry.name, deserialized.name);
         assert_eq!(entry.is_directory, deserialized.is_directory);
         assert_eq!(entry.full_path, deserialized.full_path);
@@ -270,7 +270,7 @@ mod tests {
     async fn test_validate_directory_existing() {
         let temp_dir = TempDir::new().unwrap();
         let dir_path = temp_dir.path().to_string_lossy().to_string();
-        
+
         let result = validate_directory(dir_path).await;
         assert!(result.is_ok());
         assert!(result.unwrap());
@@ -288,7 +288,7 @@ mod tests {
         let mut temp_file = NamedTempFile::new().unwrap();
         writeln!(temp_file, "test content").unwrap();
         let file_path = temp_file.path().to_string_lossy().to_string();
-        
+
         let result = validate_directory(file_path).await;
         assert!(result.is_ok());
         assert!(!result.unwrap()); // Should be false because it's a file, not a directory
@@ -300,7 +300,7 @@ mod tests {
         assert!(result.is_ok());
         let home = result.unwrap();
         assert!(!home.is_empty());
-        
+
         // Should be either HOME or USERPROFILE environment variable
         let expected = std::env::var("HOME")
             .or_else(|_| std::env::var("USERPROFILE"))
@@ -311,7 +311,7 @@ mod tests {
     #[tokio::test]
     async fn test_is_home_directory() {
         let home = get_home_directory().await.unwrap();
-        
+
         let result = is_home_directory(home.clone()).await;
         assert!(result.is_ok());
         assert!(result.unwrap());
@@ -329,7 +329,7 @@ mod tests {
         assert!(result.is_ok());
         let parent = result.unwrap();
         assert!(parent.is_some());
-        
+
         if cfg!(target_os = "windows") {
             // On Windows, the path handling might be different
             let parent_path = parent.unwrap();
@@ -361,7 +361,7 @@ mod tests {
 
         let result = list_directory_contents(dir_path.to_string_lossy().to_string()).await;
         assert!(result.is_ok());
-        
+
         let entries = result.unwrap();
         assert_eq!(entries.len(), 2);
 
@@ -389,7 +389,7 @@ mod tests {
 
         let result = list_directory_contents(dir_path).await;
         assert!(result.is_ok());
-        
+
         let entries = result.unwrap();
         assert!(entries.is_empty());
     }
@@ -398,7 +398,7 @@ mod tests {
     async fn test_list_directory_contents_nonexistent() {
         let result = list_directory_contents("/path/that/does/not/exist".to_string()).await;
         assert!(result.is_ok());
-        
+
         let entries = result.unwrap();
         assert!(entries.is_empty());
     }
@@ -416,7 +416,7 @@ mod tests {
 
         let result = list_directory_contents(dir_path.to_string_lossy().to_string()).await;
         assert!(result.is_ok());
-        
+
         let entries = result.unwrap();
         assert_eq!(entries.len(), 4);
 
@@ -439,7 +439,7 @@ mod tests {
 
         let result = list_directory_contents(dir_path.to_string_lossy().to_string()).await;
         assert!(result.is_ok());
-        
+
         let entries = result.unwrap();
         assert_eq!(entries.len(), 3);
 
@@ -457,13 +457,13 @@ mod tests {
 
         let result = list_directory_contents(temp_dir.path().to_string_lossy().to_string()).await;
         assert!(result.is_ok());
-        
+
         let entries = result.unwrap();
         assert_eq!(entries.len(), 1);
-        
+
         let entry = &entries[0];
         assert!(entry.modified.is_some());
-        
+
         // Modified time should be recent (within the last minute)
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -477,7 +477,7 @@ mod tests {
     async fn test_list_volumes() {
         let result = list_volumes().await;
         assert!(result.is_ok());
-        
+
         let volumes = result.unwrap();
         assert!(!volumes.is_empty()); // Should have at least one volume/filesystem
 

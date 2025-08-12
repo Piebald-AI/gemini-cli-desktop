@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -25,7 +25,10 @@ interface PasteJsonDialogProps {
   onServersAdd: (servers: McpServerEntry[]) => void;
 }
 
-export function PasteJsonDialog({ trigger, onServersAdd }: PasteJsonDialogProps) {
+export function PasteJsonDialog({
+  trigger,
+  onServersAdd,
+}: PasteJsonDialogProps) {
   const [open, setOpen] = useState(false);
   const [jsonInput, setJsonInput] = useState("");
   const [parsedServers, setParsedServers] = useState<McpServerEntry[]>([]);
@@ -41,7 +44,7 @@ export function PasteJsonDialog({ trigger, onServersAdd }: PasteJsonDialogProps)
 
     try {
       const parsed = JSON.parse(input);
-      
+
       // Check if it's a complete settings.json structure
       let mcpServers: McpServersConfig;
       if (parsed.mcpServers) {
@@ -50,7 +53,9 @@ export function PasteJsonDialog({ trigger, onServersAdd }: PasteJsonDialogProps)
         // Assume it's just the mcpServers object
         mcpServers = parsed;
       } else {
-        throw new Error("Invalid format. Expected an object with server configurations.");
+        throw new Error(
+          "Invalid format. Expected an object with server configurations."
+        );
       }
 
       // Convert to McpServerEntry format
@@ -58,7 +63,7 @@ export function PasteJsonDialog({ trigger, onServersAdd }: PasteJsonDialogProps)
         ([name, config], index) => ({
           id: `imported-server-${Date.now()}-${index}`,
           name,
-          config: config as any,
+          config: config as McpServerEntry['config'],
           enabled: true,
         })
       );
@@ -111,13 +116,17 @@ export function PasteJsonDialog({ trigger, onServersAdd }: PasteJsonDialogProps)
 
     // Add environment variables
     if (config.env && Object.keys(config.env).length > 0) {
-      const envStrings = Object.entries(config.env).map(([key, value]) => `${key} = ${value}`);
+      const envStrings = Object.entries(config.env).map(
+        ([key, value]) => `${key} = ${value}`
+      );
       details.push(`Environment: ${envStrings.join(" • ")}`);
     }
 
     // Add headers (for HTTP servers)
     if (config.headers && Object.keys(config.headers).length > 0) {
-      const headerStrings = Object.entries(config.headers).map(([key, value]) => `${key} = ${value}`);
+      const headerStrings = Object.entries(config.headers).map(
+        ([key, value]) => `${key} = ${value}`
+      );
       details.push(`Headers: ${headerStrings.join(" • ")}`);
     }
 
@@ -135,7 +144,9 @@ export function PasteJsonDialog({ trigger, onServersAdd }: PasteJsonDialogProps)
     }
     if (config.timeout) {
       const minutes = Math.round(config.timeout / 60000);
-      details.push(`Timeout: ${config.timeout.toLocaleString()}ms (${minutes} minutes)`);
+      details.push(
+        `Timeout: ${config.timeout.toLocaleString()}ms (${minutes} minutes)`
+      );
     }
 
     return details;
@@ -143,9 +154,7 @@ export function PasteJsonDialog({ trigger, onServersAdd }: PasteJsonDialogProps)
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogTrigger asChild>
-        {trigger}
-      </DialogTrigger>
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Paste JSON</DialogTitle>
@@ -179,18 +188,28 @@ export function PasteJsonDialog({ trigger, onServersAdd }: PasteJsonDialogProps)
                 {parsedServers.map((server, index) => {
                   const details = formatServerPreview(server);
                   const trustStatus = server.config.trust;
-                  
+
                   return (
-                    <div key={index} className="border rounded-lg p-4 space-y-2">
+                    <div
+                      key={index}
+                      className="border rounded-lg p-4 space-y-2"
+                    >
                       <div className="flex items-center gap-3">
-                        <span className="font-semibold text-base">{server.name}</span>
+                        <span className="font-semibold text-base">
+                          {server.name}
+                        </span>
                         <span className="text-sm text-muted-foreground">
-                          {getTransportType(server.config) === "stdio" 
-                            ? (isStdioConfig(server.config) ? server.config.command : "")
-                            : getTransportType(server.config) === "sse" 
-                              ? (isSSEConfig(server.config) ? server.config.url : "")
-                              : (isHTTPConfig(server.config) ? server.config.httpUrl : "")
-                          }
+                          {getTransportType(server.config) === "stdio"
+                            ? isStdioConfig(server.config)
+                              ? server.config.command
+                              : ""
+                            : getTransportType(server.config) === "sse"
+                              ? isSSEConfig(server.config)
+                                ? server.config.url
+                                : ""
+                              : isHTTPConfig(server.config)
+                                ? server.config.httpUrl
+                                : ""}
                         </span>
                         {trustStatus ? (
                           <span className="inline-flex items-center gap-1 text-green-600 text-sm">
@@ -198,10 +217,12 @@ export function PasteJsonDialog({ trigger, onServersAdd }: PasteJsonDialogProps)
                             Trusted
                           </span>
                         ) : (
-                          <span className="text-muted-foreground text-sm">Not Trusted</span>
+                          <span className="text-muted-foreground text-sm">
+                            Not Trusted
+                          </span>
                         )}
                       </div>
-                      
+
                       <div className="space-y-1 text-sm text-muted-foreground">
                         {details.map((detail, detailIndex) => (
                           <div key={detailIndex}>{detail}</div>
@@ -217,8 +238,8 @@ export function PasteJsonDialog({ trigger, onServersAdd }: PasteJsonDialogProps)
 
         {/* Footer with Create button */}
         <div className="flex justify-end pt-4 border-t">
-          <Button 
-            onClick={handleCreate} 
+          <Button
+            onClick={handleCreate}
             disabled={parsedServers.length === 0 || !!error}
             className="px-8"
           >

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Trash2 } from "lucide-react";
@@ -10,11 +10,11 @@ interface DynamicListProps {
   description?: string;
 }
 
-export function DynamicList({ 
-  items, 
-  onChange, 
-  placeholder = "Enter value", 
-  description 
+export function DynamicList({
+  items,
+  onChange,
+  placeholder = "Enter value",
+  description,
 }: DynamicListProps) {
   const [newItem, setNewItem] = useState("");
 
@@ -30,7 +30,7 @@ export function DynamicList({
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       e.preventDefault();
       handleAdd();
     }
@@ -41,7 +41,7 @@ export function DynamicList({
       {/* Existing items */}
       {items.map((item, index) => (
         <div key={index} className="flex items-center gap-2">
-          <Input 
+          <Input
             value={item}
             onChange={(e) => {
               const newItems = [...items];
@@ -50,8 +50,8 @@ export function DynamicList({
             }}
             className="flex-1"
           />
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="icon"
             onClick={() => handleRemove(index)}
             className="h-10 w-10 text-gray-500 hover:text-red-500"
@@ -60,7 +60,7 @@ export function DynamicList({
           </Button>
         </div>
       ))}
-      
+
       {/* Add new item */}
       <div className="flex items-center gap-2">
         <Input
@@ -70,7 +70,7 @@ export function DynamicList({
           placeholder={placeholder}
           className="flex-1"
         />
-        <Button 
+        <Button
           onClick={handleAdd}
           disabled={!newItem.trim() || items.includes(newItem.trim())}
         >
@@ -103,7 +103,7 @@ export function DynamicKeyValueList({
   onChange,
   keyPlaceholder = "Name",
   valuePlaceholder = "Value",
-  description
+  description,
 }: DynamicKeyValueListProps) {
   const [newKey, setNewKey] = useState("");
   const [newValue, setNewValue] = useState("");
@@ -111,11 +111,16 @@ export function DynamicKeyValueList({
   const handleAdd = () => {
     if (newKey.trim() && newValue.trim()) {
       // Check if key already exists
-      const existingIndex = items.findIndex(item => item.key === newKey.trim());
+      const existingIndex = items.findIndex(
+        (item) => item.key === newKey.trim()
+      );
       if (existingIndex >= 0) {
         // Update existing key
         const newItems = [...items];
-        newItems[existingIndex] = { key: newKey.trim(), value: newValue.trim() };
+        newItems[existingIndex] = {
+          key: newKey.trim(),
+          value: newValue.trim(),
+        };
         onChange(newItems);
       } else {
         // Add new key-value pair
@@ -131,7 +136,7 @@ export function DynamicKeyValueList({
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       e.preventDefault();
       handleAdd();
     }
@@ -143,7 +148,7 @@ export function DynamicKeyValueList({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {items.map((item, index) => (
           <div key={index} className="flex items-center gap-2">
-            <Input 
+            <Input
               value={item.key}
               onChange={(e) => {
                 const newItems = [...items];
@@ -153,7 +158,7 @@ export function DynamicKeyValueList({
               placeholder={keyPlaceholder}
               className="flex-1"
             />
-            <Input 
+            <Input
               value={item.value}
               onChange={(e) => {
                 const newItems = [...items];
@@ -163,8 +168,8 @@ export function DynamicKeyValueList({
               placeholder={valuePlaceholder}
               className="flex-1"
             />
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="icon"
               onClick={() => handleRemove(index)}
               className="h-10 w-10 text-gray-500 hover:text-red-500"
@@ -174,7 +179,7 @@ export function DynamicKeyValueList({
           </div>
         ))}
       </div>
-      
+
       {/* Add new item */}
       <div className="flex items-center gap-2">
         <Input
@@ -191,7 +196,7 @@ export function DynamicKeyValueList({
           placeholder={valuePlaceholder}
           className="flex-1"
         />
-        <Button 
+        <Button
           onClick={handleAdd}
           disabled={!newKey.trim() || !newValue.trim()}
         >
