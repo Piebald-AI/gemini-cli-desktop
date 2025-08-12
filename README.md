@@ -2,6 +2,9 @@
 
 A powerful, modern desktop and web UI for **Gemini CLI** and **Qwen Coder**.  Built with Tauri and web technologies.  Cross-platform, open-source on [GitHub.](https://github.com/Piebald-AI/gemini-desktop)
 
+> [!note]
+> :star2: **Star the repository** to stay up to date with notifications of [new releases](https://github.com/Piebald-AI/gemini-desktop/releases) and [announcements](https://github.com/Piebald-AI/gemini-desktop/discussions/categories/announcements).
+
 **Using [Gemini CLI](https://github.com/google-gemini/gemini-cli):**
 
 <img alt="Screenshot of Gemini Desktop" src="./assets/screenshot.png" width="600">
