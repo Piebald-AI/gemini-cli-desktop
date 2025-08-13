@@ -270,7 +270,7 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
 
         let response_data = RequestToolCallConfirmationResult {
             id: tool_call_id.clone(),
-            outcome,
+            outcome: outcome.clone(),
         };
 
         session::send_response_to_cli(

@@ -530,6 +530,7 @@ async fn handle_session_io_internal(
                             &event_tx,
                             &mut tool_call_id,
                             &mut pending_send_message_requests,
+                            &processes,
                         ).await;
 
                         line_buffer.clear();
@@ -593,6 +594,7 @@ async fn handle_cli_output_line(
     event_tx: &mpsc::UnboundedSender<InternalEvent>,
     tool_call_id: &mut u32,
     pending_send_message_requests: &mut HashSet<u32>,
+    processes: &ProcessMap,
 ) {
     if let Ok(json_value) = serde_json::from_str::<serde_json::Value>(line) {
         if let Some(method) = json_value.get("method").and_then(|m| m.as_str()) {
@@ -618,10 +620,45 @@ async fn handle_cli_output_line(
                 "pushToolCall" => {
                     if let Ok(params) = serde_json::from_value::<PushToolCallParams>(
                         json_value.get("params").cloned().unwrap_or_default(),
-                    ) {
+                    ) && let Some(request_id) = json_value.get("id").and_then(|i| i.as_u64())
+                    {
+                        let tool_id = *tool_call_id;
+                        
+                        // Send response back to CLI with tool ID
+                        send_response_to_cli(
+                            &session_id,
+                            request_id as u32,
+                            Some(serde_json::to_value(crate::cli::PushToolCallResult { id: tool_id }).unwrap()),
+                            None,
+                            processes,
+                        ).await;
+
+                        // Map icon to tool name for frontend renderers
+                        let tool_name = match params.icon.as_str() {
+                            "folder" => "list_directory",
+                            "fileSearch" => {
+                                // Check if this is a ReadManyFiles operation based on label content
+                                if params.label.contains("read and concatenate")
+                                    || params.label.contains("Will attempt to read")
+                                {
+                                    "read_many_files" // ReadManyFiles operation based on label
+                                } else if params.locations.is_empty() {
+                                    "glob" // Empty locations = search/glob operation
+                                } else if params.locations.len() == 1 {
+                                    "read_file" // Single file = file read operation
+                                } else {
+                                    "read_many_files" // Multiple files = read many files operation
+                                }
+                            }
+                            "search" => "search_files",
+                            "terminal" => "execute_command",
+                            "code" => "write_file",
+                            _ => &params.icon,
+                        };
+
                         let event = ToolCallEvent {
-                            id: *tool_call_id,
-                            name: params.label.clone(),
+                            id: tool_id,
+                            name: tool_name.to_string(),
                             icon: params.icon,
                             label: params.label,
                             locations: params.locations,
@@ -639,7 +676,17 @@ async fn handle_cli_output_line(
                 "updateToolCall" => {
                     if let Ok(params) = serde_json::from_value::<UpdateToolCallParams>(
                         json_value.get("params").cloned().unwrap_or_default(),
-                    ) {
+                    ) && let Some(request_id) = json_value.get("id").and_then(|i| i.as_u64())
+                    {
+                        // Send null response back to CLI
+                        send_response_to_cli(
+                            &session_id,
+                            request_id as u32,
+                            Some(serde_json::Value::Null),
+                            None,
+                            processes,
+                        ).await;
+
                         let _ = event_tx.send(InternalEvent::ToolCallUpdate {
                             session_id: session_id.to_string(),
                             payload: ToolCallUpdate {
