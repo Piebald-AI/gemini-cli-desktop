@@ -30,6 +30,7 @@ pub struct AssistantChunk {
 pub struct PushToolCallParams {
     pub icon: String,
     pub label: String,
+    pub name: Option<String>,
     #[serde(deserialize_with = "deserialize_locations")]
     pub locations: Vec<ToolCallLocation>,
 }

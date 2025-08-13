@@ -92,7 +92,6 @@ export function ToolCallDisplay({
             <ToolResultRenderer
               toolCall={enhancedToolCall}
               onConfirm={onConfirm}
-              hasConfirmationRequest={hasConfirmationRequest}
             />
           ) : (
             <div className="bg-muted/50 border border-border rounded-lg p-4">
@@ -136,7 +135,6 @@ export function ToolCallDisplay({
             <ToolResultRenderer
               toolCall={enhancedToolCall}
               onConfirm={onConfirm}
-              hasConfirmationRequest={hasConfirmationRequest}
             />
           ) : (
             <div className="bg-card border border-border rounded-lg p-4">
@@ -197,7 +195,6 @@ export function ToolCallDisplay({
             <ToolResultRenderer
               toolCall={enhancedToolCall}
               onConfirm={onConfirm}
-              hasConfirmationRequest={hasConfirmationRequest}
             />
           ) : (
             <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-md px-4 py-3">
@@ -238,14 +235,21 @@ export function ToolCallDisplay({
       )}
 
       {/* Completed State */}
-      {enhancedToolCall.status === "completed" && (
-        <div className="space-y-4">
-          {/* Enhanced Tool Result Renderer - replaces generic card for built-in tools */}
-          <ToolResultRenderer
-            toolCall={enhancedToolCall}
-            onConfirm={onConfirm}
-            hasConfirmationRequest={hasConfirmationRequest}
-          />
+      {enhancedToolCall.status === "completed" && (() => {
+        console.log("🎭 ToolCallDisplay: About to render completed tool:", {
+          name: enhancedToolCall.name,
+          status: enhancedToolCall.status,
+          id: enhancedToolCall.id,
+          hasResult: !!enhancedToolCall.result,
+          resultPreview: enhancedToolCall.result ? JSON.stringify(enhancedToolCall.result).slice(0, 100) + "..." : "no result"
+        });
+        return (
+          <div className="space-y-4">
+            {/* Enhanced Tool Result Renderer - replaces generic card for built-in tools */}
+            <ToolResultRenderer
+              toolCall={enhancedToolCall}
+              onConfirm={onConfirm}
+            />
 
           {/* Input JSON-RPC */}
           {enhancedToolCall.inputJsonRpc && (
@@ -270,8 +274,9 @@ export function ToolCallDisplay({
               </pre>
             </div>
           )}
-        </div>
-      )}
+          </div>
+        );
+      })()}
     </div>
   );
 }
