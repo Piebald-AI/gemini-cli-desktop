@@ -656,13 +656,16 @@ async fn handle_cli_output_line(
                             _ => &params.icon,
                         };
 
+                        // Keep original label for frontend parsing, but we'll update it on completion
+                        let dynamic_label = params.label.clone();
+
                         let event = ToolCallEvent {
                             id: tool_id,
                             name: tool_name.to_string(),
                             icon: params.icon,
-                            label: params.label,
+                            label: dynamic_label,
                             locations: params.locations,
-                            status: "pending".to_string(),
+                            status: "running".to_string(),
                         };
 
                         let _ = event_tx.send(InternalEvent::ToolCall {

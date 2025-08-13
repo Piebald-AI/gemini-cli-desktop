@@ -57,6 +57,12 @@ export class ToolInputParser {
         return `Searching for "${pattern}" in ${searchPath}`;
       }
 
+      case "grep":
+      case "glob": {
+        const pattern = params.pattern || params.query || params.glob || "files";
+        return `Searching ${pattern}`;
+      }
+
       case "read_file": {
         const file = params.file || params.path || "unknown file";
         return `Reading file ${file}`;
