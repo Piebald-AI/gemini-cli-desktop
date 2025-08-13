@@ -6,13 +6,6 @@ interface DefaultRendererProps {
 }
 
 export function DefaultRenderer({ toolCall }: DefaultRendererProps) {
-  console.log("🔧 DefaultRenderer called for tool:", {
-    name: toolCall.name,
-    status: toolCall.status,
-    resultType: typeof toolCall.result,
-    resultPreview: toolCall.result ? JSON.stringify(toolCall.result).slice(0, 100) + "..." : "no result"
-  });
-  
   const result = toolCall.result;
 
   // Handle different result types

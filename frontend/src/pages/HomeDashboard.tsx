@@ -115,10 +115,6 @@ export const HomeDashboard: React.FC = () => {
                             {
                               toolCallId: msgPart.toolCall.id,
                               toolCallName: msgPart.toolCall.name,
-                              toolCallStatus: msgPart.toolCall.status,
-                              toolCallResult: msgPart.toolCall.result,
-                              toolCallResultType: typeof msgPart.toolCall.result,
-                              fullToolCall: msgPart.toolCall,
                               hasConfirmation,
                               confirmationRequestExists: !!confirmationRequest,
                               confirmationMapSize: confirmationRequests.size,

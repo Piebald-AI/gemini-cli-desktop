@@ -530,7 +530,6 @@ async fn handle_session_io_internal(
                             &event_tx,
                             &mut tool_call_id,
                             &mut pending_send_message_requests,
-                            &processes,
                         ).await;
 
                         line_buffer.clear();
@@ -594,7 +593,6 @@ async fn handle_cli_output_line(
     event_tx: &mpsc::UnboundedSender<InternalEvent>,
     tool_call_id: &mut u32,
     pending_send_message_requests: &mut HashSet<u32>,
-    processes: &ProcessMap,
 ) {
     if let Ok(json_value) = serde_json::from_str::<serde_json::Value>(line) {
         if let Some(method) = json_value.get("method").and_then(|m| m.as_str()) {
@@ -621,23 +619,9 @@ async fn handle_cli_output_line(
                     if let Ok(params) = serde_json::from_value::<PushToolCallParams>(
                         json_value.get("params").cloned().unwrap_or_default(),
                     ) {
-                        // Map tool calls to proper names based on available data
-                        let derived_name = params.name.clone().unwrap_or_else(|| {
-                            match (params.icon.as_str(), params.label.as_str()) {
-                                ("folder", ".") => "list_directory".to_string(),
-                                ("folder", _) if params.locations.is_empty() => "list_directory".to_string(),
-                                ("file", _) => "read_file".to_string(),
-                                ("search", _) => "search_files".to_string(),
-                                ("terminal", _) => "execute_command".to_string(),
-                                ("edit", _) => "edit_file".to_string(),
-                                _ => params.label.clone(), // fallback to label
-                            }
-                        });
-
-                        let current_tool_call_id = *tool_call_id;
                         let event = ToolCallEvent {
-                            id: current_tool_call_id,
-                            name: derived_name,
+                            id: *tool_call_id,
+                            name: params.label.clone(),
                             icon: params.icon,
                             label: params.label,
                             locations: params.locations,
@@ -648,17 +632,6 @@ async fn handle_cli_output_line(
                             session_id: session_id.to_string(),
                             payload: event,
                         });
-
-                        // Send confirmation response back to CLI
-                        if let Some(request_id) = json_value.get("id").and_then(|i| i.as_u64()) {
-                            send_response_to_cli(
-                                session_id,
-                                request_id as u32,
-                                Some(serde_json::json!({"id": current_tool_call_id})),
-                                None,
-                                processes,
-                            ).await;
-                        }
 
                         *tool_call_id += 1;
                     }
@@ -675,17 +648,6 @@ async fn handle_cli_output_line(
                                 content: params.content,
                             },
                         });
-
-                        // Send confirmation response back to CLI
-                        if let Some(request_id) = json_value.get("id").and_then(|i| i.as_u64()) {
-                            send_response_to_cli(
-                                session_id,
-                                request_id as u32,
-                                Some(serde_json::Value::Null),
-                                None,
-                                processes,
-                            ).await;
-                        }
                     }
                 }
                 "requestToolCallConfirmation" => {
@@ -958,7 +920,6 @@ mod tests {
         let (tx, _rx) = mpsc::unbounded_channel::<InternalEvent>();
         let mut tool_call_id = 1001u32;
         let mut pending_requests = HashSet::new();
-        let processes: ProcessMap = Arc::new(Mutex::new(HashMap::new()));
 
         // Should not panic on invalid JSON
         handle_cli_output_line(
@@ -967,7 +928,6 @@ mod tests {
             &tx,
             &mut tool_call_id,
             &mut pending_requests,
-            &processes,
         )
         .await;
 
@@ -980,7 +940,6 @@ mod tests {
         let (tx, mut rx) = mpsc::unbounded_channel::<InternalEvent>();
         let mut tool_call_id = 1001u32;
         let mut pending_requests = HashSet::new();
-        let processes: ProcessMap = Arc::new(Mutex::new(HashMap::new()));
 
         let input = json!({
             "method": "streamAssistantMessageChunk",
@@ -999,7 +958,6 @@ mod tests {
             &tx,
             &mut tool_call_id,
             &mut pending_requests,
-            &processes,
         )
         .await;
 
@@ -1043,7 +1001,6 @@ mod tests {
         let (tx, mut rx) = mpsc::unbounded_channel::<InternalEvent>();
         let mut tool_call_id = 1001u32;
         let mut pending_requests = HashSet::new();
-        let processes: ProcessMap = Arc::new(Mutex::new(HashMap::new()));
 
         let input = json!({
             "method": "pushToolCall",
@@ -1061,7 +1018,6 @@ mod tests {
             &tx,
             &mut tool_call_id,
             &mut pending_requests,
-            &processes,
         )
         .await;
 
@@ -1092,7 +1048,6 @@ mod tests {
         let (tx, mut rx) = mpsc::unbounded_channel::<InternalEvent>();
         let mut tool_call_id = 1001u32;
         let mut pending_requests = HashSet::new();
-        let processes: ProcessMap = Arc::new(Mutex::new(HashMap::new()));
 
         let input = json!({
             "method": "updateToolCall",
@@ -1110,7 +1065,6 @@ mod tests {
             &tx,
             &mut tool_call_id,
             &mut pending_requests,
-            &processes,
         )
         .await;
 
@@ -1142,7 +1096,6 @@ mod tests {
         let (tx, mut rx) = mpsc::unbounded_channel::<InternalEvent>();
         let mut tool_call_id = 1001u32;
         let mut pending_requests = HashSet::new();
-        let processes: ProcessMap = Arc::new(Mutex::new(HashMap::new()));
 
         let input = json!({
             "id": 42,
@@ -1163,7 +1116,6 @@ mod tests {
             &tx,
             &mut tool_call_id,
             &mut pending_requests,
-            &processes,
         )
         .await;
 
@@ -1195,7 +1147,6 @@ mod tests {
         let (tx, mut rx) = mpsc::unbounded_channel::<InternalEvent>();
         let mut tool_call_id = 1001u32;
         let mut pending_requests = HashSet::new();
-        let processes: ProcessMap = Arc::new(Mutex::new(HashMap::new()));
         pending_requests.insert(123);
 
         let input = json!({
@@ -1210,7 +1161,6 @@ mod tests {
             &tx,
             &mut tool_call_id,
             &mut pending_requests,
-            &processes,
         )
         .await;
 
@@ -1233,7 +1183,6 @@ mod tests {
         let (tx, mut rx) = mpsc::unbounded_channel::<InternalEvent>();
         let mut tool_call_id = 1001u32;
         let mut pending_requests = HashSet::new();
-        let processes: ProcessMap = Arc::new(Mutex::new(HashMap::new()));
         pending_requests.insert(123);
 
         let input = json!({
@@ -1248,7 +1197,6 @@ mod tests {
             &tx,
             &mut tool_call_id,
             &mut pending_requests,
-            &processes,
         )
         .await;
 
@@ -1275,7 +1223,6 @@ mod tests {
         let (tx, _rx) = mpsc::unbounded_channel::<InternalEvent>();
         let mut tool_call_id = 1001u32;
         let mut pending_requests = HashSet::new();
-        let processes: ProcessMap = Arc::new(Mutex::new(HashMap::new()));
 
         let input = json!({
             "method": "unknownMethod",
@@ -1290,7 +1237,6 @@ mod tests {
             &tx,
             &mut tool_call_id,
             &mut pending_requests,
-            &processes,
         )
         .await;
 
@@ -1469,7 +1415,6 @@ mod tests {
                 &tx,
                 &mut tool_call_id,
                 &mut pending_requests,
-                &Arc::new(Mutex::new(HashMap::new())),
             )
             .await;
         }
