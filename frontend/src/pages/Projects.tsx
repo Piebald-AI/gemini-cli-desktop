@@ -4,6 +4,8 @@ import { Card } from "../components/ui/card";
 import { api } from "../lib/api";
 import { ArrowLeft } from "lucide-react";
 import { EnrichedProject } from "../lib/webApi";
+import { useBackend } from "../contexts/BackendContext";
+import { getBackendText } from "../utils/backendText";
 
 type Project = EnrichedProject;
 
@@ -16,6 +18,8 @@ export default function ProjectsPage() {
   const [projects, setProjects] = React.useState<Project[] | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const navigate = useNavigate();
+  const { selectedBackend } = useBackend();
+  const backendText = getBackendText(selectedBackend);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -49,7 +53,7 @@ export default function ProjectsPage() {
         </button>
         <h1 className="text-3xl font-semibold tracking-tight">Projects</h1>
         <p className="mt-2 text-muted-foreground">
-          All of your previous discussions with Gemini Desktop, right here.
+          {backendText.projectsDescription}
         </p>
 
         {/* Content area */}

@@ -22,6 +22,8 @@ import {
   DialogFooter,
 } from "../components/ui/dialog";
 import { Code } from "../components/ui/code";
+import { useBackend } from "../contexts/BackendContext";
+import { getBackendText } from "../utils/backendText";
 
 export function McpServersPage() {
   const [servers, setServers] = useState<McpServerEntry[]>([]);
@@ -31,6 +33,8 @@ export function McpServersPage() {
   const [serverToDelete, setServerToDelete] = useState<McpServerEntry | null>(
     null
   );
+  const { selectedBackend } = useBackend();
+  const backendText = getBackendText(selectedBackend);
 
   // Load settings file path on component mount
   useEffect(() => {
@@ -237,8 +241,7 @@ export function McpServersPage() {
               No MCP servers configured
             </h3>
             <p className="text-sm text-muted-foreground mb-6 max-w-md">
-              MCP servers extend Gemini's capabilities by providing access to
-              external tools and data sources. Get started by adding your first
+              {backendText.mcpCapabilities} Get started by adding your first
               server configuration.
             </p>
             <div className="flex gap-3">

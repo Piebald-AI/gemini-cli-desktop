@@ -9,6 +9,8 @@ import {
 } from "../ui/dialog";
 import { MentionInput } from "../common/MentionInput";
 import { Send, Info, ImagePlus } from "lucide-react";
+import { useBackend } from "../../contexts/BackendContext";
+import { getBackendText } from "../../utils/backendText";
 import { CliIO } from "../../types";
 
 interface MessageInputBarProps {
@@ -31,6 +33,8 @@ export const MessageInputBar: React.FC<MessageInputBarProps> = ({
   handleInputChange,
   handleSendMessage,
 }) => {
+  const { selectedBackend } = useBackend();
+  const backendText = getBackendText(selectedBackend);
   return (
     <div className="sticky bottom-0 bg-white dark:bg-neutral-900 flex items-center border-t border-gray-200 dark:border-neutral-700">
       <div className="px-6 py-2 w-full">
@@ -42,7 +46,7 @@ export const MessageInputBar: React.FC<MessageInputBarProps> = ({
                 onChange={handleInputChange}
                 placeholder={
                   isCliInstalled === false
-                    ? "Gemini CLI not found"
+                    ? backendText.cliNotFound
                     : "Type @ to mention files..."
                 }
                 disabled={isCliInstalled === false}

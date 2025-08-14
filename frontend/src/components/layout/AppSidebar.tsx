@@ -15,16 +15,6 @@ interface AppSidebarProps {
   onConversationSelect: (conversationId: string) => void;
   onKillProcess: (conversationId: string) => void;
   onModelChange?: (model: string) => void;
-  selectedBackend: string;
-  onBackendChange: (backend: string) => void;
-  qwenConfig: { apiKey: string; baseUrl: string; model: string };
-  onQwenConfigChange: (config: {
-    apiKey: string;
-    baseUrl: string;
-    model: string;
-  }) => void;
-  useOAuth: boolean;
-  onOAuthChange: (useOAuth: boolean) => void;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   children: React.ReactNode;
@@ -37,12 +27,6 @@ export function AppSidebar({
   onConversationSelect,
   onKillProcess,
   onModelChange,
-  selectedBackend,
-  onBackendChange,
-  qwenConfig,
-  onQwenConfigChange,
-  useOAuth,
-  onOAuthChange,
   open,
   onOpenChange,
   children,
@@ -58,12 +42,6 @@ export function AppSidebar({
             onConversationSelect={onConversationSelect}
             onKillProcess={onKillProcess}
             onModelChange={onModelChange}
-            selectedBackend={selectedBackend}
-            onBackendChange={onBackendChange}
-            qwenConfig={qwenConfig}
-            onQwenConfigChange={onQwenConfigChange}
-            useOAuth={useOAuth}
-            onOAuthChange={onOAuthChange}
           />
         </SidebarContent>
       </Sidebar>

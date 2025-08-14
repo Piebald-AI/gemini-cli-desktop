@@ -26,6 +26,8 @@ import { webApi, SearchResult, SearchFilters } from "../../lib/webApi";
 import { SearchInput } from "../common/SearchInput";
 import { SearchResults } from "../common/SearchResults";
 import { useSidebar } from "../ui/sidebar";
+import { useBackend, useBackendConfig } from "../../contexts/BackendContext";
+import { getBackendText } from "../../utils/backendText";
 import type { Conversation, ProcessStatus } from "../../types";
 
 interface ConversationListProps {
@@ -35,16 +37,6 @@ interface ConversationListProps {
   onConversationSelect: (conversationId: string) => void;
   onKillProcess: (conversationId: string) => void;
   onModelChange?: (model: string) => void;
-  selectedBackend: string;
-  onBackendChange: (backend: string) => void;
-  qwenConfig: { apiKey: string; baseUrl: string; model: string };
-  onQwenConfigChange: (config: {
-    apiKey: string;
-    baseUrl: string;
-    model: string;
-  }) => void;
-  useOAuth: boolean;
-  onOAuthChange: (useOAuth: boolean) => void;
 }
 
 export function ConversationList({
@@ -54,14 +46,12 @@ export function ConversationList({
   onConversationSelect,
   onKillProcess,
   onModelChange,
-  selectedBackend,
-  onBackendChange,
-  qwenConfig,
-  onQwenConfigChange,
-  useOAuth,
-  onOAuthChange,
 }: ConversationListProps) {
+  // Use backend context instead of props
+  const { selectedBackend, switchBackend } = useBackend();
+  const { config: qwenConfig, updateConfig: updateQwenConfig } = useBackendConfig('qwen');
   const { isMobile, setOpenMobile } = useSidebar();
+  const backendText = getBackendText(selectedBackend);
   const [selectedConversationForEnd, setSelectedConversationForEnd] = useState<{
     id: string;
     title: string;
@@ -144,8 +134,8 @@ export function ConversationList({
         </div>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
           {searchQuery.trim()
-            ? `Searching in ${conversations.length} conversation${conversations.length !== 1 ? "s" : ""} (${selectedBackend === "gemini" ? "Gemini CLI" : "Qwen Code"})`
-            : `${conversations.length} conversation${conversations.length !== 1 ? "s" : ""} (${selectedBackend === "gemini" ? "Gemini CLI" : "Qwen Code"})`}
+            ? `Searching in ${conversations.length} conversation${conversations.length !== 1 ? "s" : ""} (${backendText.name})`
+            : `${conversations.length} conversation${conversations.length !== 1 ? "s" : ""} (${backendText.name})`}
         </p>
 
         {/* Search Input */}
@@ -167,7 +157,7 @@ export function ConversationList({
             value={selectedBackend}
             onValueChange={(value) => {
               console.log("Backend changed to:", value);
-              onBackendChange(value);
+              switchBackend(value as 'gemini' | 'qwen');
               // Reset model selection when backend changes
               if (value === "gemini") {
                 setSelectedModel("gemini-2.5-flash");
@@ -199,8 +189,10 @@ export function ConversationList({
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="oauth-checkbox"
-                checked={useOAuth}
-                onCheckedChange={(checked) => onOAuthChange(checked === true)}
+                checked={qwenConfig.useOAuth}
+                onCheckedChange={(checked) =>
+                  updateQwenConfig({ useOAuth: checked === true })
+                }
               />
               <label
                 htmlFor="oauth-checkbox"
@@ -210,7 +202,7 @@ export function ConversationList({
               </label>
             </div>
 
-            {!useOAuth && (
+            {!qwenConfig.useOAuth && (
               <>
                 <div>
                   <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
@@ -220,8 +212,7 @@ export function ConversationList({
                     type="password"
                     value={qwenConfig.apiKey}
                     onChange={(e) =>
-                      onQwenConfigChange({
-                        ...qwenConfig,
+                      updateQwenConfig({
                         apiKey: e.target.value,
                       })
                     }
@@ -237,8 +228,7 @@ export function ConversationList({
                     type="text"
                     value={qwenConfig.baseUrl}
                     onChange={(e) =>
-                      onQwenConfigChange({
-                        ...qwenConfig,
+                      updateQwenConfig({
                         baseUrl: e.target.value,
                       })
                     }
@@ -254,8 +244,7 @@ export function ConversationList({
                     type="text"
                     value={qwenConfig.model}
                     onChange={(e) => {
-                      onQwenConfigChange({
-                        ...qwenConfig,
+                      updateQwenConfig({
                         model: e.target.value,
                       });
                       setSelectedModel(

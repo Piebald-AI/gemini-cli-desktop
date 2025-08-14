@@ -21,6 +21,8 @@ import {
   defaultHTTPConfig,
 } from "../../types";
 import { DynamicList, DynamicKeyValueList } from "./DynamicList";
+import { useBackend } from "../../contexts/BackendContext";
+import { getBackendText } from "../../utils/backendText";
 
 interface AddMcpServerDialogProps {
   trigger: React.ReactNode;
@@ -39,6 +41,8 @@ export function AddMcpServerDialog({
   const [open, setOpen] = useState(false);
   const [serverName, setServerName] = useState("");
   const [transportType, setTransportType] = useState<TransportType>("stdio");
+  const { selectedBackend } = useBackend();
+  const backendText = getBackendText(selectedBackend);
 
   // Command fields
   const [command, setCommand] = useState("");
@@ -278,7 +282,7 @@ export function AddMcpServerDialog({
                   placeholder="Enter the command"
                 />
                 <p className="text-sm text-muted-foreground">
-                  Command executed by Gemini CLI to start the MCP server.
+                  {backendText.mcpCommandDescription}
                 </p>
               </div>
 
@@ -399,7 +403,7 @@ export function AddMcpServerDialog({
                   items={includeTools}
                   onChange={setIncludeTools}
                   placeholder="Write args here"
-                  description="MCP tools, included in this MCP server, that Gemini CLI may execute."
+                  description={backendText.mcpToolExecution}
                 />
               </div>
 
@@ -409,7 +413,7 @@ export function AddMcpServerDialog({
                   items={excludeTools}
                   onChange={setExcludeTools}
                   placeholder="Write args here"
-                  description="MCP tools, included in this MCP server, that Gemini CLI may not execute. Takes precedence over Included Tools."
+                  description={backendText.mcpToolExclusion}
                 />
               </div>
             </>

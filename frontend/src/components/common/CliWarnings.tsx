@@ -2,18 +2,20 @@ import React, { useState, useEffect } from "react";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { AlertCircleIcon, AlertTriangle, X, Info } from "lucide-react";
 import { Button } from "../ui/button";
+import { useBackend } from "../../contexts/BackendContext";
+import { getBackendText } from "../../utils/backendText";
 
 interface CliWarningsProps {
   selectedModel: string;
   isCliInstalled: boolean | null;
-  selectedBackend: string;
 }
 
 export const CliWarnings: React.FC<CliWarningsProps> = ({
   selectedModel,
   isCliInstalled,
-  selectedBackend,
 }) => {
+  const { selectedBackend } = useBackend();
+  const backendText = getBackendText(selectedBackend);
   const [isQwenLoginAlertDismissed, setIsQwenLoginAlertDismissed] =
     useState(false);
 
@@ -33,7 +35,7 @@ export const CliWarnings: React.FC<CliWarningsProps> = ({
           <Alert className="bg-blue-50 border-blue-300 dark:bg-blue-950 dark:border-blue-700">
             <Info className="!text-blue-500 dark:!text-blue-300" />
             <AlertTitle className="text-blue-800 dark:text-blue-300 flex items-center justify-between">
-              <span>Login not supported in Gemini Desktop</span>
+              <span>{backendText.loginNotSupportedTitle}</span>
               <Button
                 variant="ghost"
                 size="sm"
@@ -45,8 +47,7 @@ export const CliWarnings: React.FC<CliWarningsProps> = ({
             </AlertTitle>
             <AlertDescription className="text-blue-800 dark:text-blue-300">
               <p>
-                Currently, authentication with OAuth through Gemini Desktop
-                isn't supported when using the Qwen backend. To login, please
+                {backendText.oauthNotSupported} To login, please
                 first use the CLI directly for authentication.
               </p>
             </AlertDescription>
@@ -114,22 +115,26 @@ export const CliWarnings: React.FC<CliWarningsProps> = ({
             className="bg-red-50 border-red-300 dark:bg-red-950 dark:border-red-700 text-red-300"
           >
             <AlertCircleIcon />
-            <AlertTitle>Gemini CLI not found</AlertTitle>
+            <AlertTitle>{backendText.cliNotFound}</AlertTitle>
             <AlertDescription className="dark:text-red-300">
               <p>
                 <span>
-                  Please install the Gemini CLI and make sure it's available in
-                  your PATH. You can install it from{" "}
+                  {backendText.installMessage}
+                  {selectedBackend === 'gemini' && (
+                    <>
+                      {' '}
+                      <a
+                        href="https://github.com/google-gemini/gemini-cli"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline underline-offset-4"
+                      >
+                        the official repository
+                      </a>
+                      .
+                    </>
+                  )}
                 </span>
-                <a
-                  href="https://github.com/google-gemini/gemini-cli"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline underline-offset-4"
-                >
-                  the official repository
-                </a>
-                .
               </p>
             </AlertDescription>
           </Alert>

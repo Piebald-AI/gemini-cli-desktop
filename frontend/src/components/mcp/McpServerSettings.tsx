@@ -22,6 +22,8 @@ import { AddMcpServerDialog } from "./AddMcpServerDialog";
 import { PasteJsonDialog } from "./PasteJsonDialog";
 import { ModelContextProtocol } from "../common/ModelContextProtocol";
 import { invoke } from "@tauri-apps/api/core";
+import { useBackend } from "../../contexts/BackendContext";
+import { getBackendText } from "../../utils/backendText";
 
 interface McpServerSettingsProps {
   trigger?: React.ReactNode;
@@ -36,6 +38,8 @@ export function McpServerSettings({ trigger }: McpServerSettingsProps) {
   const [serverToDelete, setServerToDelete] = useState<McpServerEntry | null>(
     null
   );
+  const { selectedBackend } = useBackend();
+  const backendText = getBackendText(selectedBackend);
 
   // Load settings file path on component mount
   useEffect(() => {
@@ -246,8 +250,7 @@ export function McpServerSettings({ trigger }: McpServerSettingsProps) {
                 No MCP servers configured
               </h3>
               <p className="text-sm text-muted-foreground mb-6 max-w-md">
-                MCP servers extend Gemini's capabilities by providing access to
-                external tools and data sources. Get started by adding your
+                {backendText.mcpCapabilities} Get started by adding your
                 first server configuration.
               </p>
               <div className="flex gap-3">
