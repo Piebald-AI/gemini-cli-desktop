@@ -23,6 +23,11 @@ export const api = {
               message: string;
               conversationHistory: string;
               model?: string;
+              backendConfig?: {
+                api_key: string;
+                base_url: string;
+                model: string;
+              };
             }
           ) as Promise<T>;
         case "get_process_statuses":
@@ -86,11 +91,17 @@ export const api = {
             sessionId: string;
             workingDirectory: string;
             model?: string;
+            backendConfig?: {
+              api_key: string;
+              base_url: string;
+              model: string;
+            };
           };
           return webApi.start_session(
             sessionArgs.sessionId,
             sessionArgs.workingDirectory,
-            sessionArgs.model
+            sessionArgs.model,
+            sessionArgs.backendConfig
           ) as Promise<T>;
         }
         default:

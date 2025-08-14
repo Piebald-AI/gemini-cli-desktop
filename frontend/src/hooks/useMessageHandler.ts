@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from "react";
 import { api } from "../lib/api";
 import { Message, Conversation } from "../types";
+import { useBackend } from "../contexts/BackendContext";
 
 interface UseMessageHandlerProps {
   activeConversation: string | null;
@@ -36,6 +37,7 @@ export const useMessageHandler = ({
   fetchProcessStatuses,
 }: UseMessageHandlerProps) => {
   const [input, setInput] = useState("");
+  const { selectedBackend, getApiConfig } = useBackend();
 
   const handleInputChange = useCallback(
     (
@@ -154,11 +156,25 @@ export const useMessageHandler = ({
           )
           .join("\n");
 
+        // Get backend configuration if using Qwen
+        let backendConfig = undefined;
+        if (selectedBackend === 'qwen') {
+          const apiConfig = getApiConfig();
+          if (apiConfig && apiConfig.api_key) {
+            backendConfig = {
+              api_key: apiConfig.api_key,
+              base_url: apiConfig.base_url || 'https://openrouter.ai/api/v1',
+              model: apiConfig.model || selectedModel,
+            };
+          }
+        }
+
         await api.invoke("send_message", {
           sessionId: convId,
           message: messageText,
           conversationHistory: history,
           model: selectedModel,
+          backendConfig,
         });
 
         // Refresh process statuses after sending message

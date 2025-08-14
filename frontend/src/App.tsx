@@ -102,7 +102,7 @@ function RootLayoutContent() {
           sessionId: convId,
           workingDirectory,
           model: selectedModel,
-          backendConfig: apiConfig,
+          backend_config: apiConfig,
         });
       }
 

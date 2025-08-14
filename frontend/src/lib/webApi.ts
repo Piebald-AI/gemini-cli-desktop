@@ -11,6 +11,11 @@ interface StartSessionRequest {
   session_id: string;
   working_directory?: string;
   model?: string;
+  backend_config?: {
+    api_key: string;
+    base_url: string;
+    model: string;
+  };
 }
 
 interface SendMessageRequest {
@@ -18,6 +23,11 @@ interface SendMessageRequest {
   message: string;
   conversation_history: string;
   model?: string;
+  backend_config?: {
+    api_key: string;
+    base_url: string;
+    model: string;
+  };
 }
 
 interface KillProcessRequest {
@@ -90,12 +100,18 @@ export const webApi = {
   async start_session(
     sessionId: string,
     workingDirectory?: string,
-    model?: string
+    model?: string,
+    backendConfig?: {
+      api_key: string;
+      base_url: string;
+      model: string;
+    }
   ): Promise<void> {
     const request: StartSessionRequest = {
       session_id: sessionId,
       working_directory: workingDirectory,
       model: model,
+      backend_config: backendConfig,
     };
     await apiClient.post("/start-session", request);
   },
@@ -105,12 +121,18 @@ export const webApi = {
     message: string;
     conversationHistory: string;
     model?: string;
+    backendConfig?: {
+      api_key: string;
+      base_url: string;
+      model: string;
+    };
   }): Promise<void> {
     const request: SendMessageRequest = {
       session_id: params.sessionId,
       message: params.message,
       conversation_history: params.conversationHistory,
       model: params.model,
+      backend_config: params.backendConfig,
     };
     await apiClient.post("/send-message", request);
   },
