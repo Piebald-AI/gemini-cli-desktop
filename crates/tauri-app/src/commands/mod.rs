@@ -371,22 +371,32 @@ pub async fn debug_environment() -> Result<String, String> {
 // Settings.json File Management Commands
 
 #[tauri::command]
-pub async fn get_settings_file_path() -> Result<String, String> {
+pub async fn get_settings_file_path(backend_type: Option<String>) -> Result<String, String> {
     // Try to get the settings file path
     let home_dir = dirs::home_dir().ok_or_else(|| "Unable to find home directory".to_string())?;
 
-    let settings_path = home_dir.join(".gemini").join("settings.json");
+    let dir_name = match backend_type.as_deref() {
+        Some("qwen") => ".qwen",
+        _ => ".gemini", // Default to .gemini for other backends or when not specified
+    };
+
+    let settings_path = home_dir.join(dir_name).join("settings.json");
 
     Ok(settings_path.to_string_lossy().to_string())
 }
 
 #[tauri::command]
-pub async fn read_settings_file() -> Result<Value, String> {
+pub async fn read_settings_file(backend_type: Option<String>) -> Result<Value, String> {
     use std::fs;
 
     let home_dir = dirs::home_dir().ok_or_else(|| "Unable to find home directory".to_string())?;
 
-    let settings_path = home_dir.join(".gemini").join("settings.json");
+    let dir_name = match backend_type.as_deref() {
+        Some("qwen") => ".qwen",
+        _ => ".gemini", // Default to .gemini for other backends or when not specified
+    };
+
+    let settings_path = home_dir.join(dir_name).join("settings.json");
 
     if !settings_path.exists() {
         // Return empty settings structure if file doesn't exist
@@ -405,18 +415,23 @@ pub async fn read_settings_file() -> Result<Value, String> {
 }
 
 #[tauri::command]
-pub async fn write_settings_file(settings: Value) -> Result<(), String> {
+pub async fn write_settings_file(settings: Value, backend_type: Option<String>) -> Result<(), String> {
     use std::fs;
 
     let home_dir = dirs::home_dir().ok_or_else(|| "Unable to find home directory".to_string())?;
 
-    let gemini_dir = home_dir.join(".gemini");
-    let settings_path = gemini_dir.join("settings.json");
+    let dir_name = match backend_type.as_deref() {
+        Some("qwen") => ".qwen",
+        _ => ".gemini", // Default to .gemini for other backends or when not specified
+    };
 
-    // Create .gemini directory if it doesn't exist
-    if !gemini_dir.exists() {
-        fs::create_dir_all(&gemini_dir)
-            .map_err(|e| format!("Failed to create .gemini directory: {e}"))?;
+    let config_dir = home_dir.join(dir_name);
+    let settings_path = config_dir.join("settings.json");
+
+    // Create config directory if it doesn't exist
+    if !config_dir.exists() {
+        fs::create_dir_all(&config_dir)
+            .map_err(|e| format!("Failed to create {dir_name} directory: {e}"))?;
     }
 
     // Pretty-print the JSON

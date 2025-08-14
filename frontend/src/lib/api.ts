@@ -75,6 +75,20 @@ export const api = {
           return webApi.is_home_directory(
             args as unknown as string
           ) as Promise<T>;
+        case "get_home_directory":
+          return webApi.get_home_directory() as Promise<T>;
+        case "get_parent_directory":
+          if (!args) throw new Error("Missing arguments for get_parent_directory");
+          return webApi.get_parent_directory(
+            args as unknown as string
+          ) as Promise<T>;
+        case "list_directory_contents":
+          if (!args) throw new Error("Missing arguments for list_directory_contents");
+          return webApi.list_directory_contents(
+            args as unknown as string
+          ) as Promise<T>;
+        case "list_volumes":
+          return webApi.list_volumes() as Promise<T>;
         case "list_projects":
           return webApi.list_projects(args) as Promise<T>;
         case "get_project_discussions":
@@ -85,6 +99,11 @@ export const api = {
           ) as Promise<T>;
         case "list_enriched_projects":
           return webApi.list_projects_enriched() as Promise<T>;
+        case "get_project":
+          if (!args) throw new Error("Missing arguments for get_project");
+          return webApi.get_project(
+            args as { sha256: string; externalRootPath: string }
+          ) as Promise<T>;
         case "start_session": {
           if (!args) throw new Error("Missing arguments for start_session");
           const sessionArgs = args as {

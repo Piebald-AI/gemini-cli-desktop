@@ -282,6 +282,19 @@ export const webApi = {
       await apiClient.get<EnrichedProject[]>("/projects-enriched");
     return response.data;
   },
+
+  async get_project(params: {
+    sha256: string;
+    externalRootPath: string;
+  }): Promise<EnrichedProject> {
+    const response = await apiClient.get<EnrichedProject>("/project", {
+      params: {
+        sha256: params.sha256,
+        external_root_path: params.externalRootPath,
+      },
+    });
+    return response.data;
+  },
 };
 
 export interface RecentChat {

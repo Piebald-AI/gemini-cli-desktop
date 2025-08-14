@@ -1,11 +1,14 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "../components/ui/card";
+import { Button } from "../components/ui/button";
 import { api } from "../lib/api";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Plus } from "lucide-react";
 import { EnrichedProject } from "../lib/webApi";
 import { useBackend } from "../contexts/BackendContext";
 import { getBackendText } from "../utils/backendText";
+import { DirectorySelectionDialog } from "../components/common/DirectorySelectionDialog";
+import { generateSHA256 } from "../lib/utils";
 
 type Project = EnrichedProject;
 
@@ -17,27 +20,77 @@ function truncatePath(path: string): string {
 export default function ProjectsPage() {
   const [projects, setProjects] = React.useState<Project[] | null>(null);
   const [error, setError] = React.useState<string | null>(null);
+  const [directoryDialogOpen, setDirectoryDialogOpen] = React.useState(false);
+  const [isAddingProject, setIsAddingProject] = React.useState(false);
   const navigate = useNavigate();
   const { selectedBackend } = useBackend();
   const backendText = getBackendText(selectedBackend);
 
-  React.useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const enrichedProjects = await api.invoke<EnrichedProject[]>(
-          "list_enriched_projects"
-        );
-        if (!cancelled) setProjects(enrichedProjects);
-      } catch (e) {
-        if (!cancelled) setError("Failed to load projects.");
-        console.error(e);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+  const refreshProjects = React.useCallback(async () => {
+    try {
+      const enrichedProjects = await api.invoke<EnrichedProject[]>(
+        "list_enriched_projects"
+      );
+      setProjects(enrichedProjects);
+    } catch (e) {
+      setError("Failed to load projects.");
+      console.error(e);
+    }
   }, []);
+
+  React.useEffect(() => {
+    refreshProjects();
+  }, [refreshProjects]);
+
+  const handleAddProject = async (selectedPath: string) => {
+    try {
+      setIsAddingProject(true);
+      setError(null);
+
+      // Generate SHA256 hash of the selected directory path
+      const sha256 = await generateSHA256(selectedPath);
+
+      // Create or get the project (this will create metadata if it doesn't exist)
+      const project = await api.invoke<EnrichedProject>("get_project", {
+        sha256,
+        externalRootPath: selectedPath,
+      });
+
+      // Refresh the projects list to include the new project
+      await refreshProjects();
+
+      // Navigate to the new project
+      navigate(`/projects/${project.sha256}`);
+    } catch (e) {
+      console.error("Failed to add project:", e);
+      setError("Failed to add project. Please try again.");
+    } finally {
+      setIsAddingProject(false);
+    }
+  };
+
+  const handleAddProjectNative = async () => {
+    try {
+      setIsAddingProject(true);
+      setError(null);
+
+      // Use Tauri's native file dialog for desktop
+      const { open } = await import("@tauri-apps/plugin-dialog");
+      const selectedPath = await open({
+        directory: true,
+        multiple: false,
+      });
+
+      if (selectedPath) {
+        await handleAddProject(selectedPath as string);
+      }
+    } catch (e) {
+      console.error("Failed to open native file dialog:", e);
+      setError("Failed to open file dialog. Please try again.");
+    } finally {
+      setIsAddingProject(false);
+    }
+  };
 
   return (
     <div className="w-full">
@@ -51,10 +104,23 @@ export default function ProjectsPage() {
           <ArrowLeft className="h-4 w-4 mr-2" aria-hidden="true" />
           <span>Back to Home</span>
         </button>
-        <h1 className="text-3xl font-semibold tracking-tight">Projects</h1>
-        <p className="mt-2 text-muted-foreground">
-          {backendText.projectsDescription}
-        </p>
+        
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight">Projects</h1>
+            <p className="mt-2 text-muted-foreground">
+              {backendText.projectsDescription}
+            </p>
+          </div>
+          <Button
+            onClick={__WEB__ ? () => setDirectoryDialogOpen(true) : handleAddProjectNative}
+            disabled={isAddingProject}
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            {isAddingProject ? "Adding Project..." : "Add Project"}
+          </Button>
+        </div>
 
         {/* Content area */}
         <div className="mt-6">
@@ -102,6 +168,14 @@ export default function ProjectsPage() {
           )}
         </div>
       </div>
+
+      {__WEB__ && (
+        <DirectorySelectionDialog
+          open={directoryDialogOpen}
+          onOpenChange={setDirectoryDialogOpen}
+          onSelect={handleAddProject}
+        />
+      )}
     </div>
   );
 }

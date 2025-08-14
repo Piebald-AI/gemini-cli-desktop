@@ -41,10 +41,10 @@ export function McpServerSettings({ trigger }: McpServerSettingsProps) {
   const { selectedBackend } = useBackend();
   const backendText = getBackendText(selectedBackend);
 
-  // Load settings file path on component mount
+  // Load settings file path on component mount and when backend changes
   useEffect(() => {
     loadSettingsPath();
-  }, []);
+  }, [selectedBackend]);
 
   // Load MCP servers from settings.json file when dialog opens
   useEffect(() => {
@@ -55,7 +55,9 @@ export function McpServerSettings({ trigger }: McpServerSettingsProps) {
 
   const loadSettingsPath = async () => {
     try {
-      const path = await invoke<string>("get_settings_file_path");
+      const path = await invoke<string>("get_settings_file_path", { 
+        backendType: selectedBackend 
+      });
       setSettingsFilePath(path);
     } catch (error) {
       console.error("Failed to get settings file path:", error);
@@ -66,7 +68,9 @@ export function McpServerSettings({ trigger }: McpServerSettingsProps) {
     setIsLoading(true);
     try {
       const settings =
-        await invoke<Record<string, unknown>>("read_settings_file");
+        await invoke<Record<string, unknown>>("read_settings_file", {
+          backendType: selectedBackend
+        });
       const mcpServers = settings.mcpServers || {};
 
       const serverEntries: McpServerEntry[] = Object.entries(mcpServers).map(
@@ -92,7 +96,9 @@ export function McpServerSettings({ trigger }: McpServerSettingsProps) {
     try {
       // Read current settings to preserve other configurations
       const currentSettings =
-        await invoke<Record<string, unknown>>("read_settings_file");
+        await invoke<Record<string, unknown>>("read_settings_file", {
+          backendType: selectedBackend
+        });
 
       // Update only the mcpServers section
       const mcpServersConfig: McpServersConfig = {};
@@ -107,7 +113,10 @@ export function McpServerSettings({ trigger }: McpServerSettingsProps) {
         mcpServers: mcpServersConfig,
       };
 
-      await invoke("write_settings_file", { settings: updatedSettings });
+      await invoke("write_settings_file", { 
+        settings: updatedSettings,
+        backendType: selectedBackend 
+      });
       setServers(updatedServers);
     } catch (error) {
       console.error("Failed to save MCP servers to settings file:", error);

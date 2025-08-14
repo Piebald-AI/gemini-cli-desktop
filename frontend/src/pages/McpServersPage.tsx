@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
-import { FileText, Package, Trash2 } from "lucide-react";
+import { FileText, Package, Trash2, ArrowLeft } from "lucide-react";
 import {
   McpServerEntry,
   McpServersConfig,
@@ -35,11 +36,12 @@ export function McpServersPage() {
   );
   const { selectedBackend } = useBackend();
   const backendText = getBackendText(selectedBackend);
+  const navigate = useNavigate();
 
-  // Load settings file path on component mount
+  // Load settings file path on component mount and when backend changes
   useEffect(() => {
     loadSettingsPath();
-  }, []);
+  }, [selectedBackend]);
 
   // Load MCP servers from settings.json file when component mounts
   useEffect(() => {
@@ -50,7 +52,9 @@ export function McpServersPage() {
 
   const loadSettingsPath = async () => {
     try {
-      const path = await invoke<string>("get_settings_file_path");
+      const path = await invoke<string>("get_settings_file_path", { 
+        backendType: selectedBackend 
+      });
       setSettingsFilePath(path);
     } catch (error) {
       console.error("Failed to get settings file path:", error);
@@ -61,7 +65,9 @@ export function McpServersPage() {
     setIsLoading(true);
     try {
       const settings =
-        await invoke<Record<string, unknown>>("read_settings_file");
+        await invoke<Record<string, unknown>>("read_settings_file", {
+          backendType: selectedBackend
+        });
       const mcpServers = settings.mcpServers || {};
 
       const serverEntries: McpServerEntry[] = Object.entries(mcpServers).map(
@@ -87,7 +93,9 @@ export function McpServersPage() {
     try {
       // Read current settings to preserve other configurations
       const currentSettings =
-        await invoke<Record<string, unknown>>("read_settings_file");
+        await invoke<Record<string, unknown>>("read_settings_file", {
+          backendType: selectedBackend
+        });
 
       // Update only the mcpServers section
       const mcpServersConfig: McpServersConfig = {};
@@ -102,7 +110,10 @@ export function McpServersPage() {
         mcpServers: mcpServersConfig,
       };
 
-      await invoke("write_settings_file", { settings: updatedSettings });
+      await invoke("write_settings_file", { 
+        settings: updatedSettings,
+        backendType: selectedBackend 
+      });
       setServers(updatedServers);
     } catch (error) {
       console.error("Failed to save MCP servers to settings file:", error);
@@ -217,9 +228,19 @@ export function McpServersPage() {
   };
 
   return (
-    <div className="flex-1 flex flex-col p-6">
+    <div className="w-full">
+      <div className="mx-auto w-full max-w-4xl px-6 py-8 flex-1 flex flex-col">
       {/* Page Header */}
       <div className="mb-6">
+        <button
+          type="button"
+          onClick={() => navigate("/")}
+          className="mb-4 inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition cursor-pointer"
+          aria-label="Back to Home"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" aria-hidden="true" />
+          <span>Back to Home</span>
+        </button>
         <h1 className="text-2xl font-bold mb-2">MCP Servers</h1>
         <p className="text-muted-foreground">
           Manage your Model Context Protocol server configurations
@@ -322,26 +343,28 @@ export function McpServersPage() {
       </div>
 
       {/* Bottom action buttons - fixed at bottom */}
-      <div className="flex justify-end gap-3 pt-4 border-t mt-4">
-        <AddMcpServerDialog
-          trigger={
-            <Button className="flex items-center gap-2">
-              <Package className="h-4 w-4" />
-              Add New Server
-            </Button>
-          }
-          onServerAdd={handleAddServer}
-        />
-        <PasteJsonDialog
-          trigger={
-            <Button variant="outline" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Paste JSON
-            </Button>
-          }
-          onServersAdd={handleAddServers}
-        />
-      </div>
+      {servers.length > 0 && (
+        <div className="flex justify-end gap-3 pt-4 mt-4 border-t">
+          <AddMcpServerDialog
+            trigger={
+              <Button className="flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                Add New Server
+              </Button>
+            }
+            onServerAdd={handleAddServer}
+          />
+          <PasteJsonDialog
+            trigger={
+              <Button variant="outline" className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Paste JSON
+              </Button>
+            }
+            onServersAdd={handleAddServers}
+          />
+        </div>
+      )}
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -365,6 +388,7 @@ export function McpServersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 }

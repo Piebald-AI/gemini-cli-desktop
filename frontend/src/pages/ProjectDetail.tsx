@@ -4,6 +4,8 @@ import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { api } from "../lib/api";
 import { useConversation } from "../contexts/ConversationContext";
+import { useBackend } from "../contexts/BackendContext";
+import { getBackendText } from "../utils/backendText";
 import { ArrowLeft, Plus, Loader2 } from "lucide-react";
 import { EnrichedProject } from "../lib/webApi";
 
@@ -22,6 +24,8 @@ export default function ProjectDetailPage() {
   const { id: projectId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { startNewConversation } = useConversation();
+  const { selectedBackend } = useBackend();
+  const backendText = getBackendText(selectedBackend);
   const [discussions, setDiscussions] = React.useState<Discussion[] | null>(
     null
   );
@@ -152,7 +156,7 @@ export default function ProjectDetailPage() {
               </p>
             ) : discussions.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                No discussions found.
+                You don't have any discussions with {backendText.name} yet.
               </p>
             ) : (
               <div className="grid grid-cols-1 gap-3">

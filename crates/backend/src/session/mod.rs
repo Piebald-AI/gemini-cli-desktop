@@ -273,6 +273,8 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
         BackendError::SessionInitFailed(format!("Failed to serialize init request: {e}"))
     })?;
 
+    println!("🔍 RAW INPUT TO GEMINI CLI: {}", request_json);
+
     let _ = rpc_logger.log_rpc(&request_json);
 
     stdin
@@ -303,6 +305,8 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
     reader.read_line(&mut line).await.map_err(|e| {
         BackendError::SessionInitFailed(format!("Failed to read init response: {e}"))
     })?;
+
+    println!("🔍 RAW OUTPUT FROM GEMINI CLI: {}", line.trim());
 
     let _ = rpc_logger.log_rpc(line.trim());
 
