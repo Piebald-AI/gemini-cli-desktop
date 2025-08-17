@@ -1,14 +1,8 @@
 import React, { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { createLineDiffWithWords, type LineDiff, type WordDiff } from "@/utils/wordDiff";
 
-interface DiffLine {
-  type: "unchanged" | "added" | "removed" | "context";
-  content: string;
-  lineNumber?: number;
-  oldLineNumber?: number;
-  newLineNumber?: number;
-}
 
 interface DiffViewerProps {
   oldText: string;
@@ -29,99 +23,8 @@ export function DiffViewer({
 }: DiffViewerProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // Simple diff algorithm - split into lines and compare
-  const generateDiff = (old: string, newer: string): DiffLine[] => {
-    const oldLines = old.split("\n");
-    const newLines = newer.split("\n");
-    const diff: DiffLine[] = [];
-
-    let oldIndex = 0;
-    let newIndex = 0;
-
-    // Simple line-by-line comparison
-    // This is a basic implementation - in a real app you might want to use a proper diff library
-    while (oldIndex < oldLines.length || newIndex < newLines.length) {
-      const oldLine = oldLines[oldIndex];
-      const newLine = newLines[newIndex];
-
-      if (oldIndex >= oldLines.length) {
-        // Only new lines remaining
-        diff.push({
-          type: "added",
-          content: newLine,
-          newLineNumber: newIndex + 1,
-        });
-        newIndex++;
-      } else if (newIndex >= newLines.length) {
-        // Only old lines remaining
-        diff.push({
-          type: "removed",
-          content: oldLine,
-          oldLineNumber: oldIndex + 1,
-        });
-        oldIndex++;
-      } else if (oldLine === newLine) {
-        // Lines match
-        diff.push({
-          type: "unchanged",
-          content: oldLine,
-          oldLineNumber: oldIndex + 1,
-          newLineNumber: newIndex + 1,
-        });
-        oldIndex++;
-        newIndex++;
-      } else {
-        // Lines differ - this is a simplified approach
-        // Check if the new line appears later in old lines (deletion)
-        const nextOldMatch = oldLines
-          .slice(oldIndex + 1)
-          .findIndex((line) => line === newLine);
-        // Check if the old line appears later in new lines (addition)
-        const nextNewMatch = newLines
-          .slice(newIndex + 1)
-          .findIndex((line) => line === oldLine);
-
-        if (
-          nextOldMatch !== -1 &&
-          (nextNewMatch === -1 || nextOldMatch < nextNewMatch)
-        ) {
-          // Likely a deletion
-          diff.push({
-            type: "removed",
-            content: oldLine,
-            oldLineNumber: oldIndex + 1,
-          });
-          oldIndex++;
-        } else if (nextNewMatch !== -1) {
-          // Likely an addition
-          diff.push({
-            type: "added",
-            content: newLine,
-            newLineNumber: newIndex + 1,
-          });
-          newIndex++;
-        } else {
-          // Modified line - show as removal + addition
-          diff.push({
-            type: "removed",
-            content: oldLine,
-            oldLineNumber: oldIndex + 1,
-          });
-          diff.push({
-            type: "added",
-            content: newLine,
-            newLineNumber: newIndex + 1,
-          });
-          oldIndex++;
-          newIndex++;
-        }
-      }
-    }
-
-    return diff;
-  };
-
-  const diffLines = generateDiff(oldText, newText);
+  // Use enhanced word-level diff algorithm
+  const diffLines = createLineDiffWithWords(oldText, newText);
   const visibleLines = isExpanded ? diffLines : diffLines.slice(0, maxLines);
   const hasMoreLines = diffLines.length > maxLines;
 
@@ -136,7 +39,7 @@ export function DiffViewer({
     }
   }, [additions, deletions, onStatsCalculated]);
 
-  const getLineClassName = (type: DiffLine["type"]) => {
+  const getLineClassName = (type: LineDiff["type"]) => {
     switch (type) {
       case "added":
         return "bg-green-50 dark:bg-green-900/20 border-l-2 border-green-500";
@@ -149,7 +52,7 @@ export function DiffViewer({
     }
   };
 
-  const getLinePrefix = (type: DiffLine["type"]) => {
+  const getLinePrefix = (type: LineDiff["type"]) => {
     switch (type) {
       case "added":
         return "+";
@@ -162,7 +65,7 @@ export function DiffViewer({
     }
   };
 
-  const getLineTextColor = (type: DiffLine["type"]) => {
+  const getLineTextColor = (type: LineDiff["type"]) => {
     switch (type) {
       case "added":
         return "text-green-700 dark:text-green-300";
@@ -173,6 +76,28 @@ export function DiffViewer({
       default:
         return "";
     }
+  };
+
+  // Component to render word-level highlighting within added/removed lines
+  const renderHighlightedWords = (words: WordDiff[], lineType: 'added' | 'removed') => {
+    return (
+      <span>
+        {words.map((word, index) => (
+          <span
+            key={index}
+            className={cn(
+              // Only highlight words that are different from the comparison
+              word.type === "added" && lineType === "added" && "bg-green-300 dark:bg-green-700/70 px-0.5 rounded",
+              word.type === "removed" && lineType === "removed" && "bg-red-300 dark:bg-red-700/70 px-0.5 rounded",
+              // Unchanged words get no highlighting
+              word.type === "unchanged" && ""
+            )}
+          >
+            {word.content}
+          </span>
+        ))}
+      </span>
+    );
   };
 
   return (
@@ -207,7 +132,11 @@ export function DiffViewer({
             <div
               className={cn("px-2 py-1 flex-1", getLineTextColor(line.type))}
             >
-              {line.content || " "}
+              {line.highlightedWords && (line.type === "added" || line.type === "removed") ? (
+                renderHighlightedWords(line.highlightedWords, line.type)
+              ) : (
+                line.content || " "
+              )}
             </div>
           </div>
         ))}

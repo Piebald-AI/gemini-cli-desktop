@@ -219,6 +219,17 @@ export const BackendProvider: React.FC<BackendProviderProps> = ({ children }) =>
             model: qwenConfig.model,
           };
         }
+      } else if (state.selectedBackend === 'gemini') {
+        const geminiConfig = state.configs.gemini;
+        if (geminiConfig.authMethod === 'gemini-api-key') {
+          return {
+            api_key: geminiConfig.apiKey,
+            model: currentModel,
+          };
+        } else {
+          // For OAuth, Vertex AI, or Cloud Shell, no API key needed
+          return { model: currentModel };
+        }
       }
       return { model: currentModel };
     };

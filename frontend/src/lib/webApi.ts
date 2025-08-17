@@ -16,6 +16,12 @@ interface StartSessionRequest {
     base_url: string;
     model: string;
   };
+  gemini_auth?: {
+    method: string;
+    api_key?: string;
+    vertex_project?: string;
+    vertex_location?: string;
+  };
 }
 
 interface SendMessageRequest {
@@ -105,6 +111,12 @@ export const webApi = {
       api_key: string;
       base_url: string;
       model: string;
+    },
+    geminiAuth?: {
+      method: string;
+      api_key?: string;
+      vertex_project?: string;
+      vertex_location?: string;
     }
   ): Promise<void> {
     const request: StartSessionRequest = {
@@ -112,6 +124,7 @@ export const webApi = {
       working_directory: workingDirectory,
       model: model,
       backend_config: backendConfig,
+      gemini_auth: geminiAuth,
     };
     await apiClient.post("/start-session", request);
   },

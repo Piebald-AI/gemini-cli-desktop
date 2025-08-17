@@ -1,4 +1,5 @@
 // Module declarations
+pub mod acp;
 pub mod cli;
 pub mod events;
 pub mod filesystem;
@@ -14,14 +15,20 @@ pub mod types;
 pub mod test_utils;
 
 // Re-exports
+pub use acp::{
+    InitializeParams, InitializeResult, AuthenticateParams, SessionNewParams, SessionNewResult,
+    SessionPromptParams, SessionPromptResult, SessionUpdateParams, SessionUpdate, 
+    SessionRequestPermissionParams, PermissionResult, PermissionOutcome,
+    ToolCallStatus, ToolCallKind, ContentBlock, Location, ToolCallContentItem,
+};
 pub use cli::{
-    AssistantChunk, CommandResult, MessageChunk, PushToolCallParams, PushToolCallResult,
-    RequestToolCallConfirmationParams, RequestToolCallConfirmationResult, SendUserMessageParams,
-    StreamAssistantMessageChunkParams, UpdateToolCallParams,
+    AssistantChunk, CommandResult, MessageChunk, StreamAssistantMessageChunkParams,
 };
 pub use events::{
     CliIoPayload, CliIoType, ErrorPayload, EventEmitter, GeminiOutputPayload, GeminiThoughtPayload,
-    InternalEvent, ToolCallConfirmation, ToolCallConfirmationContent, ToolCallConfirmationRequest,
+    InternalEvent, 
+    // Legacy tool call types - kept for compatibility during ACP transition
+    ToolCallConfirmation, ToolCallConfirmationContent, ToolCallConfirmationRequest,
     ToolCallEvent, ToolCallLocation, ToolCallUpdate,
 };
 pub use filesystem::{DirEntry, VolumeType};
@@ -34,7 +41,7 @@ pub use rpc::{JsonRpcError, JsonRpcRequest, JsonRpcResponse, RpcLogger};
 pub use search::{MessageMatch, RecentChat, SearchFilters, SearchResult};
 pub use security::{execute_terminal_command, is_command_safe};
 pub use session::{
-    PersistentSession, ProcessStatus, QwenConfig, SessionManager, initialize_session,
+    PersistentSession, ProcessStatus, QwenConfig, GeminiAuthConfig, SessionManager, initialize_session,
 };
 pub use types::{BackendError, BackendResult};
 
@@ -170,6 +177,7 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
         working_directory: String,
         model: String,
         backend_config: Option<QwenConfig>,
+        gemini_auth: Option<GeminiAuthConfig>,
     ) -> BackendResult<()> {
         {
             let processes = self.session_manager.get_processes();
@@ -186,6 +194,7 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
             working_directory,
             model,
             backend_config,
+            gemini_auth,
             self.emitter.clone(),
             &self.session_manager,
         )
@@ -198,37 +207,45 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
         &self,
         session_id: String,
         message: String,
-        conversation_history: String,
+        _conversation_history: String,
     ) -> BackendResult<()> {
         println!("📤 Sending message to session: {session_id}");
 
-        let message_sender = {
+        let (message_sender, acp_session_id) = {
             let processes = self.session_manager.get_processes();
             let processes = processes.lock().map_err(|_| {
                 BackendError::SessionInitFailed("Failed to lock processes".to_string())
             })?;
-            processes
-                .get(&session_id)
-                .map_or_else(|| None, |session| session.message_sender.clone())
+            
+            if let Some(session) = processes.get(&session_id) {
+                (
+                    session.message_sender.clone(),
+                    session.acp_session_id.clone()
+                )
+            } else {
+                return Err(BackendError::SessionNotFound(session_id));
+            }
         };
 
         let message_sender = if let Some(sender) = message_sender {
             sender
         } else {
-            return Err(BackendError::SessionNotFound(session_id));
+            return Err(BackendError::SessionInitFailed("No message sender available".to_string()));
         };
 
-        let mut chunks = vec![MessageChunk::Text { text: message }];
+        let acp_session_id = if let Some(acp_id) = acp_session_id {
+            acp_id
+        } else {
+            return Err(BackendError::SessionInitFailed("No ACP session ID available".to_string()));
+        };
 
-        if !conversation_history.is_empty() {
-            chunks.insert(
-                0,
-                MessageChunk::Text {
-                    text: format!("Previous conversation context:\n{conversation_history}\n\n"),
-                },
-            );
-        }
-        let msg_params = SendUserMessageParams { chunks };
+        // Create ACP prompt content blocks
+        let prompt_blocks = vec![ContentBlock::Text { text: message }];
+        
+        let prompt_params = SessionPromptParams {
+            session_id: acp_session_id,
+            prompt: prompt_blocks,
+        };
 
         let request_id = {
             let mut id_guard = self.next_request_id.lock().unwrap();
@@ -237,44 +254,74 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
             id
         };
 
-        let msg_request = JsonRpcRequest {
+        let prompt_request = JsonRpcRequest {
             jsonrpc: "2.0".to_string(),
             id: request_id,
-            method: "sendUserMessage".to_string(),
-            params: serde_json::to_value(msg_params)
+            method: "session/prompt".to_string(),
+            params: serde_json::to_value(prompt_params)
                 .map_err(|e| BackendError::JsonError(e.to_string()))?,
         };
 
-        let request_json = serde_json::to_string(&msg_request)
+        let request_json = serde_json::to_string(&prompt_request)
             .map_err(|e| BackendError::JsonError(e.to_string()))?;
 
         message_sender
             .send(request_json)
             .map_err(|_| BackendError::ChannelError)?;
 
-        println!("✅ Message sent to persistent session: {session_id}");
+        println!("✅ ACP session/prompt sent to session: {session_id}");
         Ok(())
     }
 
     /// Handle tool call confirmation response
     pub async fn handle_tool_confirmation(
         &self,
-        session_id: String,
+        acp_session_id: String,
         request_id: u32,
         tool_call_id: String,
         outcome: String,
     ) -> BackendResult<()> {
-        println!(
-            "📤 Sending tool call confirmation response: session={session_id}, request_id={request_id}, tool_call_id={tool_call_id}, outcome={outcome}"
-        );
 
-        let response_data = RequestToolCallConfirmationResult {
-            id: tool_call_id.clone(),
-            outcome: outcome.clone(),
+        // Find the conversation ID that corresponds to this ACP session ID
+        let conversation_id = {
+            let processes = self.session_manager.get_processes();
+            let processes = processes.lock().map_err(|_| {
+                BackendError::SessionInitFailed("Failed to lock processes".to_string())
+            })?;
+            
+            let mut found_conversation_id = None;
+            for (conv_id, session) in processes.iter() {
+                if let Some(session_acp_id) = &session.acp_session_id {
+                    if session_acp_id == &acp_session_id {
+                        found_conversation_id = Some(conv_id.clone());
+                        break;
+                    }
+                }
+            }
+            
+            found_conversation_id.ok_or_else(|| {
+                BackendError::SessionNotFound(format!("No conversation found for ACP session ID: {acp_session_id}"))
+            })?
+        };
+
+
+        // Convert outcome string to ACP PermissionOutcome
+        let permission_outcome = match outcome.as_str() {
+            "proceed_once" | "proceed_always" | "proceed_always_server" | "proceed_always_tool" | "modify_with_editor" => PermissionOutcome::Selected {
+                option_id: outcome.clone(),
+            },
+            "cancel" => PermissionOutcome::Cancelled,
+            _ => PermissionOutcome::Selected {
+                option_id: outcome.clone(),
+            },
+        };
+
+        let response_data = PermissionResult {
+            outcome: permission_outcome,
         };
 
         session::send_response_to_cli(
-            &session_id,
+            &conversation_id,
             request_id,
             Some(
                 serde_json::to_value(response_data)
@@ -285,22 +332,27 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
         )
         .await;
 
-        match tool_call_id.parse::<u32>() {
-            Ok(tool_call_id_num) => {
-                let update = ToolCallUpdate {
-                    tool_call_id: tool_call_id_num,
-                    status: "completed".to_string(),
-                    content: Some(serde_json::json!({
-                        "markdown": "Tool call completed after user confirmation"
-                    })),
-                };
-                let _ = self.emit_tool_call_update(&session_id, &update);
+        
+        // Create content items for the completed tool call
+        let content_items = vec![ToolCallContentItem::Content {
+            content: ContentBlock::Text {
+                text: "Tool call completed after user confirmation".to_string()
             }
-            Err(e) => {
-                eprintln!("Failed to parse tool_call_id '{tool_call_id}' as u32: {e}");
-            }
-        }
-
+        }];
+        
+        // Create ACP SessionUpdate instead of legacy ToolCallUpdate
+        let session_update = SessionUpdate::ToolCallUpdate {
+            tool_call_id: tool_call_id.clone(),
+            status: ToolCallStatus::Completed,
+            content: content_items,
+        };
+        
+        // Emit ACP session update event - use the conversation_id (frontend conversation ID), not ACP session ID
+        let emit_result = self.emitter.emit(
+            &format!("acp-session-update-{conversation_id}"),
+            session_update,
+        );
+        emit_result?;
         Ok(())
     }
 

@@ -4,6 +4,12 @@ export interface ParsedToolInput {
   description: string;
   primaryParam: string | null;
   allParams: Record<string, unknown>;
+  formattedDescription?: {
+    parts: Array<{
+      text: string;
+      isHighlighted: boolean;
+    }>;
+  };
 }
 
 export class ToolInputParser {
@@ -25,20 +31,71 @@ export class ToolInputParser {
     const name = toolCall.name.toLowerCase();
 
     // Generate human-readable description based on tool type and parameters
-    const description = this.generateDescription(name, allParams);
+    const descriptionResult = this.generateDescription(name, allParams, toolCall.label);
     primaryParam = this.extractPrimaryParam(name, allParams);
 
     return {
-      description,
+      description: typeof descriptionResult === 'string' ? descriptionResult : descriptionResult.description,
       primaryParam,
       allParams,
+      formattedDescription: typeof descriptionResult === 'object' ? descriptionResult.formattedDescription : undefined,
     };
   }
 
   private static generateDescription(
     toolName: string,
-    params: Record<string, unknown>
-  ): string {
+    params: Record<string, unknown>,
+    label?: string
+  ): string | { description: string; formattedDescription: { parts: Array<{ text: string; isHighlighted: boolean }> } } {
+    // Helper function to parse search/glob titles like "'pattern' within path" or "'pattern' in path"
+    const parseSearchTitle = (title: string, toolType: string) => {
+      // Match patterns like "'Gemini' within ./" or "'**/*.md' within ." or "'fn main' in *.rs"
+      const withinMatch = title.match(/^'([^']+)'\s+within\s+(.+)$/);
+      if (withinMatch) {
+        const [, pattern, path] = withinMatch;
+        return {
+          description: `${toolType} ${pattern} within ${path}`,
+          formattedDescription: {
+            parts: [
+              { text: toolType + " ", isHighlighted: false },
+              { text: pattern, isHighlighted: true },
+              { text: " within ", isHighlighted: false },
+              { text: path, isHighlighted: true }
+            ]
+          }
+        };
+      }
+      
+      // Match patterns like "'fn main' in *.rs within crates\\server\\src"
+      const inMatch = title.match(/^'([^']+)'\s+in\s+([^']+?)\s+within\s+(.+)$/);
+      if (inMatch) {
+        const [, pattern, filePattern, path] = inMatch;
+        return {
+          description: `${toolType} ${pattern} in ${filePattern} within ${path}`,
+          formattedDescription: {
+            parts: [
+              { text: toolType + " ", isHighlighted: false },
+              { text: pattern, isHighlighted: true },
+              { text: " in ", isHighlighted: false },
+              { text: filePattern, isHighlighted: true },
+              { text: " within ", isHighlighted: false },
+              { text: path, isHighlighted: true }
+            ]
+          }
+        };
+      }
+      const cleanTitle = title.replace(/^'|'$/g, ""); // Remove end and start quotes
+      return {
+        description: `${toolType} ${cleanTitle}`,
+        formattedDescription: {
+          parts: [
+            { text: toolType + " ", isHighlighted: false },
+            { text: cleanTitle, isHighlighted: true }
+          ]
+        }
+      };
+    };
+
     switch (toolName) {
       case "list_directory": {
         const locations = params.locations;
@@ -57,10 +114,23 @@ export class ToolInputParser {
         return `Searching for "${pattern}" in ${searchPath}`;
       }
 
-      case "grep":
-      case "glob": {
-        const pattern = params.pattern || params.query || params.glob || "files";
+      case "search_file_content":
+      case "grep": {
+        // Use the parsed title if available (from ACP updates)
+        if (label) {
+          return parseSearchTitle(label, "Grepped");
+        }
+        const pattern = params.pattern || params.query || "unknown pattern";
         return `Searching ${pattern}`;
+      }
+
+      case "glob": {
+        // Use the parsed title if available (from ACP updates) 
+        if (label) {
+          return parseSearchTitle(label, "Globbed");
+        }
+        const pattern = params.pattern || params.glob || "files";
+        return `Finding ${pattern}`;
       }
 
       case "read_file": {
@@ -85,6 +155,7 @@ export class ToolInputParser {
           : `Creating file ${writeFile}`;
       }
 
+      case "run_shell_command":
       case "execute_command": {
         const command = params.command || params.cmd || "unknown command";
         // Truncate long commands
@@ -120,6 +191,7 @@ export class ToolInputParser {
         return `Moving ${moveSource} to ${moveDest}`;
       }
 
+      case "google_web_search":
       case "web_search":
       case "search_web": {
         const query = params.query || params.q || "unknown query";
@@ -139,6 +211,11 @@ export class ToolInputParser {
       }
 
       default: {
+        // If we have a label, try to use it directly for unknown tools
+        if (label) {
+          return `Using ${toolName}: ${label}`;
+        }
+        
         // Generic fallback
         const mainParam = this.extractPrimaryParam(toolName, params);
         if (mainParam) {

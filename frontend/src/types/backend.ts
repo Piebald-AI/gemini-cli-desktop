@@ -1,11 +1,17 @@
 // Backend type definitions
 export type BackendType = 'gemini' | 'qwen';
 
+export type GeminiAuthMethod = 'oauth-personal' | 'gemini-api-key' | 'vertex-ai' | 'cloud-shell';
+
 export interface GeminiConfig {
   type: 'gemini';
-  useOAuth: boolean;
+  authMethod: GeminiAuthMethod;
+  apiKey: string;
   models: string[];
   defaultModel: string;
+  // Vertex AI specific fields
+  vertexProject?: string;
+  vertexLocation?: string;
 }
 
 export interface QwenConfig {

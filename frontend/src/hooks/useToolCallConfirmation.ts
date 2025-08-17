@@ -23,6 +23,7 @@ export const useToolCallConfirmation = ({
     async (toolCallId: string, outcome: string) => {
       const confirmationRequest = confirmationRequests.get(toolCallId);
       if (!confirmationRequest) {
+        console.error("No confirmation request found for toolCallId:", toolCallId);
         return;
       }
 
@@ -35,8 +36,9 @@ export const useToolCallConfirmation = ({
         });
 
         // If approved, update the tool call status in the UI
-        if (outcome === "allow" || outcome.startsWith("alwaysAllow")) {
+        if (outcome === "proceed_once" || outcome === "proceed_always" || outcome === "proceed_always_server" || outcome === "proceed_always_tool" || outcome.startsWith("alwaysAllow")) {
           updateConversation(activeConversation!, (conv) => {
+            let found = false;
             for (const msg of conv.messages) {
               for (const msgPart of msg.parts) {
                 if (
@@ -49,14 +51,19 @@ export const useToolCallConfirmation = ({
                   msgPart.toolCall.status = "running";
                   msgPart.toolCall.confirmationRequest =
                     preservedConfirmationRequest;
+                  found = true;
                   return;
                 }
               }
+            }
+            if (!found) {
+              console.error("Tool call not found for status update:", toolCallId);
             }
           });
         } else {
           // If rejected, mark as failed
           updateConversation(activeConversation!, (conv) => {
+            let found = false;
             for (const msg of conv.messages) {
               for (const msgPart of msg.parts) {
                 if (
@@ -67,9 +74,15 @@ export const useToolCallConfirmation = ({
                   msgPart.toolCall.result = {
                     markdown: "Tool call rejected by user",
                   };
+                  // Add a permanent rejection flag that can't be overridden
+                  (msgPart.toolCall as any).isUserRejected = true;
+                  found = true;
                   return;
                 }
               }
+            }
+            if (!found) {
+              console.error("🔧 [EDIT-DEBUG] Tool call not found in conversation for rejection:", toolCallId);
             }
           });
         }

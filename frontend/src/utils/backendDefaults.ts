@@ -2,9 +2,12 @@ import { BackendState, GeminiConfig, QwenConfig } from '../types/backend';
 
 export const defaultGeminiConfig: GeminiConfig = {
   type: 'gemini',
-  useOAuth: false,
+  authMethod: 'oauth-personal',
+  apiKey: '',
   models: ['gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'],
   defaultModel: 'gemini-2.5-flash',
+  vertexProject: '',
+  vertexLocation: 'us-central1',
 };
 
 export const defaultQwenConfig: QwenConfig = {

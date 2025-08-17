@@ -110,45 +110,12 @@ export const HomeDashboard: React.FC = () => {
                             confirmationRequest as
                               | ToolCallConfirmationRequest
                               | undefined;
-                          console.log(
-                            "🎨 Rendering tool call in HomeDashboard:",
-                            {
-                              toolCallId: msgPart.toolCall.id,
-                              toolCallName: msgPart.toolCall.name,
-                              hasConfirmation,
-                              confirmationRequestExists: !!confirmationRequest,
-                              confirmationMapSize: confirmationRequests.size,
-                              confirmationMapKeys: Array.from(
-                                confirmationRequests.keys()
-                              ),
-                              confirmationType:
-                                confirmationRequest?.confirmation?.type,
-                              // Debug the actual confirmation request object
-                              confirmationRequestRaw: confirmationRequest,
-                              confirmationContentExists:
-                                !!confirmationRequest?.content,
-                              confirmationContentType:
-                                confirmationRequest?.content?.type,
-                            }
-                          );
-
-                          console.log(
-                            "🔥 About to pass confirmationRequest to ToolCallDisplay:",
-                            confirmationRequest
-                          );
-                          console.log(
-                            "🔥 Typed version:",
-                            confirmationRequestTyped
-                          );
+                          console.log("Confirmation request typed:", confirmationRequestTyped);
 
                           // Try with explicit undefined check
                           const finalConfirmationRequest = confirmationRequest
                             ? confirmationRequest
                             : undefined;
-                          console.log(
-                            "🔥 Final confirmation request:",
-                            finalConfirmationRequest
-                          );
 
                           return (
                             <ToolCallDisplay
@@ -166,7 +133,8 @@ export const HomeDashboard: React.FC = () => {
                   )}
 
                   {currentConversation.isStreaming &&
-                    index === currentConversation.messages.length - 1 && (
+                    index === currentConversation.messages.length - 1 &&
+                    message.parts.some(part => part.type === "text" || part.type === "thinking") && (
                       <div className="text-gray-400 italic text-xs">
                         <span className="animate-pulse">●</span> Generating...
                       </div>

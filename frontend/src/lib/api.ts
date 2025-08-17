@@ -115,12 +115,19 @@ export const api = {
               base_url: string;
               model: string;
             };
+            geminiAuth?: {
+              method: string;
+              api_key?: string;
+              vertex_project?: string;
+              vertex_location?: string;
+            };
           };
           return webApi.start_session(
             sessionArgs.sessionId,
             sessionArgs.workingDirectory,
             sessionArgs.model,
-            sessionArgs.backendConfig
+            sessionArgs.backendConfig,
+            sessionArgs.geminiAuth
           ) as Promise<T>;
         }
         default:

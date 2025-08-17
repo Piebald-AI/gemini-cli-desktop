@@ -37,7 +37,7 @@ export const useMessageHandler = ({
   fetchProcessStatuses,
 }: UseMessageHandlerProps) => {
   const [input, setInput] = useState("");
-  const { selectedBackend, getApiConfig } = useBackend();
+  const { selectedBackend, getApiConfig, state: backendState } = useBackend();
 
   const handleInputChange = useCallback(
     (
@@ -119,7 +119,8 @@ export const useMessageHandler = ({
         convId = Date.now().toString();
         createNewConversation(convId, input.slice(0, 50), [newMessage], true);
         setActiveConversation(convId);
-        setupEventListenerForConversation(convId);
+        // IMPORTANT: Wait for event listeners to be fully set up before proceeding
+        await setupEventListenerForConversation(convId);
       }
 
       const messageText = input;
@@ -144,35 +145,44 @@ export const useMessageHandler = ({
       }
 
       try {
-        // Build conversation history for context - only include recent messages to avoid too long prompts.
-        // TODO 08/01/2025: Fix this conversation history stuff.
-        const recentMessages = currentConversation?.messages.slice(-10) || []; // Last 10 messages
-        const history = recentMessages
-          .map(
-            (msg) =>
-              `${msg.sender === "user" ? "User" : "Assistant"}: ${
-                msg.parts[0]?.type === "text" ? msg.parts[0].text : ""
-              }`
-          )
-          .join("\n");
+        // First ensure the session is initialized
+        // Prepare session parameters based on backend type
+        const sessionParams: any = {
+          sessionId: convId,
+          workingDirectory: ".", // Use current directory as default
+          model: selectedModel,
+        };
 
-        // Get backend configuration if using Qwen
+        // Get backend configuration
+        const apiConfig = getApiConfig();
         let backendConfig = undefined;
+        
         if (selectedBackend === 'qwen') {
-          const apiConfig = getApiConfig();
           if (apiConfig && apiConfig.api_key) {
             backendConfig = {
               api_key: apiConfig.api_key,
               base_url: apiConfig.base_url || 'https://openrouter.ai/api/v1',
               model: apiConfig.model || selectedModel,
             };
+            sessionParams.backend_config = backendConfig;
           }
+        } else if (selectedBackend === 'gemini') {
+          const geminiConfig = backendState.configs.gemini;
+          sessionParams.geminiAuth = {
+            method: geminiConfig.authMethod,
+            api_key: geminiConfig.authMethod === 'gemini-api-key' ? geminiConfig.apiKey : undefined,
+            vertex_project: geminiConfig.authMethod === 'vertex-ai' ? geminiConfig.vertexProject : undefined,
+            vertex_location: geminiConfig.authMethod === 'vertex-ai' ? geminiConfig.vertexLocation : undefined,
+          };
         }
+
+        // Initialize session (it will skip if already initialized)
+        await api.invoke("start_session", sessionParams);
 
         await api.invoke("send_message", {
           sessionId: convId,
           message: messageText,
-          conversationHistory: history,
+          conversationHistory: "", // Empty since persistent sessions maintain their own context
           model: selectedModel,
           backendConfig,
         });

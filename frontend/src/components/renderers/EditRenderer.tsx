@@ -1,13 +1,8 @@
 import { useState } from "react";
-import { Edit3, Check, X, ChevronDown } from "lucide-react";
+import { Edit3, Check, X, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "../ui/dropdown-menu";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "../ui/collapsible";
 import { DiffViewer } from "../common/DiffViewer";
 import { type ToolCall } from "../../utils/toolCallParser";
 
@@ -39,8 +34,24 @@ export function EditRenderer({ toolCall, onConfirm }: EditRendererProps) {
     additions: number;
     deletions: number;
   }>({ additions: 0, deletions: 0 });
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const result = (toolCall.result as EditResult) || {};
+  
+  const isUserRejected = (toolCall: ToolCall): boolean => {
+    // Check the permanent rejection flag first
+    // TODO 8/17/2025: Get rid of `any`.
+    if ((toolCall as any).isUserRejected) {
+      return true;
+    }
+    
+    // Fallback to checking the result markdown
+    if (toolCall.status === "failed" && toolCall.result && typeof toolCall.result === "object") {
+      return toolCall.result.markdown === "Tool call rejected by user";
+    }
+    return false;
+  };
+  
 
   // Extract edit information from parameters, result, and JSON-RPC confirmation request
   const getEditInfo = () => {
@@ -148,137 +159,125 @@ export function EditRenderer({ toolCall, onConfirm }: EditRendererProps) {
   return (
     <div className="my-4">
       <Card
-        className={`${
-          isFailed
+        className={`py-0 ${
+          isUserRejected(toolCall)
             ? "border-red-200 dark:border-red-800"
-            : isCompleted
-              ? "border-green-200 dark:border-green-800"
-              : "border-blue-200 dark:border-blue-800"
+            : isFailed
+              ? "border-red-200 dark:border-red-800"
+              : isCompleted
+                ? "border-green-200 dark:border-green-800"
+                : "border-blue-200 dark:border-blue-800"
         }`}
       >
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Edit3
-                className={`h-4 w-4 ${
-                  isFailed
-                    ? "text-red-500"
-                    : isCompleted
-                      ? "text-green-500"
-                      : "text-blue-500"
-                }`}
-              />
-              <CardTitle className="text-sm font-mono">
-                {editInfo.type === "single"
-                  ? editInfo.filePath
-                  : "(multiple files)"}
-                <span className="ml-2 text-xs font-normal text-muted-foreground">
-                  <span className="text-green-600 dark:text-green-400">
-                    +{diffStats.additions}
-                  </span>{" "}
-                  <span className="text-red-600 dark:text-red-400">
-                    -{diffStats.deletions}
-                  </span>
-                </span>
-              </CardTitle>
-            </div>
-
-            <div className="flex items-center gap-2">
-              {/* Show status indicators */}
-              {isRunning && (
-                <div className="text-xs text-blue-500 flex items-center gap-1">
-                  <div className="animate-spin h-3 w-3 border border-blue-500 border-t-transparent rounded-full"></div>
-                  Running...
+        <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+          <CollapsibleTrigger className="!no-underline hover:!no-underline [&:hover]:!no-underline [&>*]:!no-underline" asChild>
+            {/* TODO 8/17/2025: Look in to the confusing styles. */}
+            <div className="cursor-pointer w-full [&_*]:!no-underline" style={{ textDecoration: 'none !important' }}>
+              <CardHeader className="!no-underline py-2 gap-0"
+                style={{ textDecoration: 'none !important' }}>
+              <div className="flex items-center justify-between gap-4 w-full">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <Edit3
+                    className={`h-4 w-4 flex-shrink-0 ${
+                      isUserRejected(toolCall)
+                        ? "text-red-500"
+                        : isFailed
+                          ? "text-red-500"
+                          : isCompleted
+                            ? "text-green-500"
+                            : "text-blue-500"
+                    }`}
+                  />
+                  <CardTitle className="text-sm font-mono truncate">
+                    {editInfo.type === "single"
+                      ? editInfo.filePath
+                      : "(multiple files)"}
+                    <span className="ml-2 text-xs font-normal text-muted-foreground">
+                      <span className="text-green-600 dark:text-green-400">
+                        +{diffStats.additions}
+                      </span>{" "}
+                      <span className="text-red-600 dark:text-red-400">
+                        -{diffStats.deletions}
+                      </span>
+                    </span>
+                  </CardTitle>
                 </div>
-              )}
-              {isCompleted && (
-                <div className="text-xs text-green-500">✓ Completed</div>
-              )}
-              {isFailed && <div className="text-xs text-red-500">✗ Failed</div>}
 
-              {/* Show buttons for pending, hide for running */}
-              {isPending && (
-                <>
-                  <Button
-                    size="sm"
-                    className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 text-xs"
-                    onClick={() => {
-                      onConfirm?.(toolCall.id, "allow");
-                    }}
-                  >
-                    <Check className="h-3 w-3 mr-1" />
-                    Accept
-                  </Button>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {/* Show status indicators */}
+                  {isRunning && (
+                    <div className="text-xs text-blue-500 flex items-center gap-1">
+                      <div className="animate-spin h-3 w-3 border border-blue-500 border-t-transparent rounded-full"></div>
+                      Running...
+                    </div>
+                  )}
+                  {isCompleted && !isUserRejected(toolCall) && (
+                    <div className="text-xs text-green-500 flex items-center"><Check className="h-4 w-4 mr-1" /> Completed</div>
+                  )}
+                  {isUserRejected(toolCall) && (
+                    <div className="text-xs text-red-500 flex items-center"><X className="h-4 w-4 mr-1" /> Rejected</div>
+                  )}
+                  {isFailed && !isUserRejected(toolCall) && (
+                    <div className="text-xs text-red-500 flex items-center"><X className="h-4 w-4 mr-1" /> Failed</div>
+                  )}
 
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
+                  {/* Show buttons for pending, hide for running */}
+                  {isPending && (
+                    <>
                       <Button
                         size="sm"
-                        variant="outline"
-                        className="px-2 py-1 text-xs"
+                        className="bg-green-600 hover:bg-green-600 text-white px-3 py-1 text-xs"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onConfirm?.(toolCall.id, "proceed_once");
+                        }}
                       >
-                        <ChevronDown className="h-3 w-3" />
+                        <Check className="h-3 w-3 mr-1" />
+                        Allow
                       </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
-                      <DropdownMenuItem
-                        onClick={() => onConfirm?.(toolCall.id, "alwaysAllow")}
-                      >
-                        Always allow edits from this agent
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() =>
-                          onConfirm?.(toolCall.id, "alwaysAllowTool")
-                        }
-                      >
-                        Always allow this tool
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() =>
-                          onConfirm?.(toolCall.id, "alwaysAllowMcpServer")
-                        }
-                      >
-                        Always allow MCP server
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
 
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    className="px-3 py-1 text-xs"
-                    onClick={() => onConfirm?.(toolCall.id, "reject")}
-                  >
-                    <X className="h-3 w-3 mr-1" />
-                    Reject
-                  </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="px-3 py-1 text-xs"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onConfirm?.(toolCall.id, "cancel");
+                        }}
+                      >
+                        <X className="h-3 w-3 mr-1" />
+                        Deny
+                      </Button>
+                    </>
+                  )}
 
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="px-3 py-1 text-xs"
-                    onClick={() => onConfirm?.(toolCall.id, "cancel")}
-                  >
-                    Cancel
-                  </Button>
-                </>
-              )}
+                  {/* Expand/collapse chevron */}
+                  {isExpanded ? (
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </div>
+              </div>
+              </CardHeader>
             </div>
-          </div>
-        </CardHeader>
+          </CollapsibleTrigger>
 
-        <CardContent>
-          <DiffViewer
-            oldText={editInfo.type === "single" ? editInfo.oldText : ""}
-            newText={editInfo.type === "single" ? editInfo.newText : ""}
-            fileName={
-              editInfo.type === "single"
-                ? editInfo.filePath
-                : "(multiple files)"
-            }
-            onStatsCalculated={setDiffStats}
-          />
-        </CardContent>
+          <CollapsibleContent>
+            <CardContent>
+              <DiffViewer
+                oldText={editInfo.type === "single" ? editInfo.oldText : ""}
+                newText={editInfo.type === "single" ? editInfo.newText : ""}
+                fileName={
+                  editInfo.type === "single"
+                    ? editInfo.filePath
+                    : "(multiple files)"
+                }
+                onStatsCalculated={setDiffStats}
+              />
+            </CardContent>
+          </CollapsibleContent>
+        </Collapsible>
       </Card>
     </div>
   );

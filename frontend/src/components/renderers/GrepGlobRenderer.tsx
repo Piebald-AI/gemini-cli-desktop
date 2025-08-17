@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { ChevronRight, Search } from "lucide-react";
+import { ChevronRight, Search, Regex } from "lucide-react";
 import { type ToolCall } from "../../utils/toolCallParser";
+import { ToolInputParser } from "../../utils/toolInputParser";
 
 interface GrepGlobResult {
   markdown?: string;
@@ -15,17 +16,8 @@ export function GrepGlobRenderer({ toolCall }: GrepGlobRendererProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const result = toolCall.result as GrepGlobResult;
 
-  // Extract search pattern from tool call label
-  const getSearchPattern = (): string => {
-    // First try the label field (this should have the search pattern like '**/Cargo.toml')
-    if (toolCall.label && toolCall.label.trim()) {
-      const cleanLabel = toolCall.label.replace(/['"]/g, "");
-      return cleanLabel;
-    }
-
-    // Fallback to generic "files"
-    return "files";
-  };
+  // Parse the tool input to get formatted description
+  const parsedInput = ToolInputParser.parseToolInput(toolCall);
 
   // Get the summary message from the result
   const getSummary = (): string => {
@@ -49,8 +41,17 @@ export function GrepGlobRenderer({ toolCall }: GrepGlobRendererProps) {
     return "Search completed";
   };
 
-  const searchPattern = getSearchPattern();
   const summary = getSummary();
+
+  // Choose icon based on tool type
+  const getIcon = () => {
+    if (toolCall.name === "glob") {
+      return Regex;
+    }
+    return Search; // Default for grep and other search tools
+  };
+
+  const IconComponent = getIcon();
 
   return (
     <div className="mt-4">
@@ -58,9 +59,19 @@ export function GrepGlobRenderer({ toolCall }: GrepGlobRendererProps) {
         className="flex items-center gap-2 text-sm px-2 py-1 cursor-pointer hover:bg-muted/50 rounded-lg transition-colors"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <Search className="h-4 w-4 text-blue-500" />
-        <span>Searched </span>
-        <span className="text-muted-foreground">{searchPattern}</span>
+        <IconComponent className="h-4 w-4 text-blue-500" />
+        {parsedInput.formattedDescription ? (
+          parsedInput.formattedDescription.parts.map((part, index) => (
+            <span
+              key={index}
+              className={part.isHighlighted ? "text-muted-foreground" : ""}
+            >
+              {part.text}
+            </span>
+          ))
+        ) : (
+          <span>{parsedInput.description}</span>
+        )}
         <ChevronRight
           className={`h-4 w-4 text-muted-foreground transition-transform ${
             isExpanded ? "rotate-90" : ""

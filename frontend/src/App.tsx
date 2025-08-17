@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { Routes, Route, Outlet, Navigate } from "react-router-dom";
 import { api } from "./lib/api";
 import { AppSidebar } from "./components/layout/AppSidebar";
@@ -7,7 +7,7 @@ import { AppHeader } from "./components/layout/AppHeader";
 import { CliWarnings } from "./components/common/CliWarnings";
 import { SidebarInset } from "./components/ui/sidebar";
 import { ConversationContext } from "./contexts/ConversationContext";
-import { BackendProvider, useApiConfig, useCurrentBackend, useBackend } from "./contexts/BackendContext";
+import { BackendProvider, useApiConfig, useBackend } from "./contexts/BackendContext";
 import { HomeDashboard } from "./pages/HomeDashboard";
 import ProjectsPage from "./pages/Projects";
 import ProjectDetailPage from "./pages/ProjectDetail";
@@ -31,8 +31,7 @@ function RootLayoutContent() {
 
   // Use backend context instead of local state
   const { apiConfig } = useApiConfig();
-  const { model: currentModel } = useCurrentBackend();
-  const { selectedBackend } = useBackend();
+  const { selectedBackend, state: backendState } = useBackend();
 
   // Custom hooks for cleaner code
   const isCliInstalled = useCliInstallation(selectedBackend);
@@ -97,13 +96,30 @@ function RootLayoutContent() {
 
       if (workingDirectory) {
         console.log("Debug - apiConfig:", apiConfig);
+        console.log("Debug - selectedBackend:", selectedBackend);
 
-        await api.invoke("start_session", {
+        // Prepare session parameters based on backend type
+        const sessionParams: any = {
           sessionId: convId,
           workingDirectory,
           model: selectedModel,
-          backend_config: apiConfig,
-        });
+        };
+
+        // For Qwen backend, pass full backend_config
+        // For Gemini backend, pass geminiAuth with the appropriate configuration
+        if (selectedBackend === 'qwen') {
+          sessionParams.backend_config = apiConfig;
+        } else if (selectedBackend === 'gemini') {
+          const geminiConfig = backendState.configs.gemini;
+          sessionParams.geminiAuth = {
+            method: geminiConfig.authMethod,
+            api_key: geminiConfig.authMethod === 'gemini-api-key' ? geminiConfig.apiKey : undefined,
+            vertex_project: geminiConfig.authMethod === 'vertex-ai' ? geminiConfig.vertexProject : undefined,
+            vertex_location: geminiConfig.authMethod === 'vertex-ai' ? geminiConfig.vertexLocation : undefined,
+          };
+        }
+
+        await api.invoke("start_session", sessionParams);
       }
 
       await setupEventListenerForConversation(convId);
@@ -111,6 +127,7 @@ function RootLayoutContent() {
     },
     [
       selectedModel,
+      selectedBackend,
       apiConfig,
       createNewConversation,
       setActiveConversation,
@@ -139,7 +156,7 @@ function RootLayoutContent() {
           />
 
           <ConversationContext.Provider
-            value={{
+            value={useMemo(() => ({
               conversations,
               activeConversation,
               currentConversation,
@@ -153,7 +170,21 @@ function RootLayoutContent() {
               startNewConversation,
               handleConfirmToolCall,
               confirmationRequests,
-            }}
+            }), [
+              conversations,
+              activeConversation,
+              currentConversation,
+              input,
+              isCliInstalled,
+              messagesContainerRef,
+              cliIOLogs,
+              handleInputChange,
+              handleSendMessage,
+              selectedModel,
+              startNewConversation,
+              handleConfirmToolCall,
+              confirmationRequests,
+            ])}
           >
             <Outlet />
           </ConversationContext.Provider>

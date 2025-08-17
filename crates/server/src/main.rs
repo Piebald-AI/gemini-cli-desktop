@@ -205,6 +205,7 @@ struct StartSessionRequest {
     working_directory: Option<String>,
     model: Option<String>,
     backend_config: Option<backend::session::QwenConfig>,
+    gemini_auth: Option<backend::session::GeminiAuthConfig>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -214,6 +215,7 @@ struct SendMessageRequest {
     conversation_history: String,
     model: Option<String>,
     backend_config: Option<backend::session::QwenConfig>,
+    gemini_auth: Option<backend::session::GeminiAuthConfig>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -389,7 +391,7 @@ async fn start_session(request: Json<StartSessionRequest>, state: &State<AppStat
             .model
             .unwrap_or_else(|| "gemini-2.0-flash-exp".to_string());
         match backend
-            .initialize_session(req.session_id, working_directory, model, req.backend_config)
+            .initialize_session(req.session_id, working_directory, model, req.backend_config, req.gemini_auth.clone())
             .await
         {
             Ok(_) => Status::Ok,
@@ -426,7 +428,7 @@ async fn send_message(request: Json<SendMessageRequest>, state: &State<AppState>
         let model = req.model.unwrap_or_else(|| "gemini-2.0-flash-exp".to_string());
         // Initialize session with minimal working directory (current directory)
         match backend
-            .initialize_session(req.session_id.clone(), ".".to_string(), model, req.backend_config)
+            .initialize_session(req.session_id.clone(), ".".to_string(), model, req.backend_config, req.gemini_auth)
             .await
         {
             Ok(_) => {},

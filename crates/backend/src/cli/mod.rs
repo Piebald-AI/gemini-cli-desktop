@@ -1,5 +1,4 @@
 use crate::events::ToolCallLocation;
-use crate::rpc::deserialize_string_or_number;
 use serde::de::{Deserializer, Error as DeError};
 use serde::{Deserialize, Serialize};
 
@@ -43,8 +42,7 @@ pub struct PushToolCallResult {
 pub struct UpdateToolCallParams {
     #[serde(rename = "toolCallId")]
     #[serde(alias = "tool_call_id")]
-    #[serde(deserialize_with = "deserialize_string_or_number")]
-    pub tool_call_id: u32,
+    pub tool_call_id: String,
     pub status: String,
     pub content: Option<serde_json::Value>,
 }

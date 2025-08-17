@@ -50,6 +50,7 @@ export function ConversationList({
   // Use backend context instead of props
   const { selectedBackend, switchBackend } = useBackend();
   const { config: qwenConfig, updateConfig: updateQwenConfig } = useBackendConfig('qwen');
+  const { config: geminiConfig, updateConfig: updateGeminiConfig } = useBackendConfig('gemini');
   const { isMobile, setOpenMobile } = useSidebar();
   const backendText = getBackendText(selectedBackend);
   const [selectedConversationForEnd, setSelectedConversationForEnd] = useState<{
@@ -262,44 +263,169 @@ export function ConversationList({
           </div>
         )}
 
-        {/* Model Selector - Only show for Gemini backend */}
+        {/* Gemini Configuration */}
         {selectedBackend === "gemini" && (
-          <div className="mt-4">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
-              Model
-            </label>
-            <Select
-              value={selectedModel}
-              onValueChange={(value) => {
-                console.log("Model changed to:", value);
-                setSelectedModel(value);
-                onModelChange?.(value);
-              }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select a model" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="gemini-2.5-pro">Gemini 2.5 Pro</SelectItem>
-                <SelectItem value="gemini-2.5-flash">
-                  Gemini 2.5 Flash
-                </SelectItem>
-                <SelectItem value="gemini-2.5-flash-lite">
-                  <div className="flex items-center gap-2">
-                    <span>Gemini 2.5 Flash-Lite</span>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <AlertTriangle className="h-4 w-4 text-yellow-500" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Still waitin'...</p>
-                      </TooltipContent>
-                    </Tooltip>
+          <>
+            <div className="mt-4">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                Model
+              </label>
+              <Select
+                value={selectedModel}
+                onValueChange={(value) => {
+                  console.log("Model changed to:", value);
+                  setSelectedModel(value);
+                  updateGeminiConfig({ defaultModel: value });
+                  onModelChange?.(value);
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a model" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="gemini-2.5-pro">Gemini 2.5 Pro</SelectItem>
+                  <SelectItem value="gemini-2.5-flash">
+                    Gemini 2.5 Flash
+                  </SelectItem>
+                  <SelectItem value="gemini-2.5-flash-lite">
+                    <div className="flex items-center gap-2">
+                      <span>Gemini 2.5 Flash-Lite</span>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Still waitin'...</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Gemini Authentication Configuration */}
+            <div className="space-y-3 mt-4">
+              {/* Authentication Method Selector */}
+              <div>
+                <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
+                  Authentication Method
+                </label>
+                <Select
+                  value={geminiConfig.authMethod}
+                  onValueChange={(value) => 
+                    updateGeminiConfig({ authMethod: value as any })
+                  }
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select authentication method" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="oauth-personal">
+                      <div className="flex flex-col">
+                        <span>Google OAuth</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="gemini-api-key">
+                      <div className="flex flex-col">
+                        <span>API Key</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="vertex-ai">
+                      <div className="flex flex-col">
+                        <span>Vertex AI</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="cloud-shell">
+                      <div className="flex flex-col">
+                        <span>Cloud Shell</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* API Key input - only show for API key auth */}
+              {geminiConfig.authMethod === 'gemini-api-key' && (
+                <div>
+                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
+                    Gemini API Key
+                  </label>
+                  <Input
+                    type="password"
+                    value={geminiConfig.apiKey}
+                    onChange={(e) =>
+                      updateGeminiConfig({
+                        apiKey: e.target.value,
+                      })
+                    }
+                    placeholder="Enter your Gemini API key"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Get your API key from{" "}
+                    <a
+                      href="https://aistudio.google.com/apikey"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-500 hover:underline"
+                    >
+                      Google AI Studio
+                    </a>
+                  </p>
+                </div>
+              )}
+
+              {/* Vertex AI configuration - only show for Vertex AI auth */}
+              {geminiConfig.authMethod === 'vertex-ai' && (
+                <>
+                  <div>
+                    <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
+                      Google Cloud Project ID
+                    </label>
+                    <Input
+                      type="text"
+                      value={geminiConfig.vertexProject || ''}
+                      onChange={(e) =>
+                        updateGeminiConfig({
+                          vertexProject: e.target.value,
+                        })
+                      }
+                      placeholder="your-project-id"
+                    />
                   </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+                  <div>
+                    <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
+                      Location/Region
+                    </label>
+                    <Input
+                      type="text"
+                      value={geminiConfig.vertexLocation || ''}
+                      onChange={(e) =>
+                        updateGeminiConfig({
+                          vertexLocation: e.target.value,
+                        })
+                      }
+                      placeholder="us-central1"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* OAuth information */}
+              {geminiConfig.authMethod === 'oauth-personal' && (
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  1000 free requests per day, 60 free requests per minute.
+                </p>
+              )}
+
+              {/* Cloud Shell information */}
+              {geminiConfig.authMethod === 'cloud-shell' && (
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  This method works automatically in Google Cloud Shell environments
+                </p>
+              )}
+            </div>
+          </>
         )}
       </div>
 

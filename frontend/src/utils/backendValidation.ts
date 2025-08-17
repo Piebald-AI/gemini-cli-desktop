@@ -12,6 +12,27 @@ export const isValidUrl = (url: string): boolean => {
 export const validateGeminiConfig = (config: GeminiConfig): ValidationResult => {
   const errors: string[] = [];
   
+  // Check authentication requirements based on method
+  switch (config.authMethod) {
+    case 'gemini-api-key':
+      if (!config.apiKey || !config.apiKey.trim()) {
+        errors.push('API Key is required for API key authentication');
+      }
+      break;
+    case 'vertex-ai':
+      if (!config.vertexProject || !config.vertexProject.trim()) {
+        errors.push('Google Cloud Project ID is required for Vertex AI');
+      }
+      if (!config.vertexLocation || !config.vertexLocation.trim()) {
+        errors.push('Google Cloud Location is required for Vertex AI');
+      }
+      break;
+    case 'oauth-personal':
+    case 'cloud-shell':
+      // No additional fields required for these methods
+      break;
+  }
+  
   if (!config.models || config.models.length === 0) {
     errors.push('At least one model must be available');
   }

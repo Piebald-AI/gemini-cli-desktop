@@ -19,17 +19,31 @@ pub enum InternalEvent {
         session_id: String,
         payload: GeminiThoughtPayload,
     },
+    // Legacy events - DEPRECATED: Use ACP events instead
+    #[deprecated(note = "Use AcpSessionUpdate instead")]
     ToolCall {
         session_id: String,
         payload: ToolCallEvent,
     },
+    #[deprecated(note = "Use AcpSessionUpdate instead")]
     ToolCallUpdate {
         session_id: String,
         payload: ToolCallUpdate,
     },
+    #[deprecated(note = "Use AcpPermissionRequest instead")]
     ToolCallConfirmation {
         session_id: String,
         payload: ToolCallConfirmationRequest,
+    },
+    // Pure ACP events - the future
+    AcpSessionUpdate {
+        session_id: String,
+        update: crate::acp::SessionUpdate,
+    },
+    AcpPermissionRequest {
+        session_id: String,
+        request_id: u64,
+        request: crate::acp::SessionRequestPermissionParams,
     },
     GeminiTurnFinished {
         session_id: String,
@@ -83,7 +97,7 @@ pub struct ToolCallEvent {
 #[serde(rename_all = "camelCase")]
 pub struct ToolCallUpdate {
     #[serde(rename = "toolCallId")]
-    pub tool_call_id: u32,
+    pub tool_call_id: String,
     pub status: String,
     pub content: Option<serde_json::Value>,
 }
@@ -431,7 +445,7 @@ mod tests {
     #[test]
     fn test_tool_call_update_serialization() {
         let update = ToolCallUpdate {
-            tool_call_id: 456,
+            tool_call_id: "456".to_string(),
             status: "completed".to_string(),
             content: Some(json!({"result": "success"})),
         };
@@ -450,7 +464,7 @@ mod tests {
     #[test]
     fn test_tool_call_update_without_content() {
         let update = ToolCallUpdate {
-            tool_call_id: 789,
+            tool_call_id: "789".to_string(),
             status: "failed".to_string(),
             content: None,
         };
@@ -660,7 +674,7 @@ mod tests {
         let tool_update_event = InternalEvent::ToolCallUpdate {
             session_id: "session5".to_string(),
             payload: ToolCallUpdate {
-                tool_call_id: 1,
+                tool_call_id: "1".to_string(),
                 status: "completed".to_string(),
                 content: None,
             },
