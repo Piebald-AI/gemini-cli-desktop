@@ -321,9 +321,9 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
       ></div>
 
       {/* Right section with window controls - exact Segoe Fluent Icons implementation */}
-      <div className="flex items-center">
+      <div className="flex items-center h-full">
         <button
-          className="transition text-[10px] size-[48px] hover:bg-[rgba(0,_0,_0,_0.0373)] active:bg-[rgba(0,_0,_0,_0.0241)] active:text-[rgba(0,_0,_0,_0.6063)] font-['Segoe_Fluent_Icons',_'Segoe_MDL2_Assets']"
+          className="transition text-[10px] w-[46px] h-full hover:bg-muted active:bg-muted/80 font-['Segoe_Fluent_Icons',_'Segoe_MDL2_Assets']"
           tabIndex={-1}
           onClick={handleMinimize}
           onMouseDown={(e) => e.stopPropagation()}
@@ -331,7 +331,7 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
           &#xE921;
         </button>
         <button
-          className="transition text-[10px] size-[48px] hover:bg-[rgba(0,_0,_0,_0.0373)] active:bg-[rgba(0,_0,_0,_0.0241)] active:text-[rgba(0,_0,_0,_0.6063)] font-['Segoe_Fluent_Icons',_'Segoe_MDL2_Assets']"
+          className="transition text-[10px] w-[46px] h-full hover:bg-muted active:bg-muted/80 font-['Segoe_Fluent_Icons',_'Segoe_MDL2_Assets']"
           tabIndex={-1}
           onClick={handleMaximize}
           onMouseDown={(e) => e.stopPropagation()}
@@ -339,7 +339,7 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
           {isMaximized ? "\uE923" : "\uE922"}
         </button>
         <button
-          className="transition text-[10px] size-[48px] hover:bg-[#C42B1C] hover:text-white active:bg-[rgba(196,_43,_28,_0.9)] active:text-[rgba(255,_255,_255,_0.7)] font-['Segoe_Fluent_Icons',_'Segoe_MDL2_Assets']"
+          className="transition text-[10px] w-[46px] h-full hover:bg-[#C42B1C] hover:text-white active:bg-[rgba(196,_43,_28,_0.9)] active:text-[rgba(255,_255,_255,_0.7)] font-['Segoe_Fluent_Icons',_'Segoe_MDL2_Assets']"
           tabIndex={-1}
           onClick={handleClose}
           onMouseDown={(e) => e.stopPropagation()}
