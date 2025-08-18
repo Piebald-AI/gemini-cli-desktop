@@ -25,7 +25,7 @@ export const useProcessManager = () => {
   const handleKillProcess = useCallback(
     async (conversationId: string) => {
       try {
-        await api.invoke("kill_process", { conversationId });
+        await api.invoke("kill_process", { conversationId: conversationId });  // Tauri auto-converts to conversation_id
         // Refresh process statuses after killing
         await fetchProcessStatuses();
       } catch (error) {

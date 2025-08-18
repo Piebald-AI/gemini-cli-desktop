@@ -106,18 +106,23 @@ function RootLayoutContent() {
 
         // Prepare session parameters based on backend type
         const sessionParams: any = {
-          sessionId: convId,
-          workingDirectory,
+          sessionId: convId,  // Tauri auto-converts to session_id
+          workingDirectory: workingDirectory,  // Tauri auto-converts to working_directory
           model: selectedModel,
         };
 
         // For Qwen backend, pass full backend_config
         // For Gemini backend, pass geminiAuth with the appropriate configuration
         if (selectedBackend === "qwen") {
-          sessionParams.backend_config = apiConfig;
+          // Always ensure backend_config is set for Qwen to trigger qwen CLI
+          sessionParams.backendConfig = {  // Tauri auto-converts to backend_config
+            api_key: apiConfig?.api_key || "", // Empty string if OAuth
+            base_url: apiConfig?.base_url || "https://openrouter.ai/api/v1",
+            model: apiConfig?.model || selectedModel,
+          };
         } else if (selectedBackend === "gemini") {
           const geminiConfig = backendState.configs.gemini;
-          sessionParams.geminiAuth = {
+          sessionParams.geminiAuth = {  // Tauri auto-converts to gemini_auth
             method: geminiConfig.authMethod,
             api_key:
               geminiConfig.authMethod === "gemini-api-key"
