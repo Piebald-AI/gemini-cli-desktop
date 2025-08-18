@@ -162,4 +162,22 @@
     -webkit-app-region: no-drag;
     app-region: no-drag;
   }
+
+  /* Sidebar resize handle styles */
+  [data-slot="sidebar-resize-handle"] {
+    z-index: 20;
+  }
+
+  /* Disable text selection while resizing */
+  body.sidebar-resizing {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+  }
+  
+  /* Override cursor during resize for entire page */
+  body.sidebar-resizing * {
+    cursor: col-resize !important;
+  }
 }

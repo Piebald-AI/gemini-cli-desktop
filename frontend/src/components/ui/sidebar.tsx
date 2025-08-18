@@ -1,9 +1,10 @@
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, VariantProps } from "class-variance-authority";
-import { PanelLeftIcon } from "lucide-react";
+import { PanelLeftIcon, GripVertical } from "lucide-react";
 
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useResizable } from "@/hooks/useResizable";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +29,10 @@ const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
 const SIDEBAR_WIDTH = "20rem";
 const SIDEBAR_WIDTH_ICON = "3rem";
 const SIDEBAR_KEYBOARD_SHORTCUT = "b";
+const SIDEBAR_WIDTH_STORAGE_KEY = "sidebar-width";
+const SIDEBAR_MIN_WIDTH = 200;
+const SIDEBAR_MAX_WIDTH = 600;
+const SIDEBAR_DEFAULT_WIDTH = 320;
 
 type SidebarContextProps = {
   state: "expanded" | "collapsed";
@@ -37,6 +42,9 @@ type SidebarContextProps = {
   setOpenMobile: (open: boolean) => void;
   isMobile: boolean;
   toggleSidebar: () => void;
+  width?: number;
+  isResizing?: boolean;
+  handleResizeStart?: (e: React.MouseEvent) => void;
 };
 
 const SidebarContext = React.createContext<SidebarContextProps | null>(null);
@@ -57,14 +65,24 @@ function SidebarProvider({
   className,
   style,
   children,
+  resizable = false,
   ...props
 }: React.ComponentProps<"div"> & {
   defaultOpen?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  resizable?: boolean;
 }) {
   const isMobile = useIsMobile();
   const [openMobile, setOpenMobile] = React.useState(false);
+
+  // Resizable functionality
+  const { width, isResizing, handleMouseDown } = useResizable({
+    defaultWidth: SIDEBAR_DEFAULT_WIDTH,
+    minWidth: SIDEBAR_MIN_WIDTH,
+    maxWidth: SIDEBAR_MAX_WIDTH,
+    storageKey: resizable ? SIDEBAR_WIDTH_STORAGE_KEY : undefined,
+  });
 
   // This is the internal state of the sidebar.
   // We use openProp and setOpenProp for control from outside the component.
@@ -119,8 +137,11 @@ function SidebarProvider({
       openMobile,
       setOpenMobile,
       toggleSidebar,
+      width: resizable ? width : undefined,
+      isResizing: resizable ? isResizing : undefined,
+      handleResizeStart: resizable ? handleMouseDown : undefined,
     }),
-    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
+    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar, resizable, width, isResizing, handleMouseDown]
   );
 
   return (
@@ -130,7 +151,7 @@ function SidebarProvider({
           data-slot="sidebar-wrapper"
           style={
             {
-              "--sidebar-width": SIDEBAR_WIDTH,
+              "--sidebar-width": resizable && !isMobile ? `${width}px` : SIDEBAR_WIDTH,
               "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
               ...style,
             } as React.CSSProperties
@@ -160,7 +181,7 @@ function Sidebar({
   variant?: "sidebar" | "floating" | "inset";
   collapsible?: "offcanvas" | "icon" | "none";
 }) {
-  const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
+  const { isMobile, state, openMobile, setOpenMobile, width, isResizing, handleResizeStart } = useSidebar();
 
   if (collapsible === "none") {
     return (
@@ -215,7 +236,8 @@ function Sidebar({
       <div
         data-slot="sidebar-gap"
         className={cn(
-          "relative w-(--sidebar-width) bg-transparent transition-[width] duration-200 ease-linear",
+          "relative w-(--sidebar-width) bg-transparent",
+          !isResizing && "transition-[width] duration-200 ease-linear",
           "group-data-[collapsible=offcanvas]:w-0",
           "group-data-[side=right]:rotate-180",
           variant === "floating" || variant === "inset"
@@ -226,7 +248,8 @@ function Sidebar({
       <div
         data-slot="sidebar-container"
         className={cn(
-          "fixed top-8 z-10 hidden h-[calc(100vh-2rem)] w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear md:flex",
+          "fixed top-8 z-10 hidden h-[calc(100vh-2rem)] w-(--sidebar-width) md:flex",
+          !isResizing && "transition-[left,right,width] duration-200 ease-linear",
           side === "left"
             ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
             : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
@@ -241,9 +264,16 @@ function Sidebar({
         <div
           data-sidebar="sidebar"
           data-slot="sidebar-inner"
-          className="bg-sidebar group-data-[variant=floating]:border-sidebar-border flex h-full w-full flex-col group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:shadow-sm"
+          className="bg-sidebar group-data-[variant=floating]:border-sidebar-border flex h-full w-full flex-col group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:shadow-sm relative"
         >
           {children}
+          {handleResizeStart && state === "expanded" && (
+            <SidebarResizeHandle
+              onMouseDown={handleResizeStart}
+              isResizing={isResizing || false}
+              side={side}
+            />
+          )}
         </div>
       </div>
     </div>
@@ -692,6 +722,54 @@ function SidebarMenuSubButton({
       )}
       {...props}
     />
+  );
+}
+
+function SidebarResizeHandle({
+  onMouseDown,
+  isResizing,
+  side = "left",
+  className,
+  ...props
+}: React.ComponentProps<"div"> & {
+  onMouseDown: (e: React.MouseEvent) => void;
+  isResizing: boolean;
+  side?: "left" | "right";
+}) {
+  return (
+    <div
+      data-slot="sidebar-resize-handle"
+      onMouseDown={onMouseDown}
+      className={cn(
+        "absolute top-0 bottom-0 w-3 cursor-col-resize group flex items-center justify-center",
+        "hover:bg-primary/5 active:bg-primary/10",
+        "transition-all duration-150",
+        side === "left" ? "-right-1.5" : "-left-1.5",
+        isResizing && "bg-primary/10 w-5",
+        className
+      )}
+      {...props}
+    >
+      <div
+        className={cn(
+          "relative h-8 w-0.5 rounded-full",
+          "bg-border/50 group-hover:bg-border",
+          "transition-all duration-150",
+          "group-hover:h-16",
+          isResizing && "h-20 bg-primary w-1"
+        )}
+      >
+        <div className="absolute inset-0 flex items-center justify-center">
+          <GripVertical 
+            className={cn(
+              "h-4 w-4 text-muted-foreground/50",
+              "group-hover:text-muted-foreground",
+              isResizing && "text-primary"
+            )} 
+          />
+        </div>
+      </div>
+    </div>
   );
 }
 

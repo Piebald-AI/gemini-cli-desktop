@@ -32,7 +32,12 @@ export function AppSidebar({
   children,
 }: AppSidebarProps) {
   return (
-    <SidebarProvider defaultOpen={true} open={open} onOpenChange={onOpenChange}>
+    <SidebarProvider 
+      defaultOpen={true} 
+      open={open} 
+      onOpenChange={onOpenChange}
+      resizable={true}
+    >
       <Sidebar side="left" collapsible="offcanvas">
         <SidebarContent className="p-0">
           <ConversationList
