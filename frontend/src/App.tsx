@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useMemo } from "react";
+import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { Routes, Route, Outlet, Navigate } from "react-router-dom";
 import { api } from "./lib/api";
 import { AppSidebar } from "./components/layout/AppSidebar";
@@ -13,6 +13,7 @@ import {
   useApiConfig,
   useBackend,
 } from "./contexts/BackendContext";
+import { getBackendText } from "./utils/backendText";
 import { HomeDashboard } from "./pages/HomeDashboard";
 import ProjectsPage from "./pages/Projects";
 import ProjectDetailPage from "./pages/ProjectDetail";
@@ -38,6 +39,12 @@ function RootLayoutContent() {
   // Use backend context instead of local state
   const { apiConfig } = useApiConfig();
   const { selectedBackend, state: backendState } = useBackend();
+
+  // Set document title based on selected backend
+  useEffect(() => {
+    const backendText = getBackendText(selectedBackend);
+    document.title = backendText.desktopName;
+  }, [selectedBackend]);
 
   // Custom hooks for cleaner code
   const isCliInstalled = useCliInstallation(selectedBackend);

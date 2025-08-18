@@ -3,6 +3,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { QwenIcon } from "@/components/branding/QwenIcon";
 import { GeminiIcon } from "@/components/branding/GeminiIcon";
 import { useBackend } from "@/contexts/BackendContext";
+import { getBackendText } from "@/utils/backendText";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -41,9 +42,10 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
   const navigate = useNavigate();
   const { selectedBackend } = useBackend();
+  const backendText = getBackendText(selectedBackend);
   
   // Dynamic title based on backend
-  const dynamicTitle = title || (selectedBackend === "qwen" ? "Qwen Desktop" : "Gemini Desktop");
+  const dynamicTitle = title || backendText.desktopName;
   
   // Navigation handlers - these actually work
   const handleGoHome = () => {
@@ -306,7 +308,7 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
             >
               <DropdownMenuItem onClick={handleAbout} className="flex items-center gap-2 text-xs">
                 <Info size={14} />
-                About Gemini Desktop
+                About {backendText.desktopName}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

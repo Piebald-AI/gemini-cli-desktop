@@ -23,6 +23,7 @@ import {
 import { DynamicList, DynamicKeyValueList } from "./DynamicList";
 import { useBackend } from "../../contexts/BackendContext";
 import { getBackendText } from "../../utils/backendText";
+import { openUrl } from "@tauri-apps/plugin-opener";
 
 interface AddMcpServerDialogProps {
   trigger: React.ReactNode;
@@ -221,12 +222,16 @@ export function AddMcpServerDialog({
               variant="ghost"
               size="icon"
               className="h-5 w-5 p-0 text-muted-foreground hover:text-foreground"
-              onClick={() =>
-                window.open(
-                  "https://github.com/google-gemini/gemini-cli/blob/main/docs/tools/mcp-server.md",
-                  "_blank"
-                )
-              }
+              onClick={async () => {
+                const url = "https://github.com/google-gemini/gemini-cli/blob/main/docs/tools/mcp-server.md";
+                try {
+                  await openUrl(url);
+                } catch (error) {
+                  console.error("Failed to open URL with Tauri opener:", error);
+                  // Fallback to window.open if Tauri opener fails
+                  window.open(url, "_blank", "noopener,noreferrer");
+                }
+              }}
             >
               <HelpCircle className="h-4 w-4" />
             </Button>

@@ -353,7 +353,7 @@ export function McpServersPage() {
 
         {/* Bottom action buttons - fixed at bottom */}
         {servers.length > 0 && (
-          <div className="flex justify-end gap-3 pt-4 mt-4 border-t">
+          <div className="flex justify-end gap-3 pt-4 mt-4">
             <AddMcpServerDialog
               trigger={
                 <Button className="flex items-center gap-2">

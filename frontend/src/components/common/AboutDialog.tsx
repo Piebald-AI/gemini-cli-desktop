@@ -9,6 +9,7 @@ import {
 import { GeminiIcon } from "@/components/branding/GeminiIcon";
 import { QwenIcon } from "@/components/branding/QwenIcon";
 import { useBackend } from "@/contexts/BackendContext";
+import { getBackendText } from "@/utils/backendText";
 
 interface AboutDialogProps {
   open: boolean;
@@ -20,8 +21,9 @@ export const AboutDialog: React.FC<AboutDialogProps> = ({
   onOpenChange,
 }) => {
   const { selectedBackend } = useBackend();
+  const backendText = getBackendText(selectedBackend);
   
-  const appName = selectedBackend === "qwen" ? "Qwen Desktop" : "Gemini Desktop";
+  const appName = backendText.desktopName;
   const appVersion = "0.1.0";
   const currentYear = new Date().getFullYear();
 
@@ -72,7 +74,7 @@ export const AboutDialog: React.FC<AboutDialogProps> = ({
           
           <div className="pt-4 border-t border-border">
             <DialogDescription className="text-center text-xs text-muted-foreground">
-              © {currentYear} Gemini Desktop. All rights reserved.
+              © {currentYear} {appName}. All rights reserved.
             </DialogDescription>
           </div>
         </div>

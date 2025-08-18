@@ -30,8 +30,9 @@ const loadFromStorage = (): BackendState => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       const parsed = JSON.parse(stored);
+      console.log("Loading backend state from storage:", parsed);
       // Merge with defaults to handle any missing fields
-      return {
+      const result = {
         ...defaultBackendState,
         ...parsed,
         configs: {
@@ -47,7 +48,10 @@ const loadFromStorage = (): BackendState => {
           },
         },
       };
+      console.log("Merged backend state:", result);
+      return result;
     }
+    console.log("No stored backend state, using defaults");
   } catch (error) {
     console.warn("Failed to load backend state:", error);
   }
@@ -56,6 +60,7 @@ const loadFromStorage = (): BackendState => {
 
 const saveToStorage = (state: BackendState): void => {
   try {
+    console.log("Saving backend state to storage:", state);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch (error) {
     console.warn("Failed to save backend state:", error);
@@ -183,14 +188,12 @@ interface BackendProviderProps {
 export const BackendProvider: React.FC<BackendProviderProps> = ({
   children,
 }) => {
-  // Initialize state with useReducer
-  const [state, dispatch] = useReducer(backendReducer, defaultBackendState);
-
-  // Load from localStorage on mount
-  useEffect(() => {
-    const loadedState = loadFromStorage();
-    dispatch({ type: "LOAD_FROM_STORAGE", state: loadedState });
-  }, []);
+  // Initialize state with useReducer, loading from storage immediately
+  const [state, dispatch] = useReducer(
+    backendReducer,
+    null,
+    () => loadFromStorage()
+  );
 
   // Save to localStorage on state changes
   useEffect(() => {
