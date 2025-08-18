@@ -29,6 +29,7 @@ Gemini Desktop is a powerful, cross-platform desktop and web application that pr
 - **Security-first design**: Comprehensive command filtering and permission system
 - **Custom title bar**: Enhanced desktop experience with native window controls
 - **About dialog**: Integrated help and version information
+- **Resizable sidebar**: Interactive sidebar with drag-to-resize functionality and persistent width settings
 - **Cross-platform support**: Windows, macOS, and Linux compatibility
 
 ## Architecture
@@ -122,7 +123,7 @@ The project is organized as a Rust workspace with three main crates:
   - `RecentChats.tsx` - Session history sidebar
 - **`layout/`** - Application structure
   - `AppHeader.tsx` - Top navigation bar
-  - `AppSidebar.tsx` - Navigation and project selection
+  - `AppSidebar.tsx` - Navigation and project selection with resizable functionality
   - `CustomTitleBar.tsx` - Native window controls for desktop
   - `PageLayout.tsx` - Responsive layout management
 - **`mcp/`** - Model Context Protocol components
@@ -149,6 +150,7 @@ The project is organized as a Rust workspace with three main crates:
   - Complete design system with consistent theming
   - Accessible components with proper ARIA support
   - Dark/light mode toggle support
+  - Enhanced sidebar component with resize handle and drag-to-resize functionality
 
 #### Context and State Management
 - **`BackendContext.tsx`** - Primary communication layer
@@ -166,6 +168,7 @@ The project is organized as a Rust workspace with three main crates:
 - **`useConversationManager.ts`** - Conversation state management
 - **`useMessageHandler.ts`** - Message processing and display
 - **`useProcessManager.ts`** - Session lifecycle management
+- **`useResizable.ts`** - Sidebar resize functionality with mouse drag handling and localStorage persistence
 - **`useToolCallConfirmation.ts`** - User approval workflow
 - **`use-mobile.ts`** - Responsive design utilities
 
@@ -780,15 +783,15 @@ gemini-desktop/
 │   │   ├── components/
 │   │   │   ├── branding/
 │   │   │   │   ├── DesktopText.tsx
-│   │   │   │   ├── GeminiIcon.tsx          # NEW: Gemini brand icon
+│   │   │   │   ├── GeminiIcon.tsx
 │   │   │   │   ├── GeminiWordmark.tsx
 │   │   │   │   ├── PiebaldLogo.tsx
-│   │   │   │   ├── QwenIcon.tsx            # NEW: Qwen brand icon
+│   │   │   │   ├── QwenIcon.tsx
 │   │   │   │   ├── QwenWordmark.tsx
 │   │   │   │   ├── SmartLogo.tsx
 │   │   │   │   └── SmartLogoCenter.tsx
 │   │   │   ├── common/
-│   │   │   │   ├── AboutDialog.tsx         # NEW: About dialog
+│   │   │   │   ├── AboutDialog.tsx
 │   │   │   │   ├── CliWarnings.tsx
 │   │   │   │   ├── CodeBlock.tsx
 │   │   │   │   ├── DiffViewer.tsx
@@ -813,7 +816,7 @@ gemini-desktop/
 │   │   │   ├── layout/
 │   │   │   │   ├── AppHeader.tsx
 │   │   │   │   ├── AppSidebar.tsx
-│   │   │   │   ├── CustomTitleBar.tsx      # NEW: Custom title bar
+│   │   │   │   ├── CustomTitleBar.tsx
 │   │   │   │   └── PageLayout.tsx
 │   │   │   ├── mcp/
 │   │   │   │   ├── AddMcpServerDialog.tsx
@@ -832,7 +835,7 @@ gemini-desktop/
 │   │   │   │   ├── ReadManyFilesRenderer.tsx
 │   │   │   │   ├── SearchRenderer.tsx
 │   │   │   │   └── WebToolRenderer.tsx
-│   │   │   ├── theme/              # NEW: Theme management
+│   │   │   ├── theme/
 │   │   │   │   ├── simple-theme-toggle.tsx
 │   │   │   │   └── theme-provider.tsx
 │   │   │   └── ui/
@@ -869,6 +872,7 @@ gemini-desktop/
 │   │   │   ├── useConversationManager.ts
 │   │   │   ├── useMessageHandler.ts
 │   │   │   ├── useProcessManager.ts
+│   │   │   ├── useResizable.ts
 │   │   │   └── useToolCallConfirmation.ts
 │   │   ├── index.css
 │   │   ├── lib/
@@ -893,7 +897,7 @@ gemini-desktop/
 │   │   │   ├── mcpValidation.ts
 │   │   │   ├── toolCallParser.ts
 │   │   │   ├── toolInputParser.ts
-│   │   │   └── wordDiff.ts            # NEW: Word-level diff utilities
+│   │   │   └── wordDiff.ts
 │   │   └── vite-env.d.ts
 │   ├── tsconfig.json
 │   ├── tsconfig.node.json
