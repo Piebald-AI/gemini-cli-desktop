@@ -31,14 +31,24 @@ export class ToolInputParser {
     const name = toolCall.name.toLowerCase();
 
     // Generate human-readable description based on tool type and parameters
-    const descriptionResult = this.generateDescription(name, allParams, toolCall.label);
+    const descriptionResult = this.generateDescription(
+      name,
+      allParams,
+      toolCall.label
+    );
     primaryParam = this.extractPrimaryParam(name, allParams);
 
     return {
-      description: typeof descriptionResult === 'string' ? descriptionResult : descriptionResult.description,
+      description:
+        typeof descriptionResult === "string"
+          ? descriptionResult
+          : descriptionResult.description,
       primaryParam,
       allParams,
-      formattedDescription: typeof descriptionResult === 'object' ? descriptionResult.formattedDescription : undefined,
+      formattedDescription:
+        typeof descriptionResult === "object"
+          ? descriptionResult.formattedDescription
+          : undefined,
     };
   }
 
@@ -46,7 +56,14 @@ export class ToolInputParser {
     toolName: string,
     params: Record<string, unknown>,
     label?: string
-  ): string | { description: string; formattedDescription: { parts: Array<{ text: string; isHighlighted: boolean }> } } {
+  ):
+    | string
+    | {
+        description: string;
+        formattedDescription: {
+          parts: Array<{ text: string; isHighlighted: boolean }>;
+        };
+      } {
     // Helper function to parse search/glob titles like "'pattern' within path" or "'pattern' in path"
     const parseSearchTitle = (title: string, toolType: string) => {
       // Match patterns like "'Gemini' within ./" or "'**/*.md' within ." or "'fn main' in *.rs"
@@ -60,14 +77,16 @@ export class ToolInputParser {
               { text: toolType + " ", isHighlighted: false },
               { text: pattern, isHighlighted: true },
               { text: " within ", isHighlighted: false },
-              { text: path, isHighlighted: true }
-            ]
-          }
+              { text: path, isHighlighted: true },
+            ],
+          },
         };
       }
-      
+
       // Match patterns like "'fn main' in *.rs within crates\\server\\src"
-      const inMatch = title.match(/^'([^']+)'\s+in\s+([^']+?)\s+within\s+(.+)$/);
+      const inMatch = title.match(
+        /^'([^']+)'\s+in\s+([^']+?)\s+within\s+(.+)$/
+      );
       if (inMatch) {
         const [, pattern, filePattern, path] = inMatch;
         return {
@@ -79,9 +98,9 @@ export class ToolInputParser {
               { text: " in ", isHighlighted: false },
               { text: filePattern, isHighlighted: true },
               { text: " within ", isHighlighted: false },
-              { text: path, isHighlighted: true }
-            ]
-          }
+              { text: path, isHighlighted: true },
+            ],
+          },
         };
       }
       const cleanTitle = title.replace(/^'|'$/g, ""); // Remove end and start quotes
@@ -90,9 +109,9 @@ export class ToolInputParser {
         formattedDescription: {
           parts: [
             { text: toolType + " ", isHighlighted: false },
-            { text: cleanTitle, isHighlighted: true }
-          ]
-        }
+            { text: cleanTitle, isHighlighted: true },
+          ],
+        },
       };
     };
 
@@ -125,7 +144,7 @@ export class ToolInputParser {
       }
 
       case "glob": {
-        // Use the parsed title if available (from ACP updates) 
+        // Use the parsed title if available (from ACP updates)
         if (label) {
           return parseSearchTitle(label, "Globbed");
         }
@@ -215,7 +234,7 @@ export class ToolInputParser {
         if (label) {
           return `Using ${toolName}: ${label}`;
         }
-        
+
         // Generic fallback
         const mainParam = this.extractPrimaryParam(toolName, params);
         if (mainParam) {

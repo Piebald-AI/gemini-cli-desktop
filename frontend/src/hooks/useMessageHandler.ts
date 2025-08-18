@@ -156,23 +156,32 @@ export const useMessageHandler = ({
         // Get backend configuration
         const apiConfig = getApiConfig();
         let backendConfig = undefined;
-        
-        if (selectedBackend === 'qwen') {
+
+        if (selectedBackend === "qwen") {
           if (apiConfig && apiConfig.api_key) {
             backendConfig = {
               api_key: apiConfig.api_key,
-              base_url: apiConfig.base_url || 'https://openrouter.ai/api/v1',
+              base_url: apiConfig.base_url || "https://openrouter.ai/api/v1",
               model: apiConfig.model || selectedModel,
             };
             sessionParams.backend_config = backendConfig;
           }
-        } else if (selectedBackend === 'gemini') {
+        } else if (selectedBackend === "gemini") {
           const geminiConfig = backendState.configs.gemini;
           sessionParams.geminiAuth = {
             method: geminiConfig.authMethod,
-            api_key: geminiConfig.authMethod === 'gemini-api-key' ? geminiConfig.apiKey : undefined,
-            vertex_project: geminiConfig.authMethod === 'vertex-ai' ? geminiConfig.vertexProject : undefined,
-            vertex_location: geminiConfig.authMethod === 'vertex-ai' ? geminiConfig.vertexLocation : undefined,
+            api_key:
+              geminiConfig.authMethod === "gemini-api-key"
+                ? geminiConfig.apiKey
+                : undefined,
+            vertex_project:
+              geminiConfig.authMethod === "vertex-ai"
+                ? geminiConfig.vertexProject
+                : undefined,
+            vertex_location:
+              geminiConfig.authMethod === "vertex-ai"
+                ? geminiConfig.vertexLocation
+                : undefined,
           };
         }
 

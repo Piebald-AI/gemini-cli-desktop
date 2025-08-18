@@ -150,3 +150,16 @@
     color: transparent;
   }
 }
+
+@layer components {
+  /* Custom titlebar styles */
+  [data-tauri-drag-region] {
+    -webkit-app-region: drag;
+    app-region: drag;
+  }
+
+  [data-tauri-drag-region] button {
+    -webkit-app-region: no-drag;
+    app-region: no-drag;
+  }
+}

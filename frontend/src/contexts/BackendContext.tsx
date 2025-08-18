@@ -1,20 +1,29 @@
-import React, { createContext, useContext, useReducer, useEffect, useMemo, ReactNode } from "react";
-import { 
-  BackendType, 
-  BackendState, 
-  BackendContextValue, 
-  BackendAction, 
+import React, {
+  createContext,
+  useContext,
+  useReducer,
+  useEffect,
+  useMemo,
+  ReactNode,
+} from "react";
+import {
+  BackendType,
+  BackendState,
+  BackendContextValue,
+  BackendAction,
   ApiConfig,
   GeminiConfig,
-  QwenConfig 
+  QwenConfig,
 } from "../types/backend";
 import { validateBackendConfig } from "../utils/backendValidation";
 import { defaultBackendState } from "../utils/backendDefaults";
 
-const BackendContext = createContext<BackendContextValue | undefined>(undefined);
+const BackendContext = createContext<BackendContextValue | undefined>(
+  undefined
+);
 
 // Simple localStorage helpers
-const STORAGE_KEY = 'backend-state';
+const STORAGE_KEY = "backend-state";
 
 const loadFromStorage = (): BackendState => {
   try {
@@ -28,13 +37,19 @@ const loadFromStorage = (): BackendState => {
         configs: {
           ...defaultBackendState.configs,
           ...parsed.configs,
-          gemini: { ...defaultBackendState.configs.gemini, ...parsed.configs?.gemini },
-          qwen: { ...defaultBackendState.configs.qwen, ...parsed.configs?.qwen },
+          gemini: {
+            ...defaultBackendState.configs.gemini,
+            ...parsed.configs?.gemini,
+          },
+          qwen: {
+            ...defaultBackendState.configs.qwen,
+            ...parsed.configs?.qwen,
+          },
         },
       };
     }
   } catch (error) {
-    console.warn('Failed to load backend state:', error);
+    console.warn("Failed to load backend state:", error);
   }
   return defaultBackendState;
 };
@@ -43,34 +58,39 @@ const saveToStorage = (state: BackendState): void => {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch (error) {
-    console.warn('Failed to save backend state:', error);
+    console.warn("Failed to save backend state:", error);
   }
 };
 
 // Reducer function for complex state management
-const backendReducer = (state: BackendState, action: BackendAction): BackendState => {
+const backendReducer = (
+  state: BackendState,
+  action: BackendAction
+): BackendState => {
   switch (action.type) {
-    case 'SWITCH_BACKEND': {
+    case "SWITCH_BACKEND": {
       const newState = {
         ...state,
         selectedBackend: action.backend,
       };
-      
+
       // Validate the new backend
       const currentConfig = newState.configs[action.backend];
       const validation = validateBackendConfig(action.backend, currentConfig);
-      
+
       return {
         ...newState,
         isValid: validation.isValid,
         errors: {
           ...state.errors,
-          [action.backend]: validation.isValid ? '' : validation.errors.join(', ')
-        }
+          [action.backend]: validation.isValid
+            ? ""
+            : validation.errors.join(", "),
+        },
       };
     }
-    
-    case 'UPDATE_CONFIG': {
+
+    case "UPDATE_CONFIG": {
       const updatedConfigs = {
         ...state.configs,
         [action.backend]: {
@@ -78,50 +98,61 @@ const backendReducer = (state: BackendState, action: BackendAction): BackendStat
           ...action.config,
         } as any,
       };
-      
+
       // Validate the updated config
-      const validation = validateBackendConfig(action.backend, updatedConfigs[action.backend]);
-      
+      const validation = validateBackendConfig(
+        action.backend,
+        updatedConfigs[action.backend]
+      );
+
       const newState = {
         ...state,
         configs: updatedConfigs,
         errors: {
           ...state.errors,
-          [action.backend]: validation.isValid ? '' : validation.errors.join(', ')
-        }
+          [action.backend]: validation.isValid
+            ? ""
+            : validation.errors.join(", "),
+        },
       };
-      
+
       // Update overall validity
-      newState.isValid = state.selectedBackend === action.backend ? validation.isValid : state.isValid;
-      
+      newState.isValid =
+        state.selectedBackend === action.backend
+          ? validation.isValid
+          : state.isValid;
+
       return newState;
     }
-    
-    case 'SET_VALIDATION_ERROR':
+
+    case "SET_VALIDATION_ERROR":
       return {
         ...state,
         errors: {
           ...state.errors,
           [action.backend]: action.error,
         },
-        isValid: state.selectedBackend === action.backend ? false : state.isValid,
+        isValid:
+          state.selectedBackend === action.backend ? false : state.isValid,
       };
-    
-    case 'CLEAR_VALIDATION_ERROR':
+
+    case "CLEAR_VALIDATION_ERROR":
       return {
         ...state,
         errors: {
           ...state.errors,
-          [action.backend]: '',
+          [action.backend]: "",
         },
-        isValid: state.selectedBackend === action.backend ? true : state.isValid,
+        isValid:
+          state.selectedBackend === action.backend ? true : state.isValid,
       };
-    
-    case 'RESET_CONFIG': {
-      const defaultConfig = action.backend === 'gemini' 
-        ? defaultBackendState.configs.gemini 
-        : defaultBackendState.configs.qwen;
-      
+
+    case "RESET_CONFIG": {
+      const defaultConfig =
+        action.backend === "gemini"
+          ? defaultBackendState.configs.gemini
+          : defaultBackendState.configs.qwen;
+
       return {
         ...state,
         configs: {
@@ -130,15 +161,16 @@ const backendReducer = (state: BackendState, action: BackendAction): BackendStat
         },
         errors: {
           ...state.errors,
-          [action.backend]: '',
+          [action.backend]: "",
         },
-        isValid: state.selectedBackend === action.backend ? true : state.isValid,
+        isValid:
+          state.selectedBackend === action.backend ? true : state.isValid,
       };
     }
-    
-    case 'LOAD_FROM_STORAGE':
+
+    case "LOAD_FROM_STORAGE":
       return action.state;
-    
+
     default:
       return state;
   }
@@ -148,14 +180,16 @@ interface BackendProviderProps {
   children: ReactNode;
 }
 
-export const BackendProvider: React.FC<BackendProviderProps> = ({ children }) => {
+export const BackendProvider: React.FC<BackendProviderProps> = ({
+  children,
+}) => {
   // Initialize state with useReducer
   const [state, dispatch] = useReducer(backendReducer, defaultBackendState);
 
   // Load from localStorage on mount
   useEffect(() => {
     const loadedState = loadFromStorage();
-    dispatch({ type: 'LOAD_FROM_STORAGE', state: loadedState });
+    dispatch({ type: "LOAD_FROM_STORAGE", state: loadedState });
   }, []);
 
   // Save to localStorage on state changes
@@ -164,51 +198,55 @@ export const BackendProvider: React.FC<BackendProviderProps> = ({ children }) =>
   }, [state]);
 
   // Memoized actions to prevent unnecessary re-renders
-  const actions = useMemo(() => ({
-    switchBackend: (backend: BackendType) => {
-      dispatch({ type: 'SWITCH_BACKEND', backend });
-    },
+  const actions = useMemo(
+    () => ({
+      switchBackend: (backend: BackendType) => {
+        dispatch({ type: "SWITCH_BACKEND", backend });
+      },
 
-    updateConfig: <T extends BackendType>(
-      backend: T, 
-      config: Partial<BackendState['configs'][T]>
-    ) => {
-      dispatch({ type: 'UPDATE_CONFIG', backend, config });
-    },
+      updateConfig: <T extends BackendType>(
+        backend: T,
+        config: Partial<BackendState["configs"][T]>
+      ) => {
+        dispatch({ type: "UPDATE_CONFIG", backend, config });
+      },
 
-    validateConfig: (backend: BackendType): boolean => {
-      const config = state.configs[backend];
-      const validation = validateBackendConfig(backend, config);
-      
-      if (!validation.isValid) {
-        dispatch({ 
-          type: 'SET_VALIDATION_ERROR', 
-          backend, 
-          error: validation.errors.join(', ') 
-        });
-      } else {
-        dispatch({ type: 'CLEAR_VALIDATION_ERROR', backend });
-      }
-      
-      return validation.isValid;
-    },
+      validateConfig: (backend: BackendType): boolean => {
+        const config = state.configs[backend];
+        const validation = validateBackendConfig(backend, config);
 
-    resetConfig: (backend: BackendType) => {
-      dispatch({ type: 'RESET_CONFIG', backend });
-    },
-  }), [state.configs]);
+        if (!validation.isValid) {
+          dispatch({
+            type: "SET_VALIDATION_ERROR",
+            backend,
+            error: validation.errors.join(", "),
+          });
+        } else {
+          dispatch({ type: "CLEAR_VALIDATION_ERROR", backend });
+        }
+
+        return validation.isValid;
+      },
+
+      resetConfig: (backend: BackendType) => {
+        dispatch({ type: "RESET_CONFIG", backend });
+      },
+    }),
+    [state.configs]
+  );
 
   // Memoized computed values
   const computedValues = useMemo(() => {
     const currentConfig = state.configs[state.selectedBackend];
     const isCurrentBackendValid = !state.errors[state.selectedBackend];
-    
-    const currentModel = state.selectedBackend === 'gemini' 
-      ? (currentConfig as GeminiConfig).defaultModel
-      : (currentConfig as QwenConfig).model;
+
+    const currentModel =
+      state.selectedBackend === "gemini"
+        ? (currentConfig as GeminiConfig).defaultModel
+        : (currentConfig as QwenConfig).model;
 
     const getApiConfig = (): ApiConfig | null => {
-      if (state.selectedBackend === 'qwen') {
+      if (state.selectedBackend === "qwen") {
         const qwenConfig = state.configs.qwen;
         if (qwenConfig.useOAuth) {
           return { model: qwenConfig.model };
@@ -219,9 +257,9 @@ export const BackendProvider: React.FC<BackendProviderProps> = ({ children }) =>
             model: qwenConfig.model,
           };
         }
-      } else if (state.selectedBackend === 'gemini') {
+      } else if (state.selectedBackend === "gemini") {
         const geminiConfig = state.configs.gemini;
-        if (geminiConfig.authMethod === 'gemini-api-key') {
+        if (geminiConfig.authMethod === "gemini-api-key") {
           return {
             api_key: geminiConfig.apiKey,
             model: currentModel,
@@ -248,12 +286,15 @@ export const BackendProvider: React.FC<BackendProviderProps> = ({ children }) =>
   }, [state]);
 
   // Memoized context value to prevent unnecessary re-renders
-  const contextValue = useMemo(() => ({
-    state,
-    selectedBackend: state.selectedBackend,
-    ...actions,
-    ...computedValues,
-  }), [state, actions, computedValues]);
+  const contextValue = useMemo(
+    () => ({
+      state,
+      selectedBackend: state.selectedBackend,
+      ...actions,
+      ...computedValues,
+    }),
+    [state, actions, computedValues]
+  );
 
   return (
     <BackendContext.Provider value={contextValue}>
@@ -266,7 +307,7 @@ export const BackendProvider: React.FC<BackendProviderProps> = ({ children }) =>
 export const useBackend = (): BackendContextValue => {
   const context = useContext(BackendContext);
   if (!context) {
-    throw new Error('useBackend must be used within a BackendProvider');
+    throw new Error("useBackend must be used within a BackendProvider");
   }
   return context;
 };
@@ -275,7 +316,7 @@ export const useBackendConfig = <T extends BackendType>(backend: T) => {
   const { state, updateConfig } = useBackend();
   return {
     config: state.configs[backend],
-    updateConfig: (config: Partial<BackendState['configs'][T]>) => 
+    updateConfig: (config: Partial<BackendState["configs"][T]>) =>
       updateConfig(backend, config),
     isValid: !state.errors[backend],
     error: state.errors[backend],

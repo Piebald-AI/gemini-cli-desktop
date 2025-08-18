@@ -104,7 +104,7 @@ export default function ProjectsPage() {
           <ArrowLeft className="h-4 w-4 mr-2" aria-hidden="true" />
           <span>Back to Home</span>
         </button>
-        
+
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-semibold tracking-tight">Projects</h1>
@@ -113,7 +113,11 @@ export default function ProjectsPage() {
             </p>
           </div>
           <Button
-            onClick={__WEB__ ? () => setDirectoryDialogOpen(true) : handleAddProjectNative}
+            onClick={
+              __WEB__
+                ? () => setDirectoryDialogOpen(true)
+                : handleAddProjectNative
+            }
             disabled={isAddingProject}
             className="flex items-center gap-2"
           >

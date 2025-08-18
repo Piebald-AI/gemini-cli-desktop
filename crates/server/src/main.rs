@@ -391,7 +391,13 @@ async fn start_session(request: Json<StartSessionRequest>, state: &State<AppStat
             .model
             .unwrap_or_else(|| "gemini-2.0-flash-exp".to_string());
         match backend
-            .initialize_session(req.session_id, working_directory, model, req.backend_config, req.gemini_auth.clone())
+            .initialize_session(
+                req.session_id,
+                working_directory,
+                model,
+                req.backend_config,
+                req.gemini_auth.clone(),
+            )
             .await
         {
             Ok(_) => Status::Ok,
@@ -417,21 +423,30 @@ async fn send_message(request: Json<SendMessageRequest>, state: &State<AppState>
     let req = request.into_inner();
 
     let backend = state.backend.lock().await;
-    
+
     // Check if session exists, if not and we have backend config, initialize it first
-    let session_exists = backend.get_process_statuses()
+    let session_exists = backend
+        .get_process_statuses()
         .unwrap_or_default()
         .iter()
         .any(|status| status.conversation_id == req.session_id && status.is_alive);
-    
+
     if !session_exists && req.backend_config.is_some() {
-        let model = req.model.unwrap_or_else(|| "gemini-2.0-flash-exp".to_string());
+        let model = req
+            .model
+            .unwrap_or_else(|| "gemini-2.0-flash-exp".to_string());
         // Initialize session with minimal working directory (current directory)
         match backend
-            .initialize_session(req.session_id.clone(), ".".to_string(), model, req.backend_config, req.gemini_auth)
+            .initialize_session(
+                req.session_id.clone(),
+                ".".to_string(),
+                model,
+                req.backend_config,
+                req.gemini_auth,
+            )
             .await
         {
-            Ok(_) => {},
+            Ok(_) => {}
             Err(_) => return Status::InternalServerError,
         }
     }

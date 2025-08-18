@@ -1,6 +1,6 @@
 use crate::state::AppState;
 use backend::{
-    DirEntry, EnrichedProject, ProcessStatus, ProjectsResponse, QwenConfig, GeminiAuthConfig,
+    DirEntry, EnrichedProject, GeminiAuthConfig, ProcessStatus, ProjectsResponse, QwenConfig,
     RecentChat, SearchFilters, SearchResult,
 };
 use serde_json::Value;
@@ -28,7 +28,13 @@ pub async fn start_session(
         let model = model.unwrap_or_else(|| "gemini-2.0-flash-exp".to_string());
         state
             .backend
-            .initialize_session(session_id, working_directory, model, backend_config, gemini_auth)
+            .initialize_session(
+                session_id,
+                working_directory,
+                model,
+                backend_config,
+                gemini_auth,
+            )
             .await
             .map_err(|e| e.to_string())
     } else {
@@ -416,7 +422,10 @@ pub async fn read_settings_file(backend_type: Option<String>) -> Result<Value, S
 }
 
 #[tauri::command]
-pub async fn write_settings_file(settings: Value, backend_type: Option<String>) -> Result<(), String> {
+pub async fn write_settings_file(
+    settings: Value,
+    backend_type: Option<String>,
+) -> Result<(), String> {
     use std::fs;
 
     let home_dir = dirs::home_dir().ok_or_else(|| "Unable to find home directory".to_string())?;

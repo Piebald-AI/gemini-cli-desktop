@@ -25,7 +25,9 @@ export function ToolResultRenderer({
   }
   // For glob/grep tools, render even without results (they might have empty results)
   else if (
-    (toolCall.name === "glob" || toolCall.name === "grep" || toolCall.name === "search_file_content") &&
+    (toolCall.name === "glob" ||
+      toolCall.name === "grep" ||
+      toolCall.name === "search_file_content") &&
     toolCall.status === "completed"
   ) {
     // Don't check for result - render anyway
@@ -40,9 +42,9 @@ export function ToolResultRenderer({
   }
   // For edit tools, render for any status (pending, running, completed, failed) to show approval UI
   else if (
-    (toolCall.name.toLowerCase().includes("edit") || 
-     toolCall.name === "replace" || 
-     toolCall.name === "write_file") &&
+    (toolCall.name.toLowerCase().includes("edit") ||
+      toolCall.name === "replace" ||
+      toolCall.name === "write_file") &&
     (toolCall.status === "pending" ||
       toolCall.status === "running" ||
       toolCall.status === "completed" ||

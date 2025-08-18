@@ -95,11 +95,25 @@ pub struct SessionPromptParams {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ContentBlock {
-    Text { text: String },
-    Image { data: String, mime_type: String },
-    Audio { data: String, mime_type: String },
-    ResourceLink { uri: String, name: String, mime_type: String },
-    Resource { resource: ResourceInfo },
+    Text {
+        text: String,
+    },
+    Image {
+        data: String,
+        mime_type: String,
+    },
+    Audio {
+        data: String,
+        mime_type: String,
+    },
+    ResourceLink {
+        uri: String,
+        name: String,
+        mime_type: String,
+    },
+    Resource {
+        resource: ResourceInfo,
+    },
 }
 
 /// Resource information for embedded resources
@@ -124,13 +138,9 @@ pub struct SessionUpdateParams {
 #[serde(tag = "sessionUpdate", rename_all = "snake_case")]
 pub enum SessionUpdate {
     #[serde(rename = "agent_message_chunk")]
-    AgentMessageChunk {
-        content: ContentBlock,
-    },
+    AgentMessageChunk { content: ContentBlock },
     #[serde(rename = "agent_thought_chunk")]
-    AgentThoughtChunk {
-        content: ContentBlock,
-    },
+    AgentThoughtChunk { content: ContentBlock },
     #[serde(rename = "tool_call")]
     ToolCall {
         #[serde(rename = "toolCallId")]
@@ -176,13 +186,15 @@ pub enum ToolCallKind {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ToolCallContentItem {
-    Content { content: ContentBlock },
-    Diff { 
-        path: String, 
+    Content {
+        content: ContentBlock,
+    },
+    Diff {
+        path: String,
         #[serde(rename = "oldText")]
-        old_text: String, 
+        old_text: String,
         #[serde(rename = "newText")]
-        new_text: String 
+        new_text: String,
     },
 }
 
@@ -245,9 +257,9 @@ pub struct PermissionResult {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "outcome", rename_all = "snake_case")]
 pub enum PermissionOutcome {
-    Selected { 
+    Selected {
         #[serde(rename = "optionId")]
-        option_id: String 
+        option_id: String,
     },
     Cancelled,
 }
@@ -299,7 +311,7 @@ pub mod error_codes {
     pub const METHOD_NOT_FOUND: i32 = -32601;
     pub const INVALID_PARAMS: i32 = -32602;
     pub const INTERNAL_ERROR: i32 = -32603;
-    
+
     // ACP-specific error codes
     pub const SESSION_NOT_FOUND: i32 = -32001;
     pub const AUTHENTICATION_FAILED: i32 = -32002;
@@ -344,13 +356,11 @@ mod tests {
             tool_call_id: "test_001".to_string(),
             status: ToolCallStatus::InProgress,
             title: "Read file: config.json".to_string(),
-            content: vec![
-                ToolCallContentItem::Content {
-                    content: ContentBlock::Text {
-                        text: "Reading file...".to_string(),
-                    },
+            content: vec![ToolCallContentItem::Content {
+                content: ContentBlock::Text {
+                    text: "Reading file...".to_string(),
                 },
-            ],
+            }],
             locations: vec![Location {
                 path: "config.json".to_string(),
                 line: None,
@@ -379,7 +389,12 @@ mod tests {
         assert!(serialized.get("sessionUpdate").is_some());
         assert_eq!(serialized["sessionUpdate"], "agent_thought_chunk");
         assert_eq!(serialized["content"]["type"], "text");
-        assert!(serialized["content"]["text"].as_str().unwrap().contains("Acknowledging the Greeting"));
+        assert!(
+            serialized["content"]["text"]
+                .as_str()
+                .unwrap()
+                .contains("Acknowledging the Greeting")
+        );
     }
 
     #[test]
@@ -475,20 +490,16 @@ mod tests {
                 tool_call_id: "write_001".to_string(),
                 status: ToolCallStatus::Pending,
                 title: "Write to file".to_string(),
-                content: vec![
-                    ToolCallContentItem::Content {
-                        content: ContentBlock::Text {
-                            text: "File content".to_string(),
-                        },
+                content: vec![ToolCallContentItem::Content {
+                    content: ContentBlock::Text {
+                        text: "File content".to_string(),
                     },
-                ],
-                locations: vec![
-                    Location {
-                        path: "/tmp/test.txt".to_string(),
-                        line: Some(10),
-                        column: Some(5),
-                    },
-                ],
+                }],
+                locations: vec![Location {
+                    path: "/tmp/test.txt".to_string(),
+                    line: Some(10),
+                    column: Some(5),
+                }],
                 kind: ToolCallKind::Edit,
             },
         };
@@ -501,7 +512,10 @@ mod tests {
         assert_eq!(serialized["toolCall"]["toolCallId"], "write_001");
         assert_eq!(serialized["toolCall"]["status"], "pending");
         assert_eq!(serialized["toolCall"]["kind"], "edit");
-        assert_eq!(serialized["toolCall"]["locations"][0]["path"], "/tmp/test.txt");
+        assert_eq!(
+            serialized["toolCall"]["locations"][0]["path"],
+            "/tmp/test.txt"
+        );
         assert_eq!(serialized["toolCall"]["locations"][0]["line"], 10);
     }
 
@@ -519,13 +533,11 @@ mod tests {
     fn test_session_new_params_serialization() {
         let params = SessionNewParams {
             cwd: "/home/user/project".to_string(),
-            mcp_servers: vec![
-                McpServer {
-                    name: "database".to_string(),
-                    command: "db-server".to_string(),
-                    args: vec!["--port".to_string(), "5432".to_string()],
-                },
-            ],
+            mcp_servers: vec![McpServer {
+                name: "database".to_string(),
+                command: "db-server".to_string(),
+                args: vec!["--port".to_string(), "5432".to_string()],
+            }],
         };
 
         let serialized = serde_json::to_value(&params).unwrap();
@@ -556,7 +568,7 @@ mod tests {
     #[test]
     fn test_full_acp_handshake_sequence() {
         // Test the complete handshake sequence message structure
-        
+
         // 1. Initialize
         let init_params = InitializeParams {
             protocol_version: 1,
@@ -567,16 +579,19 @@ mod tests {
                 },
             },
         };
-        
+
         let init_serialized = serde_json::to_value(&init_params).unwrap();
         assert_eq!(init_serialized["protocolVersion"], 1);
-        assert_eq!(init_serialized["clientCapabilities"]["fs"]["readTextFile"], true);
+        assert_eq!(
+            init_serialized["clientCapabilities"]["fs"]["readTextFile"],
+            true
+        );
 
         // 2. Authenticate
         let auth_params = AuthenticateParams {
             method_id: "gemini-api-key".to_string(),
         };
-        
+
         let auth_serialized = serde_json::to_value(&auth_params).unwrap();
         assert_eq!(auth_serialized["methodId"], "gemini-api-key");
 
@@ -585,21 +600,22 @@ mod tests {
             cwd: "/project".to_string(),
             mcp_servers: vec![],
         };
-        
+
         let session_serialized = serde_json::to_value(&session_params).unwrap();
         assert_eq!(session_serialized["cwd"], "/project");
-        assert_eq!(session_serialized["mcpServers"].as_array().unwrap().len(), 0);
+        assert_eq!(
+            session_serialized["mcpServers"].as_array().unwrap().len(),
+            0
+        );
 
         // 4. Session/prompt
         let prompt_params = SessionPromptParams {
             session_id: "session-123".to_string(),
-            prompt: vec![
-                ContentBlock::Text {
-                    text: "Test prompt".to_string(),
-                },
-            ],
+            prompt: vec![ContentBlock::Text {
+                text: "Test prompt".to_string(),
+            }],
         };
-        
+
         let prompt_serialized = serde_json::to_value(&prompt_params).unwrap();
         assert_eq!(prompt_serialized["sessionId"], "session-123");
         assert_eq!(prompt_serialized["prompt"][0]["text"], "Test prompt");

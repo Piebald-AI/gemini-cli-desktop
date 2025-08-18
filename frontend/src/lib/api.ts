@@ -78,12 +78,14 @@ export const api = {
         case "get_home_directory":
           return webApi.get_home_directory() as Promise<T>;
         case "get_parent_directory":
-          if (!args) throw new Error("Missing arguments for get_parent_directory");
+          if (!args)
+            throw new Error("Missing arguments for get_parent_directory");
           return webApi.get_parent_directory(
             args as unknown as string
           ) as Promise<T>;
         case "list_directory_contents":
-          if (!args) throw new Error("Missing arguments for list_directory_contents");
+          if (!args)
+            throw new Error("Missing arguments for list_directory_contents");
           return webApi.list_directory_contents(
             args as unknown as string
           ) as Promise<T>;

@@ -23,7 +23,6 @@ function ToolCallDisplayComponent({
   confirmationRequest,
   confirmationRequests,
 }: ToolCallDisplayProps) {
-  
   // Try to get confirmation request from the Map as a fallback
   const actualConfirmationRequest =
     confirmationRequest ||
@@ -49,12 +48,14 @@ function ToolCallDisplayComponent({
     if ((toolCall as any).isUserRejected) {
       return true;
     }
-    
+
     // Fallback to checking the result markdown
-    return !!(toolCall.status === "failed" && 
-              toolCall.result && 
-              typeof toolCall.result === "object" && 
-              toolCall.result.markdown === "Tool call rejected by user");
+    return !!(
+      toolCall.status === "failed" &&
+      toolCall.result &&
+      typeof toolCall.result === "object" &&
+      toolCall.result.markdown === "Tool call rejected by user"
+    );
   };
 
   const getErrorSummary = (toolCall: ToolCall): string => {
@@ -110,14 +111,14 @@ function ToolCallDisplayComponent({
 
   const getRunningDescription = (toolCall: ToolCall): React.ReactNode => {
     const parsedInput = ToolInputParser.parseToolInput(toolCall);
-    
+
     // If we have formatted description data, render it with proper styling
     if (parsedInput.formattedDescription) {
       return (
         <>
           {parsedInput.formattedDescription.parts.map((part, index) => (
-            <span 
-              key={index} 
+            <span
+              key={index}
               className={part.isHighlighted ? "text-muted-foreground" : ""}
             >
               {part.text}
@@ -126,7 +127,7 @@ function ToolCallDisplayComponent({
         </>
       );
     }
-    
+
     // Fallback to plain description
     return parsedInput.description;
   };
@@ -142,13 +143,19 @@ function ToolCallDisplayComponent({
       icon: <Loader2 className="animate-spin h-3 w-3" />,
       message: "Googling...",
       isSpecialTool: true,
-      detectors: [(toolCall: ToolCall) => toolCall.label?.toLowerCase().includes("searching the web")]
+      detectors: [
+        (toolCall: ToolCall) =>
+          toolCall.label?.toLowerCase().includes("searching the web"),
+      ],
     },
     web_fetch: {
       icon: <Loader2 className="animate-spin h-3 w-3" />,
       message: "Fetching...",
       isSpecialTool: true,
-      detectors: [(toolCall: ToolCall) => toolCall.label?.toLowerCase().includes("processing urls")]
+      detectors: [
+        (toolCall: ToolCall) =>
+          toolCall.label?.toLowerCase().includes("processing urls"),
+      ],
     },
     // Example of how to add more tools:
     // glob: {
@@ -162,40 +169,40 @@ function ToolCallDisplayComponent({
   // Extract URL information for WebFetch pending state
   const getWebFetchPendingInfo = (toolCall: ToolCall) => {
     if (toolCall.name !== "web_fetch") return null;
-    
+
     // First try to extract from ACP confirmation request title
     if (toolCall.confirmationRequest?.label) {
       const title = toolCall.confirmationRequest.label;
-      
+
       // Look for URLs in the title like: "Processing URLs and instructions from prompt: \"Fetch the title of https://www.google.com/\""
       const urlMatches = title.match(/https?:\/\/[^\s"']+/g);
       if (urlMatches && urlMatches.length > 0) {
         return {
           url: urlMatches[0],
-          count: urlMatches.length
+          count: urlMatches.length,
         };
       }
-      
+
       // Look for generic patterns like "Processing URLs"
       if (title.toLowerCase().includes("processing urls")) {
         const urlCountMatch = title.match(/(\d+)\s*urls?/i);
         if (urlCountMatch) {
           return {
             url: `${urlCountMatch[1]} URLs`,
-            count: parseInt(urlCountMatch[1])
+            count: parseInt(urlCountMatch[1]),
           };
         }
         return {
           url: "URLs from prompt",
-          count: 1
+          count: 1,
         };
       }
     }
-    
+
     // Fallback to extracting from parameters
     try {
       let params: Record<string, unknown> = {};
-      
+
       // Try to get parameters from inputJsonRpc first
       if (toolCall.inputJsonRpc) {
         const input = JSON.parse(toolCall.inputJsonRpc);
@@ -204,31 +211,31 @@ function ToolCallDisplayComponent({
         // Fallback to toolCall.parameters
         params = toolCall.parameters || {};
       }
-      
+
       const url = params.url;
       if (url && typeof url === "string") {
         return {
           url: url,
-          count: 1
+          count: 1,
         };
       }
-      
+
       // Handle multiple URLs if they're in an array
       if (Array.isArray(url)) {
         return {
           url: url[0] || "content",
-          count: url.length
+          count: url.length,
         };
       }
-      
+
       return {
         url: "content",
-        count: 1
+        count: 1,
       };
     } catch {
       return {
-        url: "content", 
-        count: 1
+        url: "content",
+        count: 1,
       };
     }
   };
@@ -236,20 +243,25 @@ function ToolCallDisplayComponent({
   const getLoadingState = (toolCall: ToolCall) => {
     // Check configured tools first
     for (const [toolName, config] of Object.entries(toolLoadingConfig)) {
-      if (toolCall.name === toolName || config.detectors?.some(detector => detector(toolCall))) {
+      if (
+        toolCall.name === toolName ||
+        config.detectors?.some((detector) => detector(toolCall))
+      ) {
         return {
           icon: config.icon,
           message: config.message,
-          isWebTool: config.isSpecialTool
+          isWebTool: config.isSpecialTool,
         };
       }
     }
-    
+
     // Default loading state for other tools
     return {
-      icon: <div className="animate-spin h-3 w-3 border-2 border-primary border-t-transparent rounded-full"></div>,
+      icon: (
+        <div className="animate-spin h-3 w-3 border-2 border-primary border-t-transparent rounded-full"></div>
+      ),
       message: "Executing...",
-      isWebTool: false
+      isWebTool: false,
     };
   };
 
@@ -284,40 +296,55 @@ function ToolCallDisplayComponent({
                   Fetching{" "}
                   <span className="text-muted-foreground">
                     {(() => {
-                      const webFetchInfo = getWebFetchPendingInfo(enhancedToolCall);
-                      return webFetchInfo?.count === 1 ? webFetchInfo.url : `${webFetchInfo?.count || 1} URLs`;
+                      const webFetchInfo =
+                        getWebFetchPendingInfo(enhancedToolCall);
+                      return webFetchInfo?.count === 1
+                        ? webFetchInfo.url
+                        : `${webFetchInfo?.count || 1} URLs`;
                     })()}
                   </span>
                 </span>
-                
+
                 {/* Compact approval buttons */}
                 {hasConfirmationRequest && onConfirm && (
                   <div className="ml-auto flex items-center gap-1">
-                    {enhancedToolCall.confirmationRequest?.options && enhancedToolCall.confirmationRequest.options.length > 0 ? (
+                    {enhancedToolCall.confirmationRequest?.options &&
+                    enhancedToolCall.confirmationRequest.options.length > 0 ? (
                       // Use ACP permission options if available - group allow vs reject
                       (() => {
-                        const allowOptions = enhancedToolCall.confirmationRequest.options.filter(opt => opt.kind.includes('allow'));
-                        const rejectOptions = enhancedToolCall.confirmationRequest.options.filter(opt => opt.kind.includes('reject'));
-                        
+                        const allowOptions =
+                          enhancedToolCall.confirmationRequest.options.filter(
+                            (opt) => opt.kind.includes("allow")
+                          );
+                        const rejectOptions =
+                          enhancedToolCall.confirmationRequest.options.filter(
+                            (opt) => opt.kind.includes("reject")
+                          );
+
                         return (
                           <>
                             {/* Always Allow button (blue) if available */}
-                            {allowOptions.filter(opt => opt.kind.includes('always')).map(option => (
-                              <Button
-                                key={option.optionId}
-                                size="sm"
-                                variant="ghost"
-                                className="h-6 w-6 p-0 text-blue-500 dark:text-blue-400 hover:bg-blue-500 hover:bg-opacity-20 border border-blue-500 dark:border-blue-400"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onConfirm(enhancedToolCall.id, option.optionId);
-                                }}
-                                title={option.name}
-                              >
-                                <Check className="h-3 w-3" />
-                              </Button>
-                            ))}
-                            
+                            {allowOptions
+                              .filter((opt) => opt.kind.includes("always"))
+                              .map((option) => (
+                                <Button
+                                  key={option.optionId}
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-6 w-6 p-0 text-blue-500 dark:text-blue-400 hover:bg-blue-500 hover:bg-opacity-20 border border-blue-500 dark:border-blue-400"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onConfirm(
+                                      enhancedToolCall.id,
+                                      option.optionId
+                                    );
+                                  }}
+                                  title={option.name}
+                                >
+                                  <Check className="h-3 w-3" />
+                                </Button>
+                              ))}
+
                             {/* Allow Once button (green) */}
                             {/* {allowOptions.filter(opt => !opt.kind.includes('always')).map(option => (
                               <Button
@@ -334,9 +361,9 @@ function ToolCallDisplayComponent({
                                 <Check className="h-3 w-3" />
                               </Button>
                             ))} */}
-                            
+
                             {/* Reject button (red) */}
-                            {rejectOptions.slice(0, 1).map(option => (
+                            {rejectOptions.slice(0, 1).map((option) => (
                               <Button
                                 key={option.optionId}
                                 size="sm"
@@ -344,7 +371,10 @@ function ToolCallDisplayComponent({
                                 className="h-6 w-6 p-0 text-red-500 dark:text-red-400 hover:bg-red-500 hover:bg-opacity-20 border border-red-500 dark:border-red-400"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  onConfirm(enhancedToolCall.id, option.optionId);
+                                  onConfirm(
+                                    enhancedToolCall.id,
+                                    option.optionId
+                                  );
                                 }}
                                 title={option.name}
                               >
@@ -406,7 +436,9 @@ function ToolCallDisplayComponent({
                   <Button
                     size="sm"
                     className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 text-xs"
-                    onClick={() => onConfirm(enhancedToolCall.id, "proceed_once")}
+                    onClick={() =>
+                      onConfirm(enhancedToolCall.id, "proceed_once")
+                    }
                   >
                     <Check className="h-3 w-3 mr-1" />
                     Yes
@@ -500,9 +532,9 @@ function ToolCallDisplayComponent({
       {enhancedToolCall.status === "failed" && (
         <>
           {/* For edit tools and web fetch, show specialized renderers */}
-          {(enhancedToolCall.name.toLowerCase().includes("edit") ||
-           enhancedToolCall.name === "replace" ||
-           enhancedToolCall.name === "write_file") ? (
+          {enhancedToolCall.name.toLowerCase().includes("edit") ||
+          enhancedToolCall.name === "replace" ||
+          enhancedToolCall.name === "write_file" ? (
             <ToolResultRenderer
               toolCall={enhancedToolCall}
               onConfirm={onConfirm}
@@ -514,11 +546,16 @@ function ToolCallDisplayComponent({
               <div className="flex items-center gap-2 text-sm px-2 py-1 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800">
                 <X className="h-4 w-4 text-red-500" />
                 <span>
-                  {isUserRejected(enhancedToolCall) ? "Rejected fetch" : "Failed to fetch"}{" "}
+                  {isUserRejected(enhancedToolCall)
+                    ? "Rejected fetch"
+                    : "Failed to fetch"}{" "}
                   <span className="text-muted-foreground">
                     {(() => {
-                      const webFetchInfo = getWebFetchPendingInfo(enhancedToolCall);
-                      return webFetchInfo?.count === 1 ? webFetchInfo.url : `${webFetchInfo?.count || 1} URLs`;
+                      const webFetchInfo =
+                        getWebFetchPendingInfo(enhancedToolCall);
+                      return webFetchInfo?.count === 1
+                        ? webFetchInfo.url
+                        : `${webFetchInfo?.count || 1} URLs`;
                     })()}
                   </span>
                 </span>
@@ -536,7 +573,9 @@ function ToolCallDisplayComponent({
               </div>
               <div className="flex items-center gap-2 text-sm text-red-700 dark:text-red-300">
                 <X className="size-3" />
-                {isUserRejected(enhancedToolCall) ? "Rejected" : getErrorSummary(enhancedToolCall)}
+                {isUserRejected(enhancedToolCall)
+                  ? "Rejected"
+                  : getErrorSummary(enhancedToolCall)}
               </div>
 
               {/* Input JSON-RPC */}

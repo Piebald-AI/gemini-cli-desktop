@@ -4,10 +4,15 @@ import { api } from "./lib/api";
 import { AppSidebar } from "./components/layout/AppSidebar";
 import { MessageInputBar } from "./components/conversation/MessageInputBar";
 import { AppHeader } from "./components/layout/AppHeader";
+import { CustomTitleBar } from "./components/layout/CustomTitleBar";
 import { CliWarnings } from "./components/common/CliWarnings";
 import { SidebarInset } from "./components/ui/sidebar";
 import { ConversationContext } from "./contexts/ConversationContext";
-import { BackendProvider, useApiConfig, useBackend } from "./contexts/BackendContext";
+import {
+  BackendProvider,
+  useApiConfig,
+  useBackend,
+} from "./contexts/BackendContext";
 import { HomeDashboard } from "./pages/HomeDashboard";
 import ProjectsPage from "./pages/Projects";
 import ProjectDetailPage from "./pages/ProjectDetail";
@@ -24,7 +29,8 @@ import { CliIO } from "./types";
 import "./index.css";
 
 function RootLayoutContent() {
-  const [selectedModel, setSelectedModel] = useState<string>("gemini-2.5-flash");
+  const [selectedModel, setSelectedModel] =
+    useState<string>("gemini-2.5-flash");
   const [cliIOLogs, setCliIOLogs] = useState<CliIO[]>([]);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -107,15 +113,24 @@ function RootLayoutContent() {
 
         // For Qwen backend, pass full backend_config
         // For Gemini backend, pass geminiAuth with the appropriate configuration
-        if (selectedBackend === 'qwen') {
+        if (selectedBackend === "qwen") {
           sessionParams.backend_config = apiConfig;
-        } else if (selectedBackend === 'gemini') {
+        } else if (selectedBackend === "gemini") {
           const geminiConfig = backendState.configs.gemini;
           sessionParams.geminiAuth = {
             method: geminiConfig.authMethod,
-            api_key: geminiConfig.authMethod === 'gemini-api-key' ? geminiConfig.apiKey : undefined,
-            vertex_project: geminiConfig.authMethod === 'vertex-ai' ? geminiConfig.vertexProject : undefined,
-            vertex_location: geminiConfig.authMethod === 'vertex-ai' ? geminiConfig.vertexLocation : undefined,
+            api_key:
+              geminiConfig.authMethod === "gemini-api-key"
+                ? geminiConfig.apiKey
+                : undefined,
+            vertex_project:
+              geminiConfig.authMethod === "vertex-ai"
+                ? geminiConfig.vertexProject
+                : undefined,
+            vertex_location:
+              geminiConfig.authMethod === "vertex-ai"
+                ? geminiConfig.vertexLocation
+                : undefined,
           };
         }
 
@@ -156,35 +171,38 @@ function RootLayoutContent() {
           />
 
           <ConversationContext.Provider
-            value={useMemo(() => ({
-              conversations,
-              activeConversation,
-              currentConversation,
-              input,
-              isCliInstalled,
-              messagesContainerRef,
-              cliIOLogs,
-              handleInputChange,
-              handleSendMessage,
-              selectedModel,
-              startNewConversation,
-              handleConfirmToolCall,
-              confirmationRequests,
-            }), [
-              conversations,
-              activeConversation,
-              currentConversation,
-              input,
-              isCliInstalled,
-              messagesContainerRef,
-              cliIOLogs,
-              handleInputChange,
-              handleSendMessage,
-              selectedModel,
-              startNewConversation,
-              handleConfirmToolCall,
-              confirmationRequests,
-            ])}
+            value={useMemo(
+              () => ({
+                conversations,
+                activeConversation,
+                currentConversation,
+                input,
+                isCliInstalled,
+                messagesContainerRef,
+                cliIOLogs,
+                handleInputChange,
+                handleSendMessage,
+                selectedModel,
+                startNewConversation,
+                handleConfirmToolCall,
+                confirmationRequests,
+              }),
+              [
+                conversations,
+                activeConversation,
+                currentConversation,
+                input,
+                isCliInstalled,
+                messagesContainerRef,
+                cliIOLogs,
+                handleInputChange,
+                handleSendMessage,
+                selectedModel,
+                startNewConversation,
+                handleConfirmToolCall,
+                confirmationRequests,
+              ]
+            )}
           >
             <Outlet />
           </ConversationContext.Provider>
@@ -192,8 +210,7 @@ function RootLayoutContent() {
           {activeConversation &&
             processStatuses.find(
               (status) =>
-                status.conversation_id === activeConversation &&
-                status.is_alive
+                status.conversation_id === activeConversation && status.is_alive
             ) && (
               <MessageInputBar
                 input={input}
@@ -212,7 +229,12 @@ function RootLayoutContent() {
 function RootLayout() {
   return (
     <BackendProvider>
-      <RootLayoutContent />
+      <div className="h-screen w-full">
+        <CustomTitleBar />
+        <div className="h-[calc(100vh-2rem)] w-full">
+          <RootLayoutContent />
+        </div>
+      </div>
     </BackendProvider>
   );
 }

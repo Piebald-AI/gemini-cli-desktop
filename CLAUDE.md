@@ -18,14 +18,17 @@ This file provides comprehensive guidance to Claude Code (claude.ai/code) when w
 
 ## Project Overview
 
-Gemini Desktop is a powerful, cross-platform desktop and web application that provides a modern UI for **Gemini CLI** and **Qwen Coder**. Built with Rust (Tauri) and React/TypeScript, it enables structured interaction with AI models through the Agent Communication Protocol (ACP).
+Gemini Desktop is a powerful, cross-platform desktop and web application that provides a modern UI for **Gemini CLI** and **Qwen Code**. Built with Rust (Tauri) and React/TypeScript, it enables structured interaction with AI models through the Agent Communication Protocol (ACP).
 
 ### Key Features
 - **Dual deployment modes**: Native desktop app and web application
 - **Real-time communication**: WebSocket-based event system for live updates
 - **Tool call confirmation**: User approval workflow for AI agent actions
+- **Multi-backend support**: Gemini CLI and Qwen Code integration
 - **Project management**: Session-based workspace management with chat history
 - **Security-first design**: Comprehensive command filtering and permission system
+- **Custom title bar**: Enhanced desktop experience with native window controls
+- **About dialog**: Integrated help and version information
 - **Cross-platform support**: Windows, macOS, and Linux compatibility
 
 ## Architecture
@@ -86,26 +89,62 @@ The project is organized as a Rust workspace with three main crates:
 **React/TypeScript Single Page Application** (`frontend/`):
 
 #### Component Organization
-- **`branding/`** - Logo and wordmark components (Gemini, Qwen, Piebald)
+- **`branding/`** - Logo and wordmark components
+  - `GeminiIcon.tsx` - Gemini brand icon component
+  - `GeminiWordmark.tsx` - Gemini text branding
+  - `QwenIcon.tsx` - Qwen brand icon component
+  - `QwenWordmark.tsx` - Qwen text branding
+  - `PiebaldLogo.tsx` - Piebald company branding
+  - `SmartLogo.tsx` - Dynamic logo switching
+  - `DesktopText.tsx` - Desktop-specific text elements
 - **`common/`** - Reusable UI components
   - `ToolCallDisplay.tsx` - Tool execution visualization
   - `MarkdownRenderer.tsx` - Rich text rendering with syntax highlighting
-  - `DiffViewer.tsx` - Code difference visualization
+  - `DiffViewer.tsx` - Code difference visualization with word-level diffing
   - `SearchInput.tsx` - Advanced search interface
   - `DirectorySelectionDialog.tsx` - File system navigation
+  - `AboutDialog.tsx` - Application information and version details
+  - `CliWarnings.tsx` - CLI installation status and warnings
+  - `CodeBlock.tsx` - Syntax-highlighted code display
+  - `MentionInput.tsx` - @-mention support for user input
+  - `ModelContextProtocol.tsx` - MCP server integration components
+  - `SearchResults.tsx` - Search result display and filtering
+  - `ToolCallsList.tsx` - Tool execution history
+  - `ToolResultRenderer.tsx` - Tool output formatting
+  - `UserAvatar.tsx` - User profile display
 - **`conversation/`** - Chat interface components
   - `ConversationList.tsx` - Message history and pagination
   - `MessageInputBar.tsx` - Text input with mention support
+  - `MessageActions.tsx` - Message-level actions (copy, retry, etc.)
+  - `MessageContent.tsx` - Message body rendering
+  - `MessageHeader.tsx` - Message metadata display
   - `ThinkingBlock.tsx` - AI reasoning visualization
   - `RecentChats.tsx` - Session history sidebar
 - **`layout/`** - Application structure
+  - `AppHeader.tsx` - Top navigation bar
   - `AppSidebar.tsx` - Navigation and project selection
+  - `CustomTitleBar.tsx` - Native window controls for desktop
   - `PageLayout.tsx` - Responsive layout management
+- **`mcp/`** - Model Context Protocol components
+  - `AddMcpServerDialog.tsx` - Server configuration dialog
+  - `DynamicList.tsx` - Dynamic list management
+  - `McpServerCard.tsx` - Server status display
+  - `McpServerSettings.tsx` - Server configuration interface
+  - `PasteJsonDialog.tsx` - JSON configuration import
 - **`renderers/`** - Tool-specific result renderers
-  - `EditRenderer.tsx` - File modification display
-  - `GrepGlobRenderer.tsx` - Search result formatting
-  - `WebToolRenderer.tsx` - Web fetch result display
   - `CommandRenderer.tsx` - Terminal output formatting
+  - `DefaultRenderer.tsx` - Fallback renderer
+  - `DirectoryRenderer.tsx` - Directory listing display
+  - `EditRenderer.tsx` - File modification display
+  - `FileRenderer.tsx` - File content display
+  - `GrepGlobRenderer.tsx` - Search result formatting
+  - `ReadFileRenderer.tsx` - Single file content display
+  - `ReadManyFilesRenderer.tsx` - Multiple file content display
+  - `SearchRenderer.tsx` - Advanced search results
+  - `WebToolRenderer.tsx` - Web fetch result display
+- **`theme/`** - Theme management
+  - `simple-theme-toggle.tsx` - Light/dark mode switcher
+  - `theme-provider.tsx` - Theme context provider
 - **`ui/`** - shadcn/ui component library (New York variant)
   - Complete design system with consistent theming
   - Accessible components with proper ARIA support
@@ -122,15 +161,18 @@ The project is organized as a Rust workspace with three main crates:
   - Real-time event integration
 
 #### Custom Hooks
+- **`useCliInstallation.ts`** - CLI availability detection
 - **`useConversationEvents.ts`** - Real-time event handling
-- **`useToolCallConfirmation.ts`** - User approval workflow
+- **`useConversationManager.ts`** - Conversation state management
 - **`useMessageHandler.ts`** - Message processing and display
 - **`useProcessManager.ts`** - Session lifecycle management
+- **`useToolCallConfirmation.ts`** - User approval workflow
+- **`use-mobile.ts`** - Responsive design utilities
 
 ## Technology Stack
 
 ### Backend Technologies
-- **Rust** (Edition 2024) - Systems programming language
+- **Rust** (Editions 2024/2021) - Systems programming language
 - **Tokio** - Async runtime with full feature set
 - **Serde** - Serialization framework with derive macros
 - **Rocket** - Web framework with JSON support
@@ -143,13 +185,21 @@ The project is organized as a Rust workspace with three main crates:
 - **React 18.3** - Component-based UI framework
 - **TypeScript 5.6** - Static type checking with strict mode
 - **Vite 6.0** - Modern build tool with HMR
-- **Tailwind CSS 4.1** - Utility-first CSS framework
+- **Tailwind CSS 4.1** - Utility-first CSS framework with @tailwindcss/vite plugin
 - **shadcn/ui** - Component library with Radix UI primitives
-- **Monaco Editor** - VS Code-like code editing
+- **Monaco Editor** - VS Code-like code editing capabilities
 - **React Markdown** - Markdown rendering with syntax highlighting
 - **React Router 7.7** - Client-side routing
+- **React Mentions** - @-mention support in text inputs
+- **React Syntax Highlighter** - Code syntax highlighting
 - **Axios** - HTTP client with interceptors
 - **Lucide React** - Icon library
+- **KaTeX** - Math rendering support
+- **Highlight.js** - Code syntax highlighting
+- **Shiki** - Advanced syntax highlighting with VS Code themes
+- **next-themes** - Theme management system
+- **class-variance-authority** - CSS class variance utilities
+- **Google Generative AI** - Direct Gemini API integration
 
 ### Development Tools
 - **Just** - Task runner and build automation
@@ -226,10 +276,12 @@ just test [args]            # Run tests with optional arguments
 
 #### Frontend Build (Vite)
 - **TypeScript compilation** with strict mode
-- **Tailwind CSS processing** with custom configuration
+- **Tailwind CSS processing** with @tailwindcss/vite plugin
 - **Bundle optimization** for production
 - **Proxy setup** for API routes in development
-- **Environment variable injection** (`__WEB__` flag)
+- **Environment variable injection** (`GEMINI_DESKTOP_WEB` flag)
+- **React plugin** with fast refresh support
+- **Node.js compatibility** for server-side dependencies
 
 #### Rust Build (Cargo)
 - **Workspace compilation** with shared dependencies
@@ -544,13 +596,16 @@ gemini-desktop/
 #### Session Management
 - **Working directories** preserved per session
 - **Process isolation** with unique identifiers
+- **Multi-backend support** with Gemini and Qwen configurations
 - **Chat history** stored in structured format
 - **Tool call logs** for debugging and replay
+- **Custom title bar** for enhanced desktop experience
 
 #### Authentication
 - **API key storage** (encrypted/secure storage planned)
 - **Multiple provider support** (Gemini, Vertex AI, Qwen)
 - **Session-based authentication** for web mode
+- **Unified backend configuration** with validation
 
 ## Development Workflow
 
@@ -559,7 +614,7 @@ gemini-desktop/
 #### Rust Code
 - **Clippy pedantic lints** enabled for high code quality
 - **cargo fmt** for consistent formatting
-- **Edition 2024** features utilized
+- **Edition 2024** features utilized (2021 for tauri-app crate)
 - **Comprehensive error handling** with `thiserror`
 - **Async/await patterns** throughout
 
@@ -629,195 +684,225 @@ gemini-desktop/
 
 ## Complete Source Code Tree
 ```
-gemini-desktop
-├── assets
-|  ├── ...
+gemini-desktop/
+├── assets/
+│   ├── qwen-desktop.png
+│   └── screenshot.png
 ├── Cargo.lock
 ├── Cargo.toml
 ├── CLAUDE.md
-├── crates
-|  ├── backend
-|  |  ├── Cargo.toml
-|  |  └── src
-|  |     ├── acp
-|  |     |  └── mod.rs
-|  |     ├── cli
-|  |     |  └── mod.rs
-|  |     ├── events
-|  |     |  └── mod.rs
-|  |     ├── filesystem
-|  |     |  └── mod.rs
-|  |     ├── lib.rs
-|  |     ├── projects
-|  |     |  └── mod.rs
-|  |     ├── rpc
-|  |     |  └── mod.rs
-|  |     ├── search
-|  |     |  └── mod.rs
-|  |     ├── security
-|  |     |  └── mod.rs
-|  |     ├── session
-|  |     |  └── mod.rs
-|  |     ├── test_utils.rs
-|  |     └── types
-|  |        └── mod.rs
-|  ├── server
-|  |  ├── Cargo.toml
-|  |  └── src
-|  |     └── main.rs
-|  └── tauri-app
-|     ├── build.rs
-|     ├── capabilities
-|     |  └── default.json
-|     ├── Cargo.lock
-|     ├── Cargo.toml
-|     ├── gen
-|     |  └── schemas
-|     |     ├── ...
-|     ├── icons
-|     |  ├── ...
-|     ├── src
-|     |  ├── commands
-|     |  |  └── mod.rs
-|     |  ├── event_emitter.rs
-|     |  ├── lib.rs
-|     |  ├── main.rs
-|     |  └── state.rs
-|     └── tauri.conf.json
-├── frontend
-|  ├── components.json
-|  ├── eslint.config.js
-|  ├── index.html
-|  ├── package.json
-|  ├── pnpm-lock.yaml
-|  ├── pnpm-workspace.yaml
-|  ├── public
-|  |  ├── ...
-|  ├── src
-|  |  ├── App.tsx
-|  |  ├── assets
-|  |  |  └── react.svg
-|  |  ├── components
-|  |  |  ├── branding
-|  |  |  |  ├── DesktopText.tsx
-|  |  |  |  ├── GeminiWordmark.tsx
-|  |  |  |  ├── PiebaldLogo.tsx
-|  |  |  |  ├── QwenWordmark.tsx
-|  |  |  |  ├── SmartLogo.tsx
-|  |  |  |  └── SmartLogoCenter.tsx
-|  |  |  ├── common
-|  |  |  |  ├── CliWarnings.tsx
-|  |  |  |  ├── CodeBlock.tsx
-|  |  |  |  ├── DiffViewer.tsx
-|  |  |  |  ├── DirectorySelectionDialog.tsx
-|  |  |  |  ├── MarkdownRenderer.tsx
-|  |  |  |  ├── MentionInput.tsx
-|  |  |  |  ├── ModelContextProtocol.tsx
-|  |  |  |  ├── SearchInput.tsx
-|  |  |  |  ├── SearchResults.tsx
-|  |  |  |  ├── ToolCallDisplay.tsx
-|  |  |  |  ├── ToolCallsList.tsx
-|  |  |  |  ├── ToolResultRenderer.tsx
-|  |  |  |  └── UserAvatar.tsx
-|  |  |  ├── conversation
-|  |  |  |  ├── ConversationList.tsx
-|  |  |  |  ├── MessageActions.tsx
-|  |  |  |  ├── MessageContent.tsx
-|  |  |  |  ├── MessageHeader.tsx
-|  |  |  |  ├── MessageInputBar.tsx
-|  |  |  |  ├── RecentChats.tsx
-|  |  |  |  └── ThinkingBlock.tsx
-|  |  |  ├── layout
-|  |  |  |  ├── AppHeader.tsx
-|  |  |  |  ├── AppSidebar.tsx
-|  |  |  |  └── PageLayout.tsx
-|  |  |  ├── mcp
-|  |  |  |  ├── AddMcpServerDialog.tsx
-|  |  |  |  ├── DynamicList.tsx
-|  |  |  |  ├── McpServerCard.tsx
-|  |  |  |  ├── McpServerSettings.tsx
-|  |  |  |  └── PasteJsonDialog.tsx
-|  |  |  ├── renderers
-|  |  |  |  ├── CommandRenderer.tsx
-|  |  |  |  ├── DefaultRenderer.tsx
-|  |  |  |  ├── DirectoryRenderer.tsx
-|  |  |  |  ├── EditRenderer.tsx
-|  |  |  |  ├── FileRenderer.tsx
-|  |  |  |  ├── GrepGlobRenderer.tsx
-|  |  |  |  ├── ReadFileRenderer.tsx
-|  |  |  |  ├── ReadManyFilesRenderer.tsx
-|  |  |  |  ├── SearchRenderer.tsx
-|  |  |  |  └── WebToolRenderer.tsx
-|  |  |  ├── theme
-|  |  |  |  ├── simple-theme-toggle.tsx
-|  |  |  |  └── theme-provider.tsx
-|  |  |  └── ui
-|  |  |     ├── alert.tsx
-|  |  |     ├── avatar.tsx
-|  |  |     ├── badge.tsx
-|  |  |     ├── button.tsx
-|  |  |     ├── card.tsx
-|  |  |     ├── checkbox.tsx
-|  |  |     ├── code.tsx
-|  |  |     ├── collapsible.tsx
-|  |  |     ├── context-menu.tsx
-|  |  |     ├── dialog.tsx
-|  |  |     ├── dropdown-menu.tsx
-|  |  |     ├── input.tsx
-|  |  |     ├── label.tsx
-|  |  |     ├── radio-group.tsx
-|  |  |     ├── scroll-area.tsx
-|  |  |     ├── select.tsx
-|  |  |     ├── separator.tsx
-|  |  |     ├── sheet.tsx
-|  |  |     ├── sidebar.tsx
-|  |  |     ├── skeleton.tsx
-|  |  |     ├── table.tsx
-|  |  |     ├── textarea.tsx
-|  |  |     └── tooltip.tsx
-|  |  ├── contexts
-|  |  |  ├── BackendContext.tsx
-|  |  |  └── ConversationContext.tsx
-|  |  ├── hooks
-|  |  |  ├── use-mobile.ts
-|  |  |  ├── useCliInstallation.ts
-|  |  |  ├── useConversationEvents.ts
-|  |  |  ├── useConversationManager.ts
-|  |  |  ├── useMessageHandler.ts
-|  |  |  ├── useProcessManager.ts
-|  |  |  └── useToolCallConfirmation.ts
-|  |  ├── index.css
-|  |  ├── lib
-|  |  |  ├── api.ts
-|  |  |  ├── utils.ts
-|  |  |  └── webApi.ts
-|  |  ├── main.tsx
-|  |  ├── pages
-|  |  |  ├── HomeDashboard.tsx
-|  |  |  ├── McpServersPage.tsx
-|  |  |  ├── ProjectDetail.tsx
-|  |  |  └── Projects.tsx
-|  |  ├── types
-|  |  |  ├── backend.ts
-|  |  |  ├── index.ts
-|  |  |  └── mcp.ts
-|  |  ├── utils
-|  |  |  ├── backendDefaults.ts
-|  |  |  ├── backendText.ts
-|  |  |  ├── backendValidation.ts
-|  |  |  ├── helpers.ts
-|  |  |  ├── mcpValidation.ts
-|  |  |  ├── toolCallParser.ts
-|  |  |  └── toolInputParser.ts
-|  |  └── vite-env.d.ts
-|  ├── tsconfig.json
-|  ├── tsconfig.node.json
-|  └── vite.config.ts
-├── justfile
 ├── LICENSE
 ├── README.md
-├── src-tauri
-├── tarpaulin.toml
+├── crates/
+│   ├── backend/
+│   │   ├── Cargo.toml
+│   │   └── src/
+│   │       ├── acp/
+│   │       │   └── mod.rs
+│   │       ├── cli/
+│   │       │   └── mod.rs
+│   │       ├── events/
+│   │       │   └── mod.rs
+│   │       ├── filesystem/
+│   │       │   └── mod.rs
+│   │       ├── lib.rs
+│   │       ├── projects/
+│   │       │   └── mod.rs
+│   │       ├── rpc/
+│   │       │   └── mod.rs
+│   │       ├── search/
+│   │       │   └── mod.rs
+│   │       ├── security/
+│   │       │   └── mod.rs
+│   │       ├── session/
+│   │       │   └── mod.rs
+│   │       ├── test_utils.rs
+│   │       └── types/
+│   │           └── mod.rs
+│   ├── server/
+│   │   ├── Cargo.toml
+│   │   └── src/
+│   │       └── main.rs
+│   └── tauri-app/
+│       ├── build.rs
+│       ├── Cargo.lock
+│       ├── Cargo.toml
+│       ├── capabilities/
+│       │   └── default.json
+│       ├── gen/
+│       │   └── schemas/
+│       │       ├── acl-manifests.json
+│       │       ├── capabilities.json
+│       │       ├── desktop-schema.json
+│       │       └── windows-schema.json
+│       ├── icons/
+│       │   ├── 128x128.png
+│       │   ├── 128x128@2x.png
+│       │   ├── 32x32.png
+│       │   ├── Square107x107Logo.png
+│       │   ├── Square142x142Logo.png
+│       │   ├── Square150x150Logo.png
+│       │   ├── Square284x284Logo.png
+│       │   ├── Square30x30Logo.png
+│       │   ├── Square310x310Logo.png
+│       │   ├── Square44x44Logo.png
+│       │   ├── Square71x71Logo.png
+│       │   ├── Square89x89Logo.png
+│       │   ├── StoreLogo.png
+│       │   ├── icon.icns
+│       │   ├── icon.ico
+│       │   └── icon.png
+│       ├── src/
+│       │   ├── commands/
+│       │   │   └── mod.rs
+│       │   ├── event_emitter.rs
+│       │   ├── lib.rs
+│       │   ├── main.rs
+│       │   └── state.rs
+│       └── tauri.conf.json
+├── frontend/
+│   ├── components.json
+│   ├── dist/                    # Build output directory (generated)
+│   ├── eslint.config.js
+│   ├── index.html
+│   ├── node_modules/            # Package dependencies
+│   ├── package.json
+│   ├── pnpm-lock.yaml
+│   ├── pnpm-workspace.yaml
+│   ├── public/
+│   │   ├── Piebald.svg
+│   │   ├── tauri.svg
+│   │   └── vite.svg
+│   ├── src/
+│   │   ├── App.tsx
+│   │   ├── assets/
+│   │   │   └── react.svg
+│   │   ├── components/
+│   │   │   ├── branding/
+│   │   │   │   ├── DesktopText.tsx
+│   │   │   │   ├── GeminiIcon.tsx          # NEW: Gemini brand icon
+│   │   │   │   ├── GeminiWordmark.tsx
+│   │   │   │   ├── PiebaldLogo.tsx
+│   │   │   │   ├── QwenIcon.tsx            # NEW: Qwen brand icon
+│   │   │   │   ├── QwenWordmark.tsx
+│   │   │   │   ├── SmartLogo.tsx
+│   │   │   │   └── SmartLogoCenter.tsx
+│   │   │   ├── common/
+│   │   │   │   ├── AboutDialog.tsx         # NEW: About dialog
+│   │   │   │   ├── CliWarnings.tsx
+│   │   │   │   ├── CodeBlock.tsx
+│   │   │   │   ├── DiffViewer.tsx
+│   │   │   │   ├── DirectorySelectionDialog.tsx
+│   │   │   │   ├── MarkdownRenderer.tsx
+│   │   │   │   ├── MentionInput.tsx
+│   │   │   │   ├── ModelContextProtocol.tsx
+│   │   │   │   ├── SearchInput.tsx
+│   │   │   │   ├── SearchResults.tsx
+│   │   │   │   ├── ToolCallDisplay.tsx
+│   │   │   │   ├── ToolCallsList.tsx
+│   │   │   │   ├── ToolResultRenderer.tsx
+│   │   │   │   └── UserAvatar.tsx
+│   │   │   ├── conversation/
+│   │   │   │   ├── ConversationList.tsx
+│   │   │   │   ├── MessageActions.tsx
+│   │   │   │   ├── MessageContent.tsx
+│   │   │   │   ├── MessageHeader.tsx
+│   │   │   │   ├── MessageInputBar.tsx
+│   │   │   │   ├── RecentChats.tsx
+│   │   │   │   └── ThinkingBlock.tsx
+│   │   │   ├── layout/
+│   │   │   │   ├── AppHeader.tsx
+│   │   │   │   ├── AppSidebar.tsx
+│   │   │   │   ├── CustomTitleBar.tsx      # NEW: Custom title bar
+│   │   │   │   └── PageLayout.tsx
+│   │   │   ├── mcp/
+│   │   │   │   ├── AddMcpServerDialog.tsx
+│   │   │   │   ├── DynamicList.tsx
+│   │   │   │   ├── McpServerCard.tsx
+│   │   │   │   ├── McpServerSettings.tsx
+│   │   │   │   └── PasteJsonDialog.tsx
+│   │   │   ├── renderers/
+│   │   │   │   ├── CommandRenderer.tsx
+│   │   │   │   ├── DefaultRenderer.tsx
+│   │   │   │   ├── DirectoryRenderer.tsx
+│   │   │   │   ├── EditRenderer.tsx
+│   │   │   │   ├── FileRenderer.tsx
+│   │   │   │   ├── GrepGlobRenderer.tsx
+│   │   │   │   ├── ReadFileRenderer.tsx
+│   │   │   │   ├── ReadManyFilesRenderer.tsx
+│   │   │   │   ├── SearchRenderer.tsx
+│   │   │   │   └── WebToolRenderer.tsx
+│   │   │   ├── theme/              # NEW: Theme management
+│   │   │   │   ├── simple-theme-toggle.tsx
+│   │   │   │   └── theme-provider.tsx
+│   │   │   └── ui/
+│   │   │       ├── alert.tsx
+│   │   │       ├── avatar.tsx
+│   │   │       ├── badge.tsx
+│   │   │       ├── button.tsx
+│   │   │       ├── card.tsx
+│   │   │       ├── checkbox.tsx
+│   │   │       ├── code.tsx
+│   │   │       ├── collapsible.tsx
+│   │   │       ├── context-menu.tsx
+│   │   │       ├── dialog.tsx
+│   │   │       ├── dropdown-menu.tsx
+│   │   │       ├── input.tsx
+│   │   │       ├── label.tsx
+│   │   │       ├── radio-group.tsx
+│   │   │       ├── scroll-area.tsx
+│   │   │       ├── select.tsx
+│   │   │       ├── separator.tsx
+│   │   │       ├── sheet.tsx
+│   │   │       ├── sidebar.tsx
+│   │   │       ├── skeleton.tsx
+│   │   │       ├── table.tsx
+│   │   │       ├── textarea.tsx
+│   │   │       └── tooltip.tsx
+│   │   ├── contexts/
+│   │   │   ├── BackendContext.tsx
+│   │   │   └── ConversationContext.tsx
+│   │   ├── hooks/
+│   │   │   ├── use-mobile.ts
+│   │   │   ├── useCliInstallation.ts
+│   │   │   ├── useConversationEvents.ts
+│   │   │   ├── useConversationManager.ts
+│   │   │   ├── useMessageHandler.ts
+│   │   │   ├── useProcessManager.ts
+│   │   │   └── useToolCallConfirmation.ts
+│   │   ├── index.css
+│   │   ├── lib/
+│   │   │   ├── api.ts
+│   │   │   ├── utils.ts
+│   │   │   └── webApi.ts
+│   │   ├── main.tsx
+│   │   ├── pages/
+│   │   │   ├── HomeDashboard.tsx
+│   │   │   ├── McpServersPage.tsx
+│   │   │   ├── ProjectDetail.tsx
+│   │   │   └── Projects.tsx
+│   │   ├── types/
+│   │   │   ├── backend.ts
+│   │   │   ├── index.ts
+│   │   │   └── mcp.ts
+│   │   ├── utils/
+│   │   │   ├── backendDefaults.ts
+│   │   │   ├── backendText.ts
+│   │   │   ├── backendValidation.ts
+│   │   │   ├── helpers.ts
+│   │   │   ├── mcpValidation.ts
+│   │   │   ├── toolCallParser.ts
+│   │   │   ├── toolInputParser.ts
+│   │   │   └── wordDiff.ts            # NEW: Word-level diff utilities
+│   │   └── vite-env.d.ts
+│   ├── tsconfig.json
+│   ├── tsconfig.node.json
+│   └── vite.config.ts
+├── justfile
+├── src-tauri/                      # Legacy Tauri directory (build artifacts)
+│   └── target/
+├── target/                         # Rust build artifacts
+└── tarpaulin.toml
 ```
 
 ---

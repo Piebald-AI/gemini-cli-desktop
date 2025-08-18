@@ -110,7 +110,10 @@ export const HomeDashboard: React.FC = () => {
                             confirmationRequest as
                               | ToolCallConfirmationRequest
                               | undefined;
-                          console.log("Confirmation request typed:", confirmationRequestTyped);
+                          console.log(
+                            "Confirmation request typed:",
+                            confirmationRequestTyped
+                          );
 
                           // Try with explicit undefined check
                           const finalConfirmationRequest = confirmationRequest
@@ -134,7 +137,9 @@ export const HomeDashboard: React.FC = () => {
 
                   {currentConversation.isStreaming &&
                     index === currentConversation.messages.length - 1 &&
-                    message.parts.some(part => part.type === "text" || part.type === "thinking") && (
+                    message.parts.some(
+                      (part) => part.type === "text" || part.type === "thinking"
+                    ) && (
                       <div className="text-gray-400 italic text-xs">
                         <span className="animate-pulse">●</span> Generating...
                       </div>

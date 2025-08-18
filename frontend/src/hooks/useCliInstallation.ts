@@ -10,11 +10,11 @@ export const useCliInstallation = (backend: BackendType) => {
       try {
         // Only check CLI installation for Gemini backend
         // Qwen backend uses API calls and doesn't require CLI installation
-        if (backend === 'qwen') {
+        if (backend === "qwen") {
           setIsCliInstalled(true); // Qwen doesn't need CLI, so always "installed"
           return;
         }
-        
+
         const installed = await api.invoke<boolean>("check_cli_installed");
         setIsCliInstalled(installed);
       } catch (error) {

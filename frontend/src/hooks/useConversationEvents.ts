@@ -1,16 +1,17 @@
 import React, { useCallback } from "react";
 import { api } from "../lib/api";
 import { getWebSocketManager } from "../lib/webApi";
-import {
-  Conversation,
-  Message,
-  CliIO,
-} from "../types";
+import { Conversation, Message, CliIO } from "../types";
 import { ToolCallConfirmationRequest } from "../utils/toolCallParser";
 import { type ToolCall } from "../utils/toolCallParser";
 
 // Helper functions for ACP conversion - CORRECTED with verified tool names
-function getToolNameFromKind(kind: string, title?: string, locations?: any[], toolCallId?: string): string {
+function getToolNameFromKind(
+  kind: string,
+  title?: string,
+  locations?: any[],
+  toolCallId?: string
+): string {
   switch (kind) {
     case "read":
       // ACP has multiple read tools - try to detect which one based on context
@@ -61,8 +62,11 @@ function mapAcpStatus(acpStatus: string): ToolCall["status"] {
 }
 
 function convertAcpContentToLegacy(acpContent: any[]): any {
-  console.log("🔧 [EDIT-DEBUG] convertAcpContentToLegacy called with:", acpContent);
-  
+  console.log(
+    "🔧 [EDIT-DEBUG] convertAcpContentToLegacy called with:",
+    acpContent
+  );
+
   if (!acpContent || acpContent.length === 0) {
     console.log("🔧 [EDIT-DEBUG] No content provided, returning undefined");
     return undefined;
@@ -104,8 +108,10 @@ export const useConversationEvents = (
 ) => {
   const setupEventListenerForConversation = useCallback(
     async (conversationId: string): Promise<void> => {
-      console.log(`🎯 Setting up event listeners for conversation: ${conversationId}`);
-      
+      console.log(
+        `🎯 Setting up event listeners for conversation: ${conversationId}`
+      );
+
       // In web mode, ensure WebSocket connection is ready before registering listeners
       if (__WEB__) {
         const wsManager = getWebSocketManager();
@@ -222,18 +228,31 @@ export const useConversationEvents = (
         });
 
         // Listen for pure ACP session updates (replaces ai-tool-call and ai-tool-call-update)
-        console.log(`🔧 [EDIT-DEBUG] Registering acp-session-update listener for: ${conversationId}`);
+        console.log(
+          `🔧 [EDIT-DEBUG] Registering acp-session-update listener for: ${conversationId}`
+        );
         await api.listen<any>(
           `acp-session-update-${conversationId}`,
           ({ payload: update }) => {
-            console.log(`🔧 [EDIT-DEBUG] Received acp-session-update event:`, update);
+            console.log(
+              `🔧 [EDIT-DEBUG] Received acp-session-update event:`,
+              update
+            );
             if (update.sessionUpdate === "tool_call") {
-              console.log(`🔧 [EDIT-DEBUG] Processing tool_call event for:`, update.toolCallId);
+              console.log(
+                `🔧 [EDIT-DEBUG] Processing tool_call event for:`,
+                update.toolCallId
+              );
               // Handle tool call start
               updateConversation(conversationId, (conv, lastMsg) => {
                 // Convert ACP ToolCallKind to tool name
-                const toolName = getToolNameFromKind(update.kind, update.title, update.locations, update.toolCallId);
-                
+                const toolName = getToolNameFromKind(
+                  update.kind,
+                  update.title,
+                  update.locations,
+                  update.toolCallId
+                );
+
                 const newToolCall: ToolCall = {
                   id: update.toolCallId,
                   name: toolName,
@@ -263,65 +282,81 @@ export const useConversationEvents = (
                 }
               });
             } else if (update.sessionUpdate === "tool_call_update") {
-              
               // Add a small delay to ensure any previous state updates have completed
               setTimeout(() => {
                 // Handle tool call update
                 updateConversation(conversationId, (conv) => {
-                let updated = false;
-                for (const msg of conv.messages) {
-                  for (const msgPart of msg.parts) {
-                    if (
-                      msgPart.type === "toolCall" &&
-                      msgPart.toolCall.id === update.toolCallId
-                    ) {
-                      
-                      // Preserve confirmation request data when updating status
-                      const preservedConfirmationRequest =
-                        msgPart.toolCall.confirmationRequest;
+                  let updated = false;
+                  for (const msg of conv.messages) {
+                    for (const msgPart of msg.parts) {
+                      if (
+                        msgPart.type === "toolCall" &&
+                        msgPart.toolCall.id === update.toolCallId
+                      ) {
+                        // Preserve confirmation request data when updating status
+                        const preservedConfirmationRequest =
+                          msgPart.toolCall.confirmationRequest;
 
-                      const newStatus = mapAcpStatus(update.status);
-                      
-                      // Don't overwrite a user rejection with a backend status update
-                      const isCurrentlyRejected = (msgPart.toolCall as any).isUserRejected || 
-                        (msgPart.toolCall.status === "failed" && 
-                        msgPart.toolCall.result && 
-                        typeof msgPart.toolCall.result === "object" && 
-                        msgPart.toolCall.result.markdown === "Tool call rejected by user");
-                      
-                      if (!isCurrentlyRejected) {
-                        msgPart.toolCall.status = newStatus;
-                      }
-                      msgPart.toolCall.confirmationRequest = preservedConfirmationRequest;
-                      
-                      
-                      // Handle content updates - but don't overwrite user rejections
-                      if (update.content && update.content.length > 0 && !isCurrentlyRejected) {
-                        const contentItem = update.content[0];
-                        if (contentItem.type === "content" && contentItem.content.type === "text") {
-                          msgPart.toolCall.result = contentItem.content.text;
-                          console.log("🔧 [EDIT-DEBUG] Updated tool call with text result:", contentItem.content.text.substring(0, 100));
-                        } else if (contentItem.type === "diff") {
-                          // For diff content, just store as text with formatting
-                          const diffResult = `Diff for ${contentItem.path}:\nOld: ${contentItem.old_text}\nNew: ${contentItem.new_text}`;
-                          msgPart.toolCall.result = diffResult;
-                          console.log("🔧 [EDIT-DEBUG] Updated tool call with diff result for path:", contentItem.path);
+                        const newStatus = mapAcpStatus(update.status);
+
+                        // Don't overwrite a user rejection with a backend status update
+                        const isCurrentlyRejected =
+                          (msgPart.toolCall as any).isUserRejected ||
+                          (msgPart.toolCall.status === "failed" &&
+                            msgPart.toolCall.result &&
+                            typeof msgPart.toolCall.result === "object" &&
+                            msgPart.toolCall.result.markdown ===
+                              "Tool call rejected by user");
+
+                        if (!isCurrentlyRejected) {
+                          msgPart.toolCall.status = newStatus;
                         }
-                      }
+                        msgPart.toolCall.confirmationRequest =
+                          preservedConfirmationRequest;
 
-                      updated = true;
-                      break;
+                        // Handle content updates - but don't overwrite user rejections
+                        if (
+                          update.content &&
+                          update.content.length > 0 &&
+                          !isCurrentlyRejected
+                        ) {
+                          const contentItem = update.content[0];
+                          if (
+                            contentItem.type === "content" &&
+                            contentItem.content.type === "text"
+                          ) {
+                            msgPart.toolCall.result = contentItem.content.text;
+                            console.log(
+                              "🔧 [EDIT-DEBUG] Updated tool call with text result:",
+                              contentItem.content.text.substring(0, 100)
+                            );
+                          } else if (contentItem.type === "diff") {
+                            // For diff content, just store as text with formatting
+                            const diffResult = `Diff for ${contentItem.path}:\nOld: ${contentItem.old_text}\nNew: ${contentItem.new_text}`;
+                            msgPart.toolCall.result = diffResult;
+                            console.log(
+                              "🔧 [EDIT-DEBUG] Updated tool call with diff result for path:",
+                              contentItem.path
+                            );
+                          }
+                        }
+
+                        updated = true;
+                        break;
+                      }
                     }
+                    if (updated) break;
                   }
-                  if (updated) break;
-                }
-                
-                if (!updated) {
-                  console.error("Tool call not found for update:", update.toolCallId);
-                } else {
-                  // Force a re-render by updating the conversation timestamp
-                  conv.lastUpdated = new Date();
-                }
+
+                  if (!updated) {
+                    console.error(
+                      "Tool call not found for update:",
+                      update.toolCallId
+                    );
+                  } else {
+                    // Force a re-render by updating the conversation timestamp
+                    conv.lastUpdated = new Date();
+                  }
                 });
               }, 100); // 100ms delay to ensure state batching doesn't interfere
               // TODO 8/17/2025: Look in to the timeout.
@@ -350,18 +385,29 @@ export const useConversationEvents = (
         });
 
         // Listen for pure ACP permission requests (replaces ai-tool-call-confirmation)
-        console.log(`✅ Registering listener for: acp-permission-request-${conversationId}`);
+        console.log(
+          `✅ Registering listener for: acp-permission-request-${conversationId}`
+        );
         await api.listen<any>(
           `acp-permission-request-${conversationId}`,
           (event) => {
-            console.log("🔍 DEBUG: Received acp-permission-request event:", event);
+            console.log(
+              "🔍 DEBUG: Received acp-permission-request event:",
+              event
+            );
             console.log("🔍 DEBUG: Event payload:", event.payload);
             console.log("🔍 DEBUG: Request object:", event.payload?.request);
-            console.log("🔍 DEBUG: ToolCall object:", event.payload?.request?.toolCall);
-            
+            console.log(
+              "🔍 DEBUG: ToolCall object:",
+              event.payload?.request?.toolCall
+            );
+
             const { request_id, request } = event.payload;
             const toolCallId = request.toolCall.toolCallId;
-            console.log("🎯 Processing permission request for toolCallId:", toolCallId);
+            console.log(
+              "🎯 Processing permission request for toolCallId:",
+              toolCallId
+            );
             console.log("🎯 Tool call status:", request.toolCall.status);
             console.log("🎯 Tool call kind:", request.toolCall.kind);
 
@@ -370,7 +416,7 @@ export const useConversationEvents = (
               // When a permission request comes in, the model has finished generating
               // We should stop the streaming indicator
               conv.isStreaming = false;
-              
+
               // Check if tool call already exists
               let toolCallExists = false;
               for (const msg of conv.messages) {
@@ -385,7 +431,10 @@ export const useConversationEvents = (
                 }
               }
 
-              console.log("🔧 [EDIT-DEBUG] Tool call exists check:", { toolCallId, toolCallExists });
+              console.log("🔧 [EDIT-DEBUG] Tool call exists check:", {
+                toolCallId,
+                toolCallExists,
+              });
 
               // Create the confirmation request object
               const confirmationRequest: ToolCallConfirmationRequest = {
@@ -396,11 +445,18 @@ export const useConversationEvents = (
                 icon: "", // ACP doesn't use icons
                 content: convertAcpContentToLegacy(request.toolCall.content),
                 confirmation: {
-                  type: request.toolCall.kind === "edit" ? "edit" : request.toolCall.kind === "execute" ? "command" : "generic",
+                  type:
+                    request.toolCall.kind === "edit"
+                      ? "edit"
+                      : request.toolCall.kind === "execute"
+                        ? "command"
+                        : "generic",
                   rootCommand: undefined,
                   command: undefined,
                 },
-                locations: request.toolCall.locations.map((loc: any) => ({ path: loc.path })),
+                locations: request.toolCall.locations.map((loc: any) => ({
+                  path: loc.path,
+                })),
                 inputJsonRpc: window.pendingToolCallInput,
                 // Include ACP permission options for enhanced approval flows
                 options: request.options || [],
@@ -408,9 +464,17 @@ export const useConversationEvents = (
 
               // If tool call doesn't exist, create one with the confirmation request
               if (!toolCallExists) {
-                console.log("🔧 [EDIT-DEBUG] Creating new tool call for permission request:", toolCallId);
-                const toolName = getToolNameFromKind(request.toolCall.kind, request.toolCall.title, request.toolCall.locations, toolCallId);
-                
+                console.log(
+                  "🔧 [EDIT-DEBUG] Creating new tool call for permission request:",
+                  toolCallId
+                );
+                const toolName = getToolNameFromKind(
+                  request.toolCall.kind,
+                  request.toolCall.title,
+                  request.toolCall.locations,
+                  toolCallId
+                );
+
                 const newToolCall: ToolCall = {
                   id: toolCallId,
                   name: toolName,
@@ -420,14 +484,19 @@ export const useConversationEvents = (
                   confirmationRequest: confirmationRequest, // Attach immediately
                 };
 
-                console.log("🔧 [EDIT-DEBUG] Created tool call object:", newToolCall);
+                console.log(
+                  "🔧 [EDIT-DEBUG] Created tool call object:",
+                  newToolCall
+                );
 
                 if (lastMsg.sender === "assistant") {
                   lastMsg.parts.push({
                     type: "toolCall",
                     toolCall: newToolCall,
                   });
-                  console.log("🔧 [EDIT-DEBUG] Added tool call to existing assistant message");
+                  console.log(
+                    "🔧 [EDIT-DEBUG] Added tool call to existing assistant message"
+                  );
                 } else {
                   conv.messages.push({
                     id: Date.now().toString(),
@@ -440,10 +509,14 @@ export const useConversationEvents = (
                       },
                     ],
                   });
-                  console.log("🔧 [EDIT-DEBUG] Created new assistant message with tool call");
+                  console.log(
+                    "🔧 [EDIT-DEBUG] Created new assistant message with tool call"
+                  );
                 }
               } else {
-                console.log("🔧 [EDIT-DEBUG] Tool call exists, updating with confirmation request");
+                console.log(
+                  "🔧 [EDIT-DEBUG] Tool call exists, updating with confirmation request"
+                );
                 // Tool call exists, update it with the confirmation request
                 for (const msg of conv.messages) {
                   for (const msgPart of msg.parts) {
@@ -451,15 +524,23 @@ export const useConversationEvents = (
                       msgPart.type === "toolCall" &&
                       msgPart.toolCall.id === toolCallId
                     ) {
-                      msgPart.toolCall.confirmationRequest = confirmationRequest;
-                      console.log("🔍 [PERMISSION-STATUS] Setting tool call status from permission request:", {
-                        toolCallId: msgPart.toolCall.id,
-                        oldStatus: msgPart.toolCall.status,
-                        newStatus: mapAcpStatus(request.toolCall.status),
-                        requestStatus: request.toolCall.status
-                      });
-                      msgPart.toolCall.status = mapAcpStatus(request.toolCall.status);
-                      console.log("🔧 [EDIT-DEBUG] Updated existing tool call with confirmation request");
+                      msgPart.toolCall.confirmationRequest =
+                        confirmationRequest;
+                      console.log(
+                        "🔍 [PERMISSION-STATUS] Setting tool call status from permission request:",
+                        {
+                          toolCallId: msgPart.toolCall.id,
+                          oldStatus: msgPart.toolCall.status,
+                          newStatus: mapAcpStatus(request.toolCall.status),
+                          requestStatus: request.toolCall.status,
+                        }
+                      );
+                      msgPart.toolCall.status = mapAcpStatus(
+                        request.toolCall.status
+                      );
+                      console.log(
+                        "🔧 [EDIT-DEBUG] Updated existing tool call with confirmation request"
+                      );
                       break;
                     }
                   }
@@ -476,19 +557,32 @@ export const useConversationEvents = (
               icon: "", // ACP doesn't use icons
               content: convertAcpContentToLegacy(request.toolCall.content),
               confirmation: {
-                type: request.toolCall.kind === "edit" ? "edit" : request.toolCall.kind === "execute" ? "command" : "generic",
+                type:
+                  request.toolCall.kind === "edit"
+                    ? "edit"
+                    : request.toolCall.kind === "execute"
+                      ? "command"
+                      : "generic",
                 rootCommand: undefined,
                 command: undefined,
               },
-              locations: request.toolCall.locations.map((loc: any) => ({ path: loc.path })),
+              locations: request.toolCall.locations.map((loc: any) => ({
+                path: loc.path,
+              })),
               inputJsonRpc: window.pendingToolCallInput,
             };
 
             setConfirmationRequests((prev) => {
               const newMap = new Map(prev);
               newMap.set(toolCallId, legacyConfirmationRequest);
-              console.log("✅ Stored confirmation request in Map for toolCallId:", toolCallId);
-              console.log("✅ Total confirmation requests in Map:", newMap.size);
+              console.log(
+                "✅ Stored confirmation request in Map for toolCallId:",
+                toolCallId
+              );
+              console.log(
+                "✅ Total confirmation requests in Map:",
+                newMap.size
+              );
               return newMap;
             });
           }
@@ -500,11 +594,13 @@ export const useConversationEvents = (
             conv.isStreaming = false;
           });
         });
-        
-        console.log(`✅✅✅ ALL event listeners successfully registered for conversation: ${conversationId}`);
-        
+
+        console.log(
+          `✅✅✅ ALL event listeners successfully registered for conversation: ${conversationId}`
+        );
+
         // Add a small delay to ensure listeners are fully active
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
         // TODO 8/17/2025: Look in to the hard-coded delaay.
       } catch (error) {
         console.error(

@@ -23,7 +23,10 @@ export const useToolCallConfirmation = ({
     async (toolCallId: string, outcome: string) => {
       const confirmationRequest = confirmationRequests.get(toolCallId);
       if (!confirmationRequest) {
-        console.error("No confirmation request found for toolCallId:", toolCallId);
+        console.error(
+          "No confirmation request found for toolCallId:",
+          toolCallId
+        );
         return;
       }
 
@@ -36,7 +39,13 @@ export const useToolCallConfirmation = ({
         });
 
         // If approved, update the tool call status in the UI
-        if (outcome === "proceed_once" || outcome === "proceed_always" || outcome === "proceed_always_server" || outcome === "proceed_always_tool" || outcome.startsWith("alwaysAllow")) {
+        if (
+          outcome === "proceed_once" ||
+          outcome === "proceed_always" ||
+          outcome === "proceed_always_server" ||
+          outcome === "proceed_always_tool" ||
+          outcome.startsWith("alwaysAllow")
+        ) {
           updateConversation(activeConversation!, (conv) => {
             let found = false;
             for (const msg of conv.messages) {
@@ -57,7 +66,10 @@ export const useToolCallConfirmation = ({
               }
             }
             if (!found) {
-              console.error("Tool call not found for status update:", toolCallId);
+              console.error(
+                "Tool call not found for status update:",
+                toolCallId
+              );
             }
           });
         } else {
@@ -82,7 +94,10 @@ export const useToolCallConfirmation = ({
               }
             }
             if (!found) {
-              console.error("🔧 [EDIT-DEBUG] Tool call not found in conversation for rejection:", toolCallId);
+              console.error(
+                "🔧 [EDIT-DEBUG] Tool call not found in conversation for rejection:",
+                toolCallId
+              );
             }
           });
         }

@@ -49,8 +49,10 @@ export function ConversationList({
 }: ConversationListProps) {
   // Use backend context instead of props
   const { selectedBackend, switchBackend } = useBackend();
-  const { config: qwenConfig, updateConfig: updateQwenConfig } = useBackendConfig('qwen');
-  const { config: geminiConfig, updateConfig: updateGeminiConfig } = useBackendConfig('gemini');
+  const { config: qwenConfig, updateConfig: updateQwenConfig } =
+    useBackendConfig("qwen");
+  const { config: geminiConfig, updateConfig: updateGeminiConfig } =
+    useBackendConfig("gemini");
   const { isMobile, setOpenMobile } = useSidebar();
   const backendText = getBackendText(selectedBackend);
   const [selectedConversationForEnd, setSelectedConversationForEnd] = useState<{
@@ -158,7 +160,7 @@ export function ConversationList({
             value={selectedBackend}
             onValueChange={(value) => {
               console.log("Backend changed to:", value);
-              switchBackend(value as 'gemini' | 'qwen');
+              switchBackend(value as "gemini" | "qwen");
               // Reset model selection when backend changes
               if (value === "gemini") {
                 setSelectedModel("gemini-2.5-flash");
@@ -313,7 +315,7 @@ export function ConversationList({
                 </label>
                 <Select
                   value={geminiConfig.authMethod}
-                  onValueChange={(value) => 
+                  onValueChange={(value) =>
                     updateGeminiConfig({ authMethod: value as any })
                   }
                 >
@@ -346,7 +348,7 @@ export function ConversationList({
               </div>
 
               {/* API Key input - only show for API key auth */}
-              {geminiConfig.authMethod === 'gemini-api-key' && (
+              {geminiConfig.authMethod === "gemini-api-key" && (
                 <div>
                   <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
                     Gemini API Key
@@ -376,7 +378,7 @@ export function ConversationList({
               )}
 
               {/* Vertex AI configuration - only show for Vertex AI auth */}
-              {geminiConfig.authMethod === 'vertex-ai' && (
+              {geminiConfig.authMethod === "vertex-ai" && (
                 <>
                   <div>
                     <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
@@ -384,7 +386,7 @@ export function ConversationList({
                     </label>
                     <Input
                       type="text"
-                      value={geminiConfig.vertexProject || ''}
+                      value={geminiConfig.vertexProject || ""}
                       onChange={(e) =>
                         updateGeminiConfig({
                           vertexProject: e.target.value,
@@ -399,7 +401,7 @@ export function ConversationList({
                     </label>
                     <Input
                       type="text"
-                      value={geminiConfig.vertexLocation || ''}
+                      value={geminiConfig.vertexLocation || ""}
                       onChange={(e) =>
                         updateGeminiConfig({
                           vertexLocation: e.target.value,
@@ -412,16 +414,17 @@ export function ConversationList({
               )}
 
               {/* OAuth information */}
-              {geminiConfig.authMethod === 'oauth-personal' && (
+              {geminiConfig.authMethod === "oauth-personal" && (
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   1000 free requests per day, 60 free requests per minute.
                 </p>
               )}
 
               {/* Cloud Shell information */}
-              {geminiConfig.authMethod === 'cloud-shell' && (
+              {geminiConfig.authMethod === "cloud-shell" && (
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  This method works automatically in Google Cloud Shell environments
+                  This method works automatically in Google Cloud Shell
+                  environments
                 </p>
               )}
             </div>

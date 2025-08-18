@@ -1,8 +1,11 @@
 import React, { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { createLineDiffWithWords, type LineDiff, type WordDiff } from "@/utils/wordDiff";
-
+import {
+  createLineDiffWithWords,
+  type LineDiff,
+  type WordDiff,
+} from "@/utils/wordDiff";
 
 interface DiffViewerProps {
   oldText: string;
@@ -79,7 +82,10 @@ export function DiffViewer({
   };
 
   // Component to render word-level highlighting within added/removed lines
-  const renderHighlightedWords = (words: WordDiff[], lineType: 'added' | 'removed') => {
+  const renderHighlightedWords = (
+    words: WordDiff[],
+    lineType: "added" | "removed"
+  ) => {
     return (
       <span>
         {words.map((word, index) => (
@@ -87,8 +93,12 @@ export function DiffViewer({
             key={index}
             className={cn(
               // Only highlight words that are different from the comparison
-              word.type === "added" && lineType === "added" && "bg-green-300 dark:bg-green-700/70 px-0.5 rounded",
-              word.type === "removed" && lineType === "removed" && "bg-red-300 dark:bg-red-700/70 px-0.5 rounded",
+              word.type === "added" &&
+                lineType === "added" &&
+                "bg-green-300 dark:bg-green-700/70 px-0.5 rounded",
+              word.type === "removed" &&
+                lineType === "removed" &&
+                "bg-red-300 dark:bg-red-700/70 px-0.5 rounded",
               // Unchanged words get no highlighting
               word.type === "unchanged" && ""
             )}
@@ -132,11 +142,10 @@ export function DiffViewer({
             <div
               className={cn("px-2 py-1 flex-1", getLineTextColor(line.type))}
             >
-              {line.highlightedWords && (line.type === "added" || line.type === "removed") ? (
-                renderHighlightedWords(line.highlightedWords, line.type)
-              ) : (
-                line.content || " "
-              )}
+              {line.highlightedWords &&
+              (line.type === "added" || line.type === "removed")
+                ? renderHighlightedWords(line.highlightedWords, line.type)
+                : line.content || " "}
             </div>
           </div>
         ))}

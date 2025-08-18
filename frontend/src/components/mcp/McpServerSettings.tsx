@@ -55,8 +55,8 @@ export function McpServerSettings({ trigger }: McpServerSettingsProps) {
 
   const loadSettingsPath = async () => {
     try {
-      const path = await invoke<string>("get_settings_file_path", { 
-        backendType: selectedBackend 
+      const path = await invoke<string>("get_settings_file_path", {
+        backendType: selectedBackend,
       });
       setSettingsFilePath(path);
     } catch (error) {
@@ -67,10 +67,12 @@ export function McpServerSettings({ trigger }: McpServerSettingsProps) {
   const loadSettingsFromFile = async () => {
     setIsLoading(true);
     try {
-      const settings =
-        await invoke<Record<string, unknown>>("read_settings_file", {
-          backendType: selectedBackend
-        });
+      const settings = await invoke<Record<string, unknown>>(
+        "read_settings_file",
+        {
+          backendType: selectedBackend,
+        }
+      );
       const mcpServers = settings.mcpServers || {};
 
       const serverEntries: McpServerEntry[] = Object.entries(mcpServers).map(
@@ -95,10 +97,12 @@ export function McpServerSettings({ trigger }: McpServerSettingsProps) {
     setIsLoading(true);
     try {
       // Read current settings to preserve other configurations
-      const currentSettings =
-        await invoke<Record<string, unknown>>("read_settings_file", {
-          backendType: selectedBackend
-        });
+      const currentSettings = await invoke<Record<string, unknown>>(
+        "read_settings_file",
+        {
+          backendType: selectedBackend,
+        }
+      );
 
       // Update only the mcpServers section
       const mcpServersConfig: McpServersConfig = {};
@@ -113,9 +117,9 @@ export function McpServerSettings({ trigger }: McpServerSettingsProps) {
         mcpServers: mcpServersConfig,
       };
 
-      await invoke("write_settings_file", { 
+      await invoke("write_settings_file", {
         settings: updatedSettings,
-        backendType: selectedBackend 
+        backendType: selectedBackend,
       });
       setServers(updatedServers);
     } catch (error) {
@@ -259,8 +263,8 @@ export function McpServerSettings({ trigger }: McpServerSettingsProps) {
                 No MCP servers configured
               </h3>
               <p className="text-sm text-muted-foreground mb-6 max-w-md">
-                {backendText.mcpCapabilities} Get started by adding your
-                first server configuration.
+                {backendText.mcpCapabilities} Get started by adding your first
+                server configuration.
               </p>
               <div className="flex gap-3">
                 <AddMcpServerDialog

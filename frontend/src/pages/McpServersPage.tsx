@@ -52,8 +52,8 @@ export function McpServersPage() {
 
   const loadSettingsPath = async () => {
     try {
-      const path = await invoke<string>("get_settings_file_path", { 
-        backendType: selectedBackend 
+      const path = await invoke<string>("get_settings_file_path", {
+        backendType: selectedBackend,
       });
       setSettingsFilePath(path);
     } catch (error) {
@@ -64,10 +64,12 @@ export function McpServersPage() {
   const loadSettingsFromFile = async () => {
     setIsLoading(true);
     try {
-      const settings =
-        await invoke<Record<string, unknown>>("read_settings_file", {
-          backendType: selectedBackend
-        });
+      const settings = await invoke<Record<string, unknown>>(
+        "read_settings_file",
+        {
+          backendType: selectedBackend,
+        }
+      );
       const mcpServers = settings.mcpServers || {};
 
       const serverEntries: McpServerEntry[] = Object.entries(mcpServers).map(
@@ -92,10 +94,12 @@ export function McpServersPage() {
     setIsLoading(true);
     try {
       // Read current settings to preserve other configurations
-      const currentSettings =
-        await invoke<Record<string, unknown>>("read_settings_file", {
-          backendType: selectedBackend
-        });
+      const currentSettings = await invoke<Record<string, unknown>>(
+        "read_settings_file",
+        {
+          backendType: selectedBackend,
+        }
+      );
 
       // Update only the mcpServers section
       const mcpServersConfig: McpServersConfig = {};
@@ -110,9 +114,9 @@ export function McpServersPage() {
         mcpServers: mcpServersConfig,
       };
 
-      await invoke("write_settings_file", { 
+      await invoke("write_settings_file", {
         settings: updatedSettings,
-        backendType: selectedBackend 
+        backendType: selectedBackend,
       });
       setServers(updatedServers);
     } catch (error) {
@@ -230,164 +234,169 @@ export function McpServersPage() {
   return (
     <div className="w-full">
       <div className="mx-auto w-full max-w-4xl px-6 py-8 flex-1 flex flex-col">
-      {/* Page Header */}
-      <div className="mb-6">
-        <button
-          type="button"
-          onClick={() => navigate("/")}
-          className="mb-4 inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition cursor-pointer"
-          aria-label="Back to Home"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" aria-hidden="true" />
-          <span>Back to Home</span>
-        </button>
-        <h1 className="text-2xl font-bold mb-2">MCP Servers</h1>
-        <p className="text-muted-foreground">
-          Manage your Model Context Protocol server configurations
-        </p>
-      </div>
+        {/* Page Header */}
+        <div className="mb-6">
+          <button
+            type="button"
+            onClick={() => navigate("/")}
+            className="mb-4 inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition cursor-pointer"
+            aria-label="Back to Home"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" aria-hidden="true" />
+            <span>Back to Home</span>
+          </button>
+          <h1 className="text-2xl font-bold mb-2">MCP Servers</h1>
+          <p className="text-muted-foreground">
+            Manage your Model Context Protocol server configurations
+          </p>
+        </div>
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-y-auto">
-        {isLoading ? (
-          <div className="flex items-center justify-center p-8">
-            <div className="text-sm text-muted-foreground">
-              Loading settings file...
+        {/* Main Content */}
+        <div className="flex-1 overflow-y-auto">
+          {isLoading ? (
+            <div className="flex items-center justify-center p-8">
+              <div className="text-sm text-muted-foreground">
+                Loading settings file...
+              </div>
             </div>
-          </div>
-        ) : servers.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-12 text-center">
-            <ModelContextProtocol className="h-16 w-16 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">
-              No MCP servers configured
-            </h3>
-            <p className="text-sm text-muted-foreground mb-6 max-w-md">
-              {backendText.mcpCapabilities} Get started by adding your first
-              server configuration.
-            </p>
-            <div className="flex gap-3">
-              <AddMcpServerDialog
-                trigger={
-                  <Button className="flex items-center gap-2">
-                    <Package className="h-4 w-4" />
-                    Add Your First Server
-                  </Button>
-                }
-                onServerAdd={handleAddServer}
-              />
-              <PasteJsonDialog
-                trigger={
-                  <Button variant="outline" className="flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    Import from JSON
-                  </Button>
-                }
-                onServersAdd={handleAddServers}
-              />
+          ) : servers.length === 0 ? (
+            <div className="flex flex-col items-center justify-center p-12 text-center">
+              <ModelContextProtocol className="h-16 w-16 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">
+                No MCP servers configured
+              </h3>
+              <p className="text-sm text-muted-foreground mb-6 max-w-md">
+                {backendText.mcpCapabilities} Get started by adding your first
+                server configuration.
+              </p>
+              <div className="flex gap-3">
+                <AddMcpServerDialog
+                  trigger={
+                    <Button className="flex items-center gap-2">
+                      <Package className="h-4 w-4" />
+                      Add Your First Server
+                    </Button>
+                  }
+                  onServerAdd={handleAddServer}
+                />
+                <PasteJsonDialog
+                  trigger={
+                    <Button
+                      variant="outline"
+                      className="flex items-center gap-2"
+                    >
+                      <FileText className="h-4 w-4" />
+                      Import from JSON
+                    </Button>
+                  }
+                  onServersAdd={handleAddServers}
+                />
+              </div>
             </div>
-          </div>
-        ) : (
-          <div className="space-y-4 max-w-5xl mx-auto">
-            {servers.map((server) => {
-              const details = formatServerDetails(server);
-              const mainInfo = getMainServerInfo(server);
+          ) : (
+            <div className="space-y-4 max-w-5xl mx-auto">
+              {servers.map((server) => {
+                const details = formatServerDetails(server);
+                const mainInfo = getMainServerInfo(server);
 
-              return (
-                <Card key={server.id} className="p-4">
-                  <CardContent className="p-0 space-y-2">
-                    {/* Server header */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3 text-lg">
-                        <span className="font-semibold">{server.name}</span>
-                        <span className="text-muted-foreground font-mono text-sm">
-                          {mainInfo}
-                        </span>
-                        {server.config.trust ? (
-                          <div className="flex items-center gap-1 text-green-600">
-                            <div className="w-2 h-2 bg-green-500 rounded-full" />
-                            <span className="text-sm font-medium">Trusted</span>
-                          </div>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">
-                            Not Trusted
+                return (
+                  <Card key={server.id} className="p-4">
+                    <CardContent className="p-0 space-y-2">
+                      {/* Server header */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 text-lg">
+                          <span className="font-semibold">{server.name}</span>
+                          <span className="text-muted-foreground font-mono text-sm">
+                            {mainInfo}
                           </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteServer(server)}
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Server details */}
-                    <div className="space-y-1 text-sm text-muted-foreground">
-                      {details.map((detail, index) => (
-                        <div key={index}>
-                          <span className="font-medium">{detail.label}:</span>{" "}
-                          <span className="font-mono">{detail.value}</span>
+                          {server.config.trust ? (
+                            <div className="flex items-center gap-1 text-green-600">
+                              <div className="w-2 h-2 bg-green-500 rounded-full" />
+                              <span className="text-sm font-medium">
+                                Trusted
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">
+                              Not Trusted
+                            </span>
+                          )}
                         </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteServer(server)}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Server details */}
+                      <div className="space-y-1 text-sm text-muted-foreground">
+                        {details.map((detail, index) => (
+                          <div key={index}>
+                            <span className="font-medium">{detail.label}:</span>{" "}
+                            <span className="font-mono">{detail.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Bottom action buttons - fixed at bottom */}
+        {servers.length > 0 && (
+          <div className="flex justify-end gap-3 pt-4 mt-4 border-t">
+            <AddMcpServerDialog
+              trigger={
+                <Button className="flex items-center gap-2">
+                  <Package className="h-4 w-4" />
+                  Add New Server
+                </Button>
+              }
+              onServerAdd={handleAddServer}
+            />
+            <PasteJsonDialog
+              trigger={
+                <Button variant="outline" className="flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Paste JSON
+                </Button>
+              }
+              onServersAdd={handleAddServers}
+            />
           </div>
         )}
-      </div>
 
-      {/* Bottom action buttons - fixed at bottom */}
-      {servers.length > 0 && (
-        <div className="flex justify-end gap-3 pt-4 mt-4 border-t">
-          <AddMcpServerDialog
-            trigger={
-              <Button className="flex items-center gap-2">
-                <Package className="h-4 w-4" />
-                Add New Server
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Delete MCP Server</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete the MCP server{" "}
+                <Code>{serverToDelete?.name}</Code>? This action cannot be
+                undone and will permanently remove the server from your{" "}
+                <Code>settings.json</Code> file.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={cancelDeleteServer}>
+                Cancel
               </Button>
-            }
-            onServerAdd={handleAddServer}
-          />
-          <PasteJsonDialog
-            trigger={
-              <Button variant="outline" className="flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                Paste JSON
+              <Button variant="destructive" onClick={confirmDeleteServer}>
+                Delete Server
               </Button>
-            }
-            onServersAdd={handleAddServers}
-          />
-        </div>
-      )}
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Delete MCP Server</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete the MCP server{" "}
-              <Code>{serverToDelete?.name}</Code>? This action cannot be undone
-              and will permanently remove the server from your{" "}
-              <Code>settings.json</Code> file.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={cancelDeleteServer}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={confirmDeleteServer}>
-              Delete Server
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

@@ -50,7 +50,7 @@ export interface ToolCallConfirmationRequest {
   options?: Array<{
     optionId: string;
     name: string;
-    kind: 'allow_once' | 'allow_always' | 'reject_once' | 'reject_always';
+    kind: "allow_once" | "allow_always" | "reject_once" | "reject_always";
   }>;
 }
 
@@ -77,7 +77,9 @@ export class ToolCallParser {
   // Legacy method - no longer used since we moved to structured ACP events
   // Kept for backward compatibility if needed
   static parseGeminiOutput(output: string): ParsedContent {
-    console.warn("parseGeminiOutput is deprecated - using structured events instead");
+    console.warn(
+      "parseGeminiOutput is deprecated - using structured events instead"
+    );
     return {
       text: output,
       toolCalls: [],
@@ -90,7 +92,9 @@ export class ToolCallParser {
     toolName?: string;
     isComplete: boolean;
   } {
-    console.warn("detectStreamingToolCall is deprecated - using structured events instead");
+    console.warn(
+      "detectStreamingToolCall is deprecated - using structured events instead"
+    );
     return {
       isToolCall: false,
       toolName: undefined,

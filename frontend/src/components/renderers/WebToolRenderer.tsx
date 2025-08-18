@@ -16,11 +16,15 @@ export function WebToolRenderer({ toolCall }: WebToolRendererProps) {
   const result = toolCall.result as WebToolResult;
 
   // Detect tool type
-  const isWebSearch = toolCall.name === "google_web_search" || 
-                     (toolCall.label && toolCall.label.toLowerCase().includes("searching the web"));
-  
-  const isWebFetch = toolCall.name === "web_fetch" || 
-                    (toolCall.label && toolCall.label.toLowerCase().includes("processing urls"));
+  const isWebSearch =
+    toolCall.name === "google_web_search" ||
+    (toolCall.label &&
+      toolCall.label.toLowerCase().includes("searching the web"));
+
+  const isWebFetch =
+    toolCall.name === "web_fetch" ||
+    (toolCall.label &&
+      toolCall.label.toLowerCase().includes("processing urls"));
 
   // Get the summary message from the result
   const getSummary = (): string => {
@@ -42,13 +46,15 @@ export function WebToolRenderer({ toolCall }: WebToolRendererProps) {
   const getDescription = (): string => {
     if (isWebSearch) {
       // Extract query from label or parameters
-      const query = toolCall.label?.match(/Searching the web for: "([^"]+)"/)?.[1] || "query";
+      const query =
+        toolCall.label?.match(/Searching the web for: "([^"]+)"/)?.[1] ||
+        "query";
       const verb = toolCall.status === "running" ? "Searching" : "Searched";
       return `${verb} web for "${query}"`;
     } else if (isWebFetch) {
       // Extract URL from label or parameters
       let displayUrl = "URL";
-      
+
       if (toolCall.label) {
         // Look for URLs in the label using a more comprehensive approach
         const urlMatches = toolCall.label.match(/https?:\/\/[^\s"']+/g);
@@ -64,11 +70,13 @@ export function WebToolRenderer({ toolCall }: WebToolRendererProps) {
           displayUrl = "URLs from prompt";
         }
       }
-      
+
       const verb = toolCall.status === "running" ? "Fetching" : "Fetched";
       return `${verb} content from ${displayUrl}`;
     }
-    return toolCall.status === "running" ? "Web operation in progress" : "Web operation completed";
+    return toolCall.status === "running"
+      ? "Web operation in progress"
+      : "Web operation completed";
   };
 
   const summary = getSummary();

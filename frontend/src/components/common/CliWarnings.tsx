@@ -47,8 +47,8 @@ export const CliWarnings: React.FC<CliWarningsProps> = ({
             </AlertTitle>
             <AlertDescription className="text-blue-800 dark:text-blue-300">
               <p>
-                {backendText.oauthNotSupported} To login, please
-                first use the CLI directly for authentication.
+                {backendText.oauthNotSupported} To login, please first use the
+                CLI directly for authentication.
               </p>
             </AlertDescription>
           </Alert>
@@ -120,9 +120,9 @@ export const CliWarnings: React.FC<CliWarningsProps> = ({
               <p>
                 <span>
                   {backendText.installMessage}
-                  {selectedBackend === 'gemini' && (
+                  {selectedBackend === "gemini" && (
                     <>
-                      {' '}
+                      {" "}
                       <a
                         href="https://github.com/google-gemini/gemini-cli"
                         target="_blank"
