@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { api } from "../lib/api";
 import { ProcessStatus } from "../types";
 
 export const useProcessManager = () => {
   const [processStatuses, setProcessStatuses] = useState<ProcessStatus[]>([]);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const fetchProcessStatuses = useCallback(async () => {
     try {
@@ -35,16 +36,61 @@ export const useProcessManager = () => {
     [fetchProcessStatuses]
   );
 
+  // Determine appropriate polling interval based on process statuses
+  const getPollingInterval = useCallback((statuses: ProcessStatus[]) => {
+    const hasActiveProcesses = statuses.some(status => status.is_alive);
+    
+    if (statuses.length === 0) {
+      return 30000; // No processes: 30 seconds
+    } else if (hasActiveProcesses) {
+      return 3000; // Active processes: 3 seconds  
+    } else {
+      return 10000; // Only dead processes: 10 seconds
+    }
+  }, []);
+
+  // Set up adaptive polling
   useEffect(() => {
     fetchProcessStatuses();
 
-    // Poll for process status updates every 2 seconds
-    const interval = setInterval(() => {
-      fetchProcessStatuses();
-    }, 2000);
+    const scheduleNextPoll = (statuses: ProcessStatus[]) => {
+      if (intervalRef.current) {
+        clearTimeout(intervalRef.current);
+      }
+      
+      const interval = getPollingInterval(statuses);
+      intervalRef.current = setTimeout(() => {
+        fetchProcessStatuses();
+      }, interval);
+    };
 
-    return () => clearInterval(interval);
-  }, [fetchProcessStatuses]);
+    // Schedule initial poll
+    scheduleNextPoll(processStatuses);
+
+    return () => {
+      if (intervalRef.current) {
+        clearTimeout(intervalRef.current);
+      }
+    };
+  }, [fetchProcessStatuses, getPollingInterval]);
+
+  // Reschedule polling when process statuses change
+  useEffect(() => {
+    if (intervalRef.current) {
+      clearTimeout(intervalRef.current);
+    }
+    
+    const interval = getPollingInterval(processStatuses);
+    intervalRef.current = setTimeout(() => {
+      fetchProcessStatuses();
+    }, interval);
+    
+    return () => {
+      if (intervalRef.current) {
+        clearTimeout(intervalRef.current);
+      }
+    };
+  }, [processStatuses, fetchProcessStatuses, getPollingInterval]);
 
   return {
     processStatuses,
