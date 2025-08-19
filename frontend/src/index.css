@@ -175,7 +175,7 @@
     -moz-user-select: none;
     -ms-user-select: none;
   }
-  
+
   /* Override cursor during resize for entire page */
   body.sidebar-resizing * {
     cursor: col-resize !important;

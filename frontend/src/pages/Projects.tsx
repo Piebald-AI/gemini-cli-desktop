@@ -35,10 +35,10 @@ export default function ProjectsPage() {
       );
       setProjects(enrichedProjects);
     } catch (e) {
-      setError(t('projects.failedToLoad'));
+      setError(t("projects.failedToLoad"));
       console.error(e);
     }
-  }, []);
+  }, [t]);
 
   React.useEffect(() => {
     refreshProjects();
@@ -65,7 +65,7 @@ export default function ProjectsPage() {
       navigate(`/projects/${project.sha256}`);
     } catch (e) {
       console.error("Failed to add project:", e);
-      setError(t('projects.failedToAdd'));
+      setError(t("projects.failedToAdd"));
     } finally {
       setIsAddingProject(false);
     }
@@ -88,7 +88,7 @@ export default function ProjectsPage() {
       }
     } catch (e) {
       console.error("Failed to open native file dialog:", e);
-      setError(t('errors.failedToOpenDialog'));
+      setError(t("errors.failedToOpenDialog"));
     } finally {
       setIsAddingProject(false);
     }
@@ -101,15 +101,17 @@ export default function ProjectsPage() {
           type="button"
           onClick={() => navigate("/")}
           className="mb-4 inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition cursor-pointer"
-          aria-label={t('projects.backToHome')}
+          aria-label={t("projects.backToHome")}
         >
           <ArrowLeft className="h-4 w-4 mr-2" aria-hidden="true" />
-          <span>{t('projects.backToHome')}</span>
+          <span>{t("projects.backToHome")}</span>
         </button>
 
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-semibold tracking-tight">{t('projects.title')}</h1>
+            <h1 className="text-3xl font-semibold tracking-tight">
+              {t("projects.title")}
+            </h1>
             <p className="mt-2 text-muted-foreground">
               {backendText.projectsDescription}
             </p>
@@ -124,7 +126,9 @@ export default function ProjectsPage() {
             className="flex items-center gap-2"
           >
             <Plus className="h-4 w-4" />
-            {isAddingProject ? t('projects.addingProject') : t('projects.addProject')}
+            {isAddingProject
+              ? t("projects.addingProject")
+              : t("projects.addProject")}
           </Button>
         </div>
 
@@ -133,9 +137,13 @@ export default function ProjectsPage() {
           {error ? (
             <p className="text-sm text-muted-foreground">{error}</p>
           ) : projects === null ? (
-            <p className="text-sm text-muted-foreground">{t('projects.loadingProjects')}</p>
+            <p className="text-sm text-muted-foreground">
+              {t("projects.loadingProjects")}
+            </p>
           ) : projects.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t('projects.noProjectsFound')}</p>
+            <p className="text-sm text-muted-foreground">
+              {t("projects.noProjectsFound")}
+            </p>
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {projects.map((p) => (
@@ -152,17 +160,21 @@ export default function ProjectsPage() {
                       {truncatePath(p.metadata.path)}
                     </div>
                     <div className="mt-1 text-sm text-muted-foreground flex flex-col gap-0.5">
-                      <span>{t('projects.sha256Label')} {p.sha256.slice(0, 12)}...</span>
-                      <span>{t('projects.nameLabel')} {p.metadata.friendly_name}</span>
+                      <span>
+                        {t("projects.sha256Label")} {p.sha256.slice(0, 12)}...
+                      </span>
+                      <span>
+                        {t("projects.nameLabel")} {p.metadata.friendly_name}
+                      </span>
                       {p.metadata.first_used && (
                         <span>
-                          {t('projects.firstUsedLabel')}{" "}
+                          {t("projects.firstUsedLabel")}{" "}
                           {new Date(p.metadata.first_used).toLocaleDateString()}
                         </span>
                       )}
                       {p.metadata.updated_at && (
                         <span>
-                          {t('projects.lastUpdatedLabel')}{" "}
+                          {t("projects.lastUpdatedLabel")}{" "}
                           {new Date(p.metadata.updated_at).toLocaleDateString()}
                         </span>
                       )}

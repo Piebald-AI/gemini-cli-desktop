@@ -49,7 +49,7 @@ export const MessageInputBar: React.FC<MessageInputBarProps> = ({
                 placeholder={
                   isCliInstalled === false
                     ? backendText.cliNotFound
-                    : t('messageInput.placeholder')
+                    : t("messageInput.placeholder")
                 }
                 disabled={isCliInstalled === false}
                 className="h-9 w-full"
@@ -74,14 +74,14 @@ export const MessageInputBar: React.FC<MessageInputBarProps> = ({
                   type="button"
                   size="icon"
                   variant="outline"
-                  title={t('messageInput.viewCliLogs')}
+                  title={t("messageInput.viewCliLogs")}
                 >
                   <Info className="h-4 w-4" />
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle>{t('messageInput.cliLogsTitle')}</DialogTitle>
+                  <DialogTitle>{t("messageInput.cliLogsTitle")}</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-2 max-h-96 overflow-y-auto">
                   {cliIOLogs.map((log, index) => (
@@ -94,7 +94,9 @@ export const MessageInputBar: React.FC<MessageInputBarProps> = ({
                               : "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200"
                           }`}
                         >
-                          {log.type === "input" ? t('messageInput.logTypeIn') : t('messageInput.logTypeOut')}
+                          {log.type === "input"
+                            ? t("messageInput.logTypeIn")
+                            : t("messageInput.logTypeOut")}
                         </span>
                         <span className="text-xs text-muted-foreground">
                           {log.timestamp.toLocaleTimeString()}
@@ -110,7 +112,7 @@ export const MessageInputBar: React.FC<MessageInputBarProps> = ({
                   ))}
                   {cliIOLogs.length === 0 && (
                     <div className="text-center text-muted-foreground py-8">
-                      {t('messageInput.noLogsMessage')}
+                      {t("messageInput.noLogsMessage")}
                     </div>
                   )}
                 </div>

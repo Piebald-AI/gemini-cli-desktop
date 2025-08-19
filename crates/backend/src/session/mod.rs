@@ -183,7 +183,7 @@ async fn send_jsonrpc_request<E: EventEmitter>(
         BackendError::SessionInitFailed(format!("Failed to serialize request: {e}"))
     })?;
 
-    println!("🔍 RAW INPUT TO GEMINI CLI: {}", request_json);
+    println!("🔍 RAW INPUT TO GEMINI CLI: {request_json}");
     let _ = rpc_logger.log_rpc(&request_json);
 
     // Send request
@@ -215,7 +215,8 @@ async fn send_jsonrpc_request<E: EventEmitter>(
         .await
         .map_err(|e| BackendError::SessionInitFailed(format!("Failed to read response: {e}")))?;
 
-    println!("🔍 RAW OUTPUT FROM GEMINI CLI: {}", line.trim());
+    let trimmed_line = line.trim();
+    println!("🔍 RAW OUTPUT FROM GEMINI CLI: {trimmed_line}");
     let _ = rpc_logger.log_rpc(line.trim());
 
     let _ = emitter.emit(
@@ -524,24 +525,18 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
                 } => {
                     let _ = emitter.emit(&format!("ai-thought-{session_id}"), payload.thought);
                 }
-                InternalEvent::ToolCall {
-                    session_id,
-                    payload,
-                } => {
-                    let _ = emitter.emit(&format!("ai-tool-call-{session_id}"), payload);
+                // Deprecated events - no-op, use ACP equivalents instead
+                #[allow(deprecated)]
+                InternalEvent::ToolCall { .. } => {
+                    // No-op: Use AcpSessionUpdate instead
                 }
-                InternalEvent::ToolCallUpdate {
-                    session_id,
-                    payload,
-                } => {
-                    let _ = emitter.emit(&format!("ai-tool-call-update-{session_id}"), payload);
+                #[allow(deprecated)]
+                InternalEvent::ToolCallUpdate { .. } => {
+                    // No-op: Use AcpSessionUpdate instead
                 }
-                InternalEvent::ToolCallConfirmation {
-                    session_id,
-                    payload,
-                } => {
-                    let _ =
-                        emitter.emit(&format!("ai-tool-call-confirmation-{session_id}"), payload);
+                #[allow(deprecated)]
+                InternalEvent::ToolCallConfirmation { .. } => {
+                    // No-op: Use AcpPermissionRequest instead
                 }
                 InternalEvent::GeminiTurnFinished { session_id } => {
                     let _ = emitter.emit(&format!("ai-turn-finished-{session_id}"), true);
@@ -555,20 +550,17 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
                 // Pure ACP events - emit directly with new event names
                 InternalEvent::AcpSessionUpdate { session_id, update } => {
                     println!(
-                        "🔧 [EDIT-DEBUG] Emitting acp-session-update-{} event: {:?}",
-                        session_id, update
+                        "🔧 [EDIT-DEBUG] Emitting acp-session-update-{session_id} event: {update:?}"
                     );
                     let emit_result =
                         emitter.emit(&format!("acp-session-update-{session_id}"), update);
                     if emit_result.is_err() {
                         println!(
-                            "🔧 [EDIT-DEBUG] Failed to emit acp-session-update event: {:?}",
-                            emit_result
+                            "🔧 [EDIT-DEBUG] Failed to emit acp-session-update event: {emit_result:?}"
                         );
                     } else {
                         println!(
-                            "🔧 [EDIT-DEBUG] Successfully emitted acp-session-update-{} event",
-                            session_id
+                            "🔧 [EDIT-DEBUG] Successfully emitted acp-session-update-{session_id} event"
                         );
                     }
                 }
@@ -578,8 +570,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
                     request,
                 } => {
                     println!(
-                        "🚨 BACKEND: Emitting acp-permission-request-{} with request_id={}",
-                        session_id, request_id
+                        "🚨 BACKEND: Emitting acp-permission-request-{session_id} with request_id={request_id}"
                     );
                     println!(
                         "🚨 BACKEND: Request payload: {:?}",
@@ -708,7 +699,8 @@ async fn handle_session_io_internal(
                             },
                         });
 
-                        println!("🔧 [EDIT-DEBUG] Processing CLI output line: {}", line.chars().take(100).collect::<String>());
+                        let line_preview = line.chars().take(100).collect::<String>();
+                        println!("🔧 [EDIT-DEBUG] Processing CLI output line: {line_preview}");
 
                         handle_cli_output_line(
                             &session_id,
@@ -780,11 +772,8 @@ async fn handle_cli_output_line(
     event_tx: &mpsc::UnboundedSender<InternalEvent>,
     _processes: &ProcessMap,
 ) {
-    println!(
-        "🔧 [EDIT-DEBUG] handle_cli_output_line called for session: {}",
-        session_id
-    );
-    println!("🔧 [EDIT-DEBUG] Line content: {}", line);
+    println!("🔧 [EDIT-DEBUG] handle_cli_output_line called for session: {session_id}");
+    println!("🔧 [EDIT-DEBUG] Line content: {line}");
 
     if let Ok(json_value) = serde_json::from_str::<serde_json::Value>(line) {
         println!("🔧 [EDIT-DEBUG] Successfully parsed JSON from line");
@@ -823,7 +812,7 @@ async fn handle_cli_output_line(
                                     }
                                     _ => {
                                         // Handle other content types as needed
-                                        println!("Received non-text content block: {:?}", content);
+                                        println!("Received non-text content block: {content:?}");
                                     }
                                 }
                             }
@@ -838,8 +827,7 @@ async fn handle_cli_output_line(
                                     _ => {
                                         // Handle other content types as needed
                                         println!(
-                                            "Received non-text thought content block: {:?}",
-                                            content
+                                            "Received non-text thought content block: {content:?}"
                                         );
                                     }
                                 }
@@ -853,8 +841,7 @@ async fn handle_cli_output_line(
                                 kind,
                             } => {
                                 println!(
-                                    "🔧 [EDIT-DEBUG] Backend received ToolCall from CLI: tool_call_id={}, status={:?}, title={}",
-                                    tool_call_id, status, title
+                                    "🔧 [EDIT-DEBUG] Backend received ToolCall from CLI: tool_call_id={tool_call_id}, status={status:?}, title={title}"
                                 );
 
                                 // Emit pure ACP SessionUpdate event - no legacy conversion
@@ -872,13 +859,11 @@ async fn handle_cli_output_line(
 
                                 if emit_result.is_err() {
                                     println!(
-                                        "🔧 [EDIT-DEBUG] Failed to send ToolCall event: {:?}",
-                                        emit_result
+                                        "🔧 [EDIT-DEBUG] Failed to send ToolCall event: {emit_result:?}"
                                     );
                                 } else {
                                     println!(
-                                        "🔧 [EDIT-DEBUG] Successfully sent ToolCall event for: {}",
-                                        tool_call_id
+                                        "🔧 [EDIT-DEBUG] Successfully sent ToolCall event for: {tool_call_id}"
                                     );
                                 }
                             }
@@ -888,8 +873,7 @@ async fn handle_cli_output_line(
                                 content,
                             } => {
                                 println!(
-                                    "🔧 [EDIT-DEBUG] Backend received ToolCallUpdate from CLI: tool_call_id={}, status={:?}",
-                                    tool_call_id, status
+                                    "🔧 [EDIT-DEBUG] Backend received ToolCallUpdate from CLI: tool_call_id={tool_call_id}, status={status:?}"
                                 );
                                 println!(
                                     "🔧 [EDIT-DEBUG] ToolCallUpdate has content: {} items",
@@ -906,8 +890,7 @@ async fn handle_cli_output_line(
                                     },
                                 });
                                 println!(
-                                    "🔧 [EDIT-DEBUG] Sent AcpSessionUpdate event for ToolCallUpdate: {}",
-                                    tool_call_id
+                                    "🔧 [EDIT-DEBUG] Sent AcpSessionUpdate event for ToolCallUpdate: {tool_call_id}"
                                 );
                             }
                         }
@@ -915,7 +898,7 @@ async fn handle_cli_output_line(
                 }
                 "session/request_permission" => {
                     println!("🔔 BACKEND: Received session/request_permission from CLI");
-                    println!("🔔 BACKEND: JSON value: {:?}", json_value);
+                    println!("🔔 BACKEND: JSON value: {json_value:?}");
                     // First try to parse and log what fails
                     let params_value = json_value.get("params").cloned().unwrap_or_default();
                     println!(
@@ -928,10 +911,7 @@ async fn handle_cli_output_line(
                         serde_json::from_value::<SessionRequestPermissionParams>(params_value)
                         && let Some(id) = json_value.get("id").and_then(|i| i.as_u64())
                     {
-                        println!(
-                            "🔔 BACKEND: Successfully parsed permission request with id={}",
-                            id
-                        );
+                        println!("🔔 BACKEND: Successfully parsed permission request with id={id}");
                         println!(
                             "🔔 BACKEND: Tool call ID in request: {}",
                             params.tool_call.tool_call_id
@@ -962,12 +942,11 @@ async fn handle_cli_output_line(
             // Handle JSON-RPC responses (as opposed to notifications)
             if let Ok(result) = serde_json::from_value::<SessionPromptResult>(
                 json_value.get("result").cloned().unwrap_or_default(),
-            ) {
-                if result.stop_reason == "end_turn" {
-                    let _ = event_tx.send(InternalEvent::GeminiTurnFinished {
-                        session_id: session_id.to_string(),
-                    });
-                }
+            ) && result.stop_reason == "end_turn"
+            {
+                let _ = event_tx.send(InternalEvent::GeminiTurnFinished {
+                    session_id: session_id.to_string(),
+                });
             }
         }
 
@@ -1394,6 +1373,7 @@ mod tests {
             working_dir.to_string_lossy().to_string(),
             "gemini-2.5-flash".to_string(),
             None,
+            None,
             emitter.clone(),
             &session_manager,
         )
@@ -1419,7 +1399,7 @@ mod tests {
                 match e {
                     crate::types::BackendError::SessionInitFailed(_) => {
                         // This is expected when CLI is not available
-                        println!("Session init failed as expected (CLI not available): {}", e);
+                        println!("Session init failed as expected (CLI not available): {e}");
                     }
                     _ => panic!("Unexpected error type: {}", e),
                 }

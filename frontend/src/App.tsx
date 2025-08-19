@@ -13,6 +13,7 @@ import {
   useApiConfig,
   useBackend,
 } from "./contexts/BackendContext";
+import { SessionParams } from "./types/backend";
 import { getBackendText } from "./utils/backendText";
 import { HomeDashboard } from "./pages/HomeDashboard";
 import ProjectsPage from "./pages/Projects";
@@ -78,7 +79,6 @@ function RootLayoutContent() {
 
   const { input, handleInputChange, handleSendMessage } = useMessageHandler({
     activeConversation,
-    currentConversation,
     conversations,
     selectedModel,
     isCliInstalled,
@@ -112,9 +112,9 @@ function RootLayoutContent() {
         console.log("Debug - selectedBackend:", selectedBackend);
 
         // Prepare session parameters based on backend type
-        const sessionParams: any = {
-          sessionId: convId,  // Tauri auto-converts to session_id
-          workingDirectory: workingDirectory,  // Tauri auto-converts to working_directory
+        const sessionParams: SessionParams = {
+          sessionId: convId, // Tauri auto-converts to session_id
+          workingDirectory: workingDirectory, // Tauri auto-converts to working_directory
           model: selectedModel,
         };
 
@@ -122,14 +122,16 @@ function RootLayoutContent() {
         // For Gemini backend, pass geminiAuth with the appropriate configuration
         if (selectedBackend === "qwen") {
           // Always ensure backend_config is set for Qwen to trigger qwen CLI
-          sessionParams.backendConfig = {  // Tauri auto-converts to backend_config
+          sessionParams.backendConfig = {
+            // Tauri auto-converts to backend_config
             api_key: apiConfig?.api_key || "", // Empty string if OAuth
             base_url: apiConfig?.base_url || "https://openrouter.ai/api/v1",
             model: apiConfig?.model || selectedModel,
           };
         } else if (selectedBackend === "gemini") {
           const geminiConfig = backendState.configs.gemini;
-          sessionParams.geminiAuth = {  // Tauri auto-converts to gemini_auth
+          sessionParams.geminiAuth = {
+            // Tauri auto-converts to gemini_auth
             method: geminiConfig.authMethod,
             api_key:
               geminiConfig.authMethod === "gemini-api-key"
@@ -156,6 +158,7 @@ function RootLayoutContent() {
       selectedModel,
       selectedBackend,
       apiConfig,
+      backendState.configs.gemini,
       createNewConversation,
       setActiveConversation,
       setupEventListenerForConversation,

@@ -636,6 +636,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(deprecated)]
     fn test_internal_event_variants() {
         let cli_io_event = InternalEvent::CliIo {
             session_id: "session1".to_string(),
@@ -659,6 +660,7 @@ mod tests {
             },
         };
 
+        #[allow(deprecated)]
         let tool_call_event = InternalEvent::ToolCall {
             session_id: "session4".to_string(),
             payload: ToolCallEvent {
@@ -671,6 +673,7 @@ mod tests {
             },
         };
 
+        #[allow(deprecated)]
         let tool_update_event = InternalEvent::ToolCallUpdate {
             session_id: "session5".to_string(),
             payload: ToolCallUpdate {
@@ -680,6 +683,7 @@ mod tests {
             },
         };
 
+        #[allow(deprecated)]
         let confirmation_event = InternalEvent::ToolCallConfirmation {
             session_id: "session6".to_string(),
             payload: ToolCallConfirmationRequest {
@@ -724,16 +728,19 @@ mod tests {
             _ => panic!("Expected GeminiThought event"),
         }
 
+        #[allow(deprecated)]
         match tool_call_event {
             InternalEvent::ToolCall { session_id, .. } => assert_eq!(session_id, "session4"),
             _ => panic!("Expected ToolCall event"),
         }
 
+        #[allow(deprecated)]
         match tool_update_event {
             InternalEvent::ToolCallUpdate { session_id, .. } => assert_eq!(session_id, "session5"),
             _ => panic!("Expected ToolCallUpdate event"),
         }
 
+        #[allow(deprecated)]
         match confirmation_event {
             InternalEvent::ToolCallConfirmation { session_id, .. } => {
                 assert_eq!(session_id, "session6")

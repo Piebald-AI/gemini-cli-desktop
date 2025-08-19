@@ -101,7 +101,7 @@ const backendReducer = (
         [action.backend]: {
           ...state.configs[action.backend],
           ...action.config,
-        } as any,
+        },
       };
 
       // Validate the updated config
@@ -189,10 +189,8 @@ export const BackendProvider: React.FC<BackendProviderProps> = ({
   children,
 }) => {
   // Initialize state with useReducer, loading from storage immediately
-  const [state, dispatch] = useReducer(
-    backendReducer,
-    null,
-    () => loadFromStorage()
+  const [state, dispatch] = useReducer(backendReducer, null, () =>
+    loadFromStorage()
   );
 
   // Save to localStorage on state changes
@@ -307,6 +305,7 @@ export const BackendProvider: React.FC<BackendProviderProps> = ({
 };
 
 // Custom hooks for different use cases
+// eslint-disable-next-line react-refresh/only-export-components
 export const useBackend = (): BackendContextValue => {
   const context = useContext(BackendContext);
   if (!context) {
@@ -315,6 +314,7 @@ export const useBackend = (): BackendContextValue => {
   return context;
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useBackendConfig = <T extends BackendType>(backend: T) => {
   const { state, updateConfig } = useBackend();
   return {
@@ -326,6 +326,7 @@ export const useBackendConfig = <T extends BackendType>(backend: T) => {
   };
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useCurrentBackend = () => {
   const { state, currentConfig, currentModel } = useBackend();
   return {
@@ -336,6 +337,7 @@ export const useCurrentBackend = () => {
   };
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useApiConfig = () => {
   const { getApiConfig, canStartSession } = useBackend();
   return {

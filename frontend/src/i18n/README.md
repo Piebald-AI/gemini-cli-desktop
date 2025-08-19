@@ -5,6 +5,7 @@ This document provides a comprehensive guide on how to use the internationalizat
 ## Overview
 
 The application uses **react-i18next** for internationalization, supporting three languages:
+
 - English (`en`) - Default language
 - Simplified Chinese (`zh-CN`)
 - Traditional Chinese (`zh-TW`)
@@ -14,16 +15,16 @@ The application uses **react-i18next** for internationalization, supporting thre
 ### Using Translations in Components
 
 ```tsx
-import React from 'react';
-import { useTranslation } from 'react-i18next';
+import React from "react";
+import { useTranslation } from "react-i18next";
 
 const MyComponent: React.FC = () => {
   const { t } = useTranslation();
 
   return (
     <div>
-      <h1>{t('common.loading')}</h1>
-      <button>{t('common.save')}</button>
+      <h1>{t("common.loading")}</h1>
+      <button>{t("common.save")}</button>
     </div>
   );
 };
@@ -32,8 +33,8 @@ const MyComponent: React.FC = () => {
 ### Language Switching
 
 ```tsx
-import React from 'react';
-import { useLanguage } from '@/contexts/LanguageContext';
+import React from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const LanguageSelector: React.FC = () => {
   const { currentLanguage, setLanguage, languageNames } = useLanguage();
@@ -41,9 +42,9 @@ const LanguageSelector: React.FC = () => {
   return (
     <div>
       <p>Current: {languageNames[currentLanguage]}</p>
-      <button onClick={() => setLanguage('en')}>English</button>
-      <button onClick={() => setLanguage('zh-CN')}>简体中文</button>
-      <button onClick={() => setLanguage('zh-TW')}>繁體中文</button>
+      <button onClick={() => setLanguage("en")}>English</button>
+      <button onClick={() => setLanguage("zh-CN")}>简体中文</button>
+      <button onClick={() => setLanguage("zh-TW")}>繁體中文</button>
     </div>
   );
 };
@@ -55,11 +56,15 @@ const LanguageSelector: React.FC = () => {
 
 ```tsx
 // Simple interpolation
-{t('validation.min_length', { min: 5 })}
+{
+  t("validation.min_length", { min: 5 });
+}
 // → "Minimum length is 5 characters"
 
 // Multiple variables
-{t('projects.messages_count', { count: 42 })}
+{
+  t("projects.messages_count", { count: 42 });
+}
 // → "42 messages"
 ```
 
@@ -67,24 +72,36 @@ const LanguageSelector: React.FC = () => {
 
 ```tsx
 // Automatic pluralization based on count
-{t('time.minutes_ago', { count: 1 })}  // → "1 minute ago"
-{t('time.minutes_ago', { count: 5 })}  // → "5 minutes ago"
+{
+  t("time.minutes_ago", { count: 1 });
+} // → "1 minute ago"
+{
+  t("time.minutes_ago", { count: 5 });
+} // → "5 minutes ago"
 ```
 
 ### Default Values
 
 ```tsx
 // Provide fallback text for missing translations
-{t('some.missing.key', { defaultValue: 'Fallback text' })}
+{
+  t("some.missing.key", { defaultValue: "Fallback text" });
+}
 ```
 
 ### Namespacing
 
 ```tsx
 // Access nested translation keys
-{t('projects.title')}          // → "Projects"
-{t('common.loading')}          // → "Loading..."
-{t('mcp.server_name')}         // → "Server Name"
+{
+  t("projects.title");
+} // → "Projects"
+{
+  t("common.loading");
+} // → "Loading..."
+{
+  t("mcp.server_name");
+} // → "Server Name"
 ```
 
 ## File Structure
@@ -160,8 +177,11 @@ Translation keys are organized by feature/component:
    - `locales/zh-TW/translation.json`
 
 2. Use the key in your component:
+
    ```tsx
-   {t('your.new.key')}
+   {
+     t("your.new.key");
+   }
    ```
 
 3. Test in all supported languages
@@ -180,11 +200,11 @@ Custom hook providing language state and switching functionality:
 
 ```tsx
 const {
-  currentLanguage,    // Current language code
-  setLanguage,        // Function to change language
+  currentLanguage, // Current language code
+  setLanguage, // Function to change language
   supportedLanguages, // Array of supported language codes
-  languageNames,      // Object mapping codes to display names
-  isLoading          // Boolean indicating if i18n is initializing
+  languageNames, // Object mapping codes to display names
+  isLoading, // Boolean indicating if i18n is initializing
 } = useLanguage();
 ```
 
@@ -193,13 +213,9 @@ const {
 Pre-built language switcher component:
 
 ```tsx
-import { LanguageSwitcher } from '@/components/common/LanguageSwitcher';
+import { LanguageSwitcher } from "@/components/common/LanguageSwitcher";
 
-<LanguageSwitcher 
-  variant="outline"
-  showFlag={true}
-  showText={true}
-/>
+<LanguageSwitcher variant="outline" showFlag={true} showText={true} />;
 ```
 
 ## Configuration
@@ -207,6 +223,7 @@ import { LanguageSwitcher } from '@/components/common/LanguageSwitcher';
 ### Browser Language Detection
 
 The system automatically detects the user's preferred language based on:
+
 1. Previously saved preference (localStorage)
 2. Browser language settings
 3. HTML lang attribute
@@ -232,17 +249,13 @@ In development mode, missing translation keys are logged to the console for easy
 ### Automated Testing
 
 ```tsx
-import { render } from '@testing-library/react';
-import { I18nextProvider } from 'react-i18next';
-import i18n from '@/i18n';
+import { render } from "@testing-library/react";
+import { I18nextProvider } from "react-i18next";
+import i18n from "@/i18n";
 
 // Test component with i18n
 const renderWithI18n = (component: React.ReactElement) => {
-  return render(
-    <I18nextProvider i18n={i18n}>
-      {component}
-    </I18nextProvider>
-  );
+  return render(<I18nextProvider i18n={i18n}>{component}</I18nextProvider>);
 };
 ```
 
@@ -273,14 +286,16 @@ If migrating from a custom translation system:
 ### Example Migration
 
 **Before:**
+
 ```tsx
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useLanguage } from "@/contexts/LanguageContext";
 const { t } = useLanguage();
 ```
 
 **After:**
+
 ```tsx
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from "react-i18next";
 const { t } = useTranslation();
 ```
 

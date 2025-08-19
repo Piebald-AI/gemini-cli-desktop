@@ -1,7 +1,26 @@
+// Match types for different tools
+export interface SearchMatch {
+  file: string;
+  line_number?: number;
+  line_content?: string;
+  matches?: Array<{
+    start: number;
+    end: number;
+    text: string;
+  }>;
+}
+
+export interface MessageMatch {
+  content_snippet: string;
+  line_number: number;
+  context_before?: string;
+  context_after?: string;
+}
+
 export type ToolCallResult =
   | {
       files?: Array<{ name: string; type: string; length?: number }>;
-      matches?: Array<unknown>;
+      matches?: SearchMatch[] | MessageMatch[];
       total?: number;
       message?: string;
       markdown?: string;
@@ -64,6 +83,7 @@ export interface ToolCall {
   outputJsonRpc?: string;
   label?: string;
   icon?: string;
+  isUserRejected?: boolean;
   // For JSON-RPC confirmation requests
   confirmationRequest?: ToolCallConfirmationRequest;
 }

@@ -23,7 +23,7 @@ export const AppHeader: React.FC = () => {
 
           {/* Right section - Piebald branding */}
           <div className="flex flex-1 flex-col items-end text-xs text-neutral-400">
-            <p>{t('header.fromCreatorsOf')}</p> <PiebaldLogo />
+            <p>{t("header.fromCreatorsOf")}</p> <PiebaldLogo />
           </div>
         </div>
       </div>

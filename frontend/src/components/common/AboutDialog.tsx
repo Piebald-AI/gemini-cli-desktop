@@ -25,7 +25,7 @@ export const AboutDialog: React.FC<AboutDialogProps> = ({
   const { t } = useTranslation();
   const { selectedBackend } = useBackend();
   const backendText = getBackendText(selectedBackend);
-  
+
   const appName = backendText.desktopName;
   const appVersion = "0.1.0";
   const currentYear = new Date().getFullYear();
@@ -43,83 +43,94 @@ export const AboutDialog: React.FC<AboutDialogProps> = ({
               )}
             </div>
           </div>
-          
+
           <div className="text-center space-y-2">
-            <DialogTitle className="text-2xl font-bold">
-              {appName}
-            </DialogTitle>
+            <DialogTitle className="text-2xl font-bold">{appName}</DialogTitle>
             <DialogDescription className="text-base">
-              {t('about.version', { version: appVersion })}
+              {t("about.version", { version: appVersion })}
             </DialogDescription>
           </div>
         </DialogHeader>
-        
+
         <div className="space-y-4 py-4">
           <div className="text-center text-sm text-muted-foreground">
             <ReactMarkdown
               components={{
                 p: ({ children }) => <span>{children}</span>,
-                strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                strong: ({ children }) => (
+                  <strong className="font-semibold">{children}</strong>
+                ),
               }}
             >
-              {t('about.description')}
+              {t("about.description")}
             </ReactMarkdown>{" "}
-            <a 
-              href="https://github.com/Piebald-AI/gemini-desktop" 
-              target="_blank" 
+            <a
+              href="https://github.com/Piebald-AI/gemini-desktop"
+              target="_blank"
               rel="noopener noreferrer"
               className="text-primary hover:underline"
             >
-              {t('about.github')}
-            </a>.
+              {t("about.github")}
+            </a>
+            .
           </div>
-          
+
           <div className="text-center text-sm space-y-2 text-muted-foreground">
             <ReactMarkdown
               components={{
                 p: ({ children }) => <div>{children}</div>,
-                strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                strong: ({ children }) => (
+                  <strong className="font-semibold">{children}</strong>
+                ),
               }}
             >
-              {`• ${t('about.feature1')}`}
+              {`• ${t("about.feature1")}`}
             </ReactMarkdown>
             <ReactMarkdown
               components={{
                 p: ({ children }) => <div>{children}</div>,
-                strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                strong: ({ children }) => (
+                  <strong className="font-semibold">{children}</strong>
+                ),
               }}
             >
-              {`• ${t('about.feature2')}`}
+              {`• ${t("about.feature2")}`}
             </ReactMarkdown>
             <ReactMarkdown
               components={{
                 p: ({ children }) => <div>{children}</div>,
-                strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                strong: ({ children }) => (
+                  <strong className="font-semibold">{children}</strong>
+                ),
               }}
             >
-              {`• ${t('about.feature3')}`}
+              {`• ${t("about.feature3")}`}
             </ReactMarkdown>
             <ReactMarkdown
               components={{
                 p: ({ children }) => <div>{children}</div>,
-                strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                strong: ({ children }) => (
+                  <strong className="font-semibold">{children}</strong>
+                ),
               }}
             >
-              {`• ${t('about.feature4')}`}
+              {`• ${t("about.feature4")}`}
             </ReactMarkdown>
             <ReactMarkdown
               components={{
                 p: ({ children }) => <div>{children}</div>,
-                strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                strong: ({ children }) => (
+                  <strong className="font-semibold">{children}</strong>
+                ),
               }}
             >
-              {`• ${t('about.feature5')}`}
+              {`• ${t("about.feature5")}`}
             </ReactMarkdown>
           </div>
-          
+
           <div className="pt-4 border-t border-border">
             <DialogDescription className="text-center text-xs text-muted-foreground">
-              {t('about.copyright', { year: currentYear, appName })}
+              {t("about.copyright", { year: currentYear, appName })}
             </DialogDescription>
           </div>
         </div>

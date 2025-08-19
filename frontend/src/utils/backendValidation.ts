@@ -5,7 +5,7 @@ import {
   QwenConfig,
   ValidationResult,
 } from "../types/backend";
-import i18n from '../i18n';
+import i18n from "../i18n";
 
 export const isValidUrl = (url: string): boolean => {
   try {
@@ -26,15 +26,15 @@ export const validateGeminiConfig = (
   switch (config.authMethod) {
     case "gemini-api-key":
       if (!config.apiKey || !config.apiKey.trim()) {
-        errors.push(t('validation.apiKeyRequired'));
+        errors.push(t("validation.apiKeyRequired"));
       }
       break;
     case "vertex-ai":
       if (!config.vertexProject || !config.vertexProject.trim()) {
-        errors.push(t('validation.projectIdRequired'));
+        errors.push(t("validation.projectIdRequired"));
       }
       if (!config.vertexLocation || !config.vertexLocation.trim()) {
-        errors.push(t('validation.locationRequired'));
+        errors.push(t("validation.locationRequired"));
       }
       break;
     case "oauth-personal":
@@ -44,11 +44,11 @@ export const validateGeminiConfig = (
   }
 
   if (!config.models || config.models.length === 0) {
-    errors.push(t('validation.modelRequired'));
+    errors.push(t("validation.modelRequired"));
   }
 
   if (!config.defaultModel || !config.defaultModel.trim()) {
-    errors.push(t('validation.defaultModelRequired'));
+    errors.push(t("validation.defaultModelRequired"));
   }
 
   if (
@@ -56,7 +56,7 @@ export const validateGeminiConfig = (
     config.models &&
     !config.models.includes(config.defaultModel)
   ) {
-    errors.push(t('validation.defaultModelMustBeAvailable'));
+    errors.push(t("validation.defaultModelMustBeAvailable"));
   }
 
   return {
@@ -70,12 +70,13 @@ export const validateQwenConfig = (config: QwenConfig): ValidationResult => {
   const t = i18n.t;
 
   if (!config.useOAuth) {
-    if (!config.apiKey.trim()) errors.push(t('validation.apiKeyRequired'));
-    if (!config.baseUrl.trim()) errors.push(t('validation.baseUrlRequired'));
-    if (!isValidUrl(config.baseUrl)) errors.push(t('validation.invalidBaseUrl'));
+    if (!config.apiKey.trim()) errors.push(t("validation.apiKeyRequired"));
+    if (!config.baseUrl.trim()) errors.push(t("validation.baseUrlRequired"));
+    if (!isValidUrl(config.baseUrl))
+      errors.push(t("validation.invalidBaseUrl"));
   }
 
-  if (!config.model.trim()) errors.push(t('validation.modelRequired'));
+  if (!config.model.trim()) errors.push(t("validation.modelRequired"));
 
   return {
     isValid: errors.length === 0,
@@ -88,13 +89,13 @@ export const validateBackendConfig = (
   config: BackendConfig
 ): ValidationResult => {
   const t = i18n.t;
-  
+
   switch (backend) {
     case "gemini":
       return validateGeminiConfig(config as GeminiConfig);
     case "qwen":
       return validateQwenConfig(config as QwenConfig);
     default:
-      return { isValid: false, errors: [t('validation.unknownBackendType')] };
+      return { isValid: false, errors: [t("validation.unknownBackendType")] };
   }
 };

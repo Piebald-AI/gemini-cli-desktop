@@ -141,7 +141,19 @@ function SidebarProvider({
       isResizing: resizable ? isResizing : undefined,
       handleResizeStart: resizable ? handleMouseDown : undefined,
     }),
-    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar, resizable, width, isResizing, handleMouseDown]
+    [
+      state,
+      open,
+      setOpen,
+      isMobile,
+      openMobile,
+      setOpenMobile,
+      toggleSidebar,
+      resizable,
+      width,
+      isResizing,
+      handleMouseDown,
+    ]
   );
 
   return (
@@ -151,7 +163,8 @@ function SidebarProvider({
           data-slot="sidebar-wrapper"
           style={
             {
-              "--sidebar-width": resizable && !isMobile ? `${width}px` : SIDEBAR_WIDTH,
+              "--sidebar-width":
+                resizable && !isMobile ? `${width}px` : SIDEBAR_WIDTH,
               "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
               ...style,
             } as React.CSSProperties
@@ -181,7 +194,14 @@ function Sidebar({
   variant?: "sidebar" | "floating" | "inset";
   collapsible?: "offcanvas" | "icon" | "none";
 }) {
-  const { isMobile, state, openMobile, setOpenMobile, isResizing, handleResizeStart } = useSidebar();
+  const {
+    isMobile,
+    state,
+    openMobile,
+    setOpenMobile,
+    isResizing,
+    handleResizeStart,
+  } = useSidebar();
 
   if (collapsible === "none") {
     return (
@@ -249,7 +269,8 @@ function Sidebar({
         data-slot="sidebar-container"
         className={cn(
           "fixed top-8 z-10 hidden h-[calc(100vh-2rem)] w-(--sidebar-width) md:flex",
-          !isResizing && "transition-[left,right,width] duration-200 ease-linear",
+          !isResizing &&
+            "transition-[left,right,width] duration-200 ease-linear",
           side === "left"
             ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
             : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
@@ -760,12 +781,12 @@ function SidebarResizeHandle({
         )}
       >
         <div className="absolute inset-0 flex items-center justify-center">
-          <GripVertical 
+          <GripVertical
             className={cn(
               "h-4 w-4 text-muted-foreground/50",
               "group-hover:text-muted-foreground",
               isResizing && "text-primary"
-            )} 
+            )}
           />
         </div>
       </div>

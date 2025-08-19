@@ -32,9 +32,9 @@ export function AppSidebar({
   children,
 }: AppSidebarProps) {
   return (
-    <SidebarProvider 
-      defaultOpen={true} 
-      open={open} 
+    <SidebarProvider
+      defaultOpen={true}
+      open={open}
       onOpenChange={onOpenChange}
       resizable={true}
     >

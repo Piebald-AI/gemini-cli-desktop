@@ -2,10 +2,10 @@ import React, { useState, useCallback } from "react";
 import { api } from "../lib/api";
 import { Message, Conversation } from "../types";
 import { useBackend } from "../contexts/BackendContext";
+import { SessionParams } from "../types/backend";
 
 interface UseMessageHandlerProps {
   activeConversation: string | null;
-  currentConversation: Conversation | undefined;
   conversations: Conversation[];
   selectedModel: string;
   isCliInstalled: boolean | null;
@@ -26,7 +26,6 @@ interface UseMessageHandlerProps {
 
 export const useMessageHandler = ({
   activeConversation,
-  currentConversation,
   conversations,
   selectedModel,
   isCliInstalled,
@@ -147,8 +146,8 @@ export const useMessageHandler = ({
       try {
         // First ensure the session is initialized
         // Prepare session parameters based on backend type
-        const sessionParams: any = {
-          sessionId: convId,  // Tauri auto-converts to snake_case
+        const sessionParams: SessionParams = {
+          sessionId: convId, // Tauri auto-converts to snake_case
           workingDirectory: ".", // Tauri auto-converts to snake_case
           model: selectedModel,
         };
@@ -167,11 +166,15 @@ export const useMessageHandler = ({
             base_url: apiConfig?.base_url || "https://openrouter.ai/api/v1",
             model: apiConfig?.model || selectedModel,
           };
-          sessionParams.backendConfig = backendConfig;  // Tauri auto-converts to backend_config
-          console.log("🔍 [useMessageHandler] Setting backend_config for Qwen:", backendConfig);
+          sessionParams.backendConfig = backendConfig; // Tauri auto-converts to backend_config
+          console.log(
+            "🔍 [useMessageHandler] Setting backend_config for Qwen:",
+            backendConfig
+          );
         } else if (selectedBackend === "gemini") {
           const geminiConfig = backendState.configs.gemini;
-          sessionParams.geminiAuth = {  // Tauri auto-converts to gemini_auth
+          sessionParams.geminiAuth = {
+            // Tauri auto-converts to gemini_auth
             method: geminiConfig.authMethod,
             api_key:
               geminiConfig.authMethod === "gemini-api-key"
@@ -189,15 +192,18 @@ export const useMessageHandler = ({
         }
 
         // Initialize session (it will skip if already initialized)
-        console.log("🔍 [useMessageHandler] Final sessionParams being sent:", sessionParams);
+        console.log(
+          "🔍 [useMessageHandler] Final sessionParams being sent:",
+          sessionParams
+        );
         await api.invoke("start_session", sessionParams);
 
         await api.invoke("send_message", {
-          sessionId: convId,  // Tauri auto-converts to session_id
+          sessionId: convId, // Tauri auto-converts to session_id
           message: messageText,
           conversationHistory: "", // Tauri auto-converts to conversation_history
           model: selectedModel,
-          backendConfig: backendConfig,  // Tauri auto-converts to backend_config
+          backendConfig: backendConfig, // Tauri auto-converts to backend_config
         });
 
         // Refresh process statuses after sending message
@@ -220,8 +226,10 @@ export const useMessageHandler = ({
       isCliInstalled,
       activeConversation,
       conversations,
-      currentConversation,
       selectedModel,
+      backendState.configs.gemini,
+      getApiConfig,
+      selectedBackend,
       updateConversation,
       createNewConversation,
       setActiveConversation,

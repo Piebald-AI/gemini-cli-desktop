@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 /// ACP Protocol Types
 /// Based on the ACP specification for structured JSON-RPC communication
-
+///
 /// Initialize request parameters
 #[derive(Debug, Serialize, Deserialize)]
 pub struct InitializeParams {

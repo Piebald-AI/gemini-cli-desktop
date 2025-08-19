@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
 interface UseResizableOptions {
   defaultWidth?: number;
@@ -63,12 +63,12 @@ export function useResizable({
 
   const handleMouseUp = useCallback(() => {
     if (!isResizing) return;
-    
+
     setIsResizing(false);
     document.body.classList.remove("sidebar-resizing");
     document.body.style.cursor = "";
     document.body.style.userSelect = "";
-    
+
     // Save to localStorage
     if (storageKey) {
       localStorage.setItem(storageKey, width.toString());
@@ -79,7 +79,7 @@ export function useResizable({
     if (isResizing) {
       document.addEventListener("mousemove", handleMouseMove);
       document.addEventListener("mouseup", handleMouseUp);
-      
+
       return () => {
         document.removeEventListener("mousemove", handleMouseMove);
         document.removeEventListener("mouseup", handleMouseUp);

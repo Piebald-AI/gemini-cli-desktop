@@ -330,7 +330,7 @@ mod tests {
     #[test]
     fn test_update_tool_call_params_serialization() {
         let params = UpdateToolCallParams {
-            tool_call_id: 987,
+            tool_call_id: "987".to_string(),
             status: "completed".to_string(),
             content: Some(json!({"result": "success", "data": [1, 2, 3]})),
         };
@@ -349,7 +349,7 @@ mod tests {
     #[test]
     fn test_update_tool_call_params_without_content() {
         let params = UpdateToolCallParams {
-            tool_call_id: 456,
+            tool_call_id: "456".to_string(),
             status: "failed".to_string(),
             content: None,
         };
@@ -364,39 +364,41 @@ mod tests {
 
     #[test]
     fn test_update_tool_call_params_deserialize_string_id() {
-        // Test that tool_call_id can be deserialized from both string and number
-        let json_with_number = json!({
-            "toolCallId": 123,
-            "status": "pending",
-            "content": null
-        });
-
+        // Test that tool_call_id can be deserialized from string
         let json_with_string = json!({
             "toolCallId": "456",
             "status": "running",
             "content": null
         });
 
-        let from_number: UpdateToolCallParams = serde_json::from_value(json_with_number).unwrap();
-        let from_string: UpdateToolCallParams = serde_json::from_value(json_with_string).unwrap();
+        let json_with_snake_case = json!({
+            "tool_call_id": "789",
+            "status": "completed",
+            "content": null
+        });
 
-        assert_eq!(from_number.tool_call_id, 123);
-        assert_eq!(from_number.status, "pending");
+        let from_camel_case: UpdateToolCallParams =
+            serde_json::from_value(json_with_string).unwrap();
+        let from_snake_case: UpdateToolCallParams =
+            serde_json::from_value(json_with_snake_case).unwrap();
 
-        assert_eq!(from_string.tool_call_id, 456);
-        assert_eq!(from_string.status, "running");
+        assert_eq!(from_camel_case.tool_call_id, "456".to_string());
+        assert_eq!(from_camel_case.status, "running");
+
+        assert_eq!(from_snake_case.tool_call_id, "789".to_string());
+        assert_eq!(from_snake_case.status, "completed");
     }
 
     #[test]
-    fn test_update_tool_call_params_invalid_string_id() {
-        let json_with_invalid_string = json!({
-            "toolCallId": "not_a_number",
+    fn test_update_tool_call_params_integer_fails() {
+        // Test that integers cannot be deserialized as tool_call_id (expects string)
+        let json_with_integer = json!({
+            "toolCallId": 123,
             "status": "pending",
             "content": null
         });
 
-        let result: Result<UpdateToolCallParams, _> =
-            serde_json::from_value(json_with_invalid_string);
+        let result: Result<UpdateToolCallParams, _> = serde_json::from_value(json_with_integer);
         assert!(result.is_err());
     }
 
@@ -545,7 +547,7 @@ mod tests {
     #[test]
     fn test_update_tool_call_params_clone() {
         let params = UpdateToolCallParams {
-            tool_call_id: 789,
+            tool_call_id: "789".to_string(),
             status: "in_progress".to_string(),
             content: Some(json!({"progress": 50})),
         };

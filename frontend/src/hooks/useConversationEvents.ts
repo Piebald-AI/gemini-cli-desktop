@@ -5,11 +5,92 @@ import { Conversation, Message, CliIO } from "../types";
 import { ToolCallConfirmationRequest } from "../utils/toolCallParser";
 import { type ToolCall } from "../utils/toolCallParser";
 
+interface ToolLocation {
+  file?: string;
+  directory?: string;
+  [key: string]: unknown;
+}
+
+interface AcpTextContent {
+  type: "content";
+  content: {
+    type: "text";
+    text: string;
+  };
+}
+
+interface AcpDiffContent {
+  type: "diff";
+  path: string;
+  oldText?: string;
+  old_text?: string;
+  newText?: string;
+  new_text?: string;
+}
+
+type AcpContent = AcpTextContent | AcpDiffContent;
+
+interface LegacyDiffResult {
+  type: "diff";
+  path: string;
+  oldText?: string;
+  newText?: string;
+}
+
+interface LegacyGenericResult {
+  type: "generic";
+  oldText: undefined;
+  newText: string;
+  path: undefined;
+}
+
+type LegacyResult = LegacyDiffResult | LegacyGenericResult;
+
+// Event payload types for ACP session updates
+interface SessionUpdateEventPayload {
+  sessionUpdate: "tool_call" | "tool_call_update" | "agent_message_chunk" | "agent_thought_chunk";
+  toolCallId?: string;
+  kind?: string;
+  title?: string;
+  locations?: ToolLocation[];
+  status?: string;
+  result?: string;
+  content?: string;
+  chunk?: string;
+  thought?: string;
+}
+
+interface PermissionRequestEventPayload {
+  request_id: string;
+  request: {
+    toolCall: {
+      toolCallId: string;
+      name?: string;
+      kind?: string;
+      status?: string;
+      parameters?: Record<string, unknown>;
+    };
+    question?: string;
+    options?: string[];
+  };
+}
+
+type EventPayload = SessionUpdateEventPayload | PermissionRequestEventPayload;
+
+// Type guards for event payload discrimination
+function isSessionUpdateEvent(payload: EventPayload): payload is SessionUpdateEventPayload {
+  return 'sessionUpdate' in payload;
+}
+
+function isPermissionRequestEvent(payload: EventPayload): payload is PermissionRequestEventPayload {
+  return 'request_id' in payload && 'request' in payload;
+}
+
 // Helper functions for ACP conversion - CORRECTED with verified tool names
 function getToolNameFromKind(
   kind: string,
   title?: string,
-  locations?: any[],
+  locations?: ToolLocation[],
   toolCallId?: string
 ): string {
   switch (kind) {
@@ -61,15 +142,20 @@ function mapAcpStatus(acpStatus: string): ToolCall["status"] {
   }
 }
 
-function convertAcpContentToLegacy(acpContent: any[]): any {
+function convertAcpContentToLegacy(acpContent: AcpContent[]): LegacyResult {
   console.log(
     "🔧 [EDIT-DEBUG] convertAcpContentToLegacy called with:",
     acpContent
   );
 
   if (!acpContent || acpContent.length === 0) {
-    console.log("🔧 [EDIT-DEBUG] No content provided, returning undefined");
-    return undefined;
+    console.log("🔧 [EDIT-DEBUG] No content provided, returning default");
+    return {
+      type: "generic" as const,
+      oldText: undefined,
+      newText: "",
+      path: undefined,
+    };
   }
 
   const contentItem = acpContent[0];
@@ -92,8 +178,13 @@ function convertAcpContentToLegacy(acpContent: any[]): any {
     return result;
   }
 
-  console.log("🔧 [EDIT-DEBUG] Unknown content type, returning undefined");
-  return undefined;
+  console.log("🔧 [EDIT-DEBUG] Unknown content type, returning default");
+  return {
+    type: "generic" as const,
+    oldText: undefined,
+    newText: "",
+    path: undefined,
+  };
 }
 
 export const useConversationEvents = (
@@ -231,13 +322,17 @@ export const useConversationEvents = (
         console.log(
           `🔧 [EDIT-DEBUG] Registering acp-session-update listener for: ${conversationId}`
         );
-        await api.listen<any>(
+        await api.listen<EventPayload>(
           `acp-session-update-${conversationId}`,
-          ({ payload: update }) => {
+          ({ payload: update }: { payload: EventPayload }) => {
             console.log(
               `🔧 [EDIT-DEBUG] Received acp-session-update event:`,
               update
             );
+            if (!isSessionUpdateEvent(update)) {
+              console.warn("Received non-session-update event on session-update channel");
+              return;
+            }
             if (update.sessionUpdate === "tool_call") {
               console.log(
                 `🔧 [EDIT-DEBUG] Processing tool_call event for:`,
@@ -301,7 +396,7 @@ export const useConversationEvents = (
 
                         // Don't overwrite a user rejection with a backend status update
                         const isCurrentlyRejected =
-                          (msgPart.toolCall as any).isUserRejected ||
+                          msgPart.toolCall.isUserRejected ||
                           (msgPart.toolCall.status === "failed" &&
                             msgPart.toolCall.result &&
                             typeof msgPart.toolCall.result === "object" &&
@@ -388,7 +483,7 @@ export const useConversationEvents = (
         console.log(
           `✅ Registering listener for: acp-permission-request-${conversationId}`
         );
-        await api.listen<any>(
+        await api.listen<EventPayload>(
           `acp-permission-request-${conversationId}`,
           (event) => {
             console.log(
@@ -396,10 +491,16 @@ export const useConversationEvents = (
               event
             );
             console.log("🔍 DEBUG: Event payload:", event.payload);
-            console.log("🔍 DEBUG: Request object:", event.payload?.request);
+            
+            if (!isPermissionRequestEvent(event.payload)) {
+              console.warn("Received non-permission-request event on permission-request channel");
+              return;
+            }
+            
+            console.log("🔍 DEBUG: Request object:", event.payload.request);
             console.log(
               "🔍 DEBUG: ToolCall object:",
-              event.payload?.request?.toolCall
+              event.payload.request?.toolCall
             );
 
             const { request_id, request } = event.payload;
@@ -454,9 +555,11 @@ export const useConversationEvents = (
                   rootCommand: undefined,
                   command: undefined,
                 },
-                locations: request.toolCall.locations.map((loc: any) => ({
-                  path: loc.path,
-                })),
+                locations: request.toolCall.locations.map(
+                  (loc: ToolLocation) => ({
+                    path: loc.file || loc.directory,
+                  })
+                ),
                 inputJsonRpc: window.pendingToolCallInput,
                 // Include ACP permission options for enhanced approval flows
                 options: request.options || [],
@@ -566,9 +669,11 @@ export const useConversationEvents = (
                 rootCommand: undefined,
                 command: undefined,
               },
-              locations: request.toolCall.locations.map((loc: any) => ({
-                path: loc.path,
-              })),
+              locations: request.toolCall.locations.map(
+                (loc: ToolLocation) => ({
+                  path: loc.file || loc.directory,
+                })
+              ),
               inputJsonRpc: window.pendingToolCallInput,
             };
 

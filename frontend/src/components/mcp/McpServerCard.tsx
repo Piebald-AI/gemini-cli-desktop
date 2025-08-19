@@ -184,7 +184,7 @@ export function McpServerCard({
                     })
                   }
                   className={`w-48 ${getFieldError(validationErrors, "name") ? "border-red-500" : ""}`}
-                  placeholder={t('mcp.serverName')}
+                  placeholder={t("mcp.serverName")}
                 />
                 <FieldError fieldName="name" />
               </div>
@@ -194,7 +194,9 @@ export function McpServerCard({
             <Badge variant={getTransportBadgeColor(currentTransportType)}>
               {currentTransportType.toUpperCase()}
             </Badge>
-            {!server.enabled && <Badge variant="secondary">{t('common.disabled')}</Badge>}
+            {!server.enabled && (
+              <Badge variant="secondary">{t("common.disabled")}</Badge>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
@@ -226,14 +228,14 @@ export function McpServerCard({
                   size="sm"
                   onClick={() => onToggle(server.id)}
                 >
-                  {server.enabled ? t('common.disabled') : t('common.enabled')}
+                  {server.enabled ? t("common.disabled") : t("common.enabled")}
                 </Button>
                 <Button
                   variant="destructive"
                   size="sm"
                   onClick={() => onDelete(server.id)}
                 >
-                  {t('common.delete')}
+                  {t("common.delete")}
                 </Button>
               </>
             )}
@@ -254,11 +256,11 @@ export function McpServerCard({
               ) : (
                 <ChevronRight className="h-4 w-4" />
               )}
-              {t('mcp.basicConfiguration')}
+              {t("mcp.basicConfiguration")}
             </CollapsibleTrigger>
             <CollapsibleContent className="mt-3 space-y-3 pl-6">
               <div className="space-y-2">
-                <Label>{t('mcp.transportType')}</Label>
+                <Label>{t("mcp.transportType")}</Label>
                 <Select
                   value={currentTransportType}
                   onValueChange={(value: TransportType) =>
@@ -269,11 +271,13 @@ export function McpServerCard({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="stdio">{t('mcp.stdioTransport')}</SelectItem>
-                    <SelectItem value="sse">
-                      {t('mcp.sseTransport')}
+                    <SelectItem value="stdio">
+                      {t("mcp.stdioTransport")}
                     </SelectItem>
-                    <SelectItem value="http">{t('mcp.httpTransport')}</SelectItem>
+                    <SelectItem value="sse">{t("mcp.sseTransport")}</SelectItem>
+                    <SelectItem value="http">
+                      {t("mcp.httpTransport")}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -282,7 +286,7 @@ export function McpServerCard({
               {isStdioConfig(editedServer.config) && (
                 <>
                   <div className="space-y-2">
-                    <Label>{t('mcp.command')} *</Label>
+                    <Label>{t("mcp.command")} *</Label>
                     <Input
                       value={editedServer.config.command || ""}
                       onChange={(e) =>
@@ -299,12 +303,12 @@ export function McpServerCard({
                           ? "border-red-500"
                           : ""
                       }
-                      placeholder={t('mcp.commandPlaceholder')}
+                      placeholder={t("mcp.commandPlaceholder")}
                     />
                     <FieldError fieldName="command" />
                   </div>
                   <div className="space-y-2">
-                    <Label>{t('mcp.arguments')}</Label>
+                    <Label>{t("mcp.arguments")}</Label>
                     <Input
                       value={editedServer.config.args?.join(", ") || ""}
                       onChange={(e) =>
@@ -319,7 +323,7 @@ export function McpServerCard({
                           },
                         })
                       }
-                      placeholder={t('mcp.argumentsPlaceholder')}
+                      placeholder={t("mcp.argumentsPlaceholder")}
                     />
                   </div>
                 </>
@@ -327,7 +331,7 @@ export function McpServerCard({
 
               {isSSEConfig(editedServer.config) && (
                 <div className="space-y-2">
-                  <Label>{t('mcp.sseUrl')} *</Label>
+                  <Label>{t("mcp.sseUrl")} *</Label>
                   <Input
                     value={editedServer.config.url || ""}
                     onChange={(e) =>
@@ -341,7 +345,7 @@ export function McpServerCard({
                         ? "border-red-500"
                         : ""
                     }
-                    placeholder={t('mcp.sseUrlPlaceholder')}
+                    placeholder={t("mcp.sseUrlPlaceholder")}
                   />
                   <FieldError fieldName="url" />
                 </div>
@@ -349,7 +353,7 @@ export function McpServerCard({
 
               {isHTTPConfig(editedServer.config) && (
                 <div className="space-y-2">
-                  <Label>{t('mcp.httpUrl')} *</Label>
+                  <Label>{t("mcp.httpUrl")} *</Label>
                   <Input
                     value={editedServer.config.httpUrl || ""}
                     onChange={(e) =>
@@ -366,7 +370,7 @@ export function McpServerCard({
                         ? "border-red-500"
                         : ""
                     }
-                    placeholder={t('mcp.httpUrlPlaceholder')}
+                    placeholder={t("mcp.httpUrlPlaceholder")}
                   />
                   <FieldError fieldName="httpUrl" />
                 </div>
@@ -386,11 +390,11 @@ export function McpServerCard({
                 <ChevronRight className="h-4 w-4" />
               )}
               <Settings className="h-3 w-3" />
-              {t('mcp.advancedSettings')}
+              {t("mcp.advancedSettings")}
             </CollapsibleTrigger>
             <CollapsibleContent className="mt-3 space-y-3 pl-6">
               <div className="space-y-2">
-                <Label>{t('mcp.timeout')}</Label>
+                <Label>{t("mcp.timeout")}</Label>
                 <Input
                   type="number"
                   value={editedServer.config.timeout || 600000}
@@ -408,7 +412,7 @@ export function McpServerCard({
 
               {isStdioConfig(editedServer.config) && (
                 <div className="space-y-2">
-                  <Label>{t('mcp.workingDirectory')}</Label>
+                  <Label>{t("mcp.workingDirectory")}</Label>
                   <Input
                     value={editedServer.config.cwd || ""}
                     onChange={(e) =>
@@ -417,7 +421,7 @@ export function McpServerCard({
                         config: { ...editedServer.config, cwd: e.target.value },
                       })
                     }
-                    placeholder={t('mcp.workingDirectoryPlaceholder')}
+                    placeholder={t("mcp.workingDirectoryPlaceholder")}
                   />
                 </div>
               )}
@@ -434,7 +438,7 @@ export function McpServerCard({
                   }
                 />
                 <Label htmlFor={`trust-${server.id}`} className="text-sm">
-                  {t('mcp.trust')}
+                  {t("mcp.trust")}
                 </Label>
               </div>
             </CollapsibleContent>
@@ -452,7 +456,7 @@ export function McpServerCard({
                 <ChevronRight className="h-4 w-4" />
               )}
               <Key className="h-3 w-3" />
-              {t('mcp.authentication')}
+              {t("mcp.authentication")}
             </CollapsibleTrigger>
             <CollapsibleContent className="mt-3 space-y-3 pl-6">
               <div className="flex items-center space-x-2">
@@ -473,14 +477,14 @@ export function McpServerCard({
                   }
                 />
                 <Label htmlFor={`oauth-${server.id}`} className="text-sm">
-                  {t('mcp.enableOAuth')}
+                  {t("mcp.enableOAuth")}
                 </Label>
               </div>
 
               {editedServer.config.oauth?.enabled && (
                 <div className="space-y-3 border-l-2 border-muted pl-4">
                   <div className="space-y-2">
-                    <Label>{t('mcp.clientId')}</Label>
+                    <Label>{t("mcp.clientId")}</Label>
                     <Input
                       value={editedServer.config.oauth?.clientId || ""}
                       onChange={(e) =>
@@ -495,11 +499,11 @@ export function McpServerCard({
                           },
                         })
                       }
-                      placeholder={t('mcp.oauthClientDescription')}
+                      placeholder={t("mcp.oauthClientDescription")}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>{t('mcp.scopes')}</Label>
+                    <Label>{t("mcp.scopes")}</Label>
                     <Input
                       value={
                         editedServer.config.oauth?.scopes?.join(", ") || ""
@@ -519,7 +523,7 @@ export function McpServerCard({
                           },
                         })
                       }
-                      placeholder={t('mcp.scopesPlaceholder')}
+                      placeholder={t("mcp.scopesPlaceholder")}
                     />
                   </div>
                 </div>
@@ -539,11 +543,11 @@ export function McpServerCard({
                 <ChevronRight className="h-4 w-4" />
               )}
               <Filter className="h-3 w-3" />
-              {t('mcp.toolFiltering')}
+              {t("mcp.toolFiltering")}
             </CollapsibleTrigger>
             <CollapsibleContent className="mt-3 space-y-3 pl-6">
               <div className="space-y-2">
-                <Label>{t('mcp.includeTools')}</Label>
+                <Label>{t("mcp.includeTools")}</Label>
                 <Input
                   value={editedServer.config.includeTools?.join(", ") || ""}
                   onChange={(e) =>
@@ -558,11 +562,11 @@ export function McpServerCard({
                       },
                     })
                   }
-                  placeholder={t('mcp.includeToolsPlaceholder')}
+                  placeholder={t("mcp.includeToolsPlaceholder")}
                 />
               </div>
               <div className="space-y-2">
-                <Label>{t('mcp.excludeTools')}</Label>
+                <Label>{t("mcp.excludeTools")}</Label>
                 <Input
                   value={editedServer.config.excludeTools?.join(", ") || ""}
                   onChange={(e) =>
@@ -577,11 +581,11 @@ export function McpServerCard({
                       },
                     })
                   }
-                  placeholder={t('mcp.excludeToolsPlaceholder')}
+                  placeholder={t("mcp.excludeToolsPlaceholder")}
                 />
               </div>
               <p className="text-xs text-muted-foreground">
-                {t('mcp.toolFilteringDescription')}
+                {t("mcp.toolFilteringDescription")}
               </p>
             </CollapsibleContent>
           </Collapsible>
@@ -593,17 +597,21 @@ export function McpServerCard({
           <div className="text-sm text-muted-foreground space-y-1">
             {currentTransportType === "stdio" &&
               isStdioConfig(server.config) && (
-                <div>{t('mcp.command')}: {server.config.command || t('mcp.notConfigured')}</div>
+                <div>
+                  {t("mcp.command")}:{" "}
+                  {server.config.command || t("mcp.notConfigured")}
+                </div>
               )}
             {currentTransportType === "sse" && isSSEConfig(server.config) && (
               <div className="flex items-center gap-1">
-                {t('mcp.url')}: {server.config.url || t('mcp.notConfigured')}
+                {t("mcp.url")}: {server.config.url || t("mcp.notConfigured")}
                 {server.config.url && <ExternalLink className="h-3 w-3" />}
               </div>
             )}
             {currentTransportType === "http" && isHTTPConfig(server.config) && (
               <div className="flex items-center gap-1">
-                {t('mcp.httpUrl')}: {server.config.httpUrl || t('mcp.notConfigured')}
+                {t("mcp.httpUrl")}:{" "}
+                {server.config.httpUrl || t("mcp.notConfigured")}
                 {server.config.httpUrl && <ExternalLink className="h-3 w-3" />}
               </div>
             )}
@@ -614,22 +622,22 @@ export function McpServerCard({
             {server.config.oauth?.enabled && (
               <Badge variant="outline" className="text-xs">
                 <Key className="h-3 w-3 mr-1" />
-                {t('mcp.oauth')}
+                {t("mcp.oauth")}
               </Badge>
             )}
             {server.config.trust && (
               <Badge variant="outline" className="text-xs">
-                {t('mcp.trusted')}
+                {t("mcp.trusted")}
               </Badge>
             )}
             {(server.config.includeTools?.length ?? 0) > 0 && (
               <Badge variant="outline" className="text-xs">
-                +{server.config.includeTools?.length} {t('mcp.tools')}
+                +{server.config.includeTools?.length} {t("mcp.tools")}
               </Badge>
             )}
             {(server.config.excludeTools?.length ?? 0) > 0 && (
               <Badge variant="outline" className="text-xs">
-                -{server.config.excludeTools?.length} {t('mcp.tools')}
+                -{server.config.excludeTools?.length} {t("mcp.tools")}
               </Badge>
             )}
           </div>

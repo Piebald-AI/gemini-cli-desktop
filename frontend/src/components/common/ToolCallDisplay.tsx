@@ -47,7 +47,7 @@ function ToolCallDisplayComponent({
 
   const isUserRejected = (toolCall: ToolCall): boolean => {
     // Check the permanent rejection flag first
-    if ((toolCall as any).isUserRejected) {
+    if (toolCall.isUserRejected) {
       return true;
     }
 
@@ -56,12 +56,12 @@ function ToolCallDisplayComponent({
       toolCall.status === "failed" &&
       toolCall.result &&
       typeof toolCall.result === "object" &&
-      toolCall.result.markdown === t('toolCalls.userRejected')
+      toolCall.result.markdown === t("toolCalls.userRejected")
     );
   };
 
   const getErrorSummary = (toolCall: ToolCall): string => {
-    if (!toolCall.result) return t('toolCalls.failedToExecute');
+    if (!toolCall.result) return t("toolCalls.failedToExecute");
 
     const result = toolCall.result;
 
@@ -108,7 +108,7 @@ function ToolCallDisplayComponent({
       // Ignore JSON parsing errors
     }
 
-    return t('toolCalls.commandFailed');
+    return t("toolCalls.commandFailed");
   };
 
   const getRunningDescription = (toolCall: ToolCall): React.ReactNode => {
@@ -143,7 +143,7 @@ function ToolCallDisplayComponent({
   const toolLoadingConfig = {
     google_web_search: {
       icon: <Loader2 className="animate-spin h-3 w-3" />,
-      message: t('toolCalls.googling'),
+      message: t("toolCalls.googling"),
       isSpecialTool: true,
       detectors: [
         (toolCall: ToolCall) =>
@@ -152,7 +152,7 @@ function ToolCallDisplayComponent({
     },
     web_fetch: {
       icon: <Loader2 className="animate-spin h-3 w-3" />,
-      message: t('toolCalls.fetching'),
+      message: t("toolCalls.fetching"),
       isSpecialTool: true,
       detectors: [
         (toolCall: ToolCall) =>
@@ -262,7 +262,7 @@ function ToolCallDisplayComponent({
       icon: (
         <div className="animate-spin h-3 w-3 border-2 border-primary border-t-transparent rounded-full"></div>
       ),
-      message: t('toolCalls.executing'),
+      message: t("toolCalls.executing"),
       isWebTool: false,
     };
   };
@@ -295,14 +295,16 @@ function ToolCallDisplayComponent({
               <div className="flex items-center gap-2 text-sm px-2 py-1 hover:bg-muted/50 rounded-lg transition-colors">
                 <Loader2 className="animate-spin h-4 w-4 text-blue-500" />
                 <span>
-                  {t('toolCalls.fetching')}{" "}
+                  {t("toolCalls.fetching")}{" "}
                   <span className="text-muted-foreground">
                     {(() => {
                       const webFetchInfo =
                         getWebFetchPendingInfo(enhancedToolCall);
                       return webFetchInfo?.count === 1
                         ? webFetchInfo.url
-                        : t('toolCalls.fetchingUrls', { count: webFetchInfo?.count || 1 });
+                        : t("toolCalls.fetchingUrls", {
+                            count: webFetchInfo?.count || 1,
+                          });
                     })()}
                   </span>
                 </span>
@@ -397,7 +399,7 @@ function ToolCallDisplayComponent({
                             e.stopPropagation();
                             onConfirm(enhancedToolCall.id, "proceed_once");
                           }}
-                          title={t('toolCalls.allow')}
+                          title={t("toolCalls.allow")}
                         >
                           <Check className="h-3 w-3" />
                         </Button>
@@ -409,7 +411,7 @@ function ToolCallDisplayComponent({
                             e.stopPropagation();
                             onConfirm(enhancedToolCall.id, "cancel");
                           }}
-                          title={t('toolCalls.reject')}
+                          title={t("toolCalls.reject")}
                         >
                           <X className="h-3 w-3" />
                         </Button>
@@ -427,14 +429,16 @@ function ToolCallDisplayComponent({
                   {formatToolName(enhancedToolCall.name)}
                 </span>
                 <span className="text-sm text-muted-foreground ml-2">
-                  {t('toolCalls.pendingApproval')}
+                  {t("toolCalls.pendingApproval")}
                 </span>
               </div>
 
               {/* Approval Buttons - Show when there's a confirmation request */}
               {hasConfirmationRequest && onConfirm && (
                 <div className="flex items-center gap-2 mt-3">
-                  <span className="text-sm text-foreground">{t('toolCalls.approve')}</span>
+                  <span className="text-sm text-foreground">
+                    {t("toolCalls.approve")}
+                  </span>
                   <Button
                     size="sm"
                     className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 text-xs"
@@ -443,7 +447,7 @@ function ToolCallDisplayComponent({
                     }
                   >
                     <Check className="h-3 w-3 mr-1" />
-                    {t('common.yes')}
+                    {t("common.yes")}
                   </Button>
                   <Button
                     size="sm"
@@ -452,7 +456,7 @@ function ToolCallDisplayComponent({
                     onClick={() => onConfirm(enhancedToolCall.id, "cancel")}
                   >
                     <X className="h-3 w-3 mr-1" />
-                    {t('common.no')}
+                    {t("common.no")}
                   </Button>
                 </div>
               )}
@@ -461,7 +465,7 @@ function ToolCallDisplayComponent({
               {!hasConfirmationRequest && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground mt-3">
                   <span className="animate-pulse">●</span>
-                  {t('toolCalls.waitingForApproval')}
+                  {t("toolCalls.waitingForApproval")}
                 </div>
               )}
 
@@ -469,7 +473,7 @@ function ToolCallDisplayComponent({
               {enhancedToolCall.inputJsonRpc && (
                 <div className="mt-4">
                   <div className="text-xs font-semibold text-muted-foreground mb-2">
-                    {t('toolCalls.input')}
+                    {t("toolCalls.input")}
                   </div>
                   <pre className="bg-muted p-3 rounded text-xs overflow-x-auto border">
                     <code>{enhancedToolCall.inputJsonRpc}</code>
@@ -518,7 +522,7 @@ function ToolCallDisplayComponent({
               {enhancedToolCall.inputJsonRpc && (
                 <div className="mt-4">
                   <div className="text-xs font-semibold text-muted-foreground mb-2">
-                    {t('toolCalls.input')}
+                    {t("toolCalls.input")}
                   </div>
                   <pre className="bg-muted p-3 rounded text-xs overflow-x-auto border">
                     <code>{enhancedToolCall.inputJsonRpc}</code>
@@ -549,15 +553,17 @@ function ToolCallDisplayComponent({
                 <X className="h-4 w-4 text-red-500" />
                 <span>
                   {isUserRejected(enhancedToolCall)
-                    ? t('toolCalls.rejectedFetch')
-                    : t('toolCalls.failedToFetch')}{" "}
+                    ? t("toolCalls.rejectedFetch")
+                    : t("toolCalls.failedToFetch")}{" "}
                   <span className="text-muted-foreground">
                     {(() => {
                       const webFetchInfo =
                         getWebFetchPendingInfo(enhancedToolCall);
                       return webFetchInfo?.count === 1
                         ? webFetchInfo.url
-                        : t('toolCalls.fetchingUrls', { count: webFetchInfo?.count || 1 });
+                        : t("toolCalls.fetchingUrls", {
+                            count: webFetchInfo?.count || 1,
+                          });
                     })()}
                   </span>
                 </span>
@@ -576,7 +582,7 @@ function ToolCallDisplayComponent({
               <div className="flex items-center gap-2 text-sm text-red-700 dark:text-red-300">
                 <X className="size-3" />
                 {isUserRejected(enhancedToolCall)
-                  ? t('toolCalls.rejected')
+                  ? t("toolCalls.rejected")
                   : getErrorSummary(enhancedToolCall)}
               </div>
 
@@ -584,7 +590,7 @@ function ToolCallDisplayComponent({
               {enhancedToolCall.inputJsonRpc && (
                 <div className="mt-4">
                   <div className="text-xs font-semibold text-muted-foreground mb-2">
-                    {t('toolCalls.input')}
+                    {t("toolCalls.input")}
                   </div>
                   <pre className="bg-muted p-3 rounded text-xs overflow-x-auto border">
                     <code>{enhancedToolCall.inputJsonRpc}</code>
@@ -596,7 +602,7 @@ function ToolCallDisplayComponent({
               {enhancedToolCall.outputJsonRpc && (
                 <div className="mt-4">
                   <div className="text-xs font-semibold text-muted-foreground mb-2">
-                    {t('toolCalls.output')}
+                    {t("toolCalls.output")}
                   </div>
                   <pre className="bg-muted p-3 rounded text-xs overflow-x-auto border">
                     <code>{enhancedToolCall.outputJsonRpc}</code>

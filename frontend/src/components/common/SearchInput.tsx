@@ -32,7 +32,7 @@ export function SearchInput({
   availableProjects = [],
 }: SearchInputProps) {
   const { t } = useTranslation();
-  const defaultPlaceholder = placeholder || t('search.searchConversations');
+  const defaultPlaceholder = placeholder || t("search.searchConversations");
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<SearchFilters>({});
   const onSearchRef = useRef(onSearch);
@@ -106,7 +106,7 @@ export function SearchInput({
           {filters.project_hash && (
             <Badge variant="secondary" className="text-xs px-2 py-0.5">
               <Folder className="h-3 w-3 mr-1" />
-              {t('search.project')}: {filters.project_hash.slice(0, 8)}...
+              {t("search.project")}: {filters.project_hash.slice(0, 8)}...
               <Button
                 variant="ghost"
                 size="sm"
@@ -122,7 +122,7 @@ export function SearchInput({
           {filters.date_range && (
             <Badge variant="secondary" className="text-xs px-2 py-0.5">
               <Calendar className="h-3 w-3 mr-1" />
-              {t('search.dateRange')}
+              {t("search.dateRange")}
               <Button
                 variant="ghost"
                 size="sm"
@@ -137,7 +137,7 @@ export function SearchInput({
           )}
           {filters.max_results && filters.max_results !== 50 && (
             <Badge variant="secondary" className="text-xs px-2 py-0.5">
-              {t('search.maxResults')}: {filters.max_results}
+              {t("search.maxResults")}: {filters.max_results}
               <Button
                 variant="ghost"
                 size="sm"
@@ -159,7 +159,7 @@ export function SearchInput({
           <CardContent className="p-3 space-y-3">
             <div className="flex items-center justify-between">
               <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                {t('search.searchFilters')}
+                {t("search.searchFilters")}
               </h4>
               <Button
                 variant="ghost"
@@ -175,7 +175,7 @@ export function SearchInput({
             {availableProjects.length > 0 && (
               <div className="space-y-2">
                 <label className="text-xs font-medium text-gray-600 dark:text-gray-400">
-                  {t('search.project')}
+                  {t("search.project")}
                 </label>
                 <Select
                   value={filters.project_hash || ""}
@@ -187,10 +187,10 @@ export function SearchInput({
                   }
                 >
                   <SelectTrigger className="h-8 text-xs">
-                    <SelectValue placeholder={t('search.allProjects')} />
+                    <SelectValue placeholder={t("search.allProjects")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">{t('search.allProjects')}</SelectItem>
+                    <SelectItem value="">{t("search.allProjects")}</SelectItem>
                     {availableProjects.map((project) => (
                       <SelectItem key={project.hash} value={project.hash}>
                         {project.name} ({project.hash.slice(0, 8)}...)
@@ -204,7 +204,7 @@ export function SearchInput({
             {/* Results Limit */}
             <div className="space-y-2">
               <label className="text-xs font-medium text-gray-600 dark:text-gray-400">
-                {t('search.maxResults')}
+                {t("search.maxResults")}
               </label>
               <Select
                 value={filters.max_results?.toString() || "50"}
@@ -235,7 +235,7 @@ export function SearchInput({
                 onClick={() => setFilters({})}
                 className="w-full h-8 text-xs"
               >
-                {t('search.clearFilters')}
+                {t("search.clearFilters")}
               </Button>
             )}
           </CardContent>

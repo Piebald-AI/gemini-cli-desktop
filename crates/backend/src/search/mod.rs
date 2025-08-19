@@ -77,7 +77,7 @@ fn generate_title_from_messages(log_path: &Path) -> String {
 fn count_messages_in_log(log_path: &Path) -> u32 {
     let mut user_count = 0;
     let mut assistant_count = 0;
-    
+
     if let Ok(file) = File::open(log_path) {
         let reader = BufReader::new(file);
         for line in reader.lines().map_while(Result::ok) {
@@ -93,7 +93,7 @@ fn count_messages_in_log(log_path: &Path) -> u32 {
             }
         }
     }
-    
+
     // Return total of user messages and assistant responses
     user_count + assistant_count
 }

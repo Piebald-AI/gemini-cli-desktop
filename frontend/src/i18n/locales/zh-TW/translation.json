@@ -405,7 +405,7 @@
     "justNow": "剛剛",
     "minuteAgo": "{{count}} 分鐘前",
     "minuteAgo_other": "{{count}} 分鐘前",
-    "hourAgo": "{{count}} 小時前", 
+    "hourAgo": "{{count}} 小時前",
     "hourAgo_other": "{{count}} 小時前",
     "dayAgo": "{{count}} 天前",
     "dayAgo_other": "{{count}} 天前",

@@ -1,9 +1,52 @@
 import { type ToolCall } from "./toolCallParser";
 
+// Tool parameter types based on common usage patterns
+export interface ToolParameters {
+  // File/directory operations
+  path?: string;
+  file?: string;
+  directory?: string;
+  
+  // Search operations
+  pattern?: string;
+  query?: string;
+  glob?: string;
+  
+  // Content operations
+  content?: string;
+  text?: string;
+  
+  // Command operations
+  command?: string;
+  cmd?: string;
+  
+  // Network operations
+  url?: string;
+  method?: string;
+  
+  // Location-based operations
+  location?: string;
+  city?: string;
+  
+  // Copy/move operations
+  source?: string;
+  src?: string;
+  destination?: string;
+  dest?: string;
+  
+  // Array parameters
+  locations?: Array<{ path: string; type?: string }>;
+  patterns?: string[];
+  files?: string[];
+  
+  // Generic fallback for any other properties
+  [key: string]: unknown;
+}
+
 export interface ParsedToolInput {
   description: string;
   primaryParam: string | null;
-  allParams: Record<string, unknown>;
+  allParams: ToolParameters;
   formattedDescription?: {
     parts: Array<{
       text: string;
@@ -14,7 +57,7 @@ export interface ParsedToolInput {
 
 export class ToolInputParser {
   static parseToolInput(toolCall: ToolCall): ParsedToolInput {
-    let allParams: Record<string, unknown> = {};
+    let allParams: ToolParameters = {};
     let primaryParam: string | null = null;
 
     // First try to get parameters from inputJsonRpc
@@ -54,7 +97,7 @@ export class ToolInputParser {
 
   private static generateDescription(
     toolName: string,
-    params: Record<string, unknown>,
+    params: ToolParameters,
     label?: string
   ):
     | string
@@ -252,7 +295,7 @@ export class ToolInputParser {
 
   private static extractPrimaryParam(
     toolName: string,
-    params: Record<string, unknown>
+    params: ToolParameters
   ): string | null {
     // Define primary parameter names for each tool type
     const primaryParamMap: Record<string, string[]> = {

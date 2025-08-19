@@ -72,11 +72,12 @@ export function ReadFileRenderer({ toolCall }: ReadFileRendererProps) {
           Array.isArray(params.locations) &&
           params.locations.length > 0
         ) {
-          files = params.locations.map((loc: unknown) =>
-            typeof loc === "object" && loc !== null && "path" in loc
-              ? (loc as { path: string }).path
-              : String(loc)
-          );
+          files = params.locations.map((loc: unknown) => {
+            if (typeof loc === "object" && loc !== null && "path" in loc) {
+              return (loc as { path: string }).path;
+            }
+            return String(loc);
+          });
         }
         // If locations is empty but we have a label with patterns, parse the label
         else if (
@@ -117,11 +118,12 @@ export function ReadFileRenderer({ toolCall }: ReadFileRendererProps) {
     // Fallback: check toolCall.parameters directly
     if (files.length === 0 && toolCall.parameters?.locations) {
       if (Array.isArray(toolCall.parameters.locations)) {
-        files = toolCall.parameters.locations.map((loc: unknown) =>
-          typeof loc === "object" && loc !== null && "path" in loc
-            ? (loc as { path: string }).path
-            : String(loc)
-        );
+        files = toolCall.parameters.locations.map((loc: unknown) => {
+          if (typeof loc === "object" && loc !== null && "path" in loc) {
+            return (loc as { path: string }).path;
+          }
+          return String(loc);
+        });
       }
     }
 

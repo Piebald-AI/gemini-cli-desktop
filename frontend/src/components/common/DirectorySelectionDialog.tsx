@@ -80,7 +80,7 @@ export function DirectorySelectionDialog({
         await loadDirectoryContents(homeDir);
       }
     } catch (err) {
-      setError(t('fileSystem.failedToLoadHome'));
+      setError(t("fileSystem.failedToLoadHome"));
       console.error("Error loading home directory:", err);
     } finally {
       setLoading(false);
@@ -104,7 +104,7 @@ export function DirectorySelectionDialog({
 
       setContents(dirContents);
     } catch (err) {
-      setError(t('fileSystem.failedToLoadDirectory'));
+      setError(t("fileSystem.failedToLoadDirectory"));
       console.error("Error loading directory contents:", err);
       setContents([]);
     } finally {
@@ -127,9 +127,9 @@ export function DirectorySelectionDialog({
 
       setContents(volumes);
       setCurrentDirectory(""); // Clear current directory to indicate we're showing volumes
-      setPathInput(t('fileSystem.computer')); // Show "Computer" as the path
+      setPathInput(t("fileSystem.computer")); // Show "Computer" as the path
     } catch (err) {
-      setError(t('fileSystem.failedToLoadVolumes'));
+      setError(t("fileSystem.failedToLoadVolumes"));
       console.error("Error loading volumes:", err);
       setContents([]);
     } finally {
@@ -161,7 +161,7 @@ export function DirectorySelectionDialog({
         await loadVolumes();
       }
     } catch (err) {
-      setError(t('fileSystem.failedToNavigateUp'));
+      setError(t("fileSystem.failedToNavigateUp"));
       console.error("Error navigating up:", err);
     } finally {
       setLoading(false);
@@ -190,7 +190,7 @@ export function DirectorySelectionDialog({
       setCurrentDirectory(pathInput.trim());
       await loadDirectoryContents(pathInput.trim());
     } catch (err) {
-      setError(t('fileSystem.failedToNavigateTo'));
+      setError(t("fileSystem.failedToNavigateTo"));
       console.error("Error navigating to path:", err);
     }
   };
@@ -198,7 +198,7 @@ export function DirectorySelectionDialog({
   const handlePathCancel = () => {
     setEditingPath(false);
     // If we're in volume view (currentDirectory is empty), preserve "Computer" label
-    setPathInput(currentDirectory || t('fileSystem.computer'));
+    setPathInput(currentDirectory || t("fileSystem.computer"));
   };
 
   const handlePathKeyDown = (e: React.KeyboardEvent) => {
@@ -263,7 +263,7 @@ export function DirectorySelectionDialog({
         onPointerDownOutside={(e) => e.preventDefault()}
       >
         <DialogHeader>
-          <DialogTitle>{t('fileSystem.selectDirectory')}</DialogTitle>
+          <DialogTitle>{t("fileSystem.selectDirectory")}</DialogTitle>
         </DialogHeader>
 
         <div className="flex-1 flex flex-col gap-4 min-h-0">
@@ -275,7 +275,7 @@ export function DirectorySelectionDialog({
                 size="sm"
                 onClick={navigateUp}
                 disabled={loading}
-                title={t('accessibility.goToParentDirectory')}
+                title={t("accessibility.goToParentDirectory")}
                 className="h-7 w-7 p-0"
               >
                 <ArrowUp className="h-4 w-4" />
@@ -285,7 +285,7 @@ export function DirectorySelectionDialog({
                 size="sm"
                 onClick={initializeWithHome}
                 disabled={loading}
-                title={t('accessibility.goToHomeDirectory')}
+                title={t("accessibility.goToHomeDirectory")}
                 className="h-7 w-7 p-0"
               >
                 <Home className="h-4 w-4" />
@@ -307,16 +307,16 @@ export function DirectorySelectionDialog({
                 <span
                   className="text-sm text-gray-600 dark:text-gray-300 flex-1 truncate cursor-text hover:bg-neutral-100 dark:hover:bg-neutral-700 px-1 py-0.5 rounded"
                   onClick={handlePathEdit}
-                  title={t('fileSystem.clickToEditPath')}
+                  title={t("fileSystem.clickToEditPath")}
                 >
-                  {currentDirectory || pathInput || t('common.loading')}
+                  {currentDirectory || pathInput || t("common.loading")}
                 </span>
               )}
             </div>
 
             {/* Filter input */}
             <Input
-              placeholder={t('search.filterItems')}
+              placeholder={t("search.filterItems")}
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
               className="max-w-[10rem]"
@@ -328,7 +328,7 @@ export function DirectorySelectionDialog({
             {loading && (
               <div className="absolute top-2 right-2 z-10 flex items-center gap-2 bg-background/80 backdrop-blur-sm rounded-md px-2 py-1 border shadow-sm">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="text-sm">{t('common.loading')}</span>
+                <span className="text-sm">{t("common.loading")}</span>
               </div>
             )}
             {error ? (
@@ -343,11 +343,13 @@ export function DirectorySelectionDialog({
                       <TableRow>
                         <TableHead className="w-8 p-1.5 pl-3"></TableHead>
                         <TableHead className="p-1.5 max-w-[10rem]">
-                          {t('fileSystem.name')}
+                          {t("fileSystem.name")}
                         </TableHead>
-                        <TableHead className="w-24 p-1.5">{t('fileSystem.size')}</TableHead>
+                        <TableHead className="w-24 p-1.5">
+                          {t("fileSystem.size")}
+                        </TableHead>
                         <TableHead className="w-36 p-1.5">
-                          {t('fileSystem.dateModified')}
+                          {t("fileSystem.dateModified")}
                         </TableHead>
                       </TableRow>
                     </TableHeader>
@@ -359,10 +361,10 @@ export function DirectorySelectionDialog({
                             className="text-center text-gray-500"
                           >
                             {filter.trim()
-                              ? t('search.noItemsMatch')
+                              ? t("search.noItemsMatch")
                               : loading
-                                ? t('common.loading')
-                                : t('search.directoryEmpty')}
+                                ? t("common.loading")
+                                : t("search.directoryEmpty")}
                           </TableCell>
                         </TableRow>
                       ) : (
@@ -429,13 +431,13 @@ export function DirectorySelectionDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={handleClose}>
-            {t('common.cancel')}
+            {t("common.cancel")}
           </Button>
           <Button
             onClick={handleSelect}
             disabled={!currentDirectory || loading}
           >
-            {t('fileSystem.selectDirectoryButton')}
+            {t("fileSystem.selectDirectoryButton")}
           </Button>
         </DialogFooter>
       </DialogContent>

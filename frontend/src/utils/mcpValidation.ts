@@ -5,7 +5,7 @@ import {
   isSSEConfig,
   isHTTPConfig,
 } from "../types";
-import i18n from '../i18n';
+import i18n from "../i18n";
 
 export interface ValidationError {
   field: string;
@@ -24,17 +24,17 @@ export function validateMcpServerName(name: string): ValidationResult {
   if (!name || name.trim().length === 0) {
     errors.push({
       field: "name",
-      message: t('validation.serverNameRequired'),
+      message: t("validation.serverNameRequired"),
     });
   } else if (name.trim().length < 2) {
     errors.push({
       field: "name",
-      message: t('validation.serverNameTooShort'),
+      message: t("validation.serverNameTooShort"),
     });
   } else if (!/^[a-zA-Z0-9_-]+$/.test(name.trim())) {
     errors.push({
       field: "name",
-      message: t('validation.serverNameInvalidChars'),
+      message: t("validation.serverNameInvalidChars"),
     });
   }
 
@@ -55,7 +55,7 @@ export function validateMcpServerConfig(
     if (!config.command || config.command.trim().length === 0) {
       errors.push({
         field: "command",
-        message: t('validation.commandRequired'),
+        message: t("validation.commandRequired"),
       });
     }
 
@@ -65,7 +65,7 @@ export function validateMcpServerConfig(
       if (config.cwd.includes("..")) {
         errors.push({
           field: "cwd",
-          message: t('validation.invalidWorkingDirectory'),
+          message: t("validation.invalidWorkingDirectory"),
         });
       }
     }
@@ -73,24 +73,24 @@ export function validateMcpServerConfig(
     if (!config.url || config.url.trim().length === 0) {
       errors.push({
         field: "url",
-        message: t('validation.urlRequired'),
+        message: t("validation.urlRequired"),
       });
     } else if (!isValidUrl(config.url)) {
       errors.push({
         field: "url",
-        message: t('validation.invalidUrl'),
+        message: t("validation.invalidUrl"),
       });
     }
   } else if (isHTTPConfig(config)) {
     if (!config.httpUrl || config.httpUrl.trim().length === 0) {
       errors.push({
         field: "httpUrl",
-        message: t('validation.httpUrlRequired'),
+        message: t("validation.httpUrlRequired"),
       });
     } else if (!isValidUrl(config.httpUrl)) {
       errors.push({
         field: "httpUrl",
-        message: t('validation.invalidHttpUrl'),
+        message: t("validation.invalidHttpUrl"),
       });
     }
   }
@@ -100,12 +100,12 @@ export function validateMcpServerConfig(
     if (config.timeout < 1000) {
       errors.push({
         field: "timeout",
-        message: t('validation.timeoutTooLow'),
+        message: t("validation.timeoutTooLow"),
       });
     } else if (config.timeout > 3600000) {
       errors.push({
         field: "timeout",
-        message: t('validation.timeoutTooHigh'),
+        message: t("validation.timeoutTooHigh"),
       });
     }
   }
@@ -118,14 +118,14 @@ export function validateMcpServerConfig(
     ) {
       errors.push({
         field: "oauth.scopes",
-        message: t('validation.oauthScopesEmpty'),
+        message: t("validation.oauthScopesEmpty"),
       });
     }
 
     if (config.oauth.redirectUri && !isValidUrl(config.oauth.redirectUri)) {
       errors.push({
         field: "oauth.redirectUri",
-        message: t('validation.invalidRedirectUri'),
+        message: t("validation.invalidRedirectUri"),
       });
     }
 
@@ -135,14 +135,14 @@ export function validateMcpServerConfig(
     ) {
       errors.push({
         field: "oauth.authorizationUrl",
-        message: t('validation.invalidAuthUrl'),
+        message: t("validation.invalidAuthUrl"),
       });
     }
 
     if (config.oauth.tokenUrl && !isValidUrl(config.oauth.tokenUrl)) {
       errors.push({
         field: "oauth.tokenUrl",
-        message: t('validation.invalidTokenUrl'),
+        message: t("validation.invalidTokenUrl"),
       });
     }
   }
@@ -155,7 +155,7 @@ export function validateMcpServerConfig(
     if (overlap.length > 0) {
       errors.push({
         field: "tools",
-        message: t('validation.toolsOverlap', { tools: overlap.join(", ") }),
+        message: t("validation.toolsOverlap", { tools: overlap.join(", ") }),
       });
     }
   }
@@ -190,13 +190,13 @@ export function validateUniqueServerNames(
     if (nameMap.has(normalizedName)) {
       errors.push({
         field: `servers[${index}].name`,
-        message: t('validation.duplicateServerName', { name: server.name }),
+        message: t("validation.duplicateServerName", { name: server.name }),
       });
       // Also mark the original occurrence
       const originalIndex = nameMap.get(normalizedName)!;
       errors.push({
         field: `servers[${originalIndex}].name`,
-        message: t('validation.duplicateServerName', { name: server.name }),
+        message: t("validation.duplicateServerName", { name: server.name }),
       });
     } else {
       nameMap.set(normalizedName, index);

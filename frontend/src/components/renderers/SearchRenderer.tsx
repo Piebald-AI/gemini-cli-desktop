@@ -1,16 +1,5 @@
 import { Search, FileText, MapPin } from "lucide-react";
-import { type ToolCall } from "../../utils/toolCallParser";
-
-interface SearchMatch {
-  file: string;
-  line_number?: number;
-  line_content?: string;
-  matches?: Array<{
-    start: number;
-    end: number;
-    text: string;
-  }>;
-}
+import { type ToolCall, type SearchMatch } from "../../utils/toolCallParser";
 
 interface SearchResult {
   matches?: SearchMatch[];

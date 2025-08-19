@@ -49,6 +49,28 @@ export interface ApiConfig {
   model: string;
 }
 
+export interface GeminiAuth {
+  method: GeminiAuthMethod;
+  api_key?: string;
+  vertex_project?: string;
+  vertex_location?: string;
+}
+
+export interface BackendConfigParams {
+  api_key: string;
+  base_url: string;
+  model: string;
+}
+
+export interface SessionParams {
+  sessionId: string;
+  workingDirectory: string;
+  model: string;
+  backendConfig?: BackendConfigParams;
+  geminiAuth?: GeminiAuth;
+  [key: string]: unknown;
+}
+
 export interface BackendContextValue {
   // State
   state: BackendState;

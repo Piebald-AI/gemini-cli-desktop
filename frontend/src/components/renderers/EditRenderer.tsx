@@ -44,8 +44,7 @@ export function EditRenderer({ toolCall, onConfirm }: EditRendererProps) {
 
   const isUserRejected = (toolCall: ToolCall): boolean => {
     // Check the permanent rejection flag first
-    // TODO 8/17/2025: Get rid of `any`.
-    if ((toolCall as any).isUserRejected) {
+    if (toolCall.isUserRejected) {
       return true;
     }
 

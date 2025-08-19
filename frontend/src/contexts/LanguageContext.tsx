@@ -1,6 +1,10 @@
-import React, { createContext, useContext, useEffect, ReactNode } from 'react';
-import { useTranslation } from 'react-i18next';
-import { supportedLanguages, languageNames, type SupportedLanguage } from '../i18n/config';
+import React, { createContext, useContext, useEffect, ReactNode } from "react";
+import { useTranslation } from "react-i18next";
+import {
+  supportedLanguages,
+  languageNames,
+  type SupportedLanguage,
+} from "../i18n/config";
 
 interface LanguageContextType {
   currentLanguage: SupportedLanguage;
@@ -10,7 +14,9 @@ interface LanguageContextType {
   isLoading: boolean;
 }
 
-const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+const LanguageContext = createContext<LanguageContextType | undefined>(
+  undefined
+);
 
 interface LanguageProviderProps {
   children: ReactNode;
@@ -20,12 +26,14 @@ interface LanguageProviderProps {
  * LanguageProvider component that integrates with react-i18next
  * Provides language switching functionality and state management
  */
-export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) => {
+export const LanguageProvider: React.FC<LanguageProviderProps> = ({
+  children,
+}) => {
   const { i18n } = useTranslation();
-  
+
   // Get current language from i18next
-  const currentLanguage = (i18n.language || 'en') as SupportedLanguage;
-  
+  const currentLanguage = (i18n.language || "en") as SupportedLanguage;
+
   // Check if i18next is still loading
   const isLoading = !i18n.isInitialized;
 
@@ -39,7 +47,7 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
       // Update HTML lang attribute for accessibility
       document.documentElement.lang = language;
     } catch (error) {
-      console.error('Failed to change language:', error);
+      console.error("Failed to change language:", error);
     }
   };
 
@@ -69,10 +77,11 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
  * Hook to access language context
  * Must be used within a LanguageProvider
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export const useLanguage = (): LanguageContextType => {
   const context = useContext(LanguageContext);
   if (!context) {
-    throw new Error('useLanguage must be used within a LanguageProvider');
+    throw new Error("useLanguage must be used within a LanguageProvider");
   }
   return context;
 };
@@ -81,4 +90,5 @@ export const useLanguage = (): LanguageContextType => {
  * Type exports for convenience
  */
 export type { SupportedLanguage };
+// eslint-disable-next-line react-refresh/only-export-components
 export { supportedLanguages, languageNames };

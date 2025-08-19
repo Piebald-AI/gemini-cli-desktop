@@ -35,14 +35,21 @@ pub struct WebSocketManager {
 }
 
 impl WebSocketManager {
-    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl Default for WebSocketManager {
+    fn default() -> Self {
         Self {
             connections: Arc::new(Mutex::new(Vec::new())),
             connection_counter: Arc::new(AtomicU64::new(0)),
         }
     }
+}
 
+impl WebSocketManager {
     /// Register a new WebSocket connection
     pub async fn add_connection(&self, sender: tokio_mpsc::UnboundedSender<String>) -> u64 {
         let connection_id = self.connection_counter.fetch_add(1, Ordering::SeqCst);

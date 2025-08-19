@@ -302,11 +302,11 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
 
             let mut found_conversation_id = None;
             for (conv_id, session) in processes.iter() {
-                if let Some(session_acp_id) = &session.acp_session_id {
-                    if session_acp_id == &acp_session_id {
-                        found_conversation_id = Some(conv_id.clone());
-                        break;
-                    }
+                if let Some(session_acp_id) = &session.acp_session_id
+                    && session_acp_id == &acp_session_id
+                {
+                    found_conversation_id = Some(conv_id.clone());
+                    break;
                 }
             }
 

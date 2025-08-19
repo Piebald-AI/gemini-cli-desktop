@@ -70,7 +70,7 @@ export const HomeDashboard: React.FC = () => {
                           >
                             <UserRound className="size-4" />
                           </div>
-                          {t('homeDashboard.user')}
+                          {t("homeDashboard.user")}
                         </div>
                       </div>
                     )}
@@ -143,7 +143,8 @@ export const HomeDashboard: React.FC = () => {
                       (part) => part.type === "text" || part.type === "thinking"
                     ) && (
                       <div className="text-gray-400 italic text-xs">
-                        <span className="animate-pulse">●</span> {t('homeDashboard.generating')}
+                        <span className="animate-pulse">●</span>{" "}
+                        {t("homeDashboard.generating")}
                       </div>
                     )}
 
@@ -157,12 +158,14 @@ export const HomeDashboard: React.FC = () => {
                           className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
                         >
                           <Info className="h-3 w-3 mr-1" />
-                          {t('homeDashboard.rawJsonButton')}
+                          {t("homeDashboard.rawJsonButton")}
                         </Button>
                       </DialogTrigger>
                       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                         <DialogHeader>
-                          <DialogTitle>{t('homeDashboard.rawJsonTitle')}</DialogTitle>
+                          <DialogTitle>
+                            {t("homeDashboard.rawJsonTitle")}
+                          </DialogTitle>
                         </DialogHeader>
                         <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
                           <pre className="text-xs whitespace-pre-wrap break-all font-mono">
@@ -185,7 +188,7 @@ export const HomeDashboard: React.FC = () => {
           </div>
 
           <p className="text-muted-foreground mb-6">
-            {t('homeDashboard.tagline')}
+            {t("homeDashboard.tagline")}
           </p>
 
           {/* Dashboard tiles */}
@@ -200,9 +203,11 @@ export const HomeDashboard: React.FC = () => {
                   <FolderKanban className="h-5 w-5 text-muted-foreground" />
                 </div>
                 <div className="text-left">
-                  <CardTitle className="text-base">{t('dashboard.projectsCard.title')}</CardTitle>
+                  <CardTitle className="text-base">
+                    {t("dashboard.projectsCard.title")}
+                  </CardTitle>
                   <CardDescription>
-                    {t('dashboard.projectsCard.description')}
+                    {t("dashboard.projectsCard.description")}
                   </CardDescription>
                 </div>
               </CardHeader>
@@ -216,9 +221,11 @@ export const HomeDashboard: React.FC = () => {
                   <ModelContextProtocol className="h-5 w-5 text-muted-foreground" />
                 </div>
                 <div className="text-left">
-                  <CardTitle className="text-base">{t('dashboard.mcpCard.title')}</CardTitle>
+                  <CardTitle className="text-base">
+                    {t("dashboard.mcpCard.title")}
+                  </CardTitle>
                   <CardDescription>
-                    {t('dashboard.mcpCard.description')}
+                    {t("dashboard.mcpCard.description")}
                   </CardDescription>
                 </div>
               </CardHeader>

@@ -367,45 +367,6 @@ export interface EnrichedProject {
   metadata: ProjectMetadata;
 }
 
-// export async function list_projects(params?: { limit?: number; offset?: number }): Promise<ProjectsResponse> {
-//   const limit = params?.limit ?? 25;
-//   const offset = params?.offset ?? 0;
-
-//   // If running in web mode, use REST API
-//   if (__WEB__) {
-//     const response = await apiClient.get<ProjectsResponse>('/projects', { params: { limit, offset } });
-//     return response.data;
-//   }
-
-//   // Otherwise, use Tauri native invoke (desktop mode)
-//   const { invoke } = (await import('@tauri-apps/api/core')) as any;
-//   const resp = await invoke<ProjectsResponse>('list_projects', { limit, offset });
-//   return resp;
-// }
-
-/**
- * Get project discussions (conversations) for a specific project.
- * Each RPC log file in the project directory represents a discussion/conversation.
- */
-// export async function get_project_discussions(
-//   projectId: string
-// ): Promise<{ id: string; title: string; started_at_iso?: string; message_count?: number }[]> {
-//   // If running in web mode, use REST API
-//   if ((globalThis as any).__WEB__) {
-//     const response = await apiClient.get<{ id: string; title: string; started_at_iso?: string; message_count?: number }[]>(
-//       `/projects/${projectId}/discussions`
-//     );
-//     return response.data;
-//   }
-
-//   // Otherwise, use Tauri native invoke (desktop mode)
-//   const { invoke } = (await import('@tauri-apps/api/core')) as any;
-//   const resp = await invoke<{ id: string; title: string; started_at_iso?: string; message_count?: number }[]>(
-//     'get_project_discussions',
-//     { projectId }
-//   );
-//   return resp;
-// }
 
 // WebSocket event types and management
 interface WebSocketEvent<T = unknown> {

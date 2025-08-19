@@ -87,7 +87,7 @@ export const useToolCallConfirmation = ({
                     markdown: "Tool call rejected by user",
                   };
                   // Add a permanent rejection flag that can't be overridden
-                  (msgPart.toolCall as any).isUserRejected = true;
+                  msgPart.toolCall.isUserRejected = true;
                   found = true;
                   return;
                 }

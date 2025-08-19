@@ -65,17 +65,17 @@ export default function ProjectDetailPage() {
         >("get_project_discussions", { projectId });
         if (!cancelled) setDiscussions(data);
       } catch (e) {
-        if (!cancelled) setError(t('errors.failedToLoadProjectData'));
+        if (!cancelled) setError(t("errors.failedToLoadProjectData"));
         console.error(e);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [projectId]);
+  }, [projectId, t]);
 
   if (!projectId) {
-    return <div>{t('projects.invalidProjectId')}</div>;
+    return <div>{t("projects.invalidProjectId")}</div>;
   }
 
   const handleNewDiscussion = async () => {
@@ -83,7 +83,9 @@ export default function ProjectDetailPage() {
 
     setIsCreatingDiscussion(true);
     try {
-      const title = t('projects.newDiscussionTitle', { projectName: projectData.metadata.friendly_name });
+      const title = t("projects.newDiscussionTitle", {
+        projectName: projectData.metadata.friendly_name,
+      });
       await startNewConversation(title, projectData.metadata.path);
       navigate("/");
     } catch (error) {
@@ -91,8 +93,7 @@ export default function ProjectDetailPage() {
       const errorMessage =
         typeof error === "string"
           ? error
-          : (error as Error)?.message ||
-            t('projects.failedToCreateDiscussion');
+          : (error as Error)?.message || t("projects.failedToCreateDiscussion");
       setError(errorMessage);
     } finally {
       setIsCreatingDiscussion(false);
@@ -107,13 +108,13 @@ export default function ProjectDetailPage() {
             type="button"
             onClick={() => navigate("/projects")}
             className="mb-4 inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition cursor-pointer"
-            aria-label={t('accessibility.backToProjects')}
+            aria-label={t("accessibility.backToProjects")}
           >
             <ArrowLeft className="h-4 w-4 mr-2" aria-hidden="true" />
-            <span>{t('navigation.backToProjects')}</span>
+            <span>{t("navigation.backToProjects")}</span>
           </button>
           <h1 className="text-3xl font-semibold tracking-tight">
-            {t('projects.projectDetails')}
+            {t("projects.projectDetails")}
           </h1>
           <div className="mt-2 text-sm text-muted-foreground flex items-center gap-2">
             {projectData ? (
@@ -126,16 +127,18 @@ export default function ProjectDetailPage() {
             ) : (
               <>
                 <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
-                  {t('common.loading')}
+                  {t("common.loading")}
                 </code>
-                <span>({t('common.loading')})</span>
+                <span>({t("common.loading")})</span>
               </>
             )}
           </div>
 
           <div className="mt-6 space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-medium">{t('projects.previousDiscussions')}</h2>
+              <h2 className="text-lg font-medium">
+                {t("projects.previousDiscussions")}
+              </h2>
               <Button
                 onClick={handleNewDiscussion}
                 disabled={!projectData || isCreatingDiscussion}
@@ -146,7 +149,9 @@ export default function ProjectDetailPage() {
                 ) : (
                   <Plus className="h-4 w-4" />
                 )}
-                {isCreatingDiscussion ? t('projects.creating') : t('projects.newDiscussion')}
+                {isCreatingDiscussion
+                  ? t("projects.creating")
+                  : t("projects.newDiscussion")}
               </Button>
             </div>
 
@@ -154,11 +159,11 @@ export default function ProjectDetailPage() {
               <p className="text-sm text-muted-foreground">{error}</p>
             ) : discussions === null ? (
               <p className="text-sm text-muted-foreground">
-                {t('projects.loadingDiscussions')}
+                {t("projects.loadingDiscussions")}
               </p>
             ) : discussions.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                {t('projects.noDiscussions', { backendName: backendText.name })}
+                {t("projects.noDiscussions", { backendName: backendText.name })}
               </p>
             ) : (
               <div className="grid grid-cols-1 gap-3">
@@ -169,18 +174,25 @@ export default function ProjectDetailPage() {
                       <div className="mt-1 text-xs text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
                         {d.started_at_iso ? (
                           <span>
-                            {t('projects.started')}{" "}
+                            {t("projects.started")}{" "}
                             {new Date(d.started_at_iso).toLocaleString()}
                           </span>
                         ) : (
                           <span className="opacity-70">
-                            {t('projects.startTimeUnavailable')}
+                            {t("projects.startTimeUnavailable")}
                           </span>
                         )}
                         {typeof d.message_count === "number" ? (
-                          <span>{d.message_count} {d.message_count === 1 ? t('projects.message') : t('projects.messages')}</span>
+                          <span>
+                            {d.message_count}{" "}
+                            {d.message_count === 1
+                              ? t("projects.message")
+                              : t("projects.messages")}
+                          </span>
                         ) : (
-                          <span className="opacity-70">{t('projects.messagesUnavailable')}</span>
+                          <span className="opacity-70">
+                            {t("projects.messagesUnavailable")}
+                          </span>
                         )}
                       </div>
                     </div>

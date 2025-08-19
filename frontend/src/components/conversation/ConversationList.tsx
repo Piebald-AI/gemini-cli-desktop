@@ -27,6 +27,7 @@ import { webApi, SearchResult, SearchFilters } from "../../lib/webApi";
 import { SearchInput } from "../common/SearchInput";
 import { SearchResults } from "../common/SearchResults";
 import { useSidebar } from "../ui/sidebar";
+import { GeminiAuthMethod } from "../../types/backend";
 import { useBackend, useBackendConfig } from "../../contexts/BackendContext";
 import { getBackendText } from "../../utils/backendText";
 import type { Conversation, ProcessStatus } from "../../types";
@@ -82,10 +83,10 @@ export function ConversationList({
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-    if (diffMins < 1) return t('time.justNow');
-    if (diffMins < 60) return t('time.minutesAgo', { count: diffMins });
-    if (diffHours < 24) return t('time.hoursAgo', { count: diffHours });
-    return t('time.daysAgo', { count: diffDays });
+    if (diffMins < 1) return t("time.justNow");
+    if (diffMins < 60) return t("time.minutesAgo", { count: diffMins });
+    if (diffHours < 24) return t("time.hoursAgo", { count: diffHours });
+    return t("time.daysAgo", { count: diffDays });
   };
 
   const handleSearch = useCallback(
@@ -124,7 +125,7 @@ export function ConversationList({
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <MessageCircle className="h-5 w-5" />
-            {t('conversations.title')}
+            {t("conversations.title")}
           </h2>
           {isMobile && (
             <Button
@@ -139,8 +140,14 @@ export function ConversationList({
         </div>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
           {searchQuery.trim()
-            ? t('conversations.searchingIn', { count: conversations.length, backend: backendText.name })
-            : t('conversations.count', { count: conversations.length, backend: backendText.name })}
+            ? t("conversations.searchingIn", {
+                count: conversations.length,
+                backend: backendText.name,
+              })
+            : t("conversations.count", {
+                count: conversations.length,
+                backend: backendText.name,
+              })}
         </p>
 
         {/* Search Input */}
@@ -156,7 +163,7 @@ export function ConversationList({
         {/* Backend Selector */}
         <div className="mt-4">
           <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
-            {t('conversations.backend')}
+            {t("conversations.backend")}
           </label>
           <Select
             value={selectedBackend}
@@ -174,11 +181,11 @@ export function ConversationList({
             }}
           >
             <SelectTrigger className="w-full">
-              <SelectValue placeholder={t('conversations.selectBackend')} />
+              <SelectValue placeholder={t("conversations.selectBackend")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="gemini">{t('backend.geminiCli')}</SelectItem>
-              <SelectItem value="qwen">{t('backend.qwenCode')}</SelectItem>
+              <SelectItem value="gemini">{t("backend.geminiCli")}</SelectItem>
+              <SelectItem value="qwen">{t("backend.qwenCode")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -186,7 +193,7 @@ export function ConversationList({
         {/* Language Selector */}
         <div className="mt-4">
           <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
-            {t('conversations.language')}
+            {t("conversations.language")}
           </label>
           <Select
             value={i18n.language}
@@ -195,7 +202,7 @@ export function ConversationList({
             }}
           >
             <SelectTrigger className="w-full">
-              <SelectValue placeholder={t('conversations.selectLanguage')} />
+              <SelectValue placeholder={t("conversations.selectLanguage")} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="en">
@@ -224,7 +231,7 @@ export function ConversationList({
         {selectedBackend === "qwen" && (
           <div className="mt-4 space-y-3 p-3 border border-gray-200 dark:border-gray-700 rounded-md">
             <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              {t('backend.qwenConfiguration')}
+              {t("backend.qwenConfiguration")}
             </h4>
 
             {/* OAuth Checkbox */}
@@ -240,7 +247,7 @@ export function ConversationList({
                 htmlFor="oauth-checkbox"
                 className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer"
               >
-                {t('conversations.oauth')}
+                {t("conversations.oauth")}
               </label>
             </div>
 
@@ -248,7 +255,7 @@ export function ConversationList({
               <>
                 <div>
                   <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
-                    {t('conversations.apiKey')}
+                    {t("conversations.apiKey")}
                   </label>
                   <Input
                     type="password"
@@ -258,13 +265,13 @@ export function ConversationList({
                         apiKey: e.target.value,
                       })
                     }
-                    placeholder={t('conversations.apiKey')}
+                    placeholder={t("conversations.apiKey")}
                   />
                 </div>
 
                 <div>
                   <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
-                    {t('conversations.baseUrl')}
+                    {t("conversations.baseUrl")}
                   </label>
                   <Input
                     type="text"
@@ -280,7 +287,7 @@ export function ConversationList({
 
                 <div>
                   <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
-                    {t('conversations.model')}
+                    {t("conversations.model")}
                   </label>
                   <Input
                     type="text"
@@ -309,7 +316,7 @@ export function ConversationList({
           <>
             <div className="mt-4">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
-                {t('conversations.model')}
+                {t("conversations.model")}
               </label>
               <Select
                 value={selectedModel}
@@ -321,22 +328,24 @@ export function ConversationList({
                 }}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder={t('conversations.selectModel')} />
+                  <SelectValue placeholder={t("conversations.selectModel")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="gemini-2.5-pro">{t('backend.geminiModels.pro')}</SelectItem>
+                  <SelectItem value="gemini-2.5-pro">
+                    {t("backend.geminiModels.pro")}
+                  </SelectItem>
                   <SelectItem value="gemini-2.5-flash">
-                    {t('backend.geminiModels.flash')}
+                    {t("backend.geminiModels.flash")}
                   </SelectItem>
                   <SelectItem value="gemini-2.5-flash-lite">
                     <div className="flex items-center gap-2">
-                      <span>{t('backend.geminiModels.flashLite')}</span>
+                      <span>{t("backend.geminiModels.flashLite")}</span>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <AlertTriangle className="h-4 w-4 text-yellow-500" />
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>{t('backend.stillWaiting')}</p>
+                          <p>{t("backend.stillWaiting")}</p>
                         </TooltipContent>
                       </Tooltip>
                     </div>
@@ -350,36 +359,40 @@ export function ConversationList({
               {/* Authentication Method Selector */}
               <div>
                 <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
-                  {t('conversations.authMethod')}
+                  {t("conversations.authMethod")}
                 </label>
                 <Select
                   value={geminiConfig.authMethod}
                   onValueChange={(value) =>
-                    updateGeminiConfig({ authMethod: value as any })
+                    updateGeminiConfig({
+                      authMethod: value as GeminiAuthMethod,
+                    })
                   }
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder={t('conversations.selectAuthMethod')} />
+                    <SelectValue
+                      placeholder={t("conversations.selectAuthMethod")}
+                    />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="oauth-personal">
                       <div className="flex flex-col">
-                        <span>{t('backend.googleOAuth')}</span>
+                        <span>{t("backend.googleOAuth")}</span>
                       </div>
                     </SelectItem>
                     <SelectItem value="gemini-api-key">
                       <div className="flex flex-col">
-                        <span>{t('backend.apiKey')}</span>
+                        <span>{t("backend.apiKey")}</span>
                       </div>
                     </SelectItem>
                     <SelectItem value="vertex-ai">
                       <div className="flex flex-col">
-                        <span>{t('backend.vertexAi')}</span>
+                        <span>{t("backend.vertexAi")}</span>
                       </div>
                     </SelectItem>
                     <SelectItem value="cloud-shell">
                       <div className="flex flex-col">
-                        <span>{t('backend.cloudShell')}</span>
+                        <span>{t("backend.cloudShell")}</span>
                       </div>
                     </SelectItem>
                   </SelectContent>
@@ -390,7 +403,7 @@ export function ConversationList({
               {geminiConfig.authMethod === "gemini-api-key" && (
                 <div>
                   <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
-                    {t('conversations.geminiApiKey')}
+                    {t("conversations.geminiApiKey")}
                   </label>
                   <Input
                     type="password"
@@ -400,17 +413,17 @@ export function ConversationList({
                         apiKey: e.target.value,
                       })
                     }
-                    placeholder={t('conversations.enterGeminiApiKey')}
+                    placeholder={t("conversations.enterGeminiApiKey")}
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    {t('conversations.getApiKeyFrom')}{" "}
+                    {t("conversations.getApiKeyFrom")}{" "}
                     <a
                       href="https://aistudio.google.com/apikey"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-500 hover:underline"
                     >
-                      {t('backend.googleAiStudio')}
+                      {t("backend.googleAiStudio")}
                     </a>
                   </p>
                 </div>
@@ -421,7 +434,7 @@ export function ConversationList({
                 <>
                   <div>
                     <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
-                      {t('conversations.gcpProjectId')}
+                      {t("conversations.gcpProjectId")}
                     </label>
                     <Input
                       type="text"
@@ -431,12 +444,12 @@ export function ConversationList({
                           vertexProject: e.target.value,
                         })
                       }
-                      placeholder={t('backend.enterProjectId')}
+                      placeholder={t("backend.enterProjectId")}
                     />
                   </div>
                   <div>
                     <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
-                      {t('conversations.locationRegion')}
+                      {t("conversations.locationRegion")}
                     </label>
                     <Input
                       type="text"
@@ -446,7 +459,7 @@ export function ConversationList({
                           vertexLocation: e.target.value,
                         })
                       }
-                      placeholder={t('backend.enterLocation')}
+                      placeholder={t("backend.enterLocation")}
                     />
                   </div>
                 </>
@@ -455,14 +468,14 @@ export function ConversationList({
               {/* OAuth information */}
               {geminiConfig.authMethod === "oauth-personal" && (
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {t('conversations.oauthLimits')}
+                  {t("conversations.oauthLimits")}
                 </p>
               )}
 
               {/* Cloud Shell information */}
               {geminiConfig.authMethod === "cloud-shell" && (
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {t('conversations.cloudShellInfo')}
+                  {t("conversations.cloudShellInfo")}
                 </p>
               )}
             </div>
@@ -482,8 +495,8 @@ export function ConversationList({
         ) : conversations.length === 0 ? (
           <div className="text-center py-8 text-gray-500 dark:text-gray-400">
             <MessageCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
-            <p>{t('conversations.noConversations')}</p>
-            <p className="text-xs mt-1">{t('conversations.startNewChat')}</p>
+            <p>{t("conversations.noConversations")}</p>
+            <p className="text-xs mt-1">{t("conversations.startNewChat")}</p>
           </div>
         ) : (
           conversations
@@ -523,8 +536,10 @@ export function ConversationList({
                               >
                                 <div className="w-2 h-2 bg-green-500 rounded-full mr-1" />
                                 {processStatus?.pid
-                                  ? t('conversations.pidLabel', { pid: processStatus.pid })
-                                  : t('conversations.active')}
+                                  ? t("conversations.pidLabel", {
+                                      pid: processStatus.pid,
+                                    })
+                                  : t("conversations.active")}
                                 {/* End Chat Button */}
                                 {isActive && (
                                   <Dialog
@@ -549,16 +564,20 @@ export function ConversationList({
                                             title: conversation.title,
                                           });
                                         }}
-                                        title={t('conversations.endChat')}
+                                        title={t("conversations.endChat")}
                                       >
                                         <X className="h-4 w-4" />
                                       </Button>
                                     </DialogTrigger>
                                     <DialogContent>
                                       <DialogHeader>
-                                        <DialogTitle>{t('conversations.endChat')}</DialogTitle>
+                                        <DialogTitle>
+                                          {t("conversations.endChat")}
+                                        </DialogTitle>
                                         <DialogDescription>
-                                          {t('conversations.endChatConfirm', { title: conversation.title })}
+                                          {t("conversations.endChatConfirm", {
+                                            title: conversation.title,
+                                          })}
                                         </DialogDescription>
                                       </DialogHeader>
                                       <DialogFooter>
@@ -568,7 +587,7 @@ export function ConversationList({
                                             setSelectedConversationForEnd(null)
                                           }
                                         >
-                                          {t('common.cancel')}
+                                          {t("common.cancel")}
                                         </Button>
                                         <Button
                                           variant="destructive"
@@ -577,7 +596,7 @@ export function ConversationList({
                                             setSelectedConversationForEnd(null);
                                           }}
                                         >
-                                          {t('conversations.endChat')}
+                                          {t("conversations.endChat")}
                                         </Button>
                                       </DialogFooter>
                                     </DialogContent>
@@ -590,7 +609,7 @@ export function ConversationList({
                                 className="bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 text-xs px-2 py-0.5"
                               >
                                 <div className="w-2 h-2 bg-gray-400 rounded-full mr-1" />
-                                {t('conversations.inactive')}
+                                {t("conversations.inactive")}
                               </Badge>
                             )}
                           </div>
@@ -609,7 +628,9 @@ export function ConversationList({
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {t('conversations.messageCount', { count: conversation.messages.length })}
+                          {t("conversations.messageCount", {
+                            count: conversation.messages.length,
+                          })}
                         </p>
                       </div>
                     </div>

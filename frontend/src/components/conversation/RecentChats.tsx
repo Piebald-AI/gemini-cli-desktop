@@ -44,7 +44,7 @@ function RecentChats() {
             ? e.message
             : typeof e === "string"
               ? e
-              : t('errors.failedToLoadChats')
+              : t("errors.failedToLoadChats")
         );
         setState("error");
       }
@@ -53,7 +53,7 @@ function RecentChats() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [t]);
 
   if (state === "loading") {
     return (
@@ -75,7 +75,7 @@ function RecentChats() {
   if (state === "loaded" && chats.length === 0) {
     return (
       <div className="mt-6 text-sm text-muted-foreground">
-        {t('errors.noChatsFound')}
+        {t("errors.noChatsFound")}
       </div>
     );
   }
@@ -91,11 +91,13 @@ function RecentChats() {
           >
             <CardHeader>
               <CardTitle className="truncate">{c.title}</CardTitle>
-              <CardDescription>{t('recentChats.started', { date: dateStr })}</CardDescription>
+              <CardDescription>
+                {t("recentChats.started", { date: dateStr })}
+              </CardDescription>
             </CardHeader>
             <CardContent className="pb-6">
               <div className="text-sm text-muted-foreground">
-                {t('recentChats.messageCount', { count: c.message_count })}
+                {t("recentChats.messageCount", { count: c.message_count })}
               </div>
             </CardContent>
           </Card>

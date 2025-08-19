@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -41,19 +41,7 @@ export function McpServerSettings({ trigger }: McpServerSettingsProps) {
   const { selectedBackend } = useBackend();
   const backendText = getBackendText(selectedBackend);
 
-  // Load settings file path on component mount and when backend changes
-  useEffect(() => {
-    loadSettingsPath();
-  }, [selectedBackend]);
-
-  // Load MCP servers from settings.json file when dialog opens
-  useEffect(() => {
-    if (open && settingsFilePath) {
-      loadSettingsFromFile();
-    }
-  }, [open, settingsFilePath]);
-
-  const loadSettingsPath = async () => {
+  const loadSettingsPath = useCallback(async () => {
     try {
       const path = await invoke<string>("get_settings_file_path", {
         backendType: selectedBackend,
@@ -62,9 +50,9 @@ export function McpServerSettings({ trigger }: McpServerSettingsProps) {
     } catch (error) {
       console.error("Failed to get settings file path:", error);
     }
-  };
+  }, [selectedBackend]);
 
-  const loadSettingsFromFile = async () => {
+  const loadSettingsFromFile = useCallback(async () => {
     setIsLoading(true);
     try {
       const settings = await invoke<Record<string, unknown>>(
@@ -90,7 +78,19 @@ export function McpServerSettings({ trigger }: McpServerSettingsProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [selectedBackend]);
+
+  // Load settings file path on component mount and when backend changes
+  useEffect(() => {
+    loadSettingsPath();
+  }, [selectedBackend, loadSettingsPath]);
+
+  // Load MCP servers from settings.json file when dialog opens
+  useEffect(() => {
+    if (open && settingsFilePath) {
+      loadSettingsFromFile();
+    }
+  }, [open, settingsFilePath, loadSettingsFromFile]);
 
   // Save MCP servers to settings.json file
   const saveServersToFile = async (updatedServers: McpServerEntry[]) => {

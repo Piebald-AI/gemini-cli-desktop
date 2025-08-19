@@ -8,6 +8,46 @@ declare global {
   }
 }
 
+// Type definitions for API command arguments
+interface SendMessageArgs {
+  sessionId: string;
+  message: string;
+  conversationHistory: string;
+  model?: string;
+  backendConfig?: {
+    api_key: string;
+    base_url: string;
+    model: string;
+  };
+}
+
+interface ToolConfirmationArgs {
+  toolCallId: string;
+  outcome: string;
+}
+
+interface GenerateConversationTitleArgs {
+  message: string;
+  model?: string;
+}
+
+// Type guard functions
+function isStringArg(args: unknown): args is string {
+  return typeof args === 'string';
+}
+
+function isSendMessageArgs(args: unknown): args is SendMessageArgs {
+  return typeof args === 'object' && args !== null && 'sessionId' in args && 'message' in args;
+}
+
+function isToolConfirmationArgs(args: unknown): args is ToolConfirmationArgs {
+  return typeof args === 'object' && args !== null && 'toolCallId' in args && 'outcome' in args;
+}
+
+function isGenerateConversationTitleArgs(args: unknown): args is GenerateConversationTitleArgs {
+  return typeof args === 'object' && args !== null && 'message' in args;
+}
+
 // Abstraction layer for API calls
 export const api = {
   async invoke<T>(command: string, args?: Record<string, unknown>): Promise<T> {
@@ -53,42 +93,42 @@ export const api = {
         case "execute_confirmed_command":
           if (!args)
             throw new Error("Missing arguments for execute_confirmed_command");
-          return webApi.execute_confirmed_command(
-            args as unknown as string
-          ) as Promise<T>;
+          if (!isStringArg(args))
+            throw new Error("execute_confirmed_command expects string argument");
+          return webApi.execute_confirmed_command(args) as Promise<T>;
         case "generate_conversation_title":
           if (!args)
             throw new Error(
               "Missing arguments for generate_conversation_title"
             );
-          return webApi.generate_conversation_title(
-            args as { message: string; model?: string }
-          ) as Promise<T>;
+          if (!isGenerateConversationTitleArgs(args))
+            throw new Error("generate_conversation_title expects object with message property");
+          return webApi.generate_conversation_title(args) as Promise<T>;
         case "validate_directory":
           if (!args)
             throw new Error("Missing arguments for validate_directory");
-          return webApi.validate_directory(
-            args as unknown as string
-          ) as Promise<T>;
+          if (!isStringArg(args))
+            throw new Error("validate_directory expects string argument");
+          return webApi.validate_directory(args) as Promise<T>;
         case "is_home_directory":
           if (!args) throw new Error("Missing arguments for is_home_directory");
-          return webApi.is_home_directory(
-            args as unknown as string
-          ) as Promise<T>;
+          if (!isStringArg(args))
+            throw new Error("is_home_directory expects string argument");
+          return webApi.is_home_directory(args) as Promise<T>;
         case "get_home_directory":
           return webApi.get_home_directory() as Promise<T>;
         case "get_parent_directory":
           if (!args)
             throw new Error("Missing arguments for get_parent_directory");
-          return webApi.get_parent_directory(
-            args as unknown as string
-          ) as Promise<T>;
+          if (!isStringArg(args))
+            throw new Error("get_parent_directory expects string argument");
+          return webApi.get_parent_directory(args) as Promise<T>;
         case "list_directory_contents":
           if (!args)
             throw new Error("Missing arguments for list_directory_contents");
-          return webApi.list_directory_contents(
-            args as unknown as string
-          ) as Promise<T>;
+          if (!isStringArg(args))
+            throw new Error("list_directory_contents expects string argument");
+          return webApi.list_directory_contents(args) as Promise<T>;
         case "list_volumes":
           return webApi.list_volumes() as Promise<T>;
         case "list_projects":
@@ -96,9 +136,9 @@ export const api = {
         case "get_project_discussions":
           if (!args)
             throw new Error("Missing arguments for get_project_discussions");
-          return webApi.get_project_discussions(
-            args as unknown as string
-          ) as Promise<T>;
+          if (!isStringArg(args))
+            throw new Error("get_project_discussions expects string argument");
+          return webApi.get_project_discussions(args) as Promise<T>;
         case "list_enriched_projects":
           return webApi.list_projects_enriched() as Promise<T>;
         case "get_project":
