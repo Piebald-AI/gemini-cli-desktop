@@ -358,7 +358,7 @@ export function ConversationList({
             <div className="space-y-3 mt-4">
               {/* Authentication Method Selector */}
               <div>
-                <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
                   {t("conversations.authMethod")}
                 </label>
                 <Select
@@ -402,7 +402,7 @@ export function ConversationList({
               {/* API Key input - only show for API key auth */}
               {geminiConfig.authMethod === "gemini-api-key" && (
                 <div>
-                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
                     {t("conversations.geminiApiKey")}
                   </label>
                   <Input
@@ -433,7 +433,7 @@ export function ConversationList({
               {geminiConfig.authMethod === "vertex-ai" && (
                 <>
                   <div>
-                    <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
                       {t("conversations.gcpProjectId")}
                     </label>
                     <Input
@@ -448,7 +448,7 @@ export function ConversationList({
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
                       {t("conversations.locationRegion")}
                     </label>
                     <Input
@@ -474,7 +474,7 @@ export function ConversationList({
 
               {/* Cloud Shell information */}
               {geminiConfig.authMethod === "cloud-shell" && (
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   {t("conversations.cloudShellInfo")}
                 </p>
               )}

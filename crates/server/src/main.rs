@@ -390,6 +390,12 @@ async fn check_cli_installed(state: &State<AppState>) -> Result<Json<bool>, Stat
 #[post("/start-session", data = "<request>")]
 async fn start_session(request: Json<StartSessionRequest>, state: &State<AppState>) -> Status {
     let req = request.into_inner();
+    println!("🎯 [SESSION-REQUEST] Received start_session request for: {}", req.session_id);
+    println!("🎯 [SESSION-REQUEST] Working directory: {:?}", req.working_directory);
+    println!("🎯 [SESSION-REQUEST] Model: {:?}", req.model);
+    println!("🎯 [SESSION-REQUEST] Backend config present: {}", req.backend_config.is_some());
+    println!("🎯 [SESSION-REQUEST] Gemini auth present: {}", req.gemini_auth.is_some());
+    
     let backend = state.backend.lock().await;
 
     // If working_directory is provided, initialize a session with that directory
@@ -397,6 +403,7 @@ async fn start_session(request: Json<StartSessionRequest>, state: &State<AppStat
         let model = req
             .model
             .unwrap_or_else(|| "gemini-2.0-flash-exp".to_string());
+        println!("🎯 [SESSION-REQUEST] Attempting to initialize session with backend...");
         match backend
             .initialize_session(
                 req.session_id,
@@ -407,8 +414,14 @@ async fn start_session(request: Json<StartSessionRequest>, state: &State<AppStat
             )
             .await
         {
-            Ok(_) => Status::Ok,
-            Err(_) => Status::InternalServerError,
+            Ok(_) => {
+                println!("✅ [SESSION-REQUEST] Session initialization completed successfully");
+                Status::Ok
+            },
+            Err(e) => {
+                println!("❌ [SESSION-REQUEST] Session initialization failed: {}", e);
+                Status::InternalServerError
+            },
         }
     } else {
         // For compatibility with existing frontend, just check if CLI is installed
@@ -469,10 +482,23 @@ async fn send_message(request: Json<SendMessageRequest>, state: &State<AppState>
 
 #[get("/process-statuses")]
 async fn get_process_statuses(state: &State<AppState>) -> Result<Json<Vec<ProcessStatus>>, Status> {
+    println!("🌐 [API-STATUS] Frontend requesting process statuses...");
     let backend = state.backend.lock().await;
     match backend.get_process_statuses() {
-        Ok(statuses) => Ok(Json(statuses)),
-        Err(_) => Err(Status::InternalServerError),
+        Ok(statuses) => {
+            println!("🌐 [API-STATUS] Returning {} statuses to frontend:", statuses.len());
+            for status in &statuses {
+                println!("🌐 [API-STATUS]   - {}: {} (PID: {:?})", 
+                         status.conversation_id, 
+                         if status.is_alive { "ACTIVE" } else { "INACTIVE" },
+                         status.pid);
+            }
+            Ok(Json(statuses))
+        },
+        Err(e) => {
+            println!("❌ [API-STATUS] Failed to get statuses: {}", e);
+            Err(Status::InternalServerError)
+        },
     }
 }
 

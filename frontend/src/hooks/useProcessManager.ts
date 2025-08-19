@@ -8,18 +8,36 @@ export const useProcessManager = () => {
 
   const fetchProcessStatuses = useCallback(async () => {
     try {
+      console.log("🔄 [FRONTEND-STATUS] Fetching process statuses...");
       const statuses = await api.invoke<ProcessStatus[]>(
         "get_process_statuses"
       );
+      console.log("📊 [FRONTEND-STATUS] Received statuses:", statuses);
+      
       setProcessStatuses((prev) => {
         // Only update if statuses actually changed
-        if (JSON.stringify(prev) !== JSON.stringify(statuses)) {
+        const hasChanged = JSON.stringify(prev) !== JSON.stringify(statuses);
+        if (hasChanged) {
+          console.log("🔄 [FRONTEND-STATUS] Process statuses changed!");
+          console.log("🔄 [FRONTEND-STATUS] Previous:", prev);
+          console.log("🔄 [FRONTEND-STATUS] New:", statuses);
+          
+          // Log individual status changes
+          statuses.forEach(status => {
+            const prevStatus = prev.find(p => p.conversation_id === status.conversation_id);
+            if (!prevStatus) {
+              console.log(`➕ [FRONTEND-STATUS] New session: ${status.conversation_id} (${status.is_alive ? 'ACTIVE' : 'INACTIVE'})`);
+            } else if (prevStatus.is_alive !== status.is_alive) {
+              console.log(`🔄 [FRONTEND-STATUS] Status change: ${status.conversation_id} ${prevStatus.is_alive ? 'ACTIVE' : 'INACTIVE'} → ${status.is_alive ? 'ACTIVE' : 'INACTIVE'}`);
+            }
+          });
+          
           return statuses;
         }
         return prev;
       });
     } catch (error) {
-      console.error("Failed to fetch process statuses:", error);
+      console.error("❌ [FRONTEND-STATUS] Failed to fetch process statuses:", error);
     }
   }, []);
 
@@ -39,14 +57,20 @@ export const useProcessManager = () => {
   // Determine appropriate polling interval based on process statuses
   const getPollingInterval = useCallback((statuses: ProcessStatus[]) => {
     const hasActiveProcesses = statuses.some(status => status.is_alive);
+    const activeCount = statuses.filter(s => s.is_alive).length;
+    const inactiveCount = statuses.filter(s => !s.is_alive).length;
     
+    let interval;
     if (statuses.length === 0) {
-      return 30000; // No processes: 30 seconds
+      interval = 30000; // No processes: 30 seconds
     } else if (hasActiveProcesses) {
-      return 3000; // Active processes: 3 seconds  
+      interval = 3000; // Active processes: 3 seconds  
     } else {
-      return 10000; // Only dead processes: 10 seconds
+      interval = 10000; // Only dead processes: 10 seconds
     }
+    
+    console.log(`⏰ [FRONTEND-STATUS] Setting polling interval: ${interval}ms (${activeCount} active, ${inactiveCount} inactive)`);
+    return interval;
   }, []);
 
   // Set up adaptive polling
