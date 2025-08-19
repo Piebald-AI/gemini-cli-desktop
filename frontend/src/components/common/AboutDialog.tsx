@@ -1,4 +1,6 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
+import ReactMarkdown from "react-markdown";
 import {
   Dialog,
   DialogContent,
@@ -20,6 +22,7 @@ export const AboutDialog: React.FC<AboutDialogProps> = ({
   open,
   onOpenChange,
 }) => {
+  const { t } = useTranslation();
   const { selectedBackend } = useBackend();
   const backendText = getBackendText(selectedBackend);
   
@@ -46,35 +49,77 @@ export const AboutDialog: React.FC<AboutDialogProps> = ({
               {appName}
             </DialogTitle>
             <DialogDescription className="text-base">
-              Version {appVersion}
+              {t('about.version', { version: appVersion })}
             </DialogDescription>
           </div>
         </DialogHeader>
         
         <div className="space-y-4 py-4">
-          <DialogDescription className="text-center">
-            A powerful, modern desktop and web UI for <strong>Gemini CLI</strong> and <strong>Qwen Code</strong>. Built with Tauri and web technologies. Cross-platform, open-source on{" "}
+          <div className="text-center text-sm text-muted-foreground">
+            <ReactMarkdown
+              components={{
+                p: ({ children }) => <span>{children}</span>,
+                strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+              }}
+            >
+              {t('about.description')}
+            </ReactMarkdown>{" "}
             <a 
               href="https://github.com/Piebald-AI/gemini-desktop" 
               target="_blank" 
               rel="noopener noreferrer"
               className="text-primary hover:underline"
             >
-              GitHub
+              {t('about.github')}
             </a>.
-          </DialogDescription>
+          </div>
           
-          <DialogDescription className="text-center text-sm space-y-2">
-            <div>• Choose between Gemini models (Gemini 2.5 Pro, Gemini 2.5 Flash, Gemini 2.5 Flash-Lite)</div>
-            <div>• Use <strong>Qwen.ai OAuth/custom OpenAI-compatible providers</strong> and models with Qwen Code</div>
-            <div>• Send messages to/from AI and receive response; handle tool call requests; Markdown support</div>
-            <div>• Observe Gemini's <strong>thought process</strong></div>
-            <div>• View and handle edit requests with clear file diffs</div>
-          </DialogDescription>
+          <div className="text-center text-sm space-y-2 text-muted-foreground">
+            <ReactMarkdown
+              components={{
+                p: ({ children }) => <div>{children}</div>,
+                strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+              }}
+            >
+              {`• ${t('about.feature1')}`}
+            </ReactMarkdown>
+            <ReactMarkdown
+              components={{
+                p: ({ children }) => <div>{children}</div>,
+                strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+              }}
+            >
+              {`• ${t('about.feature2')}`}
+            </ReactMarkdown>
+            <ReactMarkdown
+              components={{
+                p: ({ children }) => <div>{children}</div>,
+                strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+              }}
+            >
+              {`• ${t('about.feature3')}`}
+            </ReactMarkdown>
+            <ReactMarkdown
+              components={{
+                p: ({ children }) => <div>{children}</div>,
+                strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+              }}
+            >
+              {`• ${t('about.feature4')}`}
+            </ReactMarkdown>
+            <ReactMarkdown
+              components={{
+                p: ({ children }) => <div>{children}</div>,
+                strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+              }}
+            >
+              {`• ${t('about.feature5')}`}
+            </ReactMarkdown>
+          </div>
           
           <div className="pt-4 border-t border-border">
             <DialogDescription className="text-center text-xs text-muted-foreground">
-              © {currentYear} {appName}. All rights reserved.
+              {t('about.copyright', { year: currentYear, appName })}
             </DialogDescription>
           </div>
         </div>

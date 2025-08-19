@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { useTranslation } from "react-i18next";
 import { QwenIcon } from "@/components/branding/QwenIcon";
 import { GeminiIcon } from "@/components/branding/GeminiIcon";
 import { useBackend } from "@/contexts/BackendContext";
@@ -43,6 +44,7 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
   const navigate = useNavigate();
   const { selectedBackend } = useBackend();
   const backendText = getBackendText(selectedBackend);
+  const { t } = useTranslation();
   
   // Dynamic title based on backend
   const dynamicTitle = title || backendText.desktopName;
@@ -103,20 +105,12 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
     };
   }, []);
 
-  // Debug logging
-  console.log('CustomTitleBar: isDesktop():', isDesktop());
-  console.log('CustomTitleBar: window.__TAURI__:', typeof window !== 'undefined' && '__TAURI__' in window);
-  
-  // Force render in development for debugging
+  // Render in desktop environment OR development mode for testing
   const shouldRender = isDesktop() || import.meta.env.DEV;
-  console.log('CustomTitleBar: shouldRender:', shouldRender);
   
   if (!shouldRender) {
-    console.log('CustomTitleBar: Not rendering - returning null');
     return null;
   }
-  
-  console.log('CustomTitleBar: Rendering titlebar');
 
   const handleMinimize = async () => {
     try {
@@ -197,12 +191,12 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
                 className="h-full px-2 text-xs hover:bg-muted/50 flex items-center gap-1 bg-transparent border-0 outline-none focus:ring-0"
                 style={{ 
                   pointerEvents: 'auto',
-                  WebkitAppRegion: 'no-drag' as any,
-                  appRegion: 'no-drag' as any
+                  ['WebkitAppRegion' as any]: 'no-drag',
+                  ['appRegion' as any]: 'no-drag'
                 }}
                 type="button"
               >
-                File
+                {t('titleBar.file')}
                 <ChevronDown size={10} />
               </button>
             </DropdownMenuTrigger>
@@ -213,21 +207,21 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
               style={{ 
                 zIndex: 2147483647,
                 position: 'fixed',
-                WebkitAppRegion: 'no-drag' as any,
-                appRegion: 'no-drag' as any
+                ['WebkitAppRegion' as any]: 'no-drag',
+                ['appRegion' as any]: 'no-drag'
               }}
             >
               <DropdownMenuItem onClick={handleGoHome} className="flex items-center gap-2 text-xs">
                 <Home size={14} />
-                Home
+                {t('titleBar.home')}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleGoProjects} className="flex items-center gap-2 text-xs">
                 <FolderOpen size={14} />
-                Projects
+                {t('titleBar.projects')}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleGoMcpServers} className="flex items-center gap-2 text-xs">
                 <Server size={14} />
-                MCP Servers
+                {t('titleBar.mcpServers')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -243,12 +237,12 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
                 className="h-full px-2 text-xs hover:bg-muted/50 flex items-center gap-1 bg-transparent border-0 outline-none focus:ring-0"
                 style={{ 
                   pointerEvents: 'auto',
-                  WebkitAppRegion: 'no-drag' as any,
-                  appRegion: 'no-drag' as any
+                  ['WebkitAppRegion' as any]: 'no-drag',
+                  ['appRegion' as any]: 'no-drag'
                 }}
                 type="button"
               >
-                View
+                {t('titleBar.view')}
                 <ChevronDown size={10} />
               </button>
             </DropdownMenuTrigger>
@@ -259,18 +253,18 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
               style={{ 
                 zIndex: 2147483647,
                 position: 'fixed',
-                WebkitAppRegion: 'no-drag' as any,
-                appRegion: 'no-drag' as any
+                ['WebkitAppRegion' as any]: 'no-drag',
+                ['appRegion' as any]: 'no-drag'
               }}
             >
               <DropdownMenuItem onClick={handleToggleTheme} className="flex items-center gap-2 text-xs">
                 <Moon size={14} />
-                Toggle Dark Mode
+                {t('titleBar.toggleDarkMode')}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleRefresh} className="flex items-center gap-2 text-xs">
                 <RotateCcw size={14} />
-                Refresh
+                {t('titleBar.refresh')}
                 <span className="ml-auto text-xs text-muted-foreground">F5</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -286,12 +280,12 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
                 className="h-full px-2 text-xs hover:bg-muted/50 flex items-center gap-1 bg-transparent border-0 outline-none focus:ring-0"
                 style={{ 
                   pointerEvents: 'auto',
-                  WebkitAppRegion: 'no-drag' as any,
-                  appRegion: 'no-drag' as any
+                  ['WebkitAppRegion' as any]: 'no-drag',
+                  ['appRegion' as any]: 'no-drag'
                 }}
                 type="button"
               >
-                Tools
+                {t('titleBar.tools')}
                 <ChevronDown size={10} />
               </button>
             </DropdownMenuTrigger>
@@ -302,13 +296,13 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
               style={{ 
                 zIndex: 2147483647,
                 position: 'fixed',
-                WebkitAppRegion: 'no-drag' as any,
-                appRegion: 'no-drag' as any
+                ['WebkitAppRegion' as any]: 'no-drag',
+                ['appRegion' as any]: 'no-drag'
               }}
             >
               <DropdownMenuItem onClick={handleAbout} className="flex items-center gap-2 text-xs">
                 <Info size={14} />
-                About {backendText.desktopName}
+                {t('titleBar.about', { name: backendText.desktopName })}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

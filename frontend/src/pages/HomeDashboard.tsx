@@ -1,5 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useConversation } from "../contexts/ConversationContext";
 import { MessageContent } from "../components/conversation/MessageContent";
 import { ThinkingBlock } from "../components/conversation/ThinkingBlock";
@@ -26,6 +27,7 @@ import { ModelContextProtocol } from "../components/common/ModelContextProtocol"
 import { ToolCallConfirmationRequest } from "../utils/toolCallParser";
 
 export const HomeDashboard: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const {
     currentConversation,
@@ -68,7 +70,7 @@ export const HomeDashboard: React.FC = () => {
                           >
                             <UserRound className="size-4" />
                           </div>
-                          User
+                          {t('homeDashboard.user')}
                         </div>
                       </div>
                     )}
@@ -141,7 +143,7 @@ export const HomeDashboard: React.FC = () => {
                       (part) => part.type === "text" || part.type === "thinking"
                     ) && (
                       <div className="text-gray-400 italic text-xs">
-                        <span className="animate-pulse">●</span> Generating...
+                        <span className="animate-pulse">●</span> {t('homeDashboard.generating')}
                       </div>
                     )}
 
@@ -155,12 +157,12 @@ export const HomeDashboard: React.FC = () => {
                           className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
                         >
                           <Info className="h-3 w-3 mr-1" />
-                          Raw JSON
+                          {t('homeDashboard.rawJsonButton')}
                         </Button>
                       </DialogTrigger>
                       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                         <DialogHeader>
-                          <DialogTitle>Message Raw JSON</DialogTitle>
+                          <DialogTitle>{t('homeDashboard.rawJsonTitle')}</DialogTitle>
                         </DialogHeader>
                         <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
                           <pre className="text-xs whitespace-pre-wrap break-all font-mono">
@@ -183,7 +185,7 @@ export const HomeDashboard: React.FC = () => {
           </div>
 
           <p className="text-muted-foreground mb-6">
-            Your ideas for the future are just a click away.
+            {t('homeDashboard.tagline')}
           </p>
 
           {/* Dashboard tiles */}
@@ -198,9 +200,9 @@ export const HomeDashboard: React.FC = () => {
                   <FolderKanban className="h-5 w-5 text-muted-foreground" />
                 </div>
                 <div className="text-left">
-                  <CardTitle className="text-base">Projects</CardTitle>
+                  <CardTitle className="text-base">{t('dashboard.projectsCard.title')}</CardTitle>
                   <CardDescription>
-                    Manage your projects, view past discussions.
+                    {t('dashboard.projectsCard.description')}
                   </CardDescription>
                 </div>
               </CardHeader>
@@ -214,9 +216,9 @@ export const HomeDashboard: React.FC = () => {
                   <ModelContextProtocol className="h-5 w-5 text-muted-foreground" />
                 </div>
                 <div className="text-left">
-                  <CardTitle className="text-base">MCP Servers</CardTitle>
+                  <CardTitle className="text-base">{t('dashboard.mcpCard.title')}</CardTitle>
                   <CardDescription>
-                    Manage MCP configuration and settings.
+                    {t('dashboard.mcpCard.description')}
                   </CardDescription>
                 </div>
               </CardHeader>

@@ -24,6 +24,7 @@ import { DynamicList, DynamicKeyValueList } from "./DynamicList";
 import { useBackend } from "../../contexts/BackendContext";
 import { getBackendText } from "../../utils/backendText";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { useTranslation } from "react-i18next";
 
 interface AddMcpServerDialogProps {
   trigger: React.ReactNode;
@@ -39,6 +40,7 @@ export function AddMcpServerDialog({
   trigger,
   onServerAdd,
 }: AddMcpServerDialogProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [serverName, setServerName] = useState("");
   const [transportType, setTransportType] = useState<TransportType>("stdio");
@@ -217,7 +219,7 @@ export function AddMcpServerDialog({
       <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
-            Add New MCP Server
+            {t('mcp.addNewMcpServer')}
             <Button
               variant="ghost"
               size="icon"
@@ -246,7 +248,7 @@ export function AddMcpServerDialog({
               id="serverName"
               value={serverName}
               onChange={(e) => setServerName(e.target.value)}
-              placeholder="Enter server name"
+              placeholder={t('mcp.enterServerName')}
             />
           </div>
 
@@ -284,7 +286,7 @@ export function AddMcpServerDialog({
                   id="command"
                   value={command}
                   onChange={(e) => setCommand(e.target.value)}
-                  placeholder="Enter the command"
+                  placeholder={t('mcp.enterCommand')}
                 />
                 <p className="text-sm text-muted-foreground">
                   {backendText.mcpCommandDescription}
@@ -296,7 +298,7 @@ export function AddMcpServerDialog({
                 <DynamicList
                   items={args}
                   onChange={setArgs}
-                  placeholder="Enter an argument"
+                  placeholder={t('mcp.enterArgument')}
                   description="Arguments to pass to the command above."
                 />
               </div>
@@ -310,7 +312,7 @@ export function AddMcpServerDialog({
                 id="url"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                placeholder="http://localhost:8080/sse"
+                placeholder={t('mcp.sseUrlPlaceholder')}
               />
               <p className="text-sm text-muted-foreground">
                 SSE endpoint URL for the MCP server.
@@ -325,7 +327,7 @@ export function AddMcpServerDialog({
                 id="httpUrl"
                 value={httpUrl}
                 onChange={(e) => setHttpUrl(e.target.value)}
-                placeholder="http://localhost:3000/mcp"
+                placeholder={t('mcp.httpUrlPlaceholder')}
               />
               <p className="text-sm text-muted-foreground">
                 HTTP endpoint URL for the MCP server.
@@ -339,8 +341,8 @@ export function AddMcpServerDialog({
             <DynamicKeyValueList
               items={environment}
               onChange={setEnvironment}
-              keyPlaceholder="Name"
-              valuePlaceholder="Value"
+              keyPlaceholder={t('common.name')}
+              valuePlaceholder={t('common.value')}
               description="Environment variables necessary for this MCP server."
             />
           </div>
@@ -367,7 +369,7 @@ export function AddMcpServerDialog({
                 id="workingDirectory"
                 value={workingDirectory}
                 onChange={(e) => setWorkingDirectory(e.target.value)}
-                placeholder="./server-directory"
+                placeholder={t('mcp.workingDirectoryPlaceholder')}
               />
               <p className="text-sm text-muted-foreground">
                 Working directory for the server command.
@@ -407,7 +409,7 @@ export function AddMcpServerDialog({
                 <DynamicList
                   items={includeTools}
                   onChange={setIncludeTools}
-                  placeholder="Write args here"
+                  placeholder={t('mcp.writeArgsHere')}
                   description={backendText.mcpToolExecution}
                 />
               </div>
@@ -417,7 +419,7 @@ export function AddMcpServerDialog({
                 <DynamicList
                   items={excludeTools}
                   onChange={setExcludeTools}
-                  placeholder="Write args here"
+                  placeholder={t('mcp.writeArgsHere')}
                   description={backendText.mcpToolExclusion}
                 />
               </div>
@@ -463,7 +465,7 @@ export function AddMcpServerDialog({
                       id="clientId"
                       value={clientId}
                       onChange={(e) => setClientId(e.target.value)}
-                      placeholder="Enter the MCP server's client ID"
+                      placeholder={t('mcp.enterClientId')}
                     />
                     <p className="text-sm text-muted-foreground">
                       OAuth client identifier. Optional with dynamic
@@ -477,7 +479,7 @@ export function AddMcpServerDialog({
                       id="clientSecret"
                       value={clientSecret}
                       onChange={(e) => setClientSecret(e.target.value)}
-                      placeholder="Enter the MCP server's client secret"
+                      placeholder={t('mcp.enterClientSecret')}
                     />
                     <p className="text-sm text-muted-foreground">
                       OAuth client secret. Optional for public clients.
@@ -490,7 +492,7 @@ export function AddMcpServerDialog({
                       id="authorizationUrl"
                       value={authorizationUrl}
                       onChange={(e) => setAuthorizationUrl(e.target.value)}
-                      placeholder="Enter the MCP server's authorization URL"
+                      placeholder={t('mcp.enterAuthUrl')}
                     />
                     <p className="text-sm text-muted-foreground">
                       OAuth authorization endpoint. Auto-discovered if omitted.
@@ -503,7 +505,7 @@ export function AddMcpServerDialog({
                       id="tokenUrl"
                       value={tokenUrl}
                       onChange={(e) => setTokenUrl(e.target.value)}
-                      placeholder="Enter the MCP server's token URL"
+                      placeholder={t('mcp.enterTokenUrl')}
                     />
                     <p className="text-sm text-muted-foreground">
                       OAuth token endpoint. Auto-discovered if omitted.
@@ -516,7 +518,7 @@ export function AddMcpServerDialog({
                   <DynamicList
                     items={scopes}
                     onChange={setScopes}
-                    placeholder="Enter a scope"
+                    placeholder={t('mcp.enterScope')}
                     description="Required OAuth scopes."
                   />
                 </div>
@@ -528,7 +530,7 @@ export function AddMcpServerDialog({
                       id="redirectUri"
                       value={redirectUri}
                       onChange={(e) => setRedirectUri(e.target.value)}
-                      placeholder="Enter the MCP server's redirect URI"
+                      placeholder={t('mcp.enterRedirectUri')}
                     />
                     <p className="text-sm text-muted-foreground">
                       Custom redirect URI. Defaults to
@@ -544,7 +546,7 @@ export function AddMcpServerDialog({
                       id="tokenParameterName"
                       value={tokenParameterName}
                       onChange={(e) => setTokenParameterName(e.target.value)}
-                      placeholder="Enter the MCP server's token parameter name"
+                      placeholder={t('mcp.enterTokenParam')}
                     />
                     <p className="text-sm text-muted-foreground">
                       Query parameter name for tokens in SSE URLs.
@@ -557,7 +559,7 @@ export function AddMcpServerDialog({
                   <DynamicList
                     items={audiences}
                     onChange={setAudiences}
-                    placeholder="Enter an audience"
+                    placeholder={t('mcp.enterAudience')}
                     description="Audiences for which the token is valid."
                   />
                 </div>
@@ -569,7 +571,7 @@ export function AddMcpServerDialog({
         {/* Footer with Create button */}
         <div className="flex-shrink-0 flex justify-end pt-4 border-t">
           <Button onClick={handleCreate} className="px-8">
-            Create
+            {t('common.create')}
           </Button>
         </div>
       </DialogContent>

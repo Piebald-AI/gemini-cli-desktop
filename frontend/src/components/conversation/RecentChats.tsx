@@ -8,10 +8,12 @@ import {
   CardContent,
 } from "../ui/card";
 import { webApi, RecentChat } from "@/lib/webApi";
+import { useTranslation } from "react-i18next";
 
 type LoadState = "idle" | "loading" | "loaded" | "error";
 
 function RecentChats() {
+  const { t } = useTranslation();
   const [state, setState] = useState<LoadState>("idle");
   const [chats, setChats] = useState<RecentChat[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +44,7 @@ function RecentChats() {
             ? e.message
             : typeof e === "string"
               ? e
-              : "Failed to load recent chats"
+              : t('errors.failedToLoadChats')
         );
         setState("error");
       }
@@ -73,7 +75,7 @@ function RecentChats() {
   if (state === "loaded" && chats.length === 0) {
     return (
       <div className="mt-6 text-sm text-muted-foreground">
-        No previous chats found.
+        {t('errors.noChatsFound')}
       </div>
     );
   }
@@ -89,11 +91,11 @@ function RecentChats() {
           >
             <CardHeader>
               <CardTitle className="truncate">{c.title}</CardTitle>
-              <CardDescription>Started {dateStr}</CardDescription>
+              <CardDescription>{t('recentChats.started', { date: dateStr })}</CardDescription>
             </CardHeader>
             <CardContent className="pb-6">
               <div className="text-sm text-muted-foreground">
-                {c.message_count} messages
+                {t('recentChats.messageCount', { count: c.message_count })}
               </div>
             </CardContent>
           </Card>

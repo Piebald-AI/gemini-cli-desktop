@@ -1,47 +1,53 @@
 import { BackendType } from "../types/backend";
+import i18n from '../i18n';
 
-// Backend configuration mapping - i18n style
+// Backend configuration mapping - URLs and static data
 const BACKEND_CONFIG = {
   gemini: {
-    backendDisplayName: "Gemini CLI",
-    appDisplayName: "Gemini Desktop",
-    backendShortname: "Gemini",
-    backendModelFamilyNameOrTool: "Gemini",
     backendDownloadUrl: "https://github.com/google-gemini/gemini-cli",
   },
   qwen: {
-    backendDisplayName: "Qwen Code",
-    appDisplayName: "Qwen Desktop",
-    backendShortname: "Qwen",
-    backendModelFamilyNameOrTool: "Qwen Code",
     backendDownloadUrl: "https://github.com/qwenlm/qwen-code",
   },
 } as const;
 
 /**
- * Get backend-specific text for UI display
+ * Get backend-specific text for UI display using i18n
  */
 export const getBackendText = (backend: BackendType) => {
   const config = BACKEND_CONFIG[backend];
+  const t = i18n.t;
+
+  // Get backend-specific names from translations
+  const backendDisplayName = t(`backend.${backend}Cli`);
+  const appDisplayName = t(`backend.${backend}Desktop`);
+  const backendShortname = t(`backend.${backend}`);
+  const backendModelFamilyNameOrTool = backend === "gemini" ? t('backend.gemini') : t('backend.qwenCode');
 
   return {
-    name: config.backendDisplayName,
-    shortName: config.backendShortname,
-    desktopName: config.appDisplayName,
-    cliNotFound: `${config.backendDisplayName} not found`,
+    name: backendDisplayName,
+    shortName: backendShortname,
+    desktopName: appDisplayName,
+    cliNotFound: t('warnings.cliNotFound', { backendName: backendDisplayName }),
     installMessage:
       backend === "gemini"
-        ? `Please install ${config.backendDisplayName} and make sure it's available in your PATH. You can install it from ${config.backendDownloadUrl}.`
-        : `Please install ${config.backendDisplayName} and make sure it's available in your PATH.`,
-    mcpCapabilities: `MCP servers extend ${config.backendModelFamilyNameOrTool}'s capabilities by providing access to external tools and data sources.`,
-    mcpToolExecution: `MCP tools, included in this MCP server, that ${config.backendDisplayName} may execute.`,
-    mcpToolExclusion: `MCP tools, included in this MCP server, that ${config.backendDisplayName} may not execute. Takes precedence over Included Tools.`,
-    mcpCommandDescription: `Command executed by ${config.backendDisplayName} to start the MCP server.`,
-    projectsDescription: `All of your previous discussions with ${config.appDisplayName}, right here.`,
+        ? t('backend.installMessageGemini', { 
+            backendName: backendDisplayName,
+            downloadUrl: config.backendDownloadUrl 
+          })
+        : t('backend.installMessage', { backendName: backendDisplayName }),
+    mcpCapabilities: t('backend.mcpCapabilities', { modelName: backendModelFamilyNameOrTool }),
+    mcpToolExecution: t('backend.mcpToolExecution', { backendName: backendDisplayName }),
+    mcpToolExclusion: t('backend.mcpToolExclusion', { backendName: backendDisplayName }),
+    mcpCommandDescription: t('backend.mcpCommandDescription', { backendName: backendDisplayName }),
+    projectsDescription: t('backend.projectsDescription', { appName: appDisplayName }),
     oauthNotSupported:
       backend === "gemini"
-        ? `Currently, authentication with OAuth through ${config.appDisplayName} isn't supported.`
-        : `Currently, authentication with OAuth through ${config.appDisplayName} isn't supported when using the ${config.backendDisplayName} backend.`,
-    loginNotSupportedTitle: `Login not supported in ${config.appDisplayName}`,
+        ? t('warnings.oauthNotSupported', { appName: appDisplayName })
+        : t('warnings.oauthNotSupportedQwen', { 
+            appName: appDisplayName, 
+            backendName: backendDisplayName 
+          }),
+    loginNotSupportedTitle: t('warnings.loginNotSupported', { appName: appDisplayName }),
   };
 };

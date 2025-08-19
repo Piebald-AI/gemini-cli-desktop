@@ -5,6 +5,7 @@ import {
   isSSEConfig,
   isHTTPConfig,
 } from "../types";
+import i18n from '../i18n';
 
 export interface ValidationError {
   field: string;
@@ -18,22 +19,22 @@ export interface ValidationResult {
 
 export function validateMcpServerName(name: string): ValidationResult {
   const errors: ValidationError[] = [];
+  const t = i18n.t;
 
   if (!name || name.trim().length === 0) {
     errors.push({
       field: "name",
-      message: "Server name is required",
+      message: t('validation.serverNameRequired'),
     });
   } else if (name.trim().length < 2) {
     errors.push({
       field: "name",
-      message: "Server name must be at least 2 characters long",
+      message: t('validation.serverNameTooShort'),
     });
   } else if (!/^[a-zA-Z0-9_-]+$/.test(name.trim())) {
     errors.push({
       field: "name",
-      message:
-        "Server name can only contain letters, numbers, underscores, and hyphens",
+      message: t('validation.serverNameInvalidChars'),
     });
   }
 
@@ -47,13 +48,14 @@ export function validateMcpServerConfig(
   config: McpServerConfig
 ): ValidationResult {
   const errors: ValidationError[] = [];
+  const t = i18n.t;
 
   // Validate transport-specific configurations
   if (isStdioConfig(config)) {
     if (!config.command || config.command.trim().length === 0) {
       errors.push({
         field: "command",
-        message: "Command is required for stdio transport",
+        message: t('validation.commandRequired'),
       });
     }
 
@@ -63,7 +65,7 @@ export function validateMcpServerConfig(
       if (config.cwd.includes("..")) {
         errors.push({
           field: "cwd",
-          message: "Working directory should not contain relative paths (..)",
+          message: t('validation.invalidWorkingDirectory'),
         });
       }
     }
@@ -71,24 +73,24 @@ export function validateMcpServerConfig(
     if (!config.url || config.url.trim().length === 0) {
       errors.push({
         field: "url",
-        message: "URL is required for SSE transport",
+        message: t('validation.urlRequired'),
       });
     } else if (!isValidUrl(config.url)) {
       errors.push({
         field: "url",
-        message: "Please enter a valid URL",
+        message: t('validation.invalidUrl'),
       });
     }
   } else if (isHTTPConfig(config)) {
     if (!config.httpUrl || config.httpUrl.trim().length === 0) {
       errors.push({
         field: "httpUrl",
-        message: "HTTP URL is required for HTTP transport",
+        message: t('validation.httpUrlRequired'),
       });
     } else if (!isValidUrl(config.httpUrl)) {
       errors.push({
         field: "httpUrl",
-        message: "Please enter a valid HTTP URL",
+        message: t('validation.invalidHttpUrl'),
       });
     }
   }
@@ -98,12 +100,12 @@ export function validateMcpServerConfig(
     if (config.timeout < 1000) {
       errors.push({
         field: "timeout",
-        message: "Timeout must be at least 1000ms (1 second)",
+        message: t('validation.timeoutTooLow'),
       });
     } else if (config.timeout > 3600000) {
       errors.push({
         field: "timeout",
-        message: "Timeout cannot exceed 3600000ms (1 hour)",
+        message: t('validation.timeoutTooHigh'),
       });
     }
   }
@@ -116,14 +118,14 @@ export function validateMcpServerConfig(
     ) {
       errors.push({
         field: "oauth.scopes",
-        message: "OAuth scopes cannot be empty",
+        message: t('validation.oauthScopesEmpty'),
       });
     }
 
     if (config.oauth.redirectUri && !isValidUrl(config.oauth.redirectUri)) {
       errors.push({
         field: "oauth.redirectUri",
-        message: "OAuth redirect URI must be a valid URL",
+        message: t('validation.invalidRedirectUri'),
       });
     }
 
@@ -133,14 +135,14 @@ export function validateMcpServerConfig(
     ) {
       errors.push({
         field: "oauth.authorizationUrl",
-        message: "OAuth authorization URL must be a valid URL",
+        message: t('validation.invalidAuthUrl'),
       });
     }
 
     if (config.oauth.tokenUrl && !isValidUrl(config.oauth.tokenUrl)) {
       errors.push({
         field: "oauth.tokenUrl",
-        message: "OAuth token URL must be a valid URL",
+        message: t('validation.invalidTokenUrl'),
       });
     }
   }
@@ -153,7 +155,7 @@ export function validateMcpServerConfig(
     if (overlap.length > 0) {
       errors.push({
         field: "tools",
-        message: `Tools cannot be both included and excluded: ${overlap.join(", ")}`,
+        message: t('validation.toolsOverlap', { tools: overlap.join(", ") }),
       });
     }
   }
@@ -181,19 +183,20 @@ export function validateUniqueServerNames(
 ): ValidationResult {
   const errors: ValidationError[] = [];
   const nameMap = new Map<string, number>();
+  const t = i18n.t;
 
   servers.forEach((server, index) => {
     const normalizedName = server.name.trim().toLowerCase();
     if (nameMap.has(normalizedName)) {
       errors.push({
         field: `servers[${index}].name`,
-        message: `Duplicate server name: "${server.name}"`,
+        message: t('validation.duplicateServerName', { name: server.name }),
       });
       // Also mark the original occurrence
       const originalIndex = nameMap.get(normalizedName)!;
       errors.push({
         field: `servers[${originalIndex}].name`,
-        message: `Duplicate server name: "${server.name}"`,
+        message: t('validation.duplicateServerName', { name: server.name }),
       });
     } else {
       nameMap.set(normalizedName, index);

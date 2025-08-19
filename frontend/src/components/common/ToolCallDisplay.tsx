@@ -7,6 +7,7 @@ import type {
 } from "../../utils/toolCallParser";
 import { ToolResultRenderer } from "./ToolResultRenderer";
 import { ToolInputParser } from "../../utils/toolInputParser";
+import { useTranslation } from "react-i18next";
 
 interface ToolCallDisplayProps {
   toolCall: ToolCall;
@@ -23,6 +24,7 @@ function ToolCallDisplayComponent({
   confirmationRequest,
   confirmationRequests,
 }: ToolCallDisplayProps) {
+  const { t } = useTranslation();
   // Try to get confirmation request from the Map as a fallback
   const actualConfirmationRequest =
     confirmationRequest ||
@@ -54,12 +56,12 @@ function ToolCallDisplayComponent({
       toolCall.status === "failed" &&
       toolCall.result &&
       typeof toolCall.result === "object" &&
-      toolCall.result.markdown === "Tool call rejected by user"
+      toolCall.result.markdown === t('toolCalls.userRejected')
     );
   };
 
   const getErrorSummary = (toolCall: ToolCall): string => {
-    if (!toolCall.result) return "Failed to execute.";
+    if (!toolCall.result) return t('toolCalls.failedToExecute');
 
     const result = toolCall.result;
 
@@ -106,7 +108,7 @@ function ToolCallDisplayComponent({
       // Ignore JSON parsing errors
     }
 
-    return "Command failed.";
+    return t('toolCalls.commandFailed');
   };
 
   const getRunningDescription = (toolCall: ToolCall): React.ReactNode => {
@@ -141,7 +143,7 @@ function ToolCallDisplayComponent({
   const toolLoadingConfig = {
     google_web_search: {
       icon: <Loader2 className="animate-spin h-3 w-3" />,
-      message: "Googling...",
+      message: t('toolCalls.googling'),
       isSpecialTool: true,
       detectors: [
         (toolCall: ToolCall) =>
@@ -150,7 +152,7 @@ function ToolCallDisplayComponent({
     },
     web_fetch: {
       icon: <Loader2 className="animate-spin h-3 w-3" />,
-      message: "Fetching...",
+      message: t('toolCalls.fetching'),
       isSpecialTool: true,
       detectors: [
         (toolCall: ToolCall) =>
@@ -160,7 +162,7 @@ function ToolCallDisplayComponent({
     // Example of how to add more tools:
     // glob: {
     //   icon: <Loader2 className="animate-spin h-3 w-3" />,
-    //   message: "Searching files...",
+    //   message: t('toolCalls.searchingFiles'),
     //   isSpecialTool: true,
     //   detectors: [(toolCall: ToolCall) => toolCall.label?.toLowerCase().includes("globbed")]
     // }
@@ -260,7 +262,7 @@ function ToolCallDisplayComponent({
       icon: (
         <div className="animate-spin h-3 w-3 border-2 border-primary border-t-transparent rounded-full"></div>
       ),
-      message: "Executing...",
+      message: t('toolCalls.executing'),
       isWebTool: false,
     };
   };
@@ -293,14 +295,14 @@ function ToolCallDisplayComponent({
               <div className="flex items-center gap-2 text-sm px-2 py-1 hover:bg-muted/50 rounded-lg transition-colors">
                 <Loader2 className="animate-spin h-4 w-4 text-blue-500" />
                 <span>
-                  Fetching{" "}
+                  {t('toolCalls.fetching')}{" "}
                   <span className="text-muted-foreground">
                     {(() => {
                       const webFetchInfo =
                         getWebFetchPendingInfo(enhancedToolCall);
                       return webFetchInfo?.count === 1
                         ? webFetchInfo.url
-                        : `${webFetchInfo?.count || 1} URLs`;
+                        : t('toolCalls.fetchingUrls', { count: webFetchInfo?.count || 1 });
                     })()}
                   </span>
                 </span>
@@ -395,7 +397,7 @@ function ToolCallDisplayComponent({
                             e.stopPropagation();
                             onConfirm(enhancedToolCall.id, "proceed_once");
                           }}
-                          title="Allow"
+                          title={t('toolCalls.allow')}
                         >
                           <Check className="h-3 w-3" />
                         </Button>
@@ -407,7 +409,7 @@ function ToolCallDisplayComponent({
                             e.stopPropagation();
                             onConfirm(enhancedToolCall.id, "cancel");
                           }}
-                          title="Reject"
+                          title={t('toolCalls.reject')}
                         >
                           <X className="h-3 w-3" />
                         </Button>
@@ -425,14 +427,14 @@ function ToolCallDisplayComponent({
                   {formatToolName(enhancedToolCall.name)}
                 </span>
                 <span className="text-sm text-muted-foreground ml-2">
-                  Pending approval...
+                  {t('toolCalls.pendingApproval')}
                 </span>
               </div>
 
               {/* Approval Buttons - Show when there's a confirmation request */}
               {hasConfirmationRequest && onConfirm && (
                 <div className="flex items-center gap-2 mt-3">
-                  <span className="text-sm text-foreground">Approve?</span>
+                  <span className="text-sm text-foreground">{t('toolCalls.approve')}</span>
                   <Button
                     size="sm"
                     className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 text-xs"
@@ -441,7 +443,7 @@ function ToolCallDisplayComponent({
                     }
                   >
                     <Check className="h-3 w-3 mr-1" />
-                    Yes
+                    {t('common.yes')}
                   </Button>
                   <Button
                     size="sm"
@@ -450,7 +452,7 @@ function ToolCallDisplayComponent({
                     onClick={() => onConfirm(enhancedToolCall.id, "cancel")}
                   >
                     <X className="h-3 w-3 mr-1" />
-                    No
+                    {t('common.no')}
                   </Button>
                 </div>
               )}
@@ -459,7 +461,7 @@ function ToolCallDisplayComponent({
               {!hasConfirmationRequest && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground mt-3">
                   <span className="animate-pulse">●</span>
-                  Waiting for user approval
+                  {t('toolCalls.waitingForApproval')}
                 </div>
               )}
 
@@ -467,7 +469,7 @@ function ToolCallDisplayComponent({
               {enhancedToolCall.inputJsonRpc && (
                 <div className="mt-4">
                   <div className="text-xs font-semibold text-muted-foreground mb-2">
-                    Input:
+                    {t('toolCalls.input')}
                   </div>
                   <pre className="bg-muted p-3 rounded text-xs overflow-x-auto border">
                     <code>{enhancedToolCall.inputJsonRpc}</code>
@@ -516,7 +518,7 @@ function ToolCallDisplayComponent({
               {enhancedToolCall.inputJsonRpc && (
                 <div className="mt-4">
                   <div className="text-xs font-semibold text-muted-foreground mb-2">
-                    Input:
+                    {t('toolCalls.input')}
                   </div>
                   <pre className="bg-muted p-3 rounded text-xs overflow-x-auto border">
                     <code>{enhancedToolCall.inputJsonRpc}</code>
@@ -547,15 +549,15 @@ function ToolCallDisplayComponent({
                 <X className="h-4 w-4 text-red-500" />
                 <span>
                   {isUserRejected(enhancedToolCall)
-                    ? "Rejected fetch"
-                    : "Failed to fetch"}{" "}
+                    ? t('toolCalls.rejectedFetch')
+                    : t('toolCalls.failedToFetch')}{" "}
                   <span className="text-muted-foreground">
                     {(() => {
                       const webFetchInfo =
                         getWebFetchPendingInfo(enhancedToolCall);
                       return webFetchInfo?.count === 1
                         ? webFetchInfo.url
-                        : `${webFetchInfo?.count || 1} URLs`;
+                        : t('toolCalls.fetchingUrls', { count: webFetchInfo?.count || 1 });
                     })()}
                   </span>
                 </span>
@@ -574,7 +576,7 @@ function ToolCallDisplayComponent({
               <div className="flex items-center gap-2 text-sm text-red-700 dark:text-red-300">
                 <X className="size-3" />
                 {isUserRejected(enhancedToolCall)
-                  ? "Rejected"
+                  ? t('toolCalls.rejected')
                   : getErrorSummary(enhancedToolCall)}
               </div>
 
@@ -582,7 +584,7 @@ function ToolCallDisplayComponent({
               {enhancedToolCall.inputJsonRpc && (
                 <div className="mt-4">
                   <div className="text-xs font-semibold text-muted-foreground mb-2">
-                    Input:
+                    {t('toolCalls.input')}
                   </div>
                   <pre className="bg-muted p-3 rounded text-xs overflow-x-auto border">
                     <code>{enhancedToolCall.inputJsonRpc}</code>
@@ -594,7 +596,7 @@ function ToolCallDisplayComponent({
               {enhancedToolCall.outputJsonRpc && (
                 <div className="mt-4">
                   <div className="text-xs font-semibold text-muted-foreground mb-2">
-                    Output:
+                    {t('toolCalls.output')}
                   </div>
                   <pre className="bg-muted p-3 rounded text-xs overflow-x-auto border">
                     <code>{enhancedToolCall.outputJsonRpc}</code>

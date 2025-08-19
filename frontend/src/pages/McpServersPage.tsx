@@ -22,11 +22,13 @@ import {
   DialogDescription,
   DialogFooter,
 } from "../components/ui/dialog";
-import { Code } from "../components/ui/code";
+// import { Code } from "../components/ui/code"; // Unused import
 import { useBackend } from "../contexts/BackendContext";
 import { getBackendText } from "../utils/backendText";
+import { useTranslation } from "react-i18next";
 
 export function McpServersPage() {
+  const { t } = useTranslation();
   const [servers, setServers] = useState<McpServerEntry[]>([]);
   const [settingsFilePath, setSettingsFilePath] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
@@ -57,7 +59,7 @@ export function McpServersPage() {
       });
       setSettingsFilePath(path);
     } catch (error) {
-      console.error("Failed to get settings file path:", error);
+      console.error(t('errors.failedToGetSettingsPath'), error);
     }
   };
 
@@ -82,7 +84,7 @@ export function McpServersPage() {
       );
       setServers(serverEntries);
     } catch (error) {
-      console.error("Failed to load MCP servers from settings file:", error);
+      console.error(t('errors.failedToLoadSettings'), error);
       setServers([]);
     } finally {
       setIsLoading(false);
@@ -120,7 +122,7 @@ export function McpServersPage() {
       });
       setServers(updatedServers);
     } catch (error) {
-      console.error("Failed to save MCP servers to settings file:", error);
+      console.error(t('errors.failedToSaveSettings'), error);
     } finally {
       setIsLoading(false);
     }
@@ -167,12 +169,12 @@ export function McpServersPage() {
       const envStrings = Object.entries(config.env)
         .map(([key, value]) => `${key} = ${value}`)
         .join(" • ");
-      details.push({ label: "Environment", value: envStrings });
+      details.push({ label: t('mcp.environment'), value: envStrings });
     }
 
     // Add working directory for stdio servers
     if (isStdioConfig(config) && config.cwd) {
-      details.push({ label: "Working Dir", value: config.cwd });
+      details.push({ label: t('mcp.workingDirectory'), value: config.cwd });
     }
 
     // Add headers for HTTP servers
@@ -184,13 +186,13 @@ export function McpServersPage() {
       const headerStrings = Object.entries(config.headers)
         .map(([key, value]) => `${key} = ${value}`)
         .join(" • ");
-      details.push({ label: "Headers", value: headerStrings });
+      details.push({ label: t('mcp.headers'), value: headerStrings });
     }
 
     // Add include tools
     if (config.includeTools && config.includeTools.length > 0) {
       details.push({
-        label: "Include Tools",
+        label: t('mcp.includedTools'),
         value: config.includeTools.join(" • "),
       });
     }
@@ -198,7 +200,7 @@ export function McpServersPage() {
     // Add exclude tools
     if (config.excludeTools && config.excludeTools.length > 0) {
       details.push({
-        label: "Exclude Tools",
+        label: t('mcp.excludedTools'),
         value: config.excludeTools.join(" • "),
       });
     }
@@ -207,7 +209,7 @@ export function McpServersPage() {
     if (config.timeout) {
       const minutes = Math.round(config.timeout / 60000);
       details.push({
-        label: "Timeout",
+        label: t('mcp.timeout'),
         value: `${config.timeout.toLocaleString()}ms (${minutes} minutes)`,
       });
     }
@@ -240,14 +242,14 @@ export function McpServersPage() {
             type="button"
             onClick={() => navigate("/")}
             className="mb-4 inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition cursor-pointer"
-            aria-label="Back to Home"
+            aria-label={t('accessibility.backToHome')}
           >
             <ArrowLeft className="h-4 w-4 mr-2" aria-hidden="true" />
-            <span>Back to Home</span>
+            <span>{t('navigation.backToHome')}</span>
           </button>
-          <h1 className="text-2xl font-bold mb-2">MCP Servers</h1>
+          <h1 className="text-2xl font-bold mb-2">{t('mcp.title')}</h1>
           <p className="text-muted-foreground">
-            Manage your Model Context Protocol server configurations
+            {t('mcp.description')}
           </p>
         </div>
 
@@ -256,25 +258,24 @@ export function McpServersPage() {
           {isLoading ? (
             <div className="flex items-center justify-center p-8">
               <div className="text-sm text-muted-foreground">
-                Loading settings file...
+                {t('mcp.loadingSettings')}
               </div>
             </div>
           ) : servers.length === 0 ? (
             <div className="flex flex-col items-center justify-center p-12 text-center">
               <ModelContextProtocol className="h-16 w-16 text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">
-                No MCP servers configured
+                {t('mcp.noServersConfigured')}
               </h3>
               <p className="text-sm text-muted-foreground mb-6 max-w-md">
-                {backendText.mcpCapabilities} Get started by adding your first
-                server configuration.
+                {backendText.mcpCapabilities} {t('mcp.addFirstServer')}.
               </p>
               <div className="flex gap-3">
                 <AddMcpServerDialog
                   trigger={
                     <Button className="flex items-center gap-2">
                       <Package className="h-4 w-4" />
-                      Add Your First Server
+                      {t('mcp.addFirstServer')}
                     </Button>
                   }
                   onServerAdd={handleAddServer}
@@ -286,7 +287,7 @@ export function McpServersPage() {
                       className="flex items-center gap-2"
                     >
                       <FileText className="h-4 w-4" />
-                      Import from JSON
+                      {t('mcp.importFromJson')}
                     </Button>
                   }
                   onServersAdd={handleAddServers}
@@ -313,12 +314,12 @@ export function McpServersPage() {
                             <div className="flex items-center gap-1 text-green-600">
                               <div className="w-2 h-2 bg-green-500 rounded-full" />
                               <span className="text-sm font-medium">
-                                Trusted
+                                {t('mcp.trusted')}
                               </span>
                             </div>
                           ) : (
                             <span className="text-sm text-muted-foreground">
-                              Not Trusted
+                              {t('mcp.notTrusted')}
                             </span>
                           )}
                         </div>
@@ -358,7 +359,7 @@ export function McpServersPage() {
               trigger={
                 <Button className="flex items-center gap-2">
                   <Package className="h-4 w-4" />
-                  Add New Server
+                  {t('mcp.addNewServer')}
                 </Button>
               }
               onServerAdd={handleAddServer}
@@ -367,7 +368,7 @@ export function McpServersPage() {
               trigger={
                 <Button variant="outline" className="flex items-center gap-2">
                   <FileText className="h-4 w-4" />
-                  Paste JSON
+                  {t('mcp.pasteJson')}
                 </Button>
               }
               onServersAdd={handleAddServers}
@@ -379,20 +380,17 @@ export function McpServersPage() {
         <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Delete MCP Server</DialogTitle>
+              <DialogTitle>{t('mcp.deleteServer')}</DialogTitle>
               <DialogDescription>
-                Are you sure you want to delete the MCP server{" "}
-                <Code>{serverToDelete?.name}</Code>? This action cannot be
-                undone and will permanently remove the server from your{" "}
-                <Code>settings.json</Code> file.
+                {t('mcp.deleteConfirmation', { serverName: serverToDelete?.name })}
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
               <Button variant="outline" onClick={cancelDeleteServer}>
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button variant="destructive" onClick={confirmDeleteServer}>
-                Delete Server
+                {t('mcp.deleteServerButton')}
               </Button>
             </DialogFooter>
           </DialogContent>
