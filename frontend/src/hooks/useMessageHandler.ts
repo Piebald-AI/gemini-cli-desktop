@@ -158,8 +158,10 @@ export const useMessageHandler = ({
 
         // Get backend configuration if using Qwen
         let backendConfig = undefined;
+        
         if (selectedBackend === 'qwen') {
           const apiConfig = getApiConfig();
+          
           if (apiConfig && apiConfig.api_key) {
             backendConfig = {
               api_key: apiConfig.api_key,

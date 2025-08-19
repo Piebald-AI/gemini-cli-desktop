@@ -96,13 +96,11 @@ function RootLayoutContent() {
       setActiveConversation(convId);
 
       if (workingDirectory) {
-        console.log("Debug - apiConfig:", apiConfig);
-
         await api.invoke("start_session", {
           sessionId: convId,
           workingDirectory,
           model: selectedModel,
-          backend_config: apiConfig,
+          backendConfig: apiConfig,
         });
       }
 
@@ -111,6 +109,7 @@ function RootLayoutContent() {
     },
     [
       selectedModel,
+      selectedBackend,
       apiConfig,
       createNewConversation,
       setActiveConversation,

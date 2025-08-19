@@ -210,6 +210,7 @@ export const BackendProvider: React.FC<BackendProviderProps> = ({ children }) =>
     const getApiConfig = (): ApiConfig | null => {
       if (state.selectedBackend === 'qwen') {
         const qwenConfig = state.configs.qwen;
+        
         if (qwenConfig.useOAuth) {
           return { model: qwenConfig.model };
         } else {
@@ -220,7 +221,8 @@ export const BackendProvider: React.FC<BackendProviderProps> = ({ children }) =>
           };
         }
       }
-      return { model: currentModel };
+      
+      return null;
     };
 
     const canStartSession = (): boolean => {
