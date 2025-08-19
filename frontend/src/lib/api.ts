@@ -9,23 +9,6 @@ declare global {
 }
 
 // Type definitions for API command arguments
-interface SendMessageArgs {
-  sessionId: string;
-  message: string;
-  conversationHistory: string;
-  model?: string;
-  backendConfig?: {
-    api_key: string;
-    base_url: string;
-    model: string;
-  };
-}
-
-interface ToolConfirmationArgs {
-  toolCallId: string;
-  outcome: string;
-}
-
 interface GenerateConversationTitleArgs {
   message: string;
   model?: string;
@@ -36,13 +19,7 @@ function isStringArg(args: unknown): args is string {
   return typeof args === 'string';
 }
 
-function isSendMessageArgs(args: unknown): args is SendMessageArgs {
-  return typeof args === 'object' && args !== null && 'sessionId' in args && 'message' in args;
-}
-
-function isToolConfirmationArgs(args: unknown): args is ToolConfirmationArgs {
-  return typeof args === 'object' && args !== null && 'toolCallId' in args && 'outcome' in args;
-}
+// Removed unused type guards
 
 function isGenerateConversationTitleArgs(args: unknown): args is GenerateConversationTitleArgs {
   return typeof args === 'object' && args !== null && 'message' in args;

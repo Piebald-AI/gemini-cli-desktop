@@ -9,7 +9,7 @@ export interface ConversationContextType {
   currentConversation: Conversation | undefined;
   input: string;
   isCliInstalled: boolean | null;
-  messagesContainerRef: React.RefObject<HTMLDivElement>;
+  messagesContainerRef: React.RefObject<HTMLDivElement | null>;
   cliIOLogs: CliIO[];
   handleInputChange: (
     _event: React.ChangeEvent<HTMLInputElement> | null,

@@ -4,7 +4,7 @@ import { ProcessStatus } from "../types";
 
 export const useProcessManager = () => {
   const [processStatuses, setProcessStatuses] = useState<ProcessStatus[]>([]);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchProcessStatuses = useCallback(async () => {
     try {
@@ -72,7 +72,7 @@ export const useProcessManager = () => {
         clearTimeout(intervalRef.current);
       }
     };
-  }, [fetchProcessStatuses, getPollingInterval]);
+  }, [fetchProcessStatuses, getPollingInterval, processStatuses]);
 
   // Reschedule polling when process statuses change
   useEffect(() => {

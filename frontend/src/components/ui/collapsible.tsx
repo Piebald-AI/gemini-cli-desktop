@@ -25,7 +25,7 @@ const Collapsible = ({
       {React.Children.map(children, (child) => {
         if (React.isValidElement(child)) {
           if (child.type === CollapsibleTrigger) {
-            return React.cloneElement(child as React.ReactElement, {
+            return React.cloneElement(child as React.ReactElement<{ onClick?: () => void; "aria-expanded"?: boolean }>, {
               onClick: () => handleOpenChange(!isOpen),
               "aria-expanded": isOpen,
             });

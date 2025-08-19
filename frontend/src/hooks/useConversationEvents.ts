@@ -55,7 +55,7 @@ interface SessionUpdateEventPayload {
   locations?: ToolLocation[];
   status?: string;
   result?: string;
-  content?: string;
+  content?: AcpContent[] | string;
   chunk?: string;
   thought?: string;
 }
@@ -63,15 +63,19 @@ interface SessionUpdateEventPayload {
 interface PermissionRequestEventPayload {
   request_id: string;
   request: {
+    sessionId?: string;
     toolCall: {
       toolCallId: string;
       name?: string;
+      title?: string;
       kind?: string;
       status?: string;
       parameters?: Record<string, unknown>;
+      content?: AcpContent[];
+      locations?: ToolLocation[];
     };
     question?: string;
-    options?: string[];
+    options?: string[] | { optionId: string; name: string; kind: "allow_once" | "allow_always" | "reject_once" | "reject_always"; }[];
   };
 }
 
@@ -88,11 +92,14 @@ function isPermissionRequestEvent(payload: EventPayload): payload is PermissionR
 
 // Helper functions for ACP conversion - CORRECTED with verified tool names
 function getToolNameFromKind(
-  kind: string,
+  kind: string | undefined,
   title?: string,
   locations?: ToolLocation[],
   toolCallId?: string
 ): string {
+  if (!kind) {
+    return "other";
+  }
   switch (kind) {
     case "read":
       // ACP has multiple read tools - try to detect which one based on context
@@ -127,7 +134,10 @@ function getToolNameFromKind(
   }
 }
 
-function mapAcpStatus(acpStatus: string): ToolCall["status"] {
+function mapAcpStatus(acpStatus: string | undefined): ToolCall["status"] {
+  if (!acpStatus) {
+    return "pending";
+  }
   switch (acpStatus) {
     case "pending":
       return "pending";
@@ -345,11 +355,11 @@ export const useConversationEvents = (
                   update.kind,
                   update.title,
                   update.locations,
-                  update.toolCallId
+                  update.toolCallId || ''
                 );
 
                 const newToolCall: ToolCall = {
-                  id: update.toolCallId,
+                  id: update.toolCallId || '',
                   name: toolName,
                   parameters: { locations: update.locations },
                   status: mapAcpStatus(update.status),
@@ -412,26 +422,28 @@ export const useConversationEvents = (
                         // Handle content updates - but don't overwrite user rejections
                         if (
                           update.content &&
-                          update.content.length > 0 &&
                           !isCurrentlyRejected
                         ) {
-                          const contentItem = update.content[0];
-                          if (
-                            contentItem.type === "content" &&
-                            contentItem.content.type === "text"
-                          ) {
-                            msgPart.toolCall.result = contentItem.content.text;
+                          if (Array.isArray(update.content) && update.content.length > 0) {
+                            const contentItem = update.content[0];
+                            if (
+                              contentItem.type === "content" &&
+                              contentItem.content.type === "text"
+                            ) {
+                              msgPart.toolCall.result = contentItem.content.text;
+                              console.log(
+                                "🔧 [EDIT-DEBUG] Updated tool call with text result:",
+                                contentItem.content.text.substring(0, 100)
+                              );
+                            } else if (contentItem.type === "diff") {
+                              // For diff content, just store as text with formatting
+                              const diffResult = `Diff for ${contentItem.path}:\nOld: ${contentItem.old_text}\nNew: ${contentItem.new_text}`;
+                              msgPart.toolCall.result = diffResult;
+                            }
+                          } else if (typeof update.content === "string") {
+                            msgPart.toolCall.result = update.content;
                             console.log(
-                              "🔧 [EDIT-DEBUG] Updated tool call with text result:",
-                              contentItem.content.text.substring(0, 100)
-                            );
-                          } else if (contentItem.type === "diff") {
-                            // For diff content, just store as text with formatting
-                            const diffResult = `Diff for ${contentItem.path}:\nOld: ${contentItem.old_text}\nNew: ${contentItem.new_text}`;
-                            msgPart.toolCall.result = diffResult;
-                            console.log(
-                              "🔧 [EDIT-DEBUG] Updated tool call with diff result for path:",
-                              contentItem.path
+                              "🔧 [EDIT-DEBUG] Updated tool call with string result"
                             );
                           }
                         }
@@ -539,12 +551,12 @@ export const useConversationEvents = (
 
               // Create the confirmation request object
               const confirmationRequest: ToolCallConfirmationRequest = {
-                requestId: request_id,
-                sessionId: request.sessionId,
+                requestId: parseInt(request_id, 10),
+                sessionId: request.sessionId || '',
                 toolCallId: toolCallId,
-                label: request.toolCall.title,
+                label: request.toolCall.title || request.toolCall.name || 'Unknown Tool',
                 icon: "", // ACP doesn't use icons
-                content: convertAcpContentToLegacy(request.toolCall.content),
+                content: convertAcpContentToLegacy(request.toolCall.content || []),
                 confirmation: {
                   type:
                     request.toolCall.kind === "edit"
@@ -555,14 +567,22 @@ export const useConversationEvents = (
                   rootCommand: undefined,
                   command: undefined,
                 },
-                locations: request.toolCall.locations.map(
+                locations: (request.toolCall.locations || []).map(
                   (loc: ToolLocation) => ({
-                    path: loc.file || loc.directory,
+                    path: loc.file || loc.directory || 'unknown',
                   })
                 ),
                 inputJsonRpc: window.pendingToolCallInput,
                 // Include ACP permission options for enhanced approval flows
-                options: request.options || [],
+                options: Array.isArray(request.options) 
+                  ? typeof request.options[0] === 'string'
+                    ? (request.options as string[]).map((opt, idx) => ({
+                        optionId: `option_${idx}`,
+                        name: opt,
+                        kind: (idx < 2 ? (idx === 0 ? 'allow_once' : 'allow_always') : (idx === 2 ? 'reject_once' : 'reject_always')) as "allow_once" | "allow_always" | "reject_once" | "reject_always"
+                      }))
+                    : request.options as { optionId: string; name: string; kind: "allow_once" | "allow_always" | "reject_once" | "reject_always"; }[]
+                  : [],
               };
 
               // If tool call doesn't exist, create one with the confirmation request
@@ -581,9 +601,9 @@ export const useConversationEvents = (
                 const newToolCall: ToolCall = {
                   id: toolCallId,
                   name: toolName,
-                  parameters: { locations: request.toolCall.locations },
+                  parameters: { locations: request.toolCall.locations || [] },
                   status: mapAcpStatus(request.toolCall.status),
-                  label: request.toolCall.title,
+                  label: request.toolCall.title || request.toolCall.name || 'Unknown Tool',
                   confirmationRequest: confirmationRequest, // Attach immediately
                 };
 
@@ -653,12 +673,12 @@ export const useConversationEvents = (
 
             // Also store in the confirmation requests Map for backward compatibility
             const legacyConfirmationRequest: ToolCallConfirmationRequest = {
-              requestId: request_id,
-              sessionId: request.sessionId,
+              requestId: parseInt(request_id, 10),
+              sessionId: request.sessionId || '',
               toolCallId: toolCallId,
-              label: request.toolCall.title,
+              label: request.toolCall.title || request.toolCall.name || 'Unknown Tool',
               icon: "", // ACP doesn't use icons
-              content: convertAcpContentToLegacy(request.toolCall.content),
+              content: convertAcpContentToLegacy(request.toolCall.content || []),
               confirmation: {
                 type:
                   request.toolCall.kind === "edit"
@@ -669,9 +689,9 @@ export const useConversationEvents = (
                 rootCommand: undefined,
                 command: undefined,
               },
-              locations: request.toolCall.locations.map(
+              locations: (request.toolCall.locations || []).map(
                 (loc: ToolLocation) => ({
-                  path: loc.file || loc.directory,
+                  path: loc.file || loc.directory || 'unknown',
                 })
               ),
               inputJsonRpc: window.pendingToolCallInput,
