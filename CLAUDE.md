@@ -27,6 +27,7 @@ Gemini Desktop is a powerful, cross-platform desktop and web application that pr
 - **Multi-backend support**: Gemini CLI and Qwen Code integration
 - **Project management**: Session-based workspace management with chat history
 - **Security-first design**: Comprehensive command filtering and permission system
+- **Internationalization**: Full i18n support with language switching for English, Chinese Simplified, and Traditional Chinese
 - **Custom title bar**: Enhanced desktop experience with native window controls
 - **About dialog**: Integrated help and version information
 - **Resizable sidebar**: Interactive sidebar with drag-to-resize functionality and persistent width settings
@@ -113,6 +114,8 @@ The project is organized as a Rust workspace with three main crates:
   - `ToolCallsList.tsx` - Tool execution history
   - `ToolResultRenderer.tsx` - Tool output formatting
   - `UserAvatar.tsx` - User profile display
+  - `LanguageSwitcher.tsx` - Language selection interface with flag icons
+  - `I18nExample.tsx` - Translation demonstration component
 - **`conversation/`** - Chat interface components
   - `ConversationList.tsx` - Message history and pagination
   - `MessageInputBar.tsx` - Text input with mention support
@@ -161,6 +164,10 @@ The project is organized as a Rust workspace with three main crates:
   - Message history and pagination
   - Tool call confirmation state
   - Real-time event integration
+- **`LanguageContext.tsx`** - Internationalization management
+  - Current language state and persistence
+  - Language switching functionality
+  - Browser language detection integration
 
 #### Custom Hooks
 - **`useCliInstallation.ts`** - CLI availability detection
@@ -203,6 +210,9 @@ The project is organized as a Rust workspace with three main crates:
 - **next-themes** - Theme management system
 - **class-variance-authority** - CSS class variance utilities
 - **Google Generative AI** - Direct Gemini API integration
+- **react-i18next** - Internationalization framework with hooks and components
+- **i18next** - Core internationalization library with interpolation and pluralization
+- **i18next-browser-languagedetector** - Browser language detection and persistence
 
 ### Development Tools
 - **Just** - Task runner and build automation
@@ -603,12 +613,21 @@ gemini-desktop/
 - **Chat history** stored in structured format
 - **Tool call logs** for debugging and replay
 - **Custom title bar** for enhanced desktop experience
+- **Full internationalization** with language detection and persistence
 
 #### Authentication
 - **API key storage** (encrypted/secure storage planned)
 - **Multiple provider support** (Gemini, Vertex AI, Qwen)
 - **Session-based authentication** for web mode
 - **Unified backend configuration** with validation
+
+#### Internationalization
+- **Language support**: English, Simplified Chinese, Traditional Chinese
+- **Browser language detection** with automatic fallback
+- **Persistent language preferences** stored in localStorage
+- **Component-level translations** using react-i18next hooks
+- **Translation interpolation** for dynamic content
+- **Pluralization support** for count-based translations
 
 ## Development Workflow
 
@@ -796,6 +815,8 @@ gemini-desktop/
 │   │   │   │   ├── CodeBlock.tsx
 │   │   │   │   ├── DiffViewer.tsx
 │   │   │   │   ├── DirectorySelectionDialog.tsx
+│   │   │   │   ├── I18nExample.tsx
+│   │   │   │   ├── LanguageSwitcher.tsx
 │   │   │   │   ├── MarkdownRenderer.tsx
 │   │   │   │   ├── MentionInput.tsx
 │   │   │   │   ├── ModelContextProtocol.tsx
@@ -864,7 +885,8 @@ gemini-desktop/
 │   │   │       └── tooltip.tsx
 │   │   ├── contexts/
 │   │   │   ├── BackendContext.tsx
-│   │   │   └── ConversationContext.tsx
+│   │   │   ├── ConversationContext.tsx
+│   │   │   └── LanguageContext.tsx
 │   │   ├── hooks/
 │   │   │   ├── use-mobile.ts
 │   │   │   ├── useCliInstallation.ts
@@ -898,6 +920,18 @@ gemini-desktop/
 │   │   │   ├── toolCallParser.ts
 │   │   │   ├── toolInputParser.ts
 │   │   │   └── wordDiff.ts
+│   │   ├── i18n/
+│   │   │   ├── README.md
+│   │   │   ├── config.ts
+│   │   │   ├── index.ts
+│   │   │   ├── locales/
+│   │   │   │   ├── en/
+│   │   │   │   │   └── translation.json
+│   │   │   │   ├── zh-CN/
+│   │   │   │   │   └── translation.json
+│   │   │   │   └── zh-TW/
+│   │   │   │       └── translation.json
+│   │   │   └── types.ts
 │   │   └── vite-env.d.ts
 │   ├── tsconfig.json
 │   ├── tsconfig.node.json
