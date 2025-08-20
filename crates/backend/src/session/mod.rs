@@ -589,6 +589,12 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
                  session_id, session_result.session_id, pid);
     }
 
+    // Emit real-time status change - session became active
+    if let Ok(statuses) = session_manager.get_process_statuses() {
+        println!("📡 [STATUS-WS] Emitting process status change after session became active");
+        let _ = emitter.emit("process-status-changed", &statuses);
+    }
+
     let (event_tx, mut event_rx) = mpsc::unbounded_channel::<InternalEvent>();
 
     let session_id_for_events = session_id.clone();
