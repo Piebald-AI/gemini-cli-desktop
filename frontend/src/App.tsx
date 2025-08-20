@@ -7,7 +7,7 @@ import { AppHeader } from "./components/layout/AppHeader";
 import { CliWarnings } from "./components/common/CliWarnings";
 import { SidebarInset } from "./components/ui/sidebar";
 import { ConversationContext } from "./contexts/ConversationContext";
-import { BackendProvider, useApiConfig, useCurrentBackend, useBackend } from "./contexts/BackendContext";
+import { BackendProvider, useApiConfig, useBackend } from "./contexts/BackendContext";
 import { HomeDashboard } from "./pages/HomeDashboard";
 import ProjectsPage from "./pages/Projects";
 import ProjectDetailPage from "./pages/ProjectDetail";
@@ -31,7 +31,6 @@ function RootLayoutContent() {
 
   // Use backend context instead of local state
   const { apiConfig } = useApiConfig();
-  const { model: currentModel } = useCurrentBackend();
   const { selectedBackend } = useBackend();
 
   // Custom hooks for cleaner code

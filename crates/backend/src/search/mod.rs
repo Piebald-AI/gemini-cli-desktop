@@ -1,4 +1,4 @@
-use crate::types::BackendResult;
+use anyhow::Result;
 use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
 use std::fs::File;
@@ -89,7 +89,7 @@ fn count_messages_in_log(log_path: &Path) -> u32 {
     count
 }
 
-pub async fn get_recent_chats() -> BackendResult<Vec<RecentChat>> {
+pub async fn get_recent_chats() -> Result<Vec<RecentChat>> {
     let home = std::env::var("HOME")
         .unwrap_or_else(|_| std::env::var("USERPROFILE").unwrap_or_else(|_| ".".to_string()));
 
@@ -148,7 +148,7 @@ pub async fn get_recent_chats() -> BackendResult<Vec<RecentChat>> {
 pub async fn search_chats(
     query: String,
     filters: Option<SearchFilters>,
-) -> BackendResult<Vec<SearchResult>> {
+) -> Result<Vec<SearchResult>> {
     // Return empty results for empty query
     if query.trim().is_empty() {
         return Ok(vec![]);
@@ -263,7 +263,7 @@ pub async fn search_chats(
     Ok(results)
 }
 
-pub async fn get_project_discussions(project_id: &str) -> BackendResult<Vec<RecentChat>> {
+pub async fn get_project_discussions(project_id: &str) -> Result<Vec<RecentChat>> {
     let home = std::env::var("HOME")
         .unwrap_or_else(|_| std::env::var("USERPROFILE").unwrap_or_else(|_| ".".to_string()));
 

@@ -1,4 +1,4 @@
-use crate::types::{BackendError, BackendResult};
+use anyhow::{Context, Result};
 use chrono::{SecondsFormat, Utc};
 use serde::{Deserialize, Deserializer, Serialize};
 use sha2::{Digest, Sha256};
@@ -54,10 +54,10 @@ pub trait RpcLogger: Send + Sync {
 pub struct ProjectHasher;
 
 impl ProjectHasher {
-    pub fn hash_path(path: &str) -> BackendResult<String> {
+    pub fn hash_path(path: &str) -> Result<String> {
         let canonical_path = std::path::Path::new(path)
             .canonicalize()
-            .map_err(BackendError::IoError)?;
+            .context("Failed to canonicalize path")?;
 
         let mut hasher = Sha256::new();
         hasher.update(canonical_path.to_string_lossy().as_bytes());
@@ -73,7 +73,7 @@ pub struct FileRpcLogger {
 }
 
 impl FileRpcLogger {
-    pub fn new(working_directory: Option<&str>, backend_name: Option<&str>) -> BackendResult<Self> {
+    pub fn new(working_directory: Option<&str>, backend_name: Option<&str>) -> Result<Self> {
         let project_dir = working_directory.map(|s| s.to_string()).unwrap_or_else(|| {
             std::env::current_dir()
                 .unwrap_or_else(|_| std::path::PathBuf::from("."))
@@ -99,7 +99,7 @@ impl FileRpcLogger {
             .join("projects")
             .join(&project_hash);
 
-        fs::create_dir_all(&log_dir).map_err(BackendError::IoError)?;
+        fs::create_dir_all(&log_dir).context("Failed to create log directory")?;
 
         // Note: ensure_project_metadata will be called from projects module
         let _ = crate::projects::ensure_project_metadata(
@@ -119,7 +119,7 @@ impl FileRpcLogger {
             .create(true)
             .append(true)
             .open(&file_path)
-            .map_err(BackendError::IoError)?;
+            .context("Failed to open log file")?;
 
         let writer = Arc::new(Mutex::new(BufWriter::new(file)));
         let backend_name = backend_name.unwrap_or("Gemini CLI").to_string();
@@ -328,7 +328,7 @@ mod tests {
         let result = ProjectHasher::hash_path(nonexistent_path);
 
         assert!(result.is_err());
-        assert!(matches!(result, Err(BackendError::IoError(_))));
+        assert!(matches!(result, Err(_)));
     }
 
     #[test]

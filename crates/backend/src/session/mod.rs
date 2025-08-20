@@ -22,7 +22,7 @@ use crate::events::{
     InternalEvent, ToolCallConfirmationRequest, ToolCallEvent, ToolCallUpdate,
 };
 use crate::rpc::{FileRpcLogger, JsonRpcRequest, JsonRpcResponse, NoOpRpcLogger, RpcLogger};
-use crate::types::{BackendError, BackendResult};
+use anyhow::{Context, Result};
 
 pub struct PersistentSession {
     pub conversation_id: String,
@@ -67,22 +67,16 @@ impl SessionManager {
         }
     }
 
-    pub fn get_process_statuses(&self) -> BackendResult<Vec<ProcessStatus>> {
-        let processes = self
-            .processes
-            .lock()
-            .map_err(|_| BackendError::SessionInitFailed("Failed to lock processes".to_string()))?;
+    pub fn get_process_statuses(&self) -> Result<Vec<ProcessStatus>> {
+        let processes = self.processes.lock().unwrap();
 
         let statuses = processes.values().map(ProcessStatus::from).collect();
 
         Ok(statuses)
     }
 
-    pub fn kill_process(&self, conversation_id: &str) -> BackendResult<()> {
-        let mut processes = self
-            .processes
-            .lock()
-            .map_err(|_| BackendError::SessionInitFailed("Failed to lock processes".to_string()))?;
+    pub fn kill_process(&self, conversation_id: &str) -> Result<()> {
+        let mut processes = self.processes.lock().unwrap();
 
         if let Some(session) = processes.get_mut(conversation_id) {
             if let Some(mut child) = session.child.take() {
@@ -94,11 +88,7 @@ impl SessionManager {
                     let output = StdCommand::new("taskkill")
                         .args(["/PID", &pid.to_string(), "/F"])
                         .output()
-                        .map_err(|e| {
-                            BackendError::CommandExecutionFailed(format!(
-                                "Failed to kill process: {e}"
-                            ))
-                        })?;
+                        .context("Failed to kill process")?;
 
                     if !output.status.success() {
                         let stderr = String::from_utf8_lossy(&output.stderr).to_string();
@@ -107,9 +97,7 @@ impl SessionManager {
                         if stderr_lower.contains("not found") {
                             // Consider the process already gone
                         } else {
-                            return Err(BackendError::CommandExecutionFailed(format!(
-                                "Failed to kill process {pid}: {stderr}"
-                            )));
+                            anyhow::bail!("Failed to kill process {pid}: {stderr}");
                         }
                     }
                 }
@@ -120,11 +108,7 @@ impl SessionManager {
                     let output = StdCommand::new("kill")
                         .args(["-9", &pid.to_string()])
                         .output()
-                        .map_err(|e| {
-                            BackendError::CommandExecutionFailed(format!(
-                                "Failed to kill process: {e}"
-                            ))
-                        })?;
+                        .context("Failed to kill process")?;
 
                     if !output.status.success() {
                         let stderr = String::from_utf8_lossy(&output.stderr).to_string();
@@ -132,9 +116,7 @@ impl SessionManager {
                         if stderr_lower.contains("no such process") {
                             // Consider the process already gone
                         } else {
-                            return Err(BackendError::CommandExecutionFailed(format!(
-                                "Failed to kill process {pid}: {stderr}"
-                            )));
+                            anyhow::bail!("Failed to kill process {pid}: {stderr}");
                         }
                     }
                 }
@@ -167,7 +149,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
     backend_config: Option<QwenConfig>,
     emitter: E,
     session_manager: &SessionManager,
-) -> BackendResult<(mpsc::UnboundedSender<String>, Arc<dyn RpcLogger>)> {
+) -> Result<(mpsc::UnboundedSender<String>, Arc<dyn RpcLogger>)> {
     let is_qwen = backend_config.is_some();
     let cli_name = if is_qwen { "Qwen Code" } else { "Gemini" };
     println!("🚀 Initializing persistent {cli_name} session for: {session_id}");
@@ -235,30 +217,14 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
         cmd.current_dir(&working_directory);
     }
 
-    let mut child = cmd.spawn().map_err(|e| {
-        let cmd_name = if is_qwen { "qwen" } else { "gemini" };
-        #[cfg(target_os = "windows")]
-        {
-            BackendError::SessionInitFailed(format!(
-                "Failed to run {cmd_name} command via cmd: {e}"
-            ))
-        }
-        #[cfg(not(target_os = "windows"))]
-        {
-            BackendError::SessionInitFailed(format!(
-                "Failed to run {} command via shell: {e}",
-                cmd_name
-            ))
-        }
-    })?;
+    let cmd_name = if is_qwen { "qwen" } else { "gemini" };
+    let mut child = cmd
+        .spawn()
+        .context(format!("Failed to run {cmd_name} command"))?;
 
     let pid = child.id();
-    let mut stdin = child.stdin.take().ok_or(BackendError::SessionInitFailed(
-        "Failed to get stdin".to_string(),
-    ))?;
-    let stdout = child.stdout.take().ok_or(BackendError::SessionInitFailed(
-        "Failed to get stdout".to_string(),
-    ))?;
+    let mut stdin = child.stdin.take().context("Failed to get stdin")?;
+    let stdout = child.stdout.take().context("Failed to get stdout")?;
 
     let init_request = JsonRpcRequest {
         jsonrpc: "2.0".to_string(),
@@ -269,9 +235,8 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
         }),
     };
 
-    let request_json = serde_json::to_string(&init_request).map_err(|e| {
-        BackendError::SessionInitFailed(format!("Failed to serialize init request: {e}"))
-    })?;
+    let request_json =
+        serde_json::to_string(&init_request).context("Failed to serialize init request")?;
 
     println!("🔍 RAW INPUT TO GEMINI CLI: {}", request_json);
 
@@ -280,17 +245,12 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
     stdin
         .write_all(request_json.as_bytes())
         .await
-        .map_err(|e| {
-            BackendError::SessionInitFailed(format!("Failed to write init request: {e}"))
-        })?;
+        .context("Failed to write init request")?;
     stdin
         .write_all(b"\n")
         .await
-        .map_err(|e| BackendError::SessionInitFailed(format!("Failed to write newline: {e}")))?;
-    stdin
-        .flush()
-        .await
-        .map_err(|e| BackendError::SessionInitFailed(format!("Failed to flush: {e}")))?;
+        .context("Failed to write newline")?;
+    stdin.flush().await.context("Failed to flush")?;
 
     let _ = emitter.emit(
         &format!("cli-io-{session_id}"),
@@ -302,9 +262,10 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
 
     let mut reader = AsyncBufReader::new(stdout);
     let mut line = String::new();
-    reader.read_line(&mut line).await.map_err(|e| {
-        BackendError::SessionInitFailed(format!("Failed to read init response: {e}"))
-    })?;
+    reader
+        .read_line(&mut line)
+        .await
+        .context("Failed to read init response")?;
 
     println!("🔍 RAW OUTPUT FROM GEMINI CLI: {}", line.trim());
 
@@ -321,14 +282,12 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
     match serde_json::from_str::<JsonRpcResponse>(&line) {
         Ok(response) => {
             if let Some(error) = &response.error {
-                return Err(BackendError::SessionInitFailed(format!(
-                    "{cli_name} CLI Error: {error:?}"
-                )));
+                return Err(anyhow::anyhow!(format!("{cli_name} CLI Error: {error:?}")));
             }
             println!("✅ Session initialized successfully for: {session_id}");
         }
         Err(e) => {
-            return Err(BackendError::SessionInitFailed(format!(
+            return Err(anyhow::anyhow!(format!(
                 "Failed to parse init response: {e}"
             )));
         }
@@ -336,9 +295,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
 
     {
         let processes = session_manager.get_processes();
-        let mut processes = processes
-            .lock()
-            .map_err(|_| BackendError::SessionInitFailed("Failed to lock processes".to_string()))?;
+        let mut processes = processes.lock().unwrap();
         processes.insert(
             session_id.clone(),
             PersistentSession {
@@ -627,15 +584,21 @@ async fn handle_cli_output_line(
                     ) && let Some(request_id) = json_value.get("id").and_then(|i| i.as_u64())
                     {
                         let tool_id = *tool_call_id;
-                        
+
                         // Send response back to CLI with tool ID
                         send_response_to_cli(
                             &session_id,
                             request_id as u32,
-                            Some(serde_json::to_value(crate::cli::PushToolCallResult { id: tool_id }).unwrap()),
+                            Some(
+                                serde_json::to_value(crate::cli::PushToolCallResult {
+                                    id: tool_id,
+                                })
+                                .unwrap(),
+                            ),
                             None,
                             processes,
-                        ).await;
+                        )
+                        .await;
 
                         // Map icon to tool name for frontend renderers
                         let tool_name = match params.icon.as_str() {
@@ -692,7 +655,8 @@ async fn handle_cli_output_line(
                             Some(serde_json::Value::Null),
                             None,
                             processes,
-                        ).await;
+                        )
+                        .await;
 
                         let _ = event_tx.send(InternalEvent::ToolCallUpdate {
                             session_id: session_id.to_string(),
@@ -1381,7 +1345,7 @@ mod tests {
                 assert!(send_result.is_ok());
             }
             Err(e) => {
-                // Expected if gemini CLI is not available
+                // Expected if Gemini CLI is not available
                 // Verify it's the expected error type
                 match e {
                     crate::types::BackendError::SessionInitFailed(_) => {

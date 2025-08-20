@@ -1,4 +1,5 @@
-use backend::{BackendError, BackendResult, EventEmitter};
+use anyhow::{Context, Result};
+use backend::EventEmitter;
 use serde::Serialize;
 use tauri::{AppHandle, Emitter};
 
@@ -14,10 +15,10 @@ impl TauriEventEmitter {
 }
 
 impl EventEmitter for TauriEventEmitter {
-    fn emit<S: Serialize + Clone>(&self, event: &str, payload: S) -> BackendResult<()> {
+    fn emit<S: Serialize + Clone>(&self, event: &str, payload: S) -> Result<()> {
         self.app_handle
             .emit(event, payload)
-            .map_err(|_e| BackendError::ChannelError)?;
+            .context("Failed to emit event")?;
         Ok(())
     }
 }

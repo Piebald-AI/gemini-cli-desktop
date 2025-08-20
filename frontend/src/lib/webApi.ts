@@ -6,6 +6,18 @@ const apiClient = axios.create({
   timeout: 30000, // 30 second timeout
 });
 
+// Add response interceptor
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response) {
+      console.error("API Error:", error.response.status, error.response.data);
+    }
+    
+    return Promise.reject(error);
+  }
+);
+
 // Types matching the server's request/response types
 interface StartSessionRequest {
   session_id: string;

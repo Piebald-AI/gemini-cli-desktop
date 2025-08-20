@@ -1,4 +1,4 @@
-use crate::types::BackendResult;
+use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
@@ -25,12 +25,12 @@ pub struct DirEntry {
     pub volume_type: Option<VolumeType>,
 }
 
-pub async fn validate_directory(path: String) -> BackendResult<bool> {
+pub async fn validate_directory(path: String) -> Result<bool> {
     let path = Path::new(&path);
     Ok(path.exists() && path.is_dir())
 }
 
-pub async fn is_home_directory(path: String) -> BackendResult<bool> {
+pub async fn is_home_directory(path: String) -> Result<bool> {
     let home = std::env::var("HOME")
         .or_else(|_| std::env::var("USERPROFILE"))
         .unwrap_or_else(|_| ".".to_string());
@@ -41,19 +41,19 @@ pub async fn is_home_directory(path: String) -> BackendResult<bool> {
     Ok(home_path == check_path)
 }
 
-pub async fn get_home_directory() -> BackendResult<String> {
+pub async fn get_home_directory() -> Result<String> {
     let home = std::env::var("HOME")
         .or_else(|_| std::env::var("USERPROFILE"))
         .unwrap_or_else(|_| ".".to_string());
     Ok(home)
 }
 
-pub async fn get_parent_directory(path: String) -> BackendResult<Option<String>> {
+pub async fn get_parent_directory(path: String) -> Result<Option<String>> {
     let path = Path::new(&path);
     Ok(path.parent().map(|p| p.to_string_lossy().to_string()))
 }
 
-pub async fn list_directory_contents(path: String) -> BackendResult<Vec<DirEntry>> {
+pub async fn list_directory_contents(path: String) -> Result<Vec<DirEntry>> {
     let mut entries = Vec::new();
     let dir_path = Path::new(&path);
 
@@ -61,11 +61,11 @@ pub async fn list_directory_contents(path: String) -> BackendResult<Vec<DirEntry
         return Ok(entries);
     }
 
-    let read_dir = std::fs::read_dir(dir_path)?;
+    let read_dir = std::fs::read_dir(dir_path).context("Failed to read directory")?;
 
     for entry in read_dir {
-        let entry = entry?;
-        let metadata = entry.metadata()?;
+        let entry = entry.context("Failed to read directory entry")?;
+        let metadata = entry.metadata().context("Failed to read directory entry metadata")?;
         let file_name = entry.file_name().to_string_lossy().to_string();
         let full_path = entry.path().to_string_lossy().to_string();
 
@@ -111,7 +111,7 @@ pub async fn list_directory_contents(path: String) -> BackendResult<Vec<DirEntry
     Ok(entries)
 }
 
-pub async fn list_volumes() -> BackendResult<Vec<DirEntry>> {
+pub async fn list_volumes() -> Result<Vec<DirEntry>> {
     let mut volumes = Vec::new();
 
     #[cfg(target_os = "windows")]
@@ -120,7 +120,8 @@ pub async fn list_volumes() -> BackendResult<Vec<DirEntry>> {
 
         let output = Command::new("wmic")
             .args(["logicaldisk", "get", "name,volumename,drivetype,size"])
-            .output()?;
+            .output()
+            .context("Failed to execute wmic command")?;
 
         let stdout = String::from_utf8_lossy(&output.stdout);
         for line in stdout.lines().skip(1) {

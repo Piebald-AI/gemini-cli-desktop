@@ -1,4 +1,4 @@
-use crate::types::{BackendError, BackendResult};
+use anyhow::Result;
 use tokio::process::Command;
 
 #[allow(clippy::too_many_lines)]
@@ -122,9 +122,9 @@ pub fn is_command_safe(command: &str) -> bool {
         .any(|&safe_cmd| first_word.starts_with(safe_cmd))
 }
 
-pub async fn execute_terminal_command(command: &str) -> BackendResult<String> {
+pub async fn execute_terminal_command(command: &str) -> Result<String> {
     if !is_command_safe(command) {
-        return Err(BackendError::CommandNotAllowed);
+        anyhow::bail!("Command not allowed");
     }
 
     println!("🖥️ Executing terminal command: {command}");
@@ -147,17 +147,15 @@ pub async fn execute_terminal_command(command: &str) -> BackendResult<String> {
                     stdout
                 ))
             } else {
-                Err(BackendError::CommandExecutionFailed(format!(
+                Err(anyhow::anyhow!(
                     "Exit code: {}\nError:\n{}\nOutput:\n{}",
                     result.status.code().unwrap_or(-1),
                     stderr,
                     stdout
-                )))
+                ))
             }
         }
-        Err(e) => Err(BackendError::CommandExecutionFailed(format!(
-            "Failed to execute command: {e}"
-        ))),
+        Err(e) => Err(anyhow::anyhow!("Failed to execute command: {e}")),
     }
 }
 
