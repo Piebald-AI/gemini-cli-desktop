@@ -51,6 +51,7 @@ The project is organized as a Rust workspace with three main crates:
   - Working directory context preservation
   - Process lifecycle management
   - Authentication handling (API keys, Vertex AI)
+  - Robust JSON parsing with non-JSON line filtering
 - **Event System** (`events/mod.rs`) - Real-time communication backbone
   - Event emission and broadcasting
   - WebSocket integration
@@ -192,17 +193,17 @@ The project is organized as a Rust workspace with three main crates:
 - **Chrono** - Date/time handling with serialization support
 
 ### Frontend Technologies
-- **React 18.3** - Component-based UI framework
-- **TypeScript 5.6** - Static type checking with strict mode
-- **Vite 6.0** - Modern build tool with HMR
+- **React 19.1** - Component-based UI framework
+- **TypeScript 5.9** - Static type checking with strict mode
+- **Vite 7.1** - Modern build tool with HMR
 - **Tailwind CSS 4.1** - Utility-first CSS framework with @tailwindcss/vite plugin
 - **shadcn/ui** - Component library with Radix UI primitives
 - **Monaco Editor** - VS Code-like code editing capabilities
 - **React Markdown** - Markdown rendering with syntax highlighting
-- **React Router 7.7** - Client-side routing
+- **React Router 7.8** - Client-side routing
 - **React Mentions** - @-mention support in text inputs
 - **React Syntax Highlighter** - Code syntax highlighting
-- **Axios** - HTTP client with interceptors
+- **Axios 1.11** - HTTP client with interceptors
 - **Lucide React** - Icon library
 - **KaTeX** - Math rendering support
 - **Highlight.js** - Code syntax highlighting
@@ -684,6 +685,12 @@ gemini-desktop/
 5. **Release notes** generated automatically
 6. **Binary distribution** via GitHub Releases
 
+### Recent Improvements
+
+- **Enhanced JSON Parsing**: Session management now includes robust handling of non-JSON CLI output lines, improving reliability when reading from Gemini CLI
+- **React 19 Upgrade**: Frontend upgraded to React 19.1 with improved type safety and performance
+- **Adaptive Process Polling**: Enhanced process manager with intelligent polling intervals
+
 ### Contributing Guidelines
 
 #### Prerequisites
@@ -909,6 +916,7 @@ gemini-desktop/
 │   │   │   └── Projects.tsx
 │   │   ├── types/
 │   │   │   ├── backend.ts
+│   │   │   ├── global.d.ts
 │   │   │   ├── index.ts
 │   │   │   └── mcp.ts
 │   │   ├── utils/
