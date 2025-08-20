@@ -217,26 +217,43 @@ async fn send_jsonrpc_request<E: EventEmitter>(
         },
     );
 
-    // Read response
+    // Read response - keep reading lines until we get valid JSON
     let mut line = String::new();
-    reader
-        .read_line(&mut line)
-        .await
-        .map_err(|e| BackendError::SessionInitFailed(format!("Failed to read response: {e}")))?;
+    let trimmed_line = loop {
+        line.clear();
+        reader
+            .read_line(&mut line)
+            .await
+            .map_err(|e| BackendError::SessionInitFailed(format!("Failed to read response: {e}")))?;
 
-    let trimmed_line = line.trim();
-    println!("🔍 RAW OUTPUT FROM GEMINI CLI: {trimmed_line}");
-    let _ = rpc_logger.log_rpc(line.trim());
+        let trimmed = line.trim();
+        println!("🔍 RAW OUTPUT FROM GEMINI CLI: {trimmed}");
+        let _ = rpc_logger.log_rpc(trimmed);
 
-    let _ = emitter.emit(
-        &format!("cli-io-{session_id}"),
-        CliIoPayload {
-            io_type: CliIoType::Output,
-            data: line.trim().to_string(),
-        },
-    );
+        let _ = emitter.emit(
+            &format!("cli-io-{session_id}"),
+            CliIoPayload {
+                io_type: CliIoType::Output,
+                data: trimmed.to_string(),
+            },
+        );
 
-    let response = serde_json::from_str::<JsonRpcResponse>(&line)
+        // Skip non-JSON lines like "Data collection is disabled."
+        if trimmed.is_empty() || (!trimmed.starts_with('{') && !trimmed.starts_with('[')) {
+            println!("🔍 Skipping non-JSON line: {trimmed}");
+            continue;
+        }
+
+        // Try to parse as JSON - if it fails, continue reading
+        if serde_json::from_str::<serde_json::Value>(trimmed).is_ok() {
+            break trimmed.to_string();
+        } else {
+            println!("🔍 Line is not valid JSON, continuing: {trimmed}");
+            continue;
+        }
+    };
+
+    let response = serde_json::from_str::<JsonRpcResponse>(&trimmed_line)
         .map_err(|e| BackendError::SessionInitFailed(format!("Failed to parse response: {e}")))?;
 
     if let Some(error) = &response.error {
@@ -1677,6 +1694,42 @@ mod tests {
         let guard = processes.lock().unwrap();
         assert!(guard.contains_key("thread-test"));
         assert_eq!(guard.get("thread-test").unwrap().pid, Some(999));
+    }
+
+    #[test]
+    fn test_skip_non_json_lines() {
+        // Test that we correctly identify non-JSON lines that should be skipped
+        let non_json_lines = vec![
+            "Data collection is disabled.",
+            "",
+            "Warning: Something happened",
+            "Loading...",
+            "debug: info",
+        ];
+
+        for line in non_json_lines {
+            // These should be identified as non-JSON and skipped
+            let is_json_candidate = !line.trim().is_empty() && 
+                (line.trim().starts_with('{') || line.trim().starts_with('['));
+            assert!(!is_json_candidate, "Line '{}' should be skipped as non-JSON", line);
+        }
+
+        // Test valid JSON lines
+        let json_lines = vec![
+            r#"{"jsonrpc": "2.0", "id": 1, "result": {}}"#,
+            r#"[{"type": "test"}]"#,
+            r#"{"method": "test"}"#,
+        ];
+
+        for line in json_lines {
+            let is_json_candidate = !line.trim().is_empty() && 
+                (line.trim().starts_with('{') || line.trim().starts_with('['));
+            assert!(is_json_candidate, "Line '{}' should be considered as potential JSON", line);
+            
+            // Verify it's actually parseable JSON
+            assert!(serde_json::from_str::<serde_json::Value>(line.trim()).is_ok(), 
+                    "Line '{}' should be valid JSON", line);
+        }
     }
 
     #[test]
