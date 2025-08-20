@@ -25,6 +25,7 @@ interface MessageInputBarProps {
     _mentions: unknown[]
   ) => void;
   handleSendMessage: (e: React.FormEvent) => Promise<void>;
+  workingDirectory?: string;
 }
 
 export const MessageInputBar: React.FC<MessageInputBarProps> = ({
@@ -33,6 +34,7 @@ export const MessageInputBar: React.FC<MessageInputBarProps> = ({
   cliIOLogs,
   handleInputChange,
   handleSendMessage,
+  workingDirectory = ".",
 }) => {
   const { t } = useTranslation();
   const { selectedBackend } = useBackend();
@@ -46,6 +48,7 @@ export const MessageInputBar: React.FC<MessageInputBarProps> = ({
               <MentionInput
                 value={input}
                 onChange={handleInputChange}
+                workingDirectory={workingDirectory}
                 placeholder={
                   isCliInstalled === false
                     ? backendText.cliNotFound
