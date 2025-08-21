@@ -8,6 +8,7 @@ name = "gemini-desktop-web"
 path = "src/main.rs"
 
 [dependencies]
+anyhow = "1.0.99"
 include_dir = "0.7.4"
 rocket = { version = "0.5.1", features = ["json"] }
 rocket_ws = "0.1.1"

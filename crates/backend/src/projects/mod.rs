@@ -1,4 +1,4 @@
-use crate::types::{BackendError, BackendResult};
+use anyhow::{Context, Result};
 use chrono::{DateTime, FixedOffset, Local};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -134,36 +134,34 @@ fn parse_millis_from_log_name(name: &str) -> Option<u64> {
     ts_part.parse::<u64>().ok()
 }
 
-fn read_project_metadata(root_sha: &str) -> BackendResult<ProjectMetadata> {
+fn read_project_metadata(root_sha: &str) -> Result<ProjectMetadata> {
     let Some(path) = project_json_path(root_sha) else {
-        return Err(BackendError::ProjectNotFound(
-            "projects root not found".to_string(),
-        ));
+        anyhow::bail!("projects root not found");
     };
     if !path.exists() {
-        return Err(BackendError::ProjectNotFound(
-            "project.json not found".to_string(),
-        ));
+        anyhow::bail!("project.json not found");
     }
-    let content = std::fs::read_to_string(&path).map_err(BackendError::IoError)?;
+    let content = std::fs::read_to_string(&path)
+        .context("Failed to read project metadata file")?;
     serde_json::from_str::<ProjectMetadata>(&content)
-        .map_err(|e| BackendError::JsonError(e.to_string()))
+        .context("Failed to parse project metadata JSON")
 }
 
-fn write_project_metadata(sha256: &str, meta: &ProjectMetadata) -> BackendResult<()> {
+fn write_project_metadata(sha256: &str, meta: &ProjectMetadata) -> Result<()> {
     let Some(json_path) = project_json_path(sha256) else {
-        return Err(BackendError::ProjectNotFound(
-            "projects root not found".to_string(),
-        ));
+        anyhow::bail!("projects root not found");
     };
     if let Some(dir) = json_path.parent() {
-        std::fs::create_dir_all(dir).map_err(BackendError::IoError)?;
+        std::fs::create_dir_all(dir)
+            .context("Failed to create project metadata directory")?;
     }
     let tmp_path = json_path.with_extension("json.tmp");
-    let content =
-        serde_json::to_string_pretty(meta).map_err(|e| BackendError::JsonError(e.to_string()))?;
-    std::fs::write(&tmp_path, content.as_bytes()).map_err(BackendError::IoError)?;
-    std::fs::rename(&tmp_path, &json_path).map_err(BackendError::IoError)?;
+    let content = serde_json::to_string_pretty(meta)
+        .context("Failed to serialize project metadata")?;
+    std::fs::write(&tmp_path, content.as_bytes())
+        .context("Failed to write temporary project metadata file")?;
+    std::fs::rename(&tmp_path, &json_path)
+        .context("Failed to rename project metadata file")?;
     Ok(())
 }
 
@@ -186,7 +184,7 @@ fn to_view(meta: &ProjectMetadata, canonical_root: &Path, sha256: &str) -> Proje
 pub fn ensure_project_metadata(
     sha256: &str,
     external_root_canonical: Option<&Path>,
-) -> BackendResult<ProjectMetadata> {
+) -> Result<ProjectMetadata> {
     match read_project_metadata(sha256) {
         Ok(meta) => Ok(meta),
         Err(e) => {
@@ -209,7 +207,7 @@ pub fn ensure_project_metadata(
     }
 }
 
-pub fn maybe_touch_updated_at(sha256: &str, throttle: &TouchThrottle) -> BackendResult<()> {
+pub fn maybe_touch_updated_at(sha256: &str, throttle: &TouchThrottle) -> Result<()> {
     let mut meta = match read_project_metadata(sha256) {
         Ok(m) => m,
         Err(_) => return Ok(()),
@@ -277,7 +275,7 @@ pub fn make_enriched_project(
     }
 }
 
-pub fn list_projects(limit: u32, offset: u32) -> BackendResult<ProjectsResponse> {
+pub fn list_projects(limit: u32, offset: u32) -> Result<ProjectsResponse> {
     let Some(root) = home_projects_root() else {
         return Ok(ProjectsResponse {
             items: vec![],
@@ -296,7 +294,8 @@ pub fn list_projects(limit: u32, offset: u32) -> BackendResult<ProjectsResponse>
     }
 
     let mut all_ids: Vec<String> = Vec::new();
-    for entry in fs::read_dir(&root).map_err(BackendError::IoError)? {
+    for entry in fs::read_dir(&root)
+        .context("Failed to read projects directory")? {
         let entry = match entry {
             Ok(e) => e,
             Err(_) => continue,
@@ -416,7 +415,7 @@ pub fn list_projects(limit: u32, offset: u32) -> BackendResult<ProjectsResponse>
     })
 }
 
-pub fn list_enriched_projects() -> BackendResult<Vec<EnrichedProject>> {
+pub fn list_enriched_projects() -> Result<Vec<EnrichedProject>> {
     let Some(root) = home_projects_root() else {
         return Ok(vec![]);
     };
@@ -424,7 +423,8 @@ pub fn list_enriched_projects() -> BackendResult<Vec<EnrichedProject>> {
         return Ok(vec![]);
     }
     let mut all_ids: Vec<String> = Vec::new();
-    for entry in fs::read_dir(&root).map_err(BackendError::IoError)? {
+    for entry in fs::read_dir(&root)
+        .context("Failed to read projects directory")? {
         let entry = match entry {
             Ok(e) => e,
             Err(_) => continue,
@@ -452,7 +452,7 @@ pub fn list_enriched_projects() -> BackendResult<Vec<EnrichedProject>> {
 pub async fn get_enriched_project(
     sha256: String,
     external_root_path: String,
-) -> BackendResult<EnrichedProject> {
+) -> Result<EnrichedProject> {
     let external_root = Path::new(&external_root_path);
     Ok(make_enriched_project(&sha256, Some(external_root), true))
 }
