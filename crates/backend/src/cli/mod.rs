@@ -128,6 +128,9 @@ where
             confirmation_type: "simple".to_string(),
             root_command: None,
             command: None,
+            server_name: None,
+            tool_name: None,
+            tool_display_name: None,
         }),
         ConfirmOrBool::Bool(false) => Err(DeError::custom("confirmation false is unsupported")),
     }
@@ -461,6 +464,9 @@ mod tests {
                 confirmation_type: "simple".to_string(),
                 root_command: None,
                 command: None,
+                server_name: None,
+                tool_name: None,
+                tool_display_name: None,
             },
             locations: vec![],
         };

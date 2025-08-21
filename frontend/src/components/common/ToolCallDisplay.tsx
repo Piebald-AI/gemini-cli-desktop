@@ -34,9 +34,33 @@ export function ToolCallDisplay({
       actualConfirmationRequest || toolCall.confirmationRequest,
   };
 
-  // Convert snake_case to PascalCase
-  const formatToolName = (name: string): string => {
-    return name
+  // Convert snake_case to PascalCase and handle MCP tools
+  const formatToolName = (toolCall: ToolCall): string => {
+    // For MCP tools, check if we have server name in parameters
+    if (toolCall.parameters?.serverName && toolCall.parameters?.toolName) {
+      return `${toolCall.parameters.toolName} (${toolCall.parameters.serverName})`;
+    }
+    
+    // For MCP tools via confirmation request
+    if (toolCall.confirmationRequest?.confirmation?.type === "mcp") {
+      const displayName = toolCall.confirmationRequest.confirmation.toolDisplayName;
+      const serverName = toolCall.confirmationRequest.confirmation.serverName;
+      const toolName = toolCall.confirmationRequest.confirmation.toolName;
+      
+      if (displayName) {
+        return `${displayName} (${serverName})`;
+      } else if (toolName && serverName) {
+        return `${toolName} (${serverName})`;
+      }
+    }
+    
+    // Use the label if available (for MCP tools this will be the display name)
+    if (toolCall.label && toolCall.label !== "{}") {
+      return toolCall.label;
+    }
+    
+    // Default formatting for non-MCP tools
+    return toolCall.name
       .split("_")
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
       .join("");
@@ -98,7 +122,7 @@ export function ToolCallDisplay({
             <div className="bg-muted/50 border border-border rounded-lg p-4">
               <div className="mb-3">
                 <span className="font-medium text-base text-black dark:text-white font-mono">
-                  {formatToolName(enhancedToolCall.name)}
+                  {formatToolName(enhancedToolCall)}
                 </span>
                 <span className="text-sm text-muted-foreground ml-2">
                   Pending approval...
@@ -142,7 +166,7 @@ export function ToolCallDisplay({
             <div className="bg-card border border-border rounded-lg p-4">
               <div className="mb-3">
                 <span className="font-medium text-base text-black dark:text-white font-mono">
-                  {formatToolName(enhancedToolCall.name)}
+                  {formatToolName(enhancedToolCall)}
                 </span>
                 <span className="text-sm text-muted-foreground ml-2">
                   {getRunningDescription(enhancedToolCall)}
@@ -202,7 +226,7 @@ export function ToolCallDisplay({
           ) : (
             <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-md px-4 py-3">
               <div className="font-medium text-sm text-black dark:text-white mb-1 font-mono">
-                {formatToolName(enhancedToolCall.name)}
+                {formatToolName(enhancedToolCall)}
               </div>
               <div className="flex items-center gap-2 text-sm text-red-700 dark:text-red-300">
                 <X className="size-3" />

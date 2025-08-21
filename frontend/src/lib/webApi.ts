@@ -307,6 +307,31 @@ export const webApi = {
     });
     return response.data;
   },
+
+  // Settings file operations
+  async get_settings_file_path(params: {
+    backendType: string;
+  }): Promise<string> {
+    const response = await apiClient.post<string>("/settings-file-path", params);
+    return response.data;
+  },
+
+  async read_settings_file(params: {
+    backendType: string;
+  }): Promise<Record<string, unknown>> {
+    const response = await apiClient.post<Record<string, unknown>>(
+      "/read-settings-file", 
+      params
+    );
+    return response.data;
+  },
+
+  async write_settings_file(params: {
+    settings: Record<string, unknown>;
+    backendType: string;
+  }): Promise<void> {
+    await apiClient.post("/write-settings-file", params);
+  },
 };
 
 export interface RecentChat {

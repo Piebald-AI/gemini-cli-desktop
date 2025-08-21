@@ -321,18 +321,33 @@ export const useConversationEvents = (
                 }
               }
 
-              // If tool call doesn't exist, create one for edit confirmations
+              // If tool call doesn't exist, create one for edit and MCP confirmations
               if (
                 !toolCallExists &&
-                event.payload.confirmation.type === "edit"
+                (event.payload.confirmation.type === "edit" || event.payload.confirmation.type === "mcp")
               ) {
+                // Determine tool name and label based on type
+                let toolName = "tool_call";
+                let displayLabel = event.payload.label || "Tool Call";
+                
+                if (event.payload.confirmation.type === "edit") {
+                  toolName = "edit_file";
+                } else if (event.payload.confirmation.type === "mcp") {
+                  toolName = event.payload.confirmation.toolName || "mcp_tool";
+                  displayLabel = event.payload.confirmation.toolDisplayName || event.payload.confirmation.toolName || "MCP Tool";
+                }
+                
                 const newToolCall: ToolCall = {
                   id: toolCallId,
-                  name: "edit_file",
-                  parameters: {},
-                  status: "pending",
-                  label: event.payload.label,
-                  icon: event.payload.icon,
+                  name: toolName,
+                  parameters: {
+                    serverName: event.payload.confirmation.serverName,
+                    toolName: event.payload.confirmation.toolName,
+                  },
+                  status: "running", // Set to running to show approval buttons
+                  confirmationRequest: event.payload,
+                  label: displayLabel,
+                  icon: event.payload.confirmation.type === "mcp" ? "🔌" : event.payload.icon,
                 };
 
                 if (lastMsg.sender === "assistant") {

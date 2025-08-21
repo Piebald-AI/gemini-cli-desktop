@@ -21,7 +21,7 @@ import {
 import { AddMcpServerDialog } from "./AddMcpServerDialog";
 import { PasteJsonDialog } from "./PasteJsonDialog";
 import { ModelContextProtocol } from "../common/ModelContextProtocol";
-import { invoke } from "@tauri-apps/api/core";
+import { webApi } from "@/lib/webApi";
 import { useBackend } from "../../contexts/BackendContext";
 import { getBackendText } from "../../utils/backendText";
 
@@ -55,9 +55,19 @@ export function McpServerSettings({ trigger }: McpServerSettingsProps) {
 
   const loadSettingsPath = async () => {
     try {
-      const path = await invoke<string>("get_settings_file_path", { 
-        backendType: selectedBackend 
-      });
+      let path: string;
+      if (
+        typeof (globalThis as { __WEB__?: boolean }).__WEB__ !==
+          "undefined" &&
+        (globalThis as { __WEB__?: boolean }).__WEB__
+      ) {
+        path = await webApi.get_settings_file_path({ backendType: selectedBackend });
+      } else {
+        const { invoke } = await import("@tauri-apps/api/core");
+        path = await invoke<string>("get_settings_file_path", { 
+          backendType: selectedBackend 
+        });
+      }
       setSettingsFilePath(path);
     } catch (error) {
       console.error("Failed to get settings file path:", error);
@@ -67,10 +77,19 @@ export function McpServerSettings({ trigger }: McpServerSettingsProps) {
   const loadSettingsFromFile = async () => {
     setIsLoading(true);
     try {
-      const settings =
-        await invoke<Record<string, unknown>>("read_settings_file", {
+      let settings: Record<string, unknown>;
+      if (
+        typeof (globalThis as { __WEB__?: boolean }).__WEB__ !==
+          "undefined" &&
+        (globalThis as { __WEB__?: boolean }).__WEB__
+      ) {
+        settings = await webApi.read_settings_file({ backendType: selectedBackend });
+      } else {
+        const { invoke } = await import("@tauri-apps/api/core");
+        settings = await invoke<Record<string, unknown>>("read_settings_file", {
           backendType: selectedBackend
         });
+      }
       const mcpServers = settings.mcpServers || {};
 
       const serverEntries: McpServerEntry[] = Object.entries(mcpServers).map(
@@ -95,10 +114,19 @@ export function McpServerSettings({ trigger }: McpServerSettingsProps) {
     setIsLoading(true);
     try {
       // Read current settings to preserve other configurations
-      const currentSettings =
-        await invoke<Record<string, unknown>>("read_settings_file", {
+      let currentSettings: Record<string, unknown>;
+      if (
+        typeof (globalThis as { __WEB__?: boolean }).__WEB__ !==
+          "undefined" &&
+        (globalThis as { __WEB__?: boolean }).__WEB__
+      ) {
+        currentSettings = await webApi.read_settings_file({ backendType: selectedBackend });
+      } else {
+        const { invoke } = await import("@tauri-apps/api/core");
+        currentSettings = await invoke<Record<string, unknown>>("read_settings_file", {
           backendType: selectedBackend
         });
+      }
 
       // Update only the mcpServers section
       const mcpServersConfig: McpServersConfig = {};
@@ -113,10 +141,22 @@ export function McpServerSettings({ trigger }: McpServerSettingsProps) {
         mcpServers: mcpServersConfig,
       };
 
-      await invoke("write_settings_file", { 
-        settings: updatedSettings,
-        backendType: selectedBackend 
-      });
+      if (
+        typeof (globalThis as { __WEB__?: boolean }).__WEB__ !==
+          "undefined" &&
+        (globalThis as { __WEB__?: boolean }).__WEB__
+      ) {
+        await webApi.write_settings_file({ 
+          settings: updatedSettings,
+          backendType: selectedBackend 
+        });
+      } else {
+        const { invoke } = await import("@tauri-apps/api/core");
+        await invoke("write_settings_file", { 
+          settings: updatedSettings,
+          backendType: selectedBackend 
+        });
+      }
       setServers(updatedServers);
     } catch (error) {
       console.error("Failed to save MCP servers to settings file:", error);

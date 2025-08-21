@@ -125,6 +125,12 @@ pub struct ToolCallConfirmation {
     pub root_command: Option<String>,
     #[serde(default)]
     pub command: Option<String>,
+    #[serde(rename = "serverName", default)]
+    pub server_name: Option<String>,
+    #[serde(rename = "toolName", default)]
+    pub tool_name: Option<String>,
+    #[serde(rename = "toolDisplayName", default)]
+    pub tool_display_name: Option<String>,
 }
 
 #[cfg(test)]
@@ -545,6 +551,9 @@ mod tests {
             confirmation_type: "simple".to_string(),
             root_command: None,
             command: None,
+            server_name: None,
+            tool_name: None,
+            tool_display_name: None,
         };
 
         let json = serde_json::to_string(&confirmation).unwrap();
@@ -575,6 +584,9 @@ mod tests {
                 confirmation_type: "simple".to_string(),
                 root_command: None,
                 command: None,
+                server_name: None,
+                tool_name: None,
+                tool_display_name: None,
             },
             locations: vec![ToolCallLocation {
                 path: "/tmp/file.txt".to_string(),
@@ -678,6 +690,9 @@ mod tests {
                     confirmation_type: "simple".to_string(),
                     root_command: None,
                     command: None,
+                    server_name: None,
+                    tool_name: None,
+                    tool_display_name: None,
                 },
                 locations: vec![],
             },

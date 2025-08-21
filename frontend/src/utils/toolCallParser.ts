@@ -38,11 +38,14 @@ export interface ToolCallConfirmationRequest {
   toolCallId?: string | null;
   label: string;
   icon: string;
-  content: ToolCallConfirmationContent;
+  content: ToolCallConfirmationContent | null;
   confirmation: {
-    type: "edit" | "command" | "generic";
+    type: "edit" | "command" | "generic" | "mcp";
     rootCommand?: string;
     command?: string;
+    serverName?: string;
+    toolName?: string;
+    toolDisplayName?: string;
   };
   locations: Array<{ path: string; line?: number; column?: number }>;
   inputJsonRpc?: string;
@@ -97,25 +100,40 @@ export class ToolCallParser {
         const jsonRpcData = JSON.parse(jsonRpcString);
 
         if (jsonRpcData.method === "requestToolCallConfirmation") {
-          const confirmationRequest =
-            jsonRpcData.params as ToolCallConfirmationRequest;
+          const params = jsonRpcData.params;
+          
+          // Simple approach: treat all confirmations as regular tool calls
+          const confirmationRequest = params as ToolCallConfirmationRequest;
+          
+          // For MCP tools, create a better display name
+          let toolName = "tool_call";
+          let displayLabel = params.label || "Tool Call";
+          let displayIcon = params.icon || "🔧";
+          
+          if (params.confirmation && params.confirmation.type === "mcp") {
+            toolName = params.confirmation.toolName || "mcp_tool";
+            displayLabel = params.confirmation.toolDisplayName || params.confirmation.toolName || "MCP Tool";
+            displayIcon = "🔌";
+          } else if (confirmationRequest.confirmation?.type === "edit") {
+            toolName = "edit_file";
+          }
+          
           const toolCall: ToolCall = {
             id: `tool_${++this.toolCallCounter}_${jsonRpcData.id || Date.now()}`,
-            name:
-              confirmationRequest.confirmation.type === "edit"
-                ? "edit_file"
-                : "tool_call",
+            name: toolName,
             parameters: {
-              file_path: confirmationRequest.content.path,
-              old_string: confirmationRequest.content.oldText,
-              new_string: confirmationRequest.content.newText,
+              file_path: confirmationRequest.content?.path,
+              old_string: confirmationRequest.content?.oldText,
+              new_string: confirmationRequest.content?.newText,
               locations: confirmationRequest.locations,
+              serverName: params.confirmation?.serverName,
+              toolName: params.confirmation?.toolName,
             },
-            status: "pending",
+            status: "running", // Set to running so it shows the approval buttons
             confirmationRequest,
             inputJsonRpc: jsonRpcString,
-            label: confirmationRequest.label,
-            icon: confirmationRequest.icon,
+            label: displayLabel,
+            icon: displayIcon,
           };
 
           toolCalls.push(toolCall);
