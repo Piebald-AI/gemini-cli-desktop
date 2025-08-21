@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Edit3, Check, X, ChevronDown, ChevronRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import {
@@ -34,6 +35,7 @@ interface EditRendererProps {
 }
 
 export function EditRenderer({ toolCall, onConfirm }: EditRendererProps) {
+  const { t } = useTranslation();
   const [diffStats, setDiffStats] = useState<{
     additions: number;
     deletions: number;
@@ -54,7 +56,7 @@ export function EditRenderer({ toolCall, onConfirm }: EditRendererProps) {
       toolCall.result &&
       typeof toolCall.result === "object"
     ) {
-      return toolCall.result.markdown === "Tool call rejected by user";
+      return toolCall.result.markdown === t("toolCalls.userRejected");
     }
     return false;
   };
@@ -67,7 +69,7 @@ export function EditRenderer({ toolCall, onConfirm }: EditRendererProps) {
 
       const editInfo = {
         type: "single" as const,
-        filePath: content.path || "unknown file",
+        filePath: content.path || t("common.unknownFile"),
         oldText: content.oldText || "",
         newText: content.newText || "",
         additions: 0, // Will be calculated by DiffViewer
@@ -222,12 +224,12 @@ export function EditRenderer({ toolCall, onConfirm }: EditRendererProps) {
                     {isRunning && (
                       <div className="text-xs text-blue-500 flex items-center gap-1">
                         <div className="animate-spin h-3 w-3 border border-blue-500 border-t-transparent rounded-full"></div>
-                        Running...
+                        {t("toolCalls.running")}
                       </div>
                     )}
                     {isCompleted && !isUserRejected(toolCall) && (
                       <div className="text-xs text-green-500 flex items-center">
-                        <Check className="h-4 w-4 mr-1" /> Completed
+                        <Check className="h-4 w-4 mr-1" /> {t("toolCalls.completed")}
                       </div>
                     )}
                     {isUserRejected(toolCall) && (
@@ -237,7 +239,7 @@ export function EditRenderer({ toolCall, onConfirm }: EditRendererProps) {
                     )}
                     {isFailed && !isUserRejected(toolCall) && (
                       <div className="text-xs text-red-500 flex items-center">
-                        <X className="h-4 w-4 mr-1" /> Failed
+                        <X className="h-4 w-4 mr-1" /> {t("toolCalls.failed")}
                       </div>
                     )}
 

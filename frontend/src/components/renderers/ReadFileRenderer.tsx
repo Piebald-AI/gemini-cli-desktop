@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { FileText, Eye, ChevronRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { type ToolCall } from "../../utils/toolCallParser";
 
 interface ReadFileResult {
@@ -14,6 +15,7 @@ interface ReadFileRendererProps {
 }
 
 export function ReadFileRenderer({ toolCall }: ReadFileRendererProps) {
+  const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const result = (toolCall.result as ReadFileResult) || {};
 
@@ -128,7 +130,7 @@ export function ReadFileRenderer({ toolCall }: ReadFileRendererProps) {
     }
 
     if (files.length === 0) {
-      files = [result?.message || "unknown file"];
+      files = [result?.message || t("common.unknownFile")];
     }
 
     return {
