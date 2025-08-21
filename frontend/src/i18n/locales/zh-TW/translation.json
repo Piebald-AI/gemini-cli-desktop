@@ -403,6 +403,9 @@
 
   "time": {
     "justNow": "剛剛",
+    "minutesAgo": "{{count}} 分鐘前",
+    "hoursAgo": "{{count}} 小時前",
+    "daysAgo": "{{count}} 天前",
     "minuteAgo": "{{count}} 分鐘前",
     "minuteAgo_other": "{{count}} 分鐘前",
     "hourAgo": "{{count}} 小時前",

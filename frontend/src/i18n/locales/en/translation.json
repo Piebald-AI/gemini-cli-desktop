@@ -98,8 +98,7 @@
     "sha256Label": "SHA256:",
     "nameLabel": "Name:",
     "firstUsedLabel": "First used:",
-    "lastUpdatedLabel": "Last updated:",
-    "projectDetails": "Project details"
+    "lastUpdatedLabel": "Last updated:"
   },
 
   "conversations": {
@@ -195,8 +194,6 @@
   },
 
   "search": {
-    "searchConversations": "Search conversations...",
-    "searchFilters": "Search Filters",
     "project": "Project",
     "allProjects": "All projects",
     "maxResults": "Max Results",
@@ -217,7 +214,6 @@
     "selectDirectoryButton": "Select Directory",
     "goToParent": "Go to parent directory",
     "goToHome": "Go to home directory",
-    "clickToEditPath": "Click to edit path",
     "name": "Name",
     "size": "Size",
     "dateModified": "Date Modified",
@@ -440,15 +436,11 @@
   "errors": {
     "failedToLoadProjects": "Failed to load projects.",
     "failedToAddProject": "Failed to add project. Please try again.",
-    "failedToLoadProjectData": "Failed to load project data.",
     "failedToCreateDiscussion": "Failed to create new discussion:",
     "failedToLoadChats": "Failed to load recent chats",
     "noChatsFound": "No previous chats found.",
     "searchFailed": "Search failed:",
     "failedToOpenDialog": "Failed to open file dialog. Please try again.",
-    "failedToSaveSettings": "Failed to save MCP servers to settings file:",
-    "failedToLoadSettings": "Failed to load MCP servers from settings file:",
-    "failedToGetSettingsPath": "Failed to get settings file path:",
     "networkError": "Network error occurred",
     "unknownError": "An unknown error occurred",
     "invalidInput": "Invalid input provided",
@@ -463,6 +455,9 @@
 
   "time": {
     "justNow": "Just now",
+    "minutesAgo": "{{count}}m ago",
+    "hoursAgo": "{{count}}h ago",
+    "daysAgo": "{{count}}d ago",
     "minuteAgo": "{{count}} minute ago",
     "minuteAgo_other": "{{count}} minutes ago",
     "hourAgo": "{{count}} hour ago",

@@ -403,6 +403,9 @@
 
   "time": {
     "justNow": "刚刚",
+    "minutesAgo": "{{count}} 分钟前",
+    "hoursAgo": "{{count}} 小时前",
+    "daysAgo": "{{count}} 天前",
     "minuteAgo": "{{count}} 分钟前",
     "minuteAgo_other": "{{count}} 分钟前",
     "hourAgo": "{{count}} 小时前",
