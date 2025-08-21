@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import { DirEntry } from "@/lib/webApi";
 import { cn } from "@/lib/utils";
 import { Folder, File, Loader2, AlertCircle } from "lucide-react";
@@ -24,6 +24,18 @@ export const FilePickerDropdown: React.FC<FilePickerDropdownProps> = ({
   searchFilter,
   className,
 }) => {
+  const selectedItemRef = useRef<HTMLDivElement>(null);
+  
+  // Scroll selected item into view when selection changes
+  useEffect(() => {
+    if (selectedItemRef.current) {
+      selectedItemRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'nearest'
+      });
+    }
+  }, [selectedIndex]);
   const formatEntryName = (entry: DirEntry): string => {
     return entry.is_directory ? `${entry.name}/` : entry.name;
   };
@@ -85,22 +97,20 @@ export const FilePickerDropdown: React.FC<FilePickerDropdownProps> = ({
 
   return (
     <div className={cn("absolute bottom-full left-0 w-full mb-1 bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-md shadow-lg z-50 py-2 max-h-60 overflow-y-auto", className)}>
-      {/* Current path header */}
-      <div className="px-3 py-2 border-b border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-700">
-        <div className="text-xs text-gray-600 dark:text-gray-300 font-mono truncate" title={currentPath}>
-          {currentPath}
-        </div>
-        {searchFilter && (
-          <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+      {/* Search filter header (only show if filtering) */}
+      {searchFilter && (
+        <div className="px-3 py-2 border-b border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-700">
+          <div className="text-xs text-blue-600 dark:text-blue-400">
             Filtering: "{searchFilter}"
           </div>
-        )}
-      </div>
+        </div>
+      )}
       
       {/* File and folder entries */}
       {entries.map((entry, index) => (
         <div
           key={`${entry.name}-${entry.is_directory}`}
+          ref={index === selectedIndex ? selectedItemRef : null}
           className={cn(
             "flex items-center gap-2 px-3 py-2 cursor-pointer text-sm transition-colors",
             index === selectedIndex
@@ -128,7 +138,7 @@ export const FilePickerDropdown: React.FC<FilePickerDropdownProps> = ({
       {/* Navigation hint */}
       <div className="px-3 py-2 border-t border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-700">
         <div className="text-xs text-gray-500 dark:text-gray-400">
-          <span className="font-semibold">Enter:</span> Select • <span className="font-semibold">Tab:</span> Select & enter folder • <span className="font-semibold">↑↓:</span> Move • <span className="font-semibold">Esc:</span> Close
+          <span className="font-semibold">Enter:</span> Select • <span className="font-semibold">Tab:</span> Smart select/navigate • <span className="font-semibold">↑↓:</span> Move • <span className="font-semibold">Esc:</span> Close
         </div>
       </div>
     </div>
