@@ -1,4 +1,4 @@
-# Your Gemini, Reimagined.
+# Your AI, Reimagined.
 
 Ever felt that the command line, while powerful, can be a bit... impersonal? Gemini Desktop is a beautiful and intuitive graphical interface for Google's Gemini CLI and Qwen Code, designed to make your interactions with AI more natural and productive.
 
@@ -9,7 +9,11 @@ Ever felt that the command line, while powerful, can be a bit... impersonal? Gem
 *   **It's more powerful for complex tasks.** Juggling multiple conversations, reviewing large code changes, and managing files is a breeze.
 *   **Access from anywhere.** With the web version, you can use your Gemini CLI running on one machine from any other device with a web browser.
 
+Use with **Gemini CLI:**
+
 <img alt="Screenshot of Gemini Desktop" src="./assets/screenshot.png" width="600">
+
+Use with **Qwen Code:**
 
 <img alt="Screenshot of Gemini Desktop for Qwen Code" src="./assets/qwen-desktop.png" width="600">
 
