@@ -1,4 +1,4 @@
-use crate::types::{BackendError, BackendResult};
+use anyhow::{anyhow, Result};
 use tokio::process::Command;
 
 #[allow(clippy::too_many_lines)]
@@ -122,9 +122,9 @@ pub fn is_command_safe(command: &str) -> bool {
         .any(|&safe_cmd| first_word.starts_with(safe_cmd))
 }
 
-pub async fn execute_terminal_command(command: &str) -> BackendResult<String> {
+pub async fn execute_terminal_command(command: &str) -> Result<String> {
     if !is_command_safe(command) {
-        return Err(BackendError::CommandNotAllowed);
+        return Err(anyhow!("Command not allowed for security reasons"));
     }
 
     println!("🖥️ Executing terminal command: {command}");
@@ -147,17 +147,15 @@ pub async fn execute_terminal_command(command: &str) -> BackendResult<String> {
                     stdout
                 ))
             } else {
-                Err(BackendError::CommandExecutionFailed(format!(
-                    "Exit code: {}\nError:\n{}\nOutput:\n{}",
+                Err(anyhow!(
+                    "Command execution failed - Exit code: {}\nError:\n{}\nOutput:\n{}",
                     result.status.code().unwrap_or(-1),
                     stderr,
                     stdout
-                )))
+                ))
             }
         }
-        Err(e) => Err(BackendError::CommandExecutionFailed(format!(
-            "Failed to execute command: {e}"
-        ))),
+        Err(e) => Err(anyhow!("Failed to execute command: {}", e)),
     }
 }
 
@@ -373,12 +371,8 @@ mod tests {
         let result = execute_terminal_command("rm -rf dangerous").await;
         assert!(result.is_err(), "Dangerous command should be blocked");
 
-        match result.unwrap_err() {
-            BackendError::CommandNotAllowed => {
-                // This is the expected error
-            }
-            other => panic!("Expected CommandNotAllowed error, got: {:?}", other),
-        }
+        let error = result.unwrap_err();
+        assert!(error.to_string().contains("Command not allowed for security reasons"));
     }
 
     #[tokio::test]
@@ -388,19 +382,13 @@ mod tests {
         let result = execute_terminal_command("nonexistentcmd_12345_unique").await;
         assert!(result.is_err(), "Non-existent command should fail");
 
-        match result.unwrap_err() {
-            BackendError::CommandNotAllowed => {
-                // This is expected since the command doesn't match safe patterns
-            }
-            BackendError::CommandExecutionFailed(msg) => {
-                // This would be the case if it was deemed safe but failed to execute
-                assert!(msg.contains("Failed to execute command") || msg.contains("Exit code:"));
-            }
-            other => panic!(
-                "Expected CommandNotAllowed or CommandExecutionFailed error, got: {:?}",
-                other
-            ),
-        }
+        let error = result.unwrap_err();
+        let error_msg = error.to_string();
+        assert!(
+            error_msg.contains("Command not allowed for security reasons") ||
+            error_msg.contains("Failed to execute command") ||
+            error_msg.contains("Command execution failed")
+        );
     }
 
     #[test]

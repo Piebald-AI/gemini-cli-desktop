@@ -720,7 +720,8 @@ mod tests {
         env_guard.remove("USERPROFILE");
 
         let result = read_project_metadata("test");
-        assert!(matches!(result, Err(BackendError::ProjectNotFound(_))));
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Project not found"));
     }
 
     #[test]
@@ -730,7 +731,8 @@ mod tests {
         env_guard.set("HOME", temp_dir.path().to_str().unwrap());
 
         let result = read_project_metadata("nonexistent");
-        assert!(matches!(result, Err(BackendError::ProjectNotFound(_))));
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Project not found"));
     }
 
     #[test]
@@ -785,11 +787,8 @@ mod tests {
 
         let result = read_project_metadata(&valid_sha);
         assert!(result.is_err());
-        match result {
-            Err(BackendError::JsonError(_)) => {} // Expected
-            Err(e) => panic!("Expected JsonError, got: {:?}", e),
-            Ok(_) => panic!("Expected error, got success"),
-        }
+        let error = result.unwrap_err();
+        assert!(error.to_string().contains("JSON") || error.to_string().contains("serde"));
     }
 
     #[test]
@@ -800,7 +799,8 @@ mod tests {
 
         let metadata = ProjectMetadata::default();
         let result = write_project_metadata("test", &metadata);
-        assert!(matches!(result, Err(BackendError::ProjectNotFound(_))));
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Project not found"));
     }
 
     #[test]
@@ -929,7 +929,8 @@ mod tests {
         env_guard.set("HOME", temp_dir.path().to_str().unwrap());
 
         let result = ensure_project_metadata("nonexistent", None);
-        assert!(matches!(result, Err(BackendError::ProjectNotFound(_))));
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Project not found"));
     }
 
     #[test]

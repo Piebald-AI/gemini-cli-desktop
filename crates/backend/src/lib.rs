@@ -228,7 +228,7 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
         let (message_sender, acp_session_id) = {
             let processes = self.session_manager.get_processes();
             let processes = processes.lock()
-                .context("Failed to lock processes")?;
+                .map_err(|_| anyhow::anyhow!("Failed to lock processes mutex"))?;
 
             if let Some(session) = processes.get(&session_id) {
                 (
@@ -292,7 +292,7 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
         let conversation_id = {
             let processes = self.session_manager.get_processes();
             let processes = processes.lock()
-                .context("Failed to lock processes")?;
+                .map_err(|_| anyhow::anyhow!("Failed to lock processes mutex"))?;
 
             let mut found_conversation_id = None;
             for (conv_id, session) in processes.iter() {

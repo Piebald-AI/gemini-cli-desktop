@@ -1,3 +1,4 @@
+use anyhow::Context;
 use include_dir::{Dir, include_dir};
 use rocket::{
     Shutdown, State, get,
@@ -79,7 +80,7 @@ impl WebSocketManager {
     }
 
     /// Broadcast an event message to all connected clients
-    pub async fn broadcast(&self, message: String) -> backend::BackendResult<()> {
+    pub async fn broadcast(&self, message: String) -> anyhow::Result<()> {
         let mut connections = self.connections.lock().await;
         let mut failed_indices = Vec::new();
 
@@ -169,7 +170,7 @@ impl WebSocketsEventEmitter {
 }
 
 impl EventEmitter for WebSocketsEventEmitter {
-    fn emit<S: Serialize + Clone>(&self, event: &str, payload: S) -> backend::BackendResult<()> {
+    fn emit<S: Serialize + Clone>(&self, event: &str, payload: S) -> anyhow::Result<()> {
         // Get next sequence number for ordering
         let sequence = self.sequence_counter.fetch_add(1, Ordering::SeqCst);
 
@@ -182,12 +183,12 @@ impl EventEmitter for WebSocketsEventEmitter {
 
         // Serialize to JSON
         let message = serde_json::to_string(&ws_event)
-            .map_err(|e| backend::BackendError::JsonError(e.to_string()))?;
+            .context("Failed to serialize WebSocket event to JSON")?;
 
         // Send synchronously to ordered channel - this maintains perfect ordering
         self.event_sender
             .send(message)
-            .map_err(|_| backend::BackendError::ChannelError)?;
+            .context("Failed to send message to WebSocket channel")?;
 
         Ok(())
     }

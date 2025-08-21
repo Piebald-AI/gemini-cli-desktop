@@ -81,7 +81,7 @@ impl SessionManager {
         let processes = self
             .processes
             .lock()
-            .context("Failed to lock processes")?;
+            .map_err(|_| anyhow::anyhow!("Failed to lock processes mutex"))?;
 
         let statuses: Vec<ProcessStatus> = processes.values().map(ProcessStatus::from).collect();
 
@@ -110,7 +110,7 @@ impl SessionManager {
         let mut processes = self
             .processes
             .lock()
-            .context("Failed to lock processes")?;
+            .map_err(|_| anyhow::anyhow!("Failed to lock processes mutex"))?;
 
         if let Some(session) = processes.get_mut(conversation_id) {
             if let Some(mut child) = session.child.take() {
@@ -412,16 +412,16 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
         println!("❌ [HANDSHAKE] Failed to spawn {} process: {}", cmd_name, e);
         #[cfg(target_os = "windows")]
         {
-            BackendError::SessionInitFailed(format!(
-                "Failed to run {cmd_name} command via cmd: {e}"
-            ))
+            anyhow::anyhow!(
+                "Session initialization failed: Failed to run {cmd_name} command via cmd: {e}"
+            )
         }
         #[cfg(not(target_os = "windows"))]
         {
-            BackendError::SessionInitFailed(format!(
-                "Failed to run {} command via shell: {e}",
+            anyhow::anyhow!(
+                "Session initialization failed: Failed to run {} command via shell: {e}",
                 cmd_name
-            ))
+            )
         }
     })?;
 
@@ -594,7 +594,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
         let processes = session_manager.get_processes();
         let mut processes = processes.lock().map_err(|_| {
             println!("❌ [HANDSHAKE] Failed to lock processes mutex");
-            BackendError::SessionInitFailed("Failed to lock processes".to_string())
+            anyhow::anyhow!("Session initialization failed: Failed to lock processes")
         })?;
 
         let persistent_session = PersistentSession {
@@ -1551,12 +1551,12 @@ mod tests {
             Err(e) => {
                 // Expected if gemini CLI is not available
                 // Verify it's the expected error type
-                match e {
-                    crate::types::BackendError::SessionInitFailed(_) => {
-                        // This is expected when CLI is not available
-                        println!("Session init failed as expected (CLI not available): {e}");
-                    }
-                    _ => panic!("Unexpected error type: {}", e),
+                let error_msg = e.to_string();
+                if error_msg.contains("Session initialization failed") {
+                    // This is expected when CLI is not available
+                    println!("Session init failed as expected (CLI not available): {e}");
+                } else {
+                    panic!("Unexpected error: {}", e);
                 }
             }
         }
