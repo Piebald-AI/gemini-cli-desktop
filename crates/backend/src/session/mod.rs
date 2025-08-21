@@ -84,14 +84,23 @@ impl SessionManager {
             .map_err(|_| BackendError::SessionInitFailed("Failed to lock processes".to_string()))?;
 
         let statuses: Vec<ProcessStatus> = processes.values().map(ProcessStatus::from).collect();
-        
-        println!("📊 [STATUS-CHECK] Current process statuses ({} sessions):", statuses.len());
+
+        println!(
+            "📊 [STATUS-CHECK] Current process statuses ({} sessions):",
+            statuses.len()
+        );
         for status in &statuses {
-            println!("📊 [STATUS-CHECK]   - {}: {} (PID: {:?}, created: {})", 
-                     status.conversation_id, 
-                     if status.is_alive { "ACTIVE" } else { "INACTIVE" },
-                     status.pid,
-                     status.created_at);
+            println!(
+                "📊 [STATUS-CHECK]   - {}: {} (PID: {:?}, created: {})",
+                status.conversation_id,
+                if status.is_alive {
+                    "ACTIVE"
+                } else {
+                    "INACTIVE"
+                },
+                status.pid,
+                status.created_at
+            );
         }
 
         Ok(statuses)
@@ -181,14 +190,14 @@ impl Default for SessionManager {
 
 // Helper function to send JSON-RPC request and read response
 async fn send_jsonrpc_request<E: EventEmitter>(
-    request: JsonRpcRequest,
+    request: &JsonRpcRequest,
     stdin: &mut ChildStdin,
     reader: &mut AsyncBufReader<ChildStdout>,
     session_id: &str,
     emitter: &E,
     rpc_logger: &Arc<dyn RpcLogger>,
 ) -> BackendResult<JsonRpcResponse> {
-    let request_json = serde_json::to_string(&request).map_err(|e| {
+    let request_json = serde_json::to_string(request).map_err(|e| {
         BackendError::SessionInitFailed(format!("Failed to serialize request: {e}"))
     })?;
 
@@ -221,10 +230,9 @@ async fn send_jsonrpc_request<E: EventEmitter>(
     let mut line = String::new();
     let trimmed_line = loop {
         line.clear();
-        reader
-            .read_line(&mut line)
-            .await
-            .map_err(|e| BackendError::SessionInitFailed(format!("Failed to read response: {e}")))?;
+        reader.read_line(&mut line).await.map_err(|e| {
+            BackendError::SessionInitFailed(format!("Failed to read response: {e}"))
+        })?;
 
         let trimmed = line.trim();
         println!("🔍 RAW OUTPUT FROM GEMINI CLI: {trimmed}");
@@ -279,8 +287,14 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
     println!("🚀 [HANDSHAKE] Starting {cli_name} session initialization for: {session_id}");
     println!("🚀 [HANDSHAKE] Working directory: {working_directory}");
     println!("🚀 [HANDSHAKE] Model: {model}");
-    println!("🚀 [HANDSHAKE] Backend config present: {}", backend_config.is_some());
-    println!("🚀 [HANDSHAKE] Gemini auth config present: {}", gemini_auth.is_some());
+    println!(
+        "🚀 [HANDSHAKE] Backend config present: {}",
+        backend_config.is_some()
+    );
+    println!(
+        "🚀 [HANDSHAKE] Gemini auth config present: {}",
+        gemini_auth.is_some()
+    );
     if let Some(auth) = &gemini_auth {
         println!("🚀 [HANDSHAKE] Auth method: {}", auth.method);
     }
@@ -293,7 +307,9 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
                 Arc::new(logger)
             }
             Err(e) => {
-                println!("⚠️ [HANDSHAKE] Failed to create RPC logger for session {session_id}: {e}");
+                println!(
+                    "⚠️ [HANDSHAKE] Failed to create RPC logger for session {session_id}: {e}"
+                );
                 Arc::new(NoOpRpcLogger)
             }
         };
@@ -314,14 +330,18 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
 
             #[cfg(target_os = "windows")]
             {
-                println!("🔧 [HANDSHAKE] Creating Windows Qwen command: cmd /C qwen --experimental-acp");
+                println!(
+                    "🔧 [HANDSHAKE] Creating Windows Qwen command: cmd /C qwen --experimental-acp"
+                );
                 let mut c = Command::new("cmd");
                 c.args(["/C", "qwen", "--experimental-acp"]);
                 c
             }
             #[cfg(not(target_os = "windows"))]
             {
-                println!("🔧 [HANDSHAKE] Creating Unix Qwen command: sh -c 'qwen --experimental-acp'");
+                println!(
+                    "🔧 [HANDSHAKE] Creating Unix Qwen command: sh -c 'qwen --experimental-acp'"
+                );
                 let mut c = Command::new("sh");
                 let qwen_command = "qwen --experimental-acp".to_string();
                 c.args(["-c", &qwen_command]);
@@ -339,7 +359,9 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
                                 std::env::set_var("GEMINI_API_KEY", api_key);
                             }
                         } else {
-                            println!("⚠️ [HANDSHAKE] No API key provided for gemini-api-key auth method");
+                            println!(
+                                "⚠️ [HANDSHAKE] No API key provided for gemini-api-key auth method"
+                            );
                         }
                     }
                     "vertex-ai" => {
@@ -357,7 +379,10 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
                         }
                     }
                     _ => {
-                        println!("🔧 [HANDSHAKE] Using auth method: {} (no env vars needed)", auth.method);
+                        println!(
+                            "🔧 [HANDSHAKE] Using auth method: {} (no env vars needed)",
+                            auth.method
+                        );
                     }
                 }
             } else {
@@ -366,7 +391,10 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
 
             #[cfg(target_os = "windows")]
             {
-                println!("🔧 [HANDSHAKE] Creating Windows Gemini command: cmd /C gemini --model {} --experimental-acp", model);
+                println!(
+                    "🔧 [HANDSHAKE] Creating Windows Gemini command: cmd /C gemini --model {} --experimental-acp",
+                    model
+                );
                 let mut c = Command::new("cmd");
                 c.args(["/C", "gemini", "--model", &model, "--experimental-acp"]);
                 c
@@ -374,7 +402,10 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
             #[cfg(not(target_os = "windows"))]
             {
                 let gemini_command = format!("gemini --model {model} --experimental-acp");
-                println!("🔧 [HANDSHAKE] Creating Unix Gemini command: sh -c '{}'", gemini_command);
+                println!(
+                    "🔧 [HANDSHAKE] Creating Unix Gemini command: sh -c '{}'",
+                    gemini_command
+                );
                 let mut c = Command::new("sh");
                 c.args(["-c", &gemini_command]);
                 c
@@ -414,7 +445,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
 
     let pid = child.id();
     println!("🔗 [HANDSHAKE] CLI process PID: {:?}", pid);
-    
+
     let mut stdin = child.stdin.take().ok_or_else(|| {
         println!("❌ [HANDSHAKE] Failed to get stdin from child process");
         BackendError::SessionInitFailed("Failed to get stdin".to_string())
@@ -450,15 +481,18 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
         })?,
     };
 
+    // { "jsonrpc": "2.0", "id": 1, "method": "initialize", "params": { "protocolVersion": 1, "clientCapabilities": { "fs": { "readTextFile": true, "writeTextFile": true } } } }
+
     let init_response = send_jsonrpc_request(
-        init_request,
+        &init_request,
         &mut stdin,
         &mut reader,
         &session_id,
         &emitter,
         &rpc_logger,
     )
-    .await.map_err(|e| {
+    .await
+    .map_err(|e| {
         println!("❌ [HANDSHAKE] Initialize request failed: {}", e);
         e
     })?;
@@ -471,58 +505,16 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
 
     println!("✅ [HANDSHAKE] Step 1/3: Initialize completed successfully for: {session_id}");
 
-    // Step 2: Authenticate - choose method based on configuration
-    println!("🔐 [HANDSHAKE] Step 2/3: Determining authentication method");
-    let auth_method_id = if let Some(auth) = &gemini_auth {
-        println!("🔐 [HANDSHAKE] Using provided auth method: {}", auth.method);
-        auth.method.clone()
-    } else if backend_config.is_some() {
-        println!("🔐 [HANDSHAKE] Using gemini-api-key auth for Qwen backend");
-        // Qwen uses API key auth
-        "gemini-api-key".to_string()
-    } else {
-        println!("🔐 [HANDSHAKE] Using default oauth-personal auth method");
-        // Default to OAuth for Gemini if no config provided
-        "oauth-personal".to_string()
-    };
-
-    let auth_params = AuthenticateParams {
-        method_id: auth_method_id.clone(),
-    };
-    println!("🔐 [HANDSHAKE] Sending authenticate request with method: {}", auth_method_id);
-
-    let auth_request = JsonRpcRequest {
-        jsonrpc: "2.0".to_string(),
-        id: 2,
-        method: "authenticate".to_string(),
-        params: serde_json::to_value(auth_params).map_err(|e| {
-            println!("❌ [HANDSHAKE] Failed to serialize auth params: {}", e);
-            BackendError::SessionInitFailed(format!("Failed to serialize auth params: {e}"))
-        })?,
-    };
-
-    let _auth_response = send_jsonrpc_request(
-        auth_request,
-        &mut stdin,
-        &mut reader,
-        &session_id,
-        &emitter,
-        &rpc_logger,
-    )
-    .await.map_err(|e| {
-        println!("❌ [HANDSHAKE] Authentication request failed: {}", e);
-        e
-    })?;
-
-    println!("✅ [HANDSHAKE] Step 2/3: Authentication completed successfully for: {session_id}");
-
-    // Step 3: Create new session
-    println!("📁 [HANDSHAKE] Step 3/3: Creating new ACP session");
+    // Step 2: Create new session
+    println!("📁 [HANDSHAKE] Step 2/3: Creating new ACP session");
     let session_params = SessionNewParams {
         cwd: working_directory.clone(),
         mcp_servers: vec![], // No MCP servers for now
     };
-    println!("📁 [HANDSHAKE] Session params: cwd={}, mcp_servers=[], ", working_directory);
+    println!(
+        "📁 [HANDSHAKE] Session params: cwd={}, mcp_servers=[], ",
+        working_directory
+    );
 
     let session_request = JsonRpcRequest {
         jsonrpc: "2.0".to_string(),
@@ -534,18 +526,91 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
         })?,
     };
 
-    let session_response = send_jsonrpc_request(
-        session_request,
+    let mut session_response = send_jsonrpc_request(
+        &session_request,
         &mut stdin,
         &mut reader,
         &session_id,
         &emitter,
         &rpc_logger,
     )
-    .await.map_err(|e| {
-        println!("❌ [HANDSHAKE] Session creation request failed: {}", e);
-        e
-    })?;
+    .await;
+
+    if let Err(e) = session_response {
+        let msg = if let BackendError::SessionInitFailed(ref msg) = e {
+            msg.clone()
+        } else {
+            e.to_string()
+        };
+        if msg.contains("Authentication required") {
+            println!("⚠️ [HANDSHAKE] Session creation request failed - needs auth");
+            // Step 3: Authenticate - choose method based on configuration
+            println!("🔐 [HANDSHAKE] Step 3/3: Determining authentication method");
+            let auth_method_id = if let Some(auth) = &gemini_auth {
+                println!("🔐 [HANDSHAKE] Using provided auth method: {}", auth.method);
+                auth.method.clone()
+            } else if backend_config.is_some() {
+                println!("🔐 [HANDSHAKE] Using gemini-api-key auth for Qwen backend");
+                // Qwen uses API key auth
+                "gemini-api-key".to_string()
+            } else {
+                println!("🔐 [HANDSHAKE] Using default oauth-personal auth method");
+                // Default to OAuth for Gemini if no config provided
+                "oauth-personal".to_string()
+            };
+
+            let auth_params = AuthenticateParams {
+                method_id: auth_method_id.clone(),
+            };
+            println!(
+                "🔐 [HANDSHAKE] Sending authenticate request with method: {}",
+                auth_method_id
+            );
+
+            let auth_request = JsonRpcRequest {
+                jsonrpc: "2.0".to_string(),
+                id: 2,
+                method: "authenticate".to_string(),
+                params: serde_json::to_value(auth_params).map_err(|e| {
+                    println!("❌ [HANDSHAKE] Failed to serialize auth params: {}", e);
+                    BackendError::SessionInitFailed(format!("Failed to serialize auth params: {e}"))
+                })?,
+            };
+
+            let _auth_response = send_jsonrpc_request(
+                &auth_request,
+                &mut stdin,
+                &mut reader,
+                &session_id,
+                &emitter,
+                &rpc_logger,
+            )
+            .await
+            .map_err(|e| {
+                println!("❌ [HANDSHAKE] Authentication request failed: {}", e);
+                e
+            })?;
+
+            println!(
+                "✅ [HANDSHAKE] Step 3/3: Authentication completed successfully for: {session_id}"
+            );
+
+            session_response = send_jsonrpc_request(
+                &session_request,
+                &mut stdin,
+                &mut reader,
+                &session_id,
+                &emitter,
+                &rpc_logger,
+            )
+            .await;
+        } else {
+            println!("❌ [HANDSHAKE] Session creation request failed: {}", msg);
+            return Err(e);
+        }
+    };
+
+    let session_response = session_response?;
 
     let session_result: SessionNewResult =
         serde_json::from_value(session_response.result.unwrap_or_default()).map_err(|e| {
@@ -561,13 +626,11 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
     {
         println!("💾 [HANDSHAKE] Storing session in process manager");
         let processes = session_manager.get_processes();
-        let mut processes = processes
-            .lock()
-            .map_err(|_| {
-                println!("❌ [HANDSHAKE] Failed to lock processes mutex");
-                BackendError::SessionInitFailed("Failed to lock processes".to_string())
-            })?;
-        
+        let mut processes = processes.lock().map_err(|_| {
+            println!("❌ [HANDSHAKE] Failed to lock processes mutex");
+            BackendError::SessionInitFailed("Failed to lock processes".to_string())
+        })?;
+
         let persistent_session = PersistentSession {
             conversation_id: session_id.clone(),
             acp_session_id: Some(session_result.session_id.clone()),
@@ -582,11 +645,13 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
             rpc_logger: rpc_logger.clone(),
             child: Some(child),
         };
-        
+
         processes.insert(session_id.clone(), persistent_session);
         println!("💾 [HANDSHAKE] Session stored successfully - marking as ALIVE");
-        println!("💾 [HANDSHAKE] Session details: conversation_id={}, acp_session_id={}, pid={:?}, is_alive=true", 
-                 session_id, session_result.session_id, pid);
+        println!(
+            "💾 [HANDSHAKE] Session details: conversation_id={}, acp_session_id={}, pid={:?}, is_alive=true",
+            session_id, session_result.session_id, pid
+        );
     }
 
     // Emit real-time status change - session became active
@@ -694,7 +759,10 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
     tokio::spawn(async move {
         // Ensure the I/O loop does not block forever if the CLI becomes silent.
         // The internal handler itself reads line-by-line and will exit on EOF.
-        println!("🔄 [HANDSHAKE] Starting I/O handler task for session: {}", session_id_clone);
+        println!(
+            "🔄 [HANDSHAKE] Starting I/O handler task for session: {}",
+            session_id_clone
+        );
         handle_session_io_internal(
             session_id_clone,
             reader,
@@ -716,11 +784,17 @@ async fn handle_session_io_internal(
     processes: ProcessMap,
     event_tx: mpsc::UnboundedSender<InternalEvent>,
 ) {
-    println!("🔄 [IO-HANDLER] Starting I/O handler loop for session: {}", session_id);
+    println!(
+        "🔄 [IO-HANDLER] Starting I/O handler loop for session: {}",
+        session_id
+    );
     let mut line_buffer = String::new();
 
     loop {
-        println!("🔄 [IO-HANDLER] Waiting for message or CLI output for session: {}", session_id);
+        println!(
+            "🔄 [IO-HANDLER] Waiting for message or CLI output for session: {}",
+            session_id
+        );
         tokio::select! {
             message = message_rx.recv() => {
                 if let Some(message_json) = message {
@@ -825,15 +899,24 @@ async fn handle_session_io_internal(
     }
 
     {
-        println!("💀 [SESSION-LIFECYCLE] I/O handler exiting, marking session as INACTIVE: {}", session_id);
+        println!(
+            "💀 [SESSION-LIFECYCLE] I/O handler exiting, marking session as INACTIVE: {}",
+            session_id
+        );
         let mut processes_guard = processes.lock().unwrap();
         if let Some(session) = processes_guard.get_mut(&session_id) {
-            println!("💀 [SESSION-LIFECYCLE] Setting is_alive=false for session: {}", session_id);
+            println!(
+                "💀 [SESSION-LIFECYCLE] Setting is_alive=false for session: {}",
+                session_id
+            );
             session.is_alive = false;
             session.stdin = None;
             session.message_sender = None;
         } else {
-            println!("⚠️ [SESSION-LIFECYCLE] Session {} not found in processes map when trying to mark inactive", session_id);
+            println!(
+                "⚠️ [SESSION-LIFECYCLE] Session {} not found in processes map when trying to mark inactive",
+                session_id
+            );
         }
     }
 
@@ -1715,9 +1798,13 @@ mod tests {
 
         for line in non_json_lines {
             // These should be identified as non-JSON and skipped
-            let is_json_candidate = !line.trim().is_empty() && 
-                (line.trim().starts_with('{') || line.trim().starts_with('['));
-            assert!(!is_json_candidate, "Line '{}' should be skipped as non-JSON", line);
+            let is_json_candidate = !line.trim().is_empty()
+                && (line.trim().starts_with('{') || line.trim().starts_with('['));
+            assert!(
+                !is_json_candidate,
+                "Line '{}' should be skipped as non-JSON",
+                line
+            );
         }
 
         // Test valid JSON lines
@@ -1728,13 +1815,20 @@ mod tests {
         ];
 
         for line in json_lines {
-            let is_json_candidate = !line.trim().is_empty() && 
-                (line.trim().starts_with('{') || line.trim().starts_with('['));
-            assert!(is_json_candidate, "Line '{}' should be considered as potential JSON", line);
-            
+            let is_json_candidate = !line.trim().is_empty()
+                && (line.trim().starts_with('{') || line.trim().starts_with('['));
+            assert!(
+                is_json_candidate,
+                "Line '{}' should be considered as potential JSON",
+                line
+            );
+
             // Verify it's actually parseable JSON
-            assert!(serde_json::from_str::<serde_json::Value>(line.trim()).is_ok(), 
-                    "Line '{}' should be valid JSON", line);
+            assert!(
+                serde_json::from_str::<serde_json::Value>(line.trim()).is_ok(),
+                "Line '{}' should be valid JSON",
+                line
+            );
         }
     }
 
