@@ -32,6 +32,7 @@ tokio = { version = "1", features = ["full"] }
 uuid = { version = "1.0", features = ["v4"] }
 backend = { path = "../backend" }
 tauri-plugin-os = "2.3.1"
+fix-path-env = { git = "https://github.com/tauri-apps/fix-path-env-rs" }
 
 [lints.clippy]
 all = { level = "warn", priority = -1 }
