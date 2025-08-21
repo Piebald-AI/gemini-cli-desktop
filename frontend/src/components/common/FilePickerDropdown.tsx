@@ -10,6 +10,7 @@ export interface FilePickerDropdownProps {
   isLoading: boolean;
   error: string | null;
   onItemClick: (entry: DirEntry) => void;
+  searchFilter?: string;
   className?: string;
 }
 
@@ -20,6 +21,7 @@ export const FilePickerDropdown: React.FC<FilePickerDropdownProps> = ({
   isLoading,
   error,
   onItemClick,
+  searchFilter,
   className,
 }) => {
   const formatEntryName = (entry: DirEntry): string => {
@@ -31,6 +33,21 @@ export const FilePickerDropdown: React.FC<FilePickerDropdownProps> = ({
       <Folder className="h-4 w-4 text-blue-500" />
     ) : (
       <File className="h-4 w-4 text-gray-500" />
+    );
+  };
+
+  const highlightSearchText = (text: string, searchFilter?: string) => {
+    if (!searchFilter) return text;
+    
+    const regex = new RegExp(`(${searchFilter})`, 'gi');
+    const parts = text.split(regex);
+    
+    return parts.map((part, index) => 
+      regex.test(part) ? (
+        <span key={index} className="bg-yellow-200 dark:bg-yellow-800 font-semibold">
+          {part}
+        </span>
+      ) : part
     );
   };
 
@@ -58,9 +75,9 @@ export const FilePickerDropdown: React.FC<FilePickerDropdownProps> = ({
 
   if (entries.length === 0) {
     return (
-      <div className={cn("absolute bottom-full left-0 w-full mb-1 bg-white border border-gray-200 rounded-md shadow-lg z-50 py-2", className)}>
-        <div className="px-3 py-3 text-sm text-gray-500">
-          Empty directory
+      <div className={cn("absolute bottom-full left-0 w-full mb-1 bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-md shadow-lg z-50 py-2", className)}>
+        <div className="px-3 py-3 text-sm text-gray-500 dark:text-gray-400">
+          {searchFilter ? `No files match "${searchFilter}"` : "Empty directory"}
         </div>
       </div>
     );
@@ -73,6 +90,11 @@ export const FilePickerDropdown: React.FC<FilePickerDropdownProps> = ({
         <div className="text-xs text-gray-600 dark:text-gray-300 font-mono truncate" title={currentPath}>
           {currentPath}
         </div>
+        {searchFilter && (
+          <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+            Filtering: "{searchFilter}"
+          </div>
+        )}
       </div>
       
       {/* File and folder entries */}
@@ -91,7 +113,7 @@ export const FilePickerDropdown: React.FC<FilePickerDropdownProps> = ({
         >
           {getEntryIcon(entry)}
           <span className="font-mono text-sm flex-1 truncate">
-            {formatEntryName(entry)}
+            {highlightSearchText(formatEntryName(entry), searchFilter)}
           </span>
           
           {/* File size for files */}
@@ -106,7 +128,7 @@ export const FilePickerDropdown: React.FC<FilePickerDropdownProps> = ({
       {/* Navigation hint */}
       <div className="px-3 py-2 border-t border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-700">
         <div className="text-xs text-gray-500 dark:text-gray-400">
-          <span className="font-semibold">Enter:</span> Select • <span className="font-semibold">Tab:</span> Navigate • <span className="font-semibold">↑↓:</span> Move • <span className="font-semibold">Esc:</span> Close
+          <span className="font-semibold">Enter:</span> Select • <span className="font-semibold">Tab:</span> Select & enter folder • <span className="font-semibold">↑↓:</span> Move • <span className="font-semibold">Esc:</span> Close
         </div>
       </div>
     </div>

@@ -23,6 +23,8 @@ export interface FileSystemNavigationActions {
 }
 
 export const useFileSystemNavigation = (initialPath?: string) => {
+  console.log("🚀 [useFileSystemNavigation] Hook initialized with initialPath:", initialPath);
+  
   const [state, setState] = useState<FileSystemNavigationState>({
     currentPath: initialPath || ".",
     entries: [],
@@ -31,12 +33,18 @@ export const useFileSystemNavigation = (initialPath?: string) => {
     error: null,
     navigationStack: [],
   });
+  
+  console.log("🚀 [useFileSystemNavigation] Initial state:", state);
 
   const loadDirectory = useCallback(async (path: string) => {
+    console.log("📁 [useFileSystemNavigation] loadDirectory called with path:", path);
     setState(prev => ({ ...prev, isLoading: true, error: null }));
     
     try {
+      console.log("📡 [useFileSystemNavigation] Making API call to list_directory_contents with path:", path);
       const entries = await api.invoke<DirEntry[]>("list_directory_contents", { path });
+      console.log("📡 [useFileSystemNavigation] API response received. Entries count:", entries?.length || 0);
+      console.log("📡 [useFileSystemNavigation] Raw entries:", entries);
       
       // Sort entries: directories first, then files, alphabetically within each group
       const sortedEntries = entries.sort((a: DirEntry, b: DirEntry) => {
@@ -44,6 +52,8 @@ export const useFileSystemNavigation = (initialPath?: string) => {
         if (!a.is_directory && b.is_directory) return 1;
         return a.name.localeCompare(b.name);
       });
+      
+      console.log("📁 [useFileSystemNavigation] Sorted entries:", sortedEntries);
 
       setState(prev => ({
         ...prev,
@@ -53,8 +63,11 @@ export const useFileSystemNavigation = (initialPath?: string) => {
         isLoading: false,
         error: null,
       }));
+      
+      console.log("✅ [useFileSystemNavigation] Directory loaded successfully. Path:", path, "Entries:", sortedEntries.length);
     } catch (err) {
-      console.error("Failed to load directory:", err);
+      console.error("❌ [useFileSystemNavigation] Failed to load directory:", err);
+      console.error("❌ [useFileSystemNavigation] Error details:", err);
       setState(prev => ({
         ...prev,
         isLoading: false,
@@ -129,12 +142,15 @@ export const useFileSystemNavigation = (initialPath?: string) => {
     return currentEntry ? currentEntry.is_directory : false;
   }, [getCurrentEntry]);
 
-  // Load initial directory on mount or path change
+  // Load initial directory only on mount, don't reset during navigation
   useEffect(() => {
-    if (initialPath && initialPath !== state.currentPath) {
+    console.log("🔄 [useFileSystemNavigation] useEffect - initialPath:", initialPath, "currentPath:", state.currentPath, "entries:", state.entries.length);
+    // Only load initially when we have no entries yet
+    if (initialPath && state.entries.length === 0) {
+      console.log("🔄 [useFileSystemNavigation] Loading initial directory:", initialPath);
       loadDirectory(initialPath);
     }
-  }, [initialPath, loadDirectory, state.currentPath]);
+  }, [initialPath, loadDirectory]); // Removed state.currentPath from deps
 
   const actions: FileSystemNavigationActions = {
     loadDirectory,

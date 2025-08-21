@@ -36,6 +36,24 @@ function RootLayoutContent() {
   const [cliIOLogs, setCliIOLogs] = useState<CliIO[]>([]);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [workingDirectory, setWorkingDirectory] = useState<string>(".");
+  const [sessionWorkingDirectories, setSessionWorkingDirectories] = useState<Map<string, string>>(new Map());
+
+  // Get the current working directory (default fallback)
+  useEffect(() => {
+    const getCurrentWorkingDirectory = async () => {
+      console.log("🏠 [App] Initializing default working directory...");
+      try {
+        const cwd = await api.invoke<string>("get_home_directory");
+        console.log("🏠 [App] Got home directory from API:", cwd);
+        setWorkingDirectory(cwd);
+      } catch (error) {
+        console.warn("🏠 [App] Failed to get working directory, using current directory:", error);
+        setWorkingDirectory(".");
+      }
+    };
+    getCurrentWorkingDirectory();
+  }, []);
 
   // Use backend context instead of local state
   const { apiConfig } = useApiConfig();
@@ -89,6 +107,19 @@ function RootLayoutContent() {
     fetchProcessStatuses,
   });
 
+  // Update working directory when active conversation changes
+  useEffect(() => {
+    if (activeConversation) {
+      const sessionWd = sessionWorkingDirectories.get(activeConversation);
+      if (sessionWd) {
+        console.log("🏠 [App] Using session working directory for", activeConversation, ":", sessionWd);
+        setWorkingDirectory(sessionWd);
+      } else {
+        console.log("🏠 [App] No session working directory found, using default");
+      }
+    }
+  }, [activeConversation, sessionWorkingDirectories]);
+
   const handleConversationSelect = useCallback(
     (conversationId: string) => {
       setActiveConversation(conversationId);
@@ -106,6 +137,12 @@ function RootLayoutContent() {
       const convId = Date.now().toString();
       createNewConversation(convId, title, [], false);
       setActiveConversation(convId);
+
+      // Store working directory for this session
+      if (workingDirectory) {
+        console.log("🏠 [App] Storing working directory for session", convId, ":", workingDirectory);
+        setSessionWorkingDirectories(prev => new Map(prev.set(convId, workingDirectory)));
+      }
 
       if (workingDirectory) {
         console.log("Debug - apiConfig:", apiConfig);
@@ -162,6 +199,7 @@ function RootLayoutContent() {
       createNewConversation,
       setActiveConversation,
       setupEventListenerForConversation,
+      setSessionWorkingDirectories,
     ]
   );
 
@@ -227,13 +265,17 @@ function RootLayoutContent() {
               (status) =>
                 status.conversation_id === activeConversation && status.is_alive
             ) && (
-              <MessageInputBar
-                input={input}
-                isCliInstalled={isCliInstalled}
-                cliIOLogs={cliIOLogs}
-                handleInputChange={handleInputChange}
-                handleSendMessage={handleSendMessage}
-              />
+              <>
+                {console.log("📝 [App] Rendering MessageInputBar with workingDirectory:", workingDirectory)}
+                <MessageInputBar
+                  input={input}
+                  isCliInstalled={isCliInstalled}
+                  cliIOLogs={cliIOLogs}
+                  handleInputChange={handleInputChange}
+                  handleSendMessage={handleSendMessage}
+                  workingDirectory={workingDirectory}
+                />
+              </>
             )}
         </div>
       </SidebarInset>

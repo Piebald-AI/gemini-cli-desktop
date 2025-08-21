@@ -101,10 +101,16 @@ export const api = {
             throw new Error("get_parent_directory expects string argument");
           return webApi.get_parent_directory(args) as Promise<T>;
         case "list_directory_contents":
-          if (!args)
+          console.log("🌐 [API] list_directory_contents called with args:", args);
+          if (!args) {
+            console.error("🌐 [API] Missing arguments for list_directory_contents");
             throw new Error("Missing arguments for list_directory_contents");
-          if (!isStringArg(args))
+          }
+          if (!isStringArg(args)) {
+            console.error("🌐 [API] list_directory_contents expects string argument, got:", typeof args, args);
             throw new Error("list_directory_contents expects string argument");
+          }
+          console.log("🌐 [API] Calling webApi.list_directory_contents with path:", args);
           return webApi.list_directory_contents(args) as Promise<T>;
         case "list_volumes":
           return webApi.list_volumes() as Promise<T>;

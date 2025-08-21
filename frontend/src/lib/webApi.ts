@@ -228,12 +228,29 @@ export const webApi = {
   },
 
   async list_directory_contents(path: string): Promise<DirEntry[]> {
+    console.log("🌍 [webApi] list_directory_contents called with path:", path);
     const request: ListDirectoryRequest = { path };
-    const response = await apiClient.post<DirEntry[]>(
-      "/list-directory",
-      request
-    );
-    return response.data;
+    console.log("🌍 [webApi] Making POST request to /list-directory with:", request);
+    
+    try {
+      const response = await apiClient.post<DirEntry[]>(
+        "/list-directory",
+        request
+      );
+      console.log("🌍 [webApi] Response received:", response.status, response.data);
+      console.log("🌍 [webApi] Response data length:", response.data?.length || 0);
+      return response.data;
+    } catch (error) {
+      console.error("🌍 [webApi] Error in list_directory_contents:", error);
+      if (axios.isAxiosError(error)) {
+        console.error("🌍 [webApi] Axios error details:", {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data
+        });
+      }
+      throw error;
+    }
   },
 
   async list_volumes(): Promise<DirEntry[]> {
