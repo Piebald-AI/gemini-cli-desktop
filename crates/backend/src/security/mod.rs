@@ -132,7 +132,7 @@ pub async fn execute_terminal_command(command: &str) -> BackendResult<String> {
     let output = if cfg!(target_os = "windows") {
         Command::new("cmd").args(["/C", command]).output().await
     } else {
-        Command::new("sh").args(["-c", command]).output().await
+        Command::new("sh").args(["-lc", command]).output().await
     };
 
     match output {

@@ -321,10 +321,10 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
             }
             #[cfg(not(target_os = "windows"))]
             {
-                println!("🔧 [HANDSHAKE] Creating Unix Qwen command: sh -c 'qwen --experimental-acp'");
+                println!("🔧 [HANDSHAKE] Creating Unix Qwen command: sh -lc 'qwen --experimental-acp'");
                 let mut c = Command::new("sh");
                 let qwen_command = "qwen --experimental-acp".to_string();
-                c.args(["-c", &qwen_command]);
+                c.args(["-lc", &qwen_command]);
                 c
             }
         } else {
@@ -374,9 +374,9 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
             #[cfg(not(target_os = "windows"))]
             {
                 let gemini_command = format!("gemini --model {model} --experimental-acp");
-                println!("🔧 [HANDSHAKE] Creating Unix Gemini command: sh -c '{}'", gemini_command);
+                println!("🔧 [HANDSHAKE] Creating Unix Gemini command: sh -lc '{}'", gemini_command);
                 let mut c = Command::new("sh");
-                c.args(["-c", &gemini_command]);
+                c.args(["-lc", &gemini_command]);
                 c
             }
         }

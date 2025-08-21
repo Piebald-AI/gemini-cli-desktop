@@ -167,7 +167,7 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
                 .await
         } else {
             Command::new("sh")
-                .args(["-c", "gemini --version"])
+                .args(["-lc", "gemini --version"])
                 .output()
                 .await
         };
