@@ -1,0 +1,12 @@
+{
+  "app": {
+    "windows": [
+      {
+        "title": "Gemini Desktop",
+        "width": 1280,
+        "height": 730,
+        "decorations": false
+      }
+    ]
+  }
+}
