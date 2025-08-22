@@ -114,12 +114,16 @@ pub async fn list_directory_contents(path: String) -> BackendResult<Vec<DirEntry
 pub async fn list_volumes() -> BackendResult<Vec<DirEntry>> {
     let mut volumes = Vec::new();
 
-    #[cfg(target_os = "windows")]
+    #[cfg(windows)]
     {
+        use std::os::windows::process::CommandExt;
         use std::process::Command;
+
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
 
         let output = Command::new("wmic")
             .args(["logicaldisk", "get", "name,volumename,drivetype,size"])
+            .creation_flags(CREATE_NO_WINDOW)
             .output()?;
 
         let stdout = String::from_utf8_lossy(&output.stdout);
@@ -162,7 +166,7 @@ pub async fn list_volumes() -> BackendResult<Vec<DirEntry>> {
         }
     }
 
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(not(windows))]
     {
         volumes.push(DirEntry {
             name: "Root (/)".to_string(),
@@ -330,11 +334,14 @@ mod tests {
         let parent = result.unwrap();
         assert!(parent.is_some());
 
-        if cfg!(target_os = "windows") {
+        #[cfg(windows)]
+        {
             // On Windows, the path handling might be different
             let parent_path = parent.unwrap();
             assert!(parent_path.contains("path"));
-        } else {
+        }
+        #[cfg(not(windows))]
+        {
             assert_eq!(parent.unwrap(), "/path/to");
         }
     }
@@ -488,7 +495,7 @@ mod tests {
             assert!(!volume.full_path.is_empty());
         }
 
-        #[cfg(not(target_os = "windows"))]
+        #[cfg(not(windows))]
         {
             // On Unix systems, should have at least root
             let has_root = volumes.iter().any(|v| v.full_path == "/");
