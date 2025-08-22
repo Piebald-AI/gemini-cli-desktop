@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { api } from "../lib/api";
+import { listen } from "../lib/listen";
 import { ProcessStatus } from "../types";
 
 export const useProcessManager = () => {
@@ -8,9 +9,7 @@ export const useProcessManager = () => {
   const fetchProcessStatuses = useCallback(async () => {
     try {
       console.log("🔄 [FRONTEND-STATUS] Fetching process statuses...");
-      const statuses = await api.invoke<ProcessStatus[]>(
-        "get_process_statuses"
-      );
+      const statuses = await api.get_process_statuses();
       console.log("📊 [FRONTEND-STATUS] Received statuses:", statuses);
 
       setProcessStatuses((prev) => {
@@ -52,7 +51,7 @@ export const useProcessManager = () => {
   const handleKillProcess = useCallback(
     async (conversationId: string) => {
       try {
-        await api.invoke("kill_process", { conversationId: conversationId }); // Tauri auto-converts to conversation_id
+        await api.kill_process({ conversationId });
         // Refresh process statuses after killing
         await fetchProcessStatuses();
       } catch (error) {
@@ -72,7 +71,7 @@ export const useProcessManager = () => {
     fetchProcessStatuses();
 
     // Listen for real-time status updates via WebSocket
-    const unsubscribe = api.listen<ProcessStatus[]>(
+    const unsubscribe = listen<ProcessStatus[]>(
       "process-status-changed",
       (event) => {
         console.log(
@@ -87,8 +86,7 @@ export const useProcessManager = () => {
       console.log("🔌 [PROCESS-WS] Cleaning up WebSocket listeners");
       unsubscribe.then((unsub) => unsub());
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // No dependencies - no race conditions!
+  }, [fetchProcessStatuses]);
 
   return {
     processStatuses,

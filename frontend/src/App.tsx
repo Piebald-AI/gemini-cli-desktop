@@ -13,7 +13,6 @@ import {
   useApiConfig,
   useBackend,
 } from "./contexts/BackendContext";
-import { SessionParams } from "./types/backend";
 import { getBackendText } from "./utils/backendText";
 import { HomeDashboard } from "./pages/HomeDashboard";
 import ProjectsPage from "./pages/Projects";
@@ -48,7 +47,7 @@ function RootLayoutContent() {
     const getCurrentWorkingDirectory = async () => {
       console.log("🏠 [App] Initializing default working directory...");
       try {
-        const cwd = await api.invoke<string>("get_home_directory");
+        const cwd = await api.get_home_directory();
         console.log("🏠 [App] Got home directory from API:", cwd);
         setWorkingDirectory(cwd);
       } catch (error) {
@@ -169,18 +168,14 @@ function RootLayoutContent() {
         console.log("Debug - apiConfig:", apiConfig);
         console.log("Debug - selectedBackend:", selectedBackend);
 
-        // Prepare session parameters based on backend type
-        const sessionParams: SessionParams = {
-          sessionId: convId, // Tauri auto-converts to session_id
-          workingDirectory: workingDirectory, // Tauri auto-converts to working_directory
-          model: selectedModel,
-        };
+        let backendConfig;
+        let geminiAuth;
 
         // For Qwen backend, pass full backend_config
         // For Gemini backend, pass geminiAuth with the appropriate configuration
         if (selectedBackend === "qwen") {
           // Always ensure backend_config is set for Qwen to trigger qwen CLI
-          sessionParams.backendConfig = {
+          backendConfig = {
             // Tauri auto-converts to backend_config
             api_key: apiConfig?.api_key || "", // Empty string if OAuth
             base_url: apiConfig?.base_url || "https://openrouter.ai/api/v1",
@@ -188,7 +183,7 @@ function RootLayoutContent() {
           };
         } else if (selectedBackend === "gemini") {
           const geminiConfig = backendState.configs.gemini;
-          sessionParams.geminiAuth = {
+          geminiAuth = {
             // Tauri auto-converts to gemini_auth
             method: geminiConfig.authMethod,
             api_key:
@@ -206,7 +201,13 @@ function RootLayoutContent() {
           };
         }
 
-        await api.invoke("start_session", sessionParams);
+        await api.start_session({
+          sessionId: convId,
+          workingDirectory,
+          model: selectedModel,
+          backendConfig,
+          geminiAuth,
+        });
       }
 
       await setupEventListenerForConversation(convId);
@@ -287,10 +288,6 @@ function RootLayoutContent() {
                 status.conversation_id === activeConversation && status.is_alive
             ) && (
               <>
-                {console.log(
-                  "📝 [App] Rendering MessageInputBar with workingDirectory:",
-                  workingDirectory
-                )}
                 <MessageInputBar
                   input={input}
                   isCliInstalled={isCliInstalled}

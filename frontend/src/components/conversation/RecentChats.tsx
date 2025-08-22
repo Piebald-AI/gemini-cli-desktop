@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
 import {
   Card,
   CardHeader,
@@ -7,7 +6,8 @@ import {
   CardDescription,
   CardContent,
 } from "../ui/card";
-import { webApi, RecentChat } from "@/lib/webApi";
+import { RecentChat } from "@/lib/webApi";
+import { api } from "@/lib/api";
 import { useTranslation } from "react-i18next";
 
 type LoadState = "idle" | "loading" | "loaded" | "error";
@@ -23,17 +23,7 @@ function RecentChats() {
     const load = async () => {
       setState("loading");
       try {
-        let items: RecentChat[];
-        // Check if running in web mode (__WEB__ is injected by build)
-        if (
-          typeof (globalThis as { __WEB__?: boolean }).__WEB__ !==
-            "undefined" &&
-          (globalThis as { __WEB__?: boolean }).__WEB__
-        ) {
-          items = await webApi.get_recent_chats();
-        } else {
-          items = await invoke<RecentChat[]>("get_recent_chats");
-        }
+        let items = await api.get_recent_chats();
         if (!active) return;
         setChats(items);
         setState("loaded");

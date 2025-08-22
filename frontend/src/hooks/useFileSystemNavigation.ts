@@ -23,11 +23,6 @@ export interface FileSystemNavigationActions {
 }
 
 export const useFileSystemNavigation = (initialPath?: string) => {
-  console.log(
-    "🚀 [useFileSystemNavigation] Hook initialized with initialPath:",
-    initialPath
-  );
-
   const [state, setState] = useState<FileSystemNavigationState>({
     currentPath: initialPath || ".",
     entries: [],
@@ -36,8 +31,6 @@ export const useFileSystemNavigation = (initialPath?: string) => {
     error: null,
     navigationStack: [],
   });
-
-  console.log("🚀 [useFileSystemNavigation] Initial state:", state);
 
   const loadDirectory = useCallback(async (path: string) => {
     console.log(
@@ -51,9 +44,7 @@ export const useFileSystemNavigation = (initialPath?: string) => {
         "📡 [useFileSystemNavigation] Making API call to list_directory_contents with path:",
         path
       );
-      const entries = await api.invoke<DirEntry[]>("list_directory_contents", {
-        path,
-      });
+      const entries = await api.list_directory_contents(path);
       console.log(
         "📡 [useFileSystemNavigation] API response received. Entries count:",
         entries?.length || 0
@@ -124,10 +115,7 @@ export const useFileSystemNavigation = (initialPath?: string) => {
     if (state.navigationStack.length === 0) {
       // Try to get parent directory from API
       try {
-        const parentPath = await api.invoke<string | null>(
-          "get_parent_directory",
-          { path: state.currentPath }
-        );
+        const parentPath = await api.get_parent_directory(state.currentPath);
         if (parentPath) {
           await loadDirectory(parentPath);
         }

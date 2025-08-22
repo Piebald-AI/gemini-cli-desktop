@@ -44,9 +44,7 @@ export default function ProjectDetailPage() {
     (async () => {
       try {
         // First, try to get enriched project data from the list
-        const enrichedProjects = await api.invoke<EnrichedProject[]>(
-          "list_enriched_projects"
-        );
+        const enrichedProjects = await api.list_enriched_projects();
         const project = enrichedProjects.find(
           (p: EnrichedProject) => p.sha256 === projectId
         );
@@ -55,14 +53,7 @@ export default function ProjectDetailPage() {
         }
 
         // Then get discussions
-        const data = await api.invoke<
-          {
-            id: string;
-            title: string;
-            started_at_iso?: string;
-            message_count?: number;
-          }[]
-        >("get_project_discussions", { projectId });
+        const data = await api.get_project_discussions({ projectId });
         if (!cancelled) setDiscussions(data);
       } catch (e) {
         if (!cancelled) setError(t("errors.failedToLoadProjectData"));
