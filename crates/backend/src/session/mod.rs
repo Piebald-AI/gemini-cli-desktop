@@ -6,6 +6,9 @@ use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader as AsyncBufReader};
 use tokio::process::{Child, ChildStdin, ChildStdout, Command};
 use tokio::sync::mpsc;
 
+#[cfg(windows)]
+const CREATE_NO_WINDOW: u32 = 0x08000000;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct QwenConfig {
     pub api_key: String,
@@ -116,21 +119,42 @@ impl SessionManager {
             if let Some(mut child) = session.child.take() {
                 drop(child.kill());
             } else if let Some(pid) = session.pid {
-                #[cfg(windows)]
-                {
-                    use std::process::Command as StdCommand;
-                    let output = StdCommand::new("taskkill")
-                        .args(["/PID", &pid.to_string(), "/F"])
-                        .output()
-                        .map_err(|e| {
-                            BackendError::CommandExecutionFailed(format!(
-                                "Failed to kill process: {e}"
-                            ))
-                        })?;
+                let output = {
+                    #[cfg(windows)]
+                    {
+                        use std::os::windows::process::CommandExt;
+                        use std::process::Command as StdCommand;
 
-                    if !output.status.success() {
-                        let stderr = String::from_utf8_lossy(&output.stderr).to_string();
-                        let stderr_lower = stderr.to_lowercase();
+                        StdCommand::new("taskkill")
+                            .args(["/PID", &pid.to_string(), "/F"])
+                            .creation_flags(CREATE_NO_WINDOW)
+                            .output()
+                            .map_err(|e| {
+                                BackendError::CommandExecutionFailed(format!(
+                                    "Failed to kill process: {e}"
+                                ))
+                            })?
+                    }
+                    #[cfg(not(windows))]
+                    {
+                        use std::process::Command as StdCommand;
+
+                        StdCommand::new("kill")
+                            .args(["-9", &pid.to_string()])
+                            .output()
+                            .map_err(|e| {
+                                BackendError::CommandExecutionFailed(format!(
+                                    "Failed to kill process: {e}"
+                                ))
+                            })?
+                    }
+                };
+
+                if !output.status.success() {
+                    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+                    let stderr_lower = stderr.to_lowercase();
+                    #[cfg(windows)]
+                    {
                         // Treat "not found" as success to make kill idempotent in tests and runtime
                         if stderr_lower.contains("not found") {
                             // Consider the process already gone
@@ -140,23 +164,8 @@ impl SessionManager {
                             )));
                         }
                     }
-                }
-
-                #[cfg(not(windows))]
-                {
-                    use std::process::Command as StdCommand;
-                    let output = StdCommand::new("kill")
-                        .args(["-9", &pid.to_string()])
-                        .output()
-                        .map_err(|e| {
-                            BackendError::CommandExecutionFailed(format!(
-                                "Failed to kill process: {e}"
-                            ))
-                        })?;
-
-                    if !output.status.success() {
-                        let stderr = String::from_utf8_lossy(&output.stderr).to_string();
-                        let stderr_lower = stderr.to_lowercase();
+                    #[cfg(not(windows))]
+                    {
                         if stderr_lower.contains("no such process") {
                             // Consider the process already gone
                         } else {
@@ -328,16 +337,17 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
             println!("🔧 [HANDSHAKE] Set OPENAI_BASE_URL: {}", config.base_url);
             println!("🔧 [HANDSHAKE] Set OPENAI_MODEL: {}", config.model);
 
-            #[cfg(target_os = "windows")]
+            #[cfg(windows)]
             {
                 println!(
-                    "🔧 [HANDSHAKE] Creating Windows Qwen command: cmd /C qwen --experimental-acp"
+                    "🔧 [HANDSHAKE] Creating Windows Qwen command: cmd.exe /C qwen --experimental-acp"
                 );
-                let mut c = Command::new("cmd");
+                let mut c = Command::new("cmd.exe");
                 c.args(["/C", "qwen", "--experimental-acp"]);
+                c.creation_flags(CREATE_NO_WINDOW);
                 c
             }
-            #[cfg(not(target_os = "windows"))]
+            #[cfg(not(windows))]
             {
                 println!(
                     "🔧 [HANDSHAKE] Creating Unix Qwen command: sh -lc 'qwen --experimental-acp'"
@@ -389,16 +399,17 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
                 println!("🔧 [HANDSHAKE] No auth config provided, using default OAuth");
             }
 
-            #[cfg(target_os = "windows")]
+            #[cfg(windows)]
             {
                 println!(
-                    "🔧 [HANDSHAKE] Creating Windows Gemini command: cmd /C gemini --model {model} --experimental-acp"
+                    "🔧 [HANDSHAKE] Creating Windows Gemini command: cmd.exe /C gemini --model {model} --experimental-acp"
                 );
-                let mut c = Command::new("cmd");
+                let mut c = Command::new("cmd.exe");
                 c.args(["/C", "gemini", "--model", &model, "--experimental-acp"]);
+                c.creation_flags(CREATE_NO_WINDOW);
                 c
             }
-            #[cfg(not(target_os = "windows"))]
+            #[cfg(not(windows))]
             {
                 let gemini_command = format!("gemini --model {model} --experimental-acp");
                 println!(
@@ -425,13 +436,13 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
     let mut child = cmd.spawn().map_err(|e| {
         let cmd_name = if is_qwen { "qwen" } else { "gemini" };
         println!("❌ [HANDSHAKE] Failed to spawn {cmd_name} process: {e}");
-        #[cfg(target_os = "windows")]
+        #[cfg(windows)]
         {
             BackendError::SessionInitFailed(format!(
                 "Failed to run {cmd_name} command via cmd: {e}"
             ))
         }
-        #[cfg(not(target_os = "windows"))]
+        #[cfg(not(windows))]
         {
             BackendError::SessionInitFailed(format!(
                 "Failed to run {} command via shell: {e}",

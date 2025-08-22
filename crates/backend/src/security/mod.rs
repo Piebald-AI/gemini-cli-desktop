@@ -129,10 +129,19 @@ pub async fn execute_terminal_command(command: &str) -> BackendResult<String> {
 
     println!("🖥️ Executing terminal command: {command}");
 
-    let output = if cfg!(target_os = "windows") {
-        Command::new("cmd").args(["/C", command]).output().await
-    } else {
-        Command::new("sh").args(["-lc", command]).output().await
+    let output = {
+        #[cfg(windows)]
+        {
+            Command::new("cmd.exe")
+                .args(["/C", command])
+                .creation_flags(0x08000000) // CREATE_NO_WINDOW
+                .output()
+                .await
+        }
+        #[cfg(not(windows))]
+        {
+            Command::new("sh").args(["-lc", command]).output().await
+        }
     };
 
     match output {

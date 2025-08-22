@@ -59,6 +59,9 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio::process::Command;
 
+#[cfg(windows)]
+const CREATE_NO_WINDOW: u32 = 0x08000000;
+
 /// Main backend interface for Gemini CLI functionality
 pub struct GeminiBackend<E: EventEmitter> {
     emitter: E,
@@ -160,16 +163,22 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
 
     /// Check if Gemini CLI is installed and available
     pub async fn check_cli_installed(&self) -> BackendResult<bool> {
-        let result = if cfg!(target_os = "windows") {
-            Command::new("cmd")
-                .args(["/C", "gemini", "--version"])
-                .output()
-                .await
-        } else {
-            Command::new("sh")
-                .args(["-lc", "gemini --version"])
-                .output()
-                .await
+        let result = {
+            #[cfg(windows)]
+            {
+                Command::new("cmd.exe")
+                    .args(["/C", "gemini", "--version"])
+                    .creation_flags(CREATE_NO_WINDOW)
+                    .output()
+                    .await
+            }
+            #[cfg(not(windows))]
+            {
+                Command::new("sh")
+                    .args(["-lc", "gemini --version"])
+                    .output()
+                    .await
+            }
         };
 
         match result {
@@ -416,22 +425,28 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
 
         let model_to_use = model.unwrap_or_else(|| "gemini-2.5-flash".to_string());
 
-        let mut child = if cfg!(target_os = "windows") {
-            Command::new("cmd")
-                .args(["/C", "gemini", "--model", &model_to_use])
-                .stdin(std::process::Stdio::piped())
-                .stdout(std::process::Stdio::piped())
-                .stderr(std::process::Stdio::piped())
-                .spawn()
-                .map_err(|e| BackendError::CommandExecutionFailed(e.to_string()))?
-        } else {
-            Command::new("gemini")
-                .args(["--model", &model_to_use])
-                .stdin(std::process::Stdio::piped())
-                .stdout(std::process::Stdio::piped())
-                .stderr(std::process::Stdio::piped())
-                .spawn()
-                .map_err(|e| BackendError::CommandExecutionFailed(e.to_string()))?
+        let mut child = {
+            #[cfg(windows)]
+            {
+                Command::new("cmd.exe")
+                    .args(["/C", "gemini", "--model", &model_to_use])
+                    .stdin(std::process::Stdio::piped())
+                    .stdout(std::process::Stdio::piped())
+                    .stderr(std::process::Stdio::piped())
+                    .creation_flags(CREATE_NO_WINDOW)
+                    .spawn()
+                    .map_err(|e| BackendError::CommandExecutionFailed(e.to_string()))?
+            }
+            #[cfg(not(windows))]
+            {
+                Command::new("gemini")
+                    .args(["--model", &model_to_use])
+                    .stdin(std::process::Stdio::piped())
+                    .stdout(std::process::Stdio::piped())
+                    .stderr(std::process::Stdio::piped())
+                    .spawn()
+                    .map_err(|e| BackendError::CommandExecutionFailed(e.to_string()))?
+            }
         };
 
         if let Some(stdin) = child.stdin.take() {
