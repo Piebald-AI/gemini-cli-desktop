@@ -166,7 +166,9 @@ export function DiffViewer({
           <span className="text-xs text-muted-foreground">
             {isExpanded
               ? t("common.showLess")
-              : t("common.showMoreLines", { count: diffLines.length - maxLines })}
+              : t("common.showMoreLines", {
+                  count: diffLines.length - maxLines,
+                })}
           </span>
         </div>
       )}

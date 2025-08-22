@@ -486,15 +486,15 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
     /// Kill a process by conversation ID
     pub fn kill_process(&self, conversation_id: &str) -> BackendResult<()> {
         let result = self.session_manager.kill_process(conversation_id);
-        
+
         // Emit real-time status change after killing process
-        if result.is_ok() {
-            if let Ok(statuses) = self.session_manager.get_process_statuses() {
-                println!("📡 [STATUS-WS] Emitting process status change after killing process");
-                let _ = self.emitter.emit("process-status-changed", &statuses);
-            }
+        if result.is_ok()
+            && let Ok(statuses) = self.session_manager.get_process_statuses()
+        {
+            println!("📡 [STATUS-WS] Emitting process status change after killing process");
+            let _ = self.emitter.emit("process-status-changed", &statuses);
         }
-        
+
         result
     }
 

@@ -6,39 +6,39 @@ export interface ToolParameters {
   path?: string;
   file?: string;
   directory?: string;
-  
+
   // Search operations
   pattern?: string;
   query?: string;
   glob?: string;
-  
+
   // Content operations
   content?: string;
   text?: string;
-  
+
   // Command operations
   command?: string;
   cmd?: string;
-  
+
   // Network operations
   url?: string;
   method?: string;
-  
+
   // Location-based operations
   location?: string;
   city?: string;
-  
+
   // Copy/move operations
   source?: string;
   src?: string;
   destination?: string;
   dest?: string;
-  
+
   // Array parameters
   locations?: Array<{ path: string; type?: string }>;
   patterns?: string[];
   files?: string[];
-  
+
   // Generic fallback for any other properties
   [key: string]: unknown;
 }

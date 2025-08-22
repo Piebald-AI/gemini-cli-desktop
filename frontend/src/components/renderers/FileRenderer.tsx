@@ -28,7 +28,9 @@ export function FileRenderer({ toolCall }: FileRendererProps) {
     try {
       if (toolCall.inputJsonRpc) {
         const input = JSON.parse(toolCall.inputJsonRpc);
-        return input.params?.file || input.params?.path || t("common.unknownFile");
+        return (
+          input.params?.file || input.params?.path || t("common.unknownFile")
+        );
       }
     } catch {
       // Intentionally ignore parse errors
