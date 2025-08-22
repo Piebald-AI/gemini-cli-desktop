@@ -72,19 +72,19 @@ export function MentionInput({
             // Special case: if search filter is empty and we end with slash,
             // we're actually trying to complete the folder name, not search inside it
             if (searchFilter === "") {
-              // Remove the trailing slash and treat the last part as search filter
+              // Remove the trailing slash and treat the last part as search filter INCLUDING the slash
               const folderPath = afterAt.substring(0, lastSlashIndex);
               const parentSlashIndex = folderPath.lastIndexOf('/');
               
               if (parentSlashIndex !== -1) {
                 const parentDirectory = folderPath.substring(0, parentSlashIndex + 1);
                 const folderName = folderPath.substring(parentSlashIndex + 1);
-                console.log("🔍 [detectAtTrigger] Folder completion - parentDirectory:", JSON.stringify(parentDirectory), "folderName:", JSON.stringify(folderName));
-                return { atIndex, searchText: afterAt, directory: parentDirectory, searchFilter: folderName };
+                console.log("🔍 [detectAtTrigger] Folder completion - parentDirectory:", JSON.stringify(parentDirectory), "folderName:", JSON.stringify(folderName + "/"));
+                return { atIndex, searchText: afterAt, directory: parentDirectory, searchFilter: folderName + "/" };
               } else {
                 // No parent directory, completing folder in root
-                console.log("🔍 [detectAtTrigger] Root folder completion - folderName:", JSON.stringify(folderPath));
-                return { atIndex, searchText: afterAt, directory: "", searchFilter: folderPath };
+                console.log("🔍 [detectAtTrigger] Root folder completion - folderName:", JSON.stringify(folderPath + "/"));
+                return { atIndex, searchText: afterAt, directory: "", searchFilter: folderPath + "/" };
               }
             } else {
               console.log("🔍 [detectAtTrigger] File search - directory:", JSON.stringify(directory), "searchFilter:", JSON.stringify(searchFilter));
@@ -107,9 +107,15 @@ export function MentionInput({
       return navState.entries;
     }
     
-    return navState.entries.filter(entry => 
-      entry.name.toLowerCase().includes(searchFilter.toLowerCase())
-    );
+    return navState.entries.filter(entry => {
+      const entryDisplayName = entry.is_directory ? `${entry.name}/` : entry.name;
+      const searchLower = searchFilter.toLowerCase();
+      const entryLower = entry.name.toLowerCase();
+      const entryDisplayLower = entryDisplayName.toLowerCase();
+      
+      // Match against both the raw name and the display name (with slash for directories)
+      return entryLower.includes(searchLower) || entryDisplayLower.includes(searchLower);
+    });
   }, [navState.entries, searchFilter]);
 
   // Reset selection when search filter changes or entries change
@@ -206,28 +212,39 @@ export function MentionInput({
       // No existing mention, just use the entry name
       newMentionText = mentionText;
     } else {
-      // Check if we're completing a partial match (e.g., ".gi" -> ".git")
-      // or continuing a path (e.g., ".git/" -> ".git/hooks")
-      const lastSlashIndex = existingMentionText.lastIndexOf('/');
-      
-      if (lastSlashIndex === existingMentionText.length - 1) {
-        // Existing text ends with slash, we're continuing a path
-        newMentionText = `${existingMentionText}${mentionText}`;
+      // Check if the existing text exactly matches the selected entry
+      // This handles the case where user types "@.folder/" and presses Enter on ".folder"
+      if (existingMentionText === mentionText) {
+        // Exact match - user has already typed the complete name, don't duplicate
+        newMentionText = mentionText;
       } else {
-        // No trailing slash, we're completing a partial match
-        // Replace the partial match with the full entry name
-        if (lastSlashIndex !== -1) {
-          // There's a path before the partial match
-          const pathPrefix = existingMentionText.substring(0, lastSlashIndex + 1);
-          newMentionText = `${pathPrefix}${mentionText}`;
+        // Check if we're completing a partial match (e.g., ".gi" -> ".git")
+        // or continuing a path (e.g., ".git/" -> ".git/hooks")
+        const lastSlashIndex = existingMentionText.lastIndexOf('/');
+        
+        if (lastSlashIndex === existingMentionText.length - 1) {
+          // Existing text ends with slash, we're continuing a path
+          newMentionText = `${existingMentionText}${mentionText}`;
         } else {
-          // No path, just replace the entire partial match
-          newMentionText = mentionText;
+          // No trailing slash, we're completing a partial match
+          // Replace the partial match with the full entry name
+          if (lastSlashIndex !== -1) {
+            // There's a path before the partial match
+            const pathPrefix = existingMentionText.substring(0, lastSlashIndex + 1);
+            newMentionText = `${pathPrefix}${mentionText}`;
+          } else {
+            // No path, just replace the entire partial match
+            newMentionText = mentionText;
+          }
         }
       }
     }
     
-    const newValue = `${beforeAt}@${newMentionText} ${afterAtAndMention}`;
+    // Only add space after mention if it's not a folder (folders end with / and shouldn't have space)
+    const addSpace = !newMentionText.endsWith('/');
+    const newValue = addSpace 
+      ? `${beforeAt}@${newMentionText} ${afterAtAndMention}`
+      : `${beforeAt}@${newMentionText}${afterAtAndMention}`;
     
     console.log("🔥 [MentionInput] Building mention - existing:", existingMentionText, "entry:", mentionText, "final:", newMentionText);
     console.log("🔥 [MentionInput] New value:", newValue);

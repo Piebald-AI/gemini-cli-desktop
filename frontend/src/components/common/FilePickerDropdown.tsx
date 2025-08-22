@@ -48,10 +48,24 @@ export const FilePickerDropdown: React.FC<FilePickerDropdownProps> = ({
     );
   };
 
-  const highlightSearchText = (text: string, searchFilter?: string) => {
+  const highlightSearchText = (text: string, searchFilter?: string, isDirectory: boolean = false) => {
     if (!searchFilter) return text;
     
-    const regex = new RegExp(`(${searchFilter})`, 'gi');
+    // Special case: if user has typed the folder name with trailing slash,
+    // and this is a directory, highlight the entire name including slash
+    if (isDirectory && text.endsWith('/') && searchFilter.endsWith('/') && 
+        text.toLowerCase() === searchFilter.toLowerCase()) {
+      return (
+        <span className="bg-yellow-200 dark:bg-yellow-800 font-semibold">
+          {text}
+        </span>
+      );
+    }
+    
+    // For all other cases, use regex to highlight only the matching parts
+    // Escape special regex characters in searchFilter to avoid issues with slashes
+    const escapedSearchFilter = searchFilter.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(${escapedSearchFilter})`, 'gi');
     const parts = text.split(regex);
     
     return parts.map((part, index) => 
@@ -123,7 +137,7 @@ export const FilePickerDropdown: React.FC<FilePickerDropdownProps> = ({
         >
           {getEntryIcon(entry)}
           <span className="font-mono text-sm flex-1 truncate">
-            {highlightSearchText(formatEntryName(entry), searchFilter)}
+            {highlightSearchText(formatEntryName(entry), searchFilter, entry.is_directory)}
           </span>
           
           {/* File size for files */}
