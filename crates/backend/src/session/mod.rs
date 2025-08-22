@@ -6,6 +6,9 @@ use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader as AsyncBufReader};
 use tokio::process::{Child, ChildStdin, ChildStdout, Command};
 use tokio::sync::mpsc;
 
+#[cfg(windows)]
+const CREATE_NO_WINDOW: u32 = 0x08000000;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct QwenConfig {
     pub api_key: String,
@@ -124,7 +127,7 @@ impl SessionManager {
 
                         StdCommand::new("taskkill")
                             .args(["/PID", &pid.to_string(), "/F"])
-                            .creation_flags(0x08000000) // CREATE_NO_WINDOW
+                            .creation_flags(CREATE_NO_WINDOW)
                             .output()
                             .map_err(|e| {
                                 BackendError::CommandExecutionFailed(format!(
@@ -341,7 +344,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
                 );
                 let mut c = Command::new("cmd.exe");
                 c.args(["/C", "qwen", "--experimental-acp"]);
-                c.creation_flags(0x08000000); // CREATE_NO_WINDOW
+                c.creation_flags(CREATE_NO_WINDOW);
                 c
             }
             #[cfg(not(windows))]
@@ -403,7 +406,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
                 );
                 let mut c = Command::new("cmd.exe");
                 c.args(["/C", "gemini", "--model", &model, "--experimental-acp"]);
-                c.creation_flags(0x08000000); // CREATE_NO_WINDOW
+                c.creation_flags(CREATE_NO_WINDOW);
                 c
             }
             #[cfg(not(windows))]

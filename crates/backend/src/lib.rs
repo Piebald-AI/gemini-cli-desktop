@@ -59,6 +59,9 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio::process::Command;
 
+#[cfg(windows)]
+const CREATE_NO_WINDOW: u32 = 0x08000000;
+
 /// Main backend interface for Gemini CLI functionality
 pub struct GeminiBackend<E: EventEmitter> {
     emitter: E,
@@ -165,7 +168,7 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
             {
                 Command::new("cmd.exe")
                     .args(["/C", "gemini", "--version"])
-                    .creation_flags(0x08000000) // CREATE_NO_WINDOW
+                    .creation_flags(CREATE_NO_WINDOW)
                     .output()
                     .await
             }
@@ -430,7 +433,7 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
                     .stdin(std::process::Stdio::piped())
                     .stdout(std::process::Stdio::piped())
                     .stderr(std::process::Stdio::piped())
-                    .creation_flags(0x08000000) // CREATE_NO_WINDOW
+                    .creation_flags(CREATE_NO_WINDOW)
                     .spawn()
                     .map_err(|e| BackendError::CommandExecutionFailed(e.to_string()))?
             }

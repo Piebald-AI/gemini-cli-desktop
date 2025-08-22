@@ -119,11 +119,9 @@ pub async fn list_volumes() -> BackendResult<Vec<DirEntry>> {
         use std::os::windows::process::CommandExt;
         use std::process::Command;
 
-        const CREATE_NO_WINDOW: u32 = 0x08000000;
-
         let output = Command::new("wmic")
             .args(["logicaldisk", "get", "name,volumename,drivetype,size"])
-            .creation_flags(CREATE_NO_WINDOW)
+            .creation_flags(0x08000000) // CREATE_NO_WINDOW
             .output()?;
 
         let stdout = String::from_utf8_lossy(&output.stdout);
