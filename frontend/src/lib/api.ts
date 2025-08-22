@@ -113,7 +113,6 @@ export const api = new Proxy(
           const fn = webApi[prop] as (
             args: APIParameters<T>
           ) => APIReturnType<T>;
-          console.log("ARRRRRRRRRRRRRRRGS", prop, args);
           return fn(args);
         } else {
           return invoke<Awaited<APIReturnType<T>>>(prop, args as InvokeArgs);
