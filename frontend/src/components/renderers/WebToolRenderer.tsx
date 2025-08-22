@@ -41,7 +41,9 @@ export function WebToolRenderer({ toolCall }: WebToolRendererProps) {
         return result.message;
       }
     }
-    return isWebSearch ? t("toolCalls.webSearchCompleted") : t("toolCalls.webFetchCompleted");
+    return isWebSearch
+      ? t("toolCalls.webSearchCompleted")
+      : t("toolCalls.webFetchCompleted");
   };
 
   // Get description for the tool
@@ -51,7 +53,10 @@ export function WebToolRenderer({ toolCall }: WebToolRendererProps) {
       const query =
         toolCall.label?.match(/Searching the web for: "([^"]+)"/)?.[1] ||
         "query";
-      const verb = toolCall.status === "running" ? t("toolCalls.searching") : t("toolCalls.searched");
+      const verb =
+        toolCall.status === "running"
+          ? t("toolCalls.searching")
+          : t("toolCalls.searched");
       return `${verb} web for "${query}"`;
     } else if (isWebFetch) {
       // Extract URL from label or parameters
@@ -73,7 +78,10 @@ export function WebToolRenderer({ toolCall }: WebToolRendererProps) {
         }
       }
 
-      const verb = toolCall.status === "running" ? t("toolCalls.fetchingContent") : t("toolCalls.fetchedContent");
+      const verb =
+        toolCall.status === "running"
+          ? t("toolCalls.fetchingContent")
+          : t("toolCalls.fetchedContent");
       return `${verb} content from ${displayUrl}`;
     }
     return toolCall.status === "running"

@@ -29,6 +29,8 @@ import { useConversationEvents } from "./hooks/useConversationEvents";
 import { useCliInstallation } from "./hooks/useCliInstallation";
 import { CliIO } from "./types";
 import "./index.css";
+import { cn } from "./lib/utils";
+import { platform } from "@tauri-apps/plugin-os";
 
 function RootLayoutContent() {
   const [selectedModel, setSelectedModel] =
@@ -37,7 +39,9 @@ function RootLayoutContent() {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [workingDirectory, setWorkingDirectory] = useState<string>(".");
-  const [sessionWorkingDirectories, setSessionWorkingDirectories] = useState<Map<string, string>>(new Map());
+  const [sessionWorkingDirectories, setSessionWorkingDirectories] = useState<
+    Map<string, string>
+  >(new Map());
 
   // Get the current working directory (default fallback)
   useEffect(() => {
@@ -48,7 +52,10 @@ function RootLayoutContent() {
         console.log("🏠 [App] Got home directory from API:", cwd);
         setWorkingDirectory(cwd);
       } catch (error) {
-        console.warn("🏠 [App] Failed to get working directory, using current directory:", error);
+        console.warn(
+          "🏠 [App] Failed to get working directory, using current directory:",
+          error
+        );
         setWorkingDirectory(".");
       }
     };
@@ -112,10 +119,17 @@ function RootLayoutContent() {
     if (activeConversation) {
       const sessionWd = sessionWorkingDirectories.get(activeConversation);
       if (sessionWd) {
-        console.log("🏠 [App] Using session working directory for", activeConversation, ":", sessionWd);
+        console.log(
+          "🏠 [App] Using session working directory for",
+          activeConversation,
+          ":",
+          sessionWd
+        );
         setWorkingDirectory(sessionWd);
       } else {
-        console.log("🏠 [App] No session working directory found, using default");
+        console.log(
+          "🏠 [App] No session working directory found, using default"
+        );
       }
     }
   }, [activeConversation, sessionWorkingDirectories]);
@@ -140,8 +154,15 @@ function RootLayoutContent() {
 
       // Store working directory for this session
       if (workingDirectory) {
-        console.log("🏠 [App] Storing working directory for session", convId, ":", workingDirectory);
-        setSessionWorkingDirectories(prev => new Map(prev.set(convId, workingDirectory)));
+        console.log(
+          "🏠 [App] Storing working directory for session",
+          convId,
+          ":",
+          workingDirectory
+        );
+        setSessionWorkingDirectories(
+          (prev) => new Map(prev.set(convId, workingDirectory))
+        );
       }
 
       if (workingDirectory) {
@@ -266,7 +287,10 @@ function RootLayoutContent() {
                 status.conversation_id === activeConversation && status.is_alive
             ) && (
               <>
-                {console.log("📝 [App] Rendering MessageInputBar with workingDirectory:", workingDirectory)}
+                {console.log(
+                  "📝 [App] Rendering MessageInputBar with workingDirectory:",
+                  workingDirectory
+                )}
                 <MessageInputBar
                   input={input}
                   isCliInstalled={isCliInstalled}
@@ -288,7 +312,14 @@ function RootLayout() {
     <BackendProvider>
       <div className="h-screen w-full">
         <CustomTitleBar />
-        <div className="h-[calc(100vh-2rem)] w-full">
+        <div
+          className={cn(
+            "w-full",
+            __WEB__ || platform() !== "windows"
+              ? "h-full"
+              : "h-[calc(100vh-2rem)]"
+          )}
+        >
           <RootLayoutContent />
         </div>
       </div>

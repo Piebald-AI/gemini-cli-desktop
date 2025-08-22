@@ -229,7 +229,8 @@ export function EditRenderer({ toolCall, onConfirm }: EditRendererProps) {
                     )}
                     {isCompleted && !isUserRejected(toolCall) && (
                       <div className="text-xs text-green-500 flex items-center">
-                        <Check className="h-4 w-4 mr-1" /> {t("toolCalls.completed")}
+                        <Check className="h-4 w-4 mr-1" />{" "}
+                        {t("toolCalls.completed")}
                       </div>
                     )}
                     {isUserRejected(toolCall) && (

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { platform } from "@tauri-apps/plugin-os";
 import { useTranslation } from "react-i18next";
 import { QwenIcon } from "@/components/branding/QwenIcon";
 import { GeminiIcon } from "@/components/branding/GeminiIcon";
@@ -29,11 +30,6 @@ interface CustomTitleBarProps {
   title?: string;
   className?: string;
 }
-
-// Environment detection
-const isDesktop = () => {
-  return typeof window !== "undefined" && "__TAURI__" in window;
-};
 
 export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
   title,
@@ -102,10 +98,8 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
     };
   }, []);
 
-  // Render in desktop environment OR development mode for testing
-  const shouldRender = isDesktop() || import.meta.env.DEV;
-
-  if (!shouldRender) {
+  // Only show in the desktop app on Windows.
+  if (__WEB__ || platform() !== "windows") {
     return null;
   }
 

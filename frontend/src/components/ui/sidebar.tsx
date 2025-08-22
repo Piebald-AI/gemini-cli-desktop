@@ -23,6 +23,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { platform } from "@tauri-apps/plugin-os";
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state";
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
@@ -170,7 +171,10 @@ function SidebarProvider({
             } as React.CSSProperties
           }
           className={cn(
-            "group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar flex min-h-[calc(100vh-2rem)] w-full",
+            "group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar flex w-full",
+            __WEB__ || platform() !== "windows"
+              ? "min-h-full"
+              : "min-h-[calc(100vh-2rem)]",
             className
           )}
           {...props}
@@ -268,7 +272,10 @@ function Sidebar({
       <div
         data-slot="sidebar-container"
         className={cn(
-          "fixed top-8 z-10 hidden h-[calc(100vh-2rem)] w-(--sidebar-width) md:flex",
+          "fixed z-10 hidden w-(--sidebar-width) md:flex",
+          __WEB__ || platform() !== "windows"
+            ? "top-0 h-full"
+            : "top-8 h-[calc(100vh-2rem)]",
           !isResizing &&
             "transition-[left,right,width] duration-200 ease-linear",
           side === "left"
@@ -357,8 +364,9 @@ function SidebarInset({ className, ...props }: React.ComponentProps<"main">) {
     <main
       data-slot="sidebar-inset"
       className={cn(
-        "bg-background relative flex w-full flex-1 flex-col pt-8",
+        "bg-background relative flex w-full flex-1 flex-col",
         "md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow-sm md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-2",
+        !__WEB__ && platform() === "windows" && "pt-8",
         className
       )}
       {...props}

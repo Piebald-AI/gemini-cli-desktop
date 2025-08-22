@@ -340,11 +340,11 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
             #[cfg(not(target_os = "windows"))]
             {
                 println!(
-                    "🔧 [HANDSHAKE] Creating Unix Qwen command: sh -c 'qwen --experimental-acp'"
+                    "🔧 [HANDSHAKE] Creating Unix Qwen command: sh -lc 'qwen --experimental-acp'"
                 );
                 let mut c = Command::new("sh");
                 let qwen_command = "qwen --experimental-acp".to_string();
-                c.args(["-c", &qwen_command]);
+                c.args(["-lc", &qwen_command]);
                 c
             }
         } else {
@@ -366,13 +366,13 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
                     }
                     "vertex-ai" => {
                         if let Some(project) = &auth.vertex_project {
-                            println!("🔧 [HANDSHAKE] Setting GOOGLE_CLOUD_PROJECT: {}", project);
+                            println!("🔧 [HANDSHAKE] Setting GOOGLE_CLOUD_PROJECT: {project}");
                             unsafe {
                                 std::env::set_var("GOOGLE_CLOUD_PROJECT", project);
                             }
                         }
                         if let Some(location) = &auth.vertex_location {
-                            println!("🔧 [HANDSHAKE] Setting GOOGLE_CLOUD_LOCATION: {}", location);
+                            println!("🔧 [HANDSHAKE] Setting GOOGLE_CLOUD_LOCATION: {location}");
                             unsafe {
                                 std::env::set_var("GOOGLE_CLOUD_LOCATION", location);
                             }
@@ -392,8 +392,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
             #[cfg(target_os = "windows")]
             {
                 println!(
-                    "🔧 [HANDSHAKE] Creating Windows Gemini command: cmd /C gemini --model {} --experimental-acp",
-                    model
+                    "🔧 [HANDSHAKE] Creating Windows Gemini command: cmd /C gemini --model {model} --experimental-acp"
                 );
                 let mut c = Command::new("cmd");
                 c.args(["/C", "gemini", "--model", &model, "--experimental-acp"]);
@@ -403,11 +402,11 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
             {
                 let gemini_command = format!("gemini --model {model} --experimental-acp");
                 println!(
-                    "🔧 [HANDSHAKE] Creating Unix Gemini command: sh -c '{}'",
+                    "🔧 [HANDSHAKE] Creating Unix Gemini command: sh -lc '{}'",
                     gemini_command
                 );
                 let mut c = Command::new("sh");
-                c.args(["-c", &gemini_command]);
+                c.args(["-lc", &gemini_command]);
                 c
             }
         }
@@ -425,7 +424,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
     println!("🔄 [HANDSHAKE] Spawning CLI process...");
     let mut child = cmd.spawn().map_err(|e| {
         let cmd_name = if is_qwen { "qwen" } else { "gemini" };
-        println!("❌ [HANDSHAKE] Failed to spawn {} process: {}", cmd_name, e);
+        println!("❌ [HANDSHAKE] Failed to spawn {cmd_name} process: {e}");
         #[cfg(target_os = "windows")]
         {
             BackendError::SessionInitFailed(format!(
@@ -444,7 +443,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
     println!("✅ [HANDSHAKE] CLI process spawned successfully");
 
     let pid = child.id();
-    println!("🔗 [HANDSHAKE] CLI process PID: {:?}", pid);
+    println!("🔗 [HANDSHAKE] CLI process PID: {pid:?}");
 
     let mut stdin = child.stdin.take().ok_or_else(|| {
         println!("❌ [HANDSHAKE] Failed to get stdin from child process");
@@ -476,7 +475,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
         id: 1,
         method: "initialize".to_string(),
         params: serde_json::to_value(init_params).map_err(|e| {
-            println!("❌ [HANDSHAKE] Failed to serialize init params: {}", e);
+            println!("❌ [HANDSHAKE] Failed to serialize init params: {e}");
             BackendError::SessionInitFailed(format!("Failed to serialize init params: {e}"))
         })?,
     };
@@ -493,13 +492,13 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
     )
     .await
     .map_err(|e| {
-        println!("❌ [HANDSHAKE] Initialize request failed: {}", e);
+        println!("❌ [HANDSHAKE] Initialize request failed: {e}");
         e
     })?;
 
     let _init_result: InitializeResult =
         serde_json::from_value(init_response.result.unwrap_or_default()).map_err(|e| {
-            println!("❌ [HANDSHAKE] Failed to parse init result: {}", e);
+            println!("❌ [HANDSHAKE] Failed to parse init result: {e}");
             BackendError::SessionInitFailed(format!("Failed to parse init result: {e}"))
         })?;
 
@@ -511,17 +510,14 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
         cwd: working_directory.clone(),
         mcp_servers: vec![], // No MCP servers for now
     };
-    println!(
-        "📁 [HANDSHAKE] Session params: cwd={}, mcp_servers=[], ",
-        working_directory
-    );
+    println!("📁 [HANDSHAKE] Session params: cwd={working_directory}, mcp_servers=[]");
 
     let session_request = JsonRpcRequest {
         jsonrpc: "2.0".to_string(),
         id: 3,
         method: "session/new".to_string(),
         params: serde_json::to_value(session_params).map_err(|e| {
-            println!("❌ [HANDSHAKE] Failed to serialize session params: {}", e);
+            println!("❌ [HANDSHAKE] Failed to serialize session params: {e}");
             BackendError::SessionInitFailed(format!("Failed to serialize session params: {e}"))
         })?,
     };
@@ -562,17 +558,14 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
             let auth_params = AuthenticateParams {
                 method_id: auth_method_id.clone(),
             };
-            println!(
-                "🔐 [HANDSHAKE] Sending authenticate request with method: {}",
-                auth_method_id
-            );
+            println!("🔐 [HANDSHAKE] Sending authenticate request with method: {auth_method_id}");
 
             let auth_request = JsonRpcRequest {
                 jsonrpc: "2.0".to_string(),
                 id: 2,
                 method: "authenticate".to_string(),
                 params: serde_json::to_value(auth_params).map_err(|e| {
-                    println!("❌ [HANDSHAKE] Failed to serialize auth params: {}", e);
+                    println!("❌ [HANDSHAKE] Failed to serialize auth params: {e}");
                     BackendError::SessionInitFailed(format!("Failed to serialize auth params: {e}"))
                 })?,
             };
@@ -587,7 +580,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
             )
             .await
             .map_err(|e| {
-                println!("❌ [HANDSHAKE] Authentication request failed: {}", e);
+                println!("❌ [HANDSHAKE] Authentication request failed: {e}");
                 e
             })?;
 
@@ -605,7 +598,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
             )
             .await;
         } else {
-            println!("❌ [HANDSHAKE] Session creation request failed: {}", msg);
+            println!("❌ [HANDSHAKE] Session creation request failed: {msg}");
             return Err(e);
         }
     };
@@ -614,7 +607,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
 
     let session_result: SessionNewResult =
         serde_json::from_value(session_response.result.unwrap_or_default()).map_err(|e| {
-            println!("❌ [HANDSHAKE] Failed to parse session result: {}", e);
+            println!("❌ [HANDSHAKE] Failed to parse session result: {e}");
             BackendError::SessionInitFailed(format!("Failed to parse session result: {e}"))
         })?;
 
@@ -759,10 +752,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
     tokio::spawn(async move {
         // Ensure the I/O loop does not block forever if the CLI becomes silent.
         // The internal handler itself reads line-by-line and will exit on EOF.
-        println!(
-            "🔄 [HANDSHAKE] Starting I/O handler task for session: {}",
-            session_id_clone
-        );
+        println!("🔄 [HANDSHAKE] Starting I/O handler task for session: {session_id_clone}");
         handle_session_io_internal(
             session_id_clone,
             reader,
@@ -784,17 +774,11 @@ async fn handle_session_io_internal(
     processes: ProcessMap,
     event_tx: mpsc::UnboundedSender<InternalEvent>,
 ) {
-    println!(
-        "🔄 [IO-HANDLER] Starting I/O handler loop for session: {}",
-        session_id
-    );
+    println!("🔄 [IO-HANDLER] Starting I/O handler loop for session: {session_id}");
     let mut line_buffer = String::new();
 
     loop {
-        println!(
-            "🔄 [IO-HANDLER] Waiting for message or CLI output for session: {}",
-            session_id
-        );
+        println!("🔄 [IO-HANDLER] Waiting for message or CLI output for session: {session_id}");
         tokio::select! {
             message = message_rx.recv() => {
                 if let Some(message_json) = message {
@@ -857,7 +841,7 @@ async fn handle_session_io_internal(
                         break;
                     }
                     Ok(bytes_read) => {
-                        println!("📥 [SESSION-LIFECYCLE] Read {} bytes from CLI for session: {}", bytes_read, session_id);
+                        println!("📥 [SESSION-LIFECYCLE] Read {bytes_read} bytes from CLI for session: {session_id}");
                         let line = line_buffer.trim().to_string();
 
                         if let Ok(processes_guard) = processes.lock()
@@ -889,7 +873,7 @@ async fn handle_session_io_internal(
                         line_buffer.clear();
                     }
                     Err(e) => {
-                        println!("💀 [SESSION-LIFECYCLE] Error reading from CLI for session {}: {}", session_id, e);
+                        println!("💀 [SESSION-LIFECYCLE] Error reading from CLI for session {session_id}: {e}");
                         println!("💀 [SESSION-LIFECYCLE] This will cause session to become INACTIVE");
                         break;
                     }
@@ -900,22 +884,17 @@ async fn handle_session_io_internal(
 
     {
         println!(
-            "💀 [SESSION-LIFECYCLE] I/O handler exiting, marking session as INACTIVE: {}",
-            session_id
+            "💀 [SESSION-LIFECYCLE] I/O handler exiting, marking session as INACTIVE: {session_id}"
         );
         let mut processes_guard = processes.lock().unwrap();
         if let Some(session) = processes_guard.get_mut(&session_id) {
-            println!(
-                "💀 [SESSION-LIFECYCLE] Setting is_alive=false for session: {}",
-                session_id
-            );
+            println!("💀 [SESSION-LIFECYCLE] Setting is_alive=false for session: {session_id}");
             session.is_alive = false;
             session.stdin = None;
             session.message_sender = None;
         } else {
             println!(
-                "⚠️ [SESSION-LIFECYCLE] Session {} not found in processes map when trying to mark inactive",
-                session_id
+                "⚠️ [SESSION-LIFECYCLE] Session {session_id} not found in processes map when trying to mark inactive"
             );
         }
     }

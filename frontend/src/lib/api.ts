@@ -16,13 +16,15 @@ interface GenerateConversationTitleArgs {
 
 // Type guard functions
 function isStringArg(args: unknown): args is string {
-  return typeof args === 'string';
+  return typeof args === "string";
 }
 
 // Removed unused type guards
 
-function isGenerateConversationTitleArgs(args: unknown): args is GenerateConversationTitleArgs {
-  return typeof args === 'object' && args !== null && 'message' in args;
+function isGenerateConversationTitleArgs(
+  args: unknown
+): args is GenerateConversationTitleArgs {
+  return typeof args === "object" && args !== null && "message" in args;
 }
 
 // Abstraction layer for API calls
@@ -71,7 +73,9 @@ export const api = {
           if (!args)
             throw new Error("Missing arguments for execute_confirmed_command");
           if (!isStringArg(args))
-            throw new Error("execute_confirmed_command expects string argument");
+            throw new Error(
+              "execute_confirmed_command expects string argument"
+            );
           return webApi.execute_confirmed_command(args) as Promise<T>;
         case "generate_conversation_title":
           if (!args)
@@ -79,7 +83,9 @@ export const api = {
               "Missing arguments for generate_conversation_title"
             );
           if (!isGenerateConversationTitleArgs(args))
-            throw new Error("generate_conversation_title expects object with message property");
+            throw new Error(
+              "generate_conversation_title expects object with message property"
+            );
           return webApi.generate_conversation_title(args) as Promise<T>;
         case "validate_directory":
           if (!args)
@@ -101,16 +107,28 @@ export const api = {
             throw new Error("get_parent_directory expects string argument");
           return webApi.get_parent_directory(args) as Promise<T>;
         case "list_directory_contents":
-          console.log("🌐 [API] list_directory_contents called with args:", args);
+          console.log(
+            "🌐 [API] list_directory_contents called with args:",
+            args
+          );
           if (!args) {
-            console.error("🌐 [API] Missing arguments for list_directory_contents");
+            console.error(
+              "🌐 [API] Missing arguments for list_directory_contents"
+            );
             throw new Error("Missing arguments for list_directory_contents");
           }
           if (!isStringArg(args)) {
-            console.error("🌐 [API] list_directory_contents expects string argument, got:", typeof args, args);
+            console.error(
+              "🌐 [API] list_directory_contents expects string argument, got:",
+              typeof args,
+              args
+            );
             throw new Error("list_directory_contents expects string argument");
           }
-          console.log("🌐 [API] Calling webApi.list_directory_contents with path:", args);
+          console.log(
+            "🌐 [API] Calling webApi.list_directory_contents with path:",
+            args
+          );
           return webApi.list_directory_contents(args) as Promise<T>;
         case "list_volumes":
           return webApi.list_volumes() as Promise<T>;

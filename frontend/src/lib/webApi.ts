@@ -230,15 +230,25 @@ export const webApi = {
   async list_directory_contents(path: string): Promise<DirEntry[]> {
     console.log("🌍 [webApi] list_directory_contents called with path:", path);
     const request: ListDirectoryRequest = { path };
-    console.log("🌍 [webApi] Making POST request to /list-directory with:", request);
-    
+    console.log(
+      "🌍 [webApi] Making POST request to /list-directory with:",
+      request
+    );
+
     try {
       const response = await apiClient.post<DirEntry[]>(
         "/list-directory",
         request
       );
-      console.log("🌍 [webApi] Response received:", response.status, response.data);
-      console.log("🌍 [webApi] Response data length:", response.data?.length || 0);
+      console.log(
+        "🌍 [webApi] Response received:",
+        response.status,
+        response.data
+      );
+      console.log(
+        "🌍 [webApi] Response data length:",
+        response.data?.length || 0
+      );
       return response.data;
     } catch (error) {
       console.error("🌍 [webApi] Error in list_directory_contents:", error);
@@ -246,7 +256,7 @@ export const webApi = {
         console.error("🌍 [webApi] Axios error details:", {
           status: error.response?.status,
           statusText: error.response?.statusText,
-          data: error.response?.data
+          data: error.response?.data,
         });
       }
       throw error;
@@ -383,7 +393,6 @@ export interface EnrichedProject {
   root_path: string;
   metadata: ProjectMetadata;
 }
-
 
 // WebSocket event types and management
 interface WebSocketEvent<T = unknown> {

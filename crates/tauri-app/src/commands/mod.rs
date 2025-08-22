@@ -89,7 +89,7 @@ pub async fn test_cli_command(cli_name: String) -> Result<String, String> {
             .map_err(|e| format!("Failed to run {cli_name} --help via cmd: {e}"))?
     } else {
         Command::new("sh")
-            .args(["-c", &format!("{cli_name} --help")])
+            .args(["-lc", &format!("{cli_name} --help")])
             .output()
             .await
             .map_err(|e| format!("Failed to run {cli_name} --help via shell: {e}"))?
@@ -323,7 +323,7 @@ pub async fn debug_environment() -> Result<String, String> {
             }
         } else {
             match tokio::process::Command::new("sh")
-                .args(["-c", &format!("{cli_name} --version")])
+                .args(["-lc", &format!("{cli_name} --version")])
                 .output()
                 .await
             {
