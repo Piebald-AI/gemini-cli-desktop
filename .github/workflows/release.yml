@@ -3,15 +3,18 @@ name: Release & Publish
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 jobs:
   release:
-    runs-on: ubuntu-latest
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, macos-13, macos-14, windows-2025]
     permissions:
       contents: write
-      id-token: write
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -26,18 +29,80 @@ jobs:
         with:
           node-version: 22.x
           cache: pnpm
-          cache-dependency-path: 'frontend/pnpm-lock.yaml'
-          registry-url: https://registry.npmjs.org
+          cache-dependency-path: "frontend/pnpm-lock.yaml"
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: "true"
+
+      - uses: taiki-e/install-action@just
+
+      - name: Install build dependencies
+        if: matrix.os == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgdk-pixbuf-2.0-dev \
+            libpango1.0-dev \
+            libjavascriptcoregtk-4.1-dev \
+            libatk1.0-dev \
+            libsoup-3.0-dev \
+            libwebkit2gtk-4.1-dev \
+            librsvg2-dev
 
       - name: Install dependencies
-        working-directory: frontend
-        run: pnpm install --frozen-lockfile
+        run: just deps
 
       - name: Build project
-        working-directory: frontend
-        run: pnpm tauri build
+        run: just build-all
+
+      - name: Archive `gemini-desktop-web` executable (macOS/Linux)
+        if: matrix.os != 'windows-2025'
+        run: |
+          cd target/release
+          case "${{ matrix.os }}" in
+            ubuntu-22.04) PLATFORM="linux-x64-gnu";;
+            macos-13) PLATFORM="macos-x64";;
+            macos-14) PLATFORM="macos-arm64";;
+            *) echo "Invalid OS: ${{ matrix.os }}"; exit 1;;
+          esac
+          tar -czf gemini-desktop-web-${PLATFORM}.tar.gz gemini-desktop-web
+
+      - name: Archive `gemini-desktop-web` executable (Windows)
+        if: matrix.os == 'windows-2025'
+        run: |
+          cd target/release
+          7z a -tzip gemini-desktop-web-windows-x64-msvc.zip gemini-desktop-web.exe
+
+      - name: Build Windows installer
+        if: matrix.os == 'windows-2025'
+        run: |
+          winget install --id JRSoftware.InnoSetup --disable-interactivity --accept-source-agreements --accept-package-agreements
+          & "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe" installer.iss
+
+      - name: Remove spaces from installer names
+        if: matrix.os != 'windows-2025'
+        run: |
+          cd target/release/bundle
+
+          find appimage rpm deb dmg -maxdepth 1 -type f -name 'Gemini Desktop*' 2>/dev/null \
+          -exec bash -c '
+          for f; do
+              mv "$f" "$(dirname "$f")/$(basename "$f" | sed "s/^Gemini Desktop/GeminiDesktop/")"
+          done
+          ' _ {} + || true
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          files: |
+            target/release/bundle/dmg/*.dmg
+            target/release/bundle/deb/*.deb
+            target/release/bundle/rpm/*.rpm
+            target/release/bundle/appimage/*.AppImage
+            target/release/GeminiDesktopSetup.exe
+            target/release/gemini-desktop-web-*.tar.gz
+            target/release/gemini-desktop-web-*.zip
           generate_release_notes: true
