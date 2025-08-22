@@ -174,7 +174,7 @@ function SidebarProvider({
             "group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar flex w-full",
             __WEB__ || platform() !== "windows"
               ? "min-h-full"
-              : "min-h-[calc(100vh-2rem)]",
+              : "min-h-[calc(100vh)]",
             className
           )}
           {...props}

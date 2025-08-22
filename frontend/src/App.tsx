@@ -315,9 +315,7 @@ function RootLayout() {
         <div
           className={cn(
             "w-full",
-            __WEB__ || platform() !== "windows"
-              ? "h-full"
-              : "h-[calc(100vh-2rem)]"
+            __WEB__ || platform() !== "windows" ? "h-full" : "h-[calc(100vh)]"
           )}
         >
           <RootLayoutContent />
