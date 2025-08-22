@@ -35,7 +35,16 @@
     "enabled": "已启用",
     "disabled": "已禁用",
     "required": "必填",
-    "optional": "可选"
+    "optional": "可选",
+    "copy": "复制",
+    "copied": "已复制！",
+    "thinking": "思考中",
+    "unknownFile": "未知文件",
+    "unknownSize": "未知大小",
+    "currentDirectory": "当前目录",
+    "showLess": "显示更少",
+    "showMoreLines": "显示更多 {{count}} 行",
+    "completedSuccessfully": "成功完成。"
   },
 
   "navigation": {
@@ -173,7 +182,7 @@
     "approve": "批准？",
     "allow": "允许",
     "deny": "拒绝",
-    "reject": "拒绝",
+    "reject": "驳回",
     "executing": "执行中...",
     "running": "运行中...",
     "completed": "已完成",
@@ -190,7 +199,16 @@
     "fetchingUrls": "正在获取 {{count}} 个网址",
     "fetchingUrl": "正在获取 {{url}}",
     "rejectedFetch": "拒绝获取",
-    "failedToFetch": "获取失败"
+    "failedToFetch": "获取失败",
+    "success": "成功",
+    "searching": "搜索中",
+    "searched": "已搜索",
+    "fetchingContent": "获取中",
+    "fetchedContent": "已获取",
+    "webSearchCompleted": "网页搜索完成",
+    "webFetchCompleted": "网页获取完成",
+    "listedDirectory": "已列出目录",
+    "fileContentNotAvailable": "文件内容不可用"
   },
 
   "search": {
@@ -279,7 +297,40 @@
     "enterArgument": "输入参数",
     "enterScope": "输入作用域",
     "enterAudience": "输入受众",
-    "writeArgsHere": "在此处输入参数"
+    "writeArgsHere": "在此处输入参数",
+    "basicConfiguration": "基本配置",
+    "transportType": "传输类型",
+    "stdioTransport": "标准输入输出（本地命令）",
+    "sseTransport": "SSE（服务器推送事件）",
+    "httpTransport": "HTTP（HTTP 流）",
+    "commandPlaceholder": "例如：python -m my_mcp_server",
+    "arguments": "参数（逗号分隔）",
+    "argumentsPlaceholder": "例如：--port, 8080, --verbose",
+    "sseUrl": "SSE 网址",
+    "sseUrlPlaceholder": "http://localhost:8080/sse",
+    "httpUrlPlaceholder": "http://localhost:3000/mcp",
+    "advancedSettings": "高级设置",
+    "workingDirectoryPlaceholder": "./server-directory",
+    "authentication": "身份验证",
+    "enableOAuth": "启用 OAuth 2.0 身份验证",
+    "scopesPlaceholder": "例如：read, write, admin",
+    "toolFiltering": "工具筛选",
+    "includeTools": "包含工具（白名单，逗号分隔）",
+    "excludeTools": "排除工具（黑名单，逗号分隔）",
+    "includeToolsPlaceholder": "例如：safe_tool, file_reader, data_processor",
+    "excludeToolsPlaceholder": "例如：dangerous_tool, file_deleter",
+    "toolFilteringDescription": "排除工具优先于包含工具。两者都留空将使用所有可用工具。",
+    "notConfigured": "未配置",
+    "oauth": "OAuth",
+    "tools": "工具",
+    "enterServerName": "输入服务器名称",
+    "enterCommand": "输入命令",
+    "enterClientId": "输入 MCP 服务器的客户端 ID",
+    "enterClientSecret": "输入 MCP 服务器的客户端密钥",
+    "enterAuthUrl": "输入 MCP 服务器的授权网址",
+    "enterTokenUrl": "输入 MCP 服务器的令牌网址",
+    "enterRedirectUri": "输入 MCP 服务器的重定向 URI",
+    "enterTokenParam": "输入 MCP 服务器的令牌参数名称"
   },
 
   "backend": {
@@ -377,6 +428,11 @@
       "thoughtProcess": "• 观察 Gemini 的 **思考过程**",
       "fileDiffs": "• 查看和处理带有清晰文件差异的编辑请求"
     },
+    "feature1": "在 Gemini 模型中选择（Gemini 2.5 Pro、Gemini 2.5 Flash、Gemini 2.5 Flash-Lite）",
+    "feature2": "使用 **Qwen.ai OAuth/自定义 OpenAI 兼容提供商** 和 Qwen Code 的模型",
+    "feature3": "向/从 AI 发送消息并接收响应；处理工具调用请求；Markdown 支持",
+    "feature4": "观察 Gemini 的**思考过程**",
+    "feature5": "查看和处理带有清晰文件差异的编辑请求",
     "copyright": "© {{year}} {{appName}}。保留所有权利。",
     "fromCreators": "来自创建者"
   },

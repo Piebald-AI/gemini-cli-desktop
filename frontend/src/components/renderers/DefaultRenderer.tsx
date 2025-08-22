@@ -1,4 +1,5 @@
 import { Wrench, Check } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { type ToolCall } from "../../utils/toolCallParser";
 
 interface DefaultRendererProps {
@@ -6,6 +7,7 @@ interface DefaultRendererProps {
 }
 
 export function DefaultRenderer({ toolCall }: DefaultRendererProps) {
+  const { t } = useTranslation();
   const result = toolCall.result;
 
   // Handle different result types
@@ -82,7 +84,7 @@ export function DefaultRenderer({ toolCall }: DefaultRendererProps) {
     ) {
       return String(result.message);
     }
-    return "Completed successfully.";
+    return t("common.completedSuccessfully");
   };
 
   return (

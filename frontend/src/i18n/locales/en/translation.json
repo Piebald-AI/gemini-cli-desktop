@@ -35,7 +35,16 @@
     "enabled": "Enabled",
     "disabled": "Disabled",
     "required": "Required",
-    "optional": "Optional"
+    "optional": "Optional",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "thinking": "Thinking",
+    "unknownFile": "unknown file",
+    "unknownSize": "unknown size",
+    "currentDirectory": "current directory",
+    "showLess": "Show less",
+    "showMoreLines": "Show {{count}} more lines",
+    "completedSuccessfully": "Completed successfully."
   },
 
   "navigation": {
@@ -190,7 +199,16 @@
     "fetchingUrls": "Fetching {{count}} URLs",
     "fetchingUrl": "Fetching {{url}}",
     "rejectedFetch": "Rejected fetch",
-    "failedToFetch": "Failed to fetch"
+    "failedToFetch": "Failed to fetch",
+    "success": "Success",
+    "searching": "Searching",
+    "searched": "Searched",
+    "fetchingContent": "Fetching",
+    "fetchedContent": "Fetched",
+    "webSearchCompleted": "Web search completed",
+    "webFetchCompleted": "Web fetch completed",
+    "listedDirectory": "Listed directory",
+    "fileContentNotAvailable": "File content not available"
   },
 
   "search": {

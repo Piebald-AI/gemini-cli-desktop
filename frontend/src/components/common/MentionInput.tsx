@@ -61,7 +61,40 @@ export function MentionInput({
       if (/\s/.test(charBeforeAt) || atIndex === 0) {
         // Only show if there's no space after @ (still building the mention)
         if (!afterAt.includes(" ")) {
-          return { atIndex, searchText: afterAt };
+          console.log("🔍 [detectAtTrigger] Found @ trigger - afterAt:", JSON.stringify(afterAt));
+          
+          // Parse the path to find directory and search filter
+          const lastSlashIndex = afterAt.lastIndexOf('/');
+          if (lastSlashIndex !== -1) {
+            const directory = afterAt.substring(0, lastSlashIndex + 1); // Include the trailing slash
+            const searchFilter = afterAt.substring(lastSlashIndex + 1);
+            
+            // Special case: if search filter is empty and we end with slash,
+            // we're actually trying to complete the folder name, not search inside it
+            if (searchFilter === "") {
+              // Remove the trailing slash and treat the last part as search filter INCLUDING the slash
+              const folderPath = afterAt.substring(0, lastSlashIndex);
+              const parentSlashIndex = folderPath.lastIndexOf('/');
+              
+              if (parentSlashIndex !== -1) {
+                const parentDirectory = folderPath.substring(0, parentSlashIndex + 1);
+                const folderName = folderPath.substring(parentSlashIndex + 1);
+                console.log("🔍 [detectAtTrigger] Folder completion - parentDirectory:", JSON.stringify(parentDirectory), "folderName:", JSON.stringify(folderName + "/"));
+                return { atIndex, searchText: afterAt, directory: parentDirectory, searchFilter: folderName + "/" };
+              } else {
+                // No parent directory, completing folder in root
+                console.log("🔍 [detectAtTrigger] Root folder completion - folderName:", JSON.stringify(folderPath + "/"));
+                return { atIndex, searchText: afterAt, directory: "", searchFilter: folderPath + "/" };
+              }
+            } else {
+              console.log("🔍 [detectAtTrigger] File search - directory:", JSON.stringify(directory), "searchFilter:", JSON.stringify(searchFilter));
+              return { atIndex, searchText: afterAt, directory, searchFilter };
+            }
+          } else {
+            // No slash, so it's just a search in the current directory
+            console.log("🔍 [detectAtTrigger] No slash found, treating as root search:", JSON.stringify(afterAt));
+            return { atIndex, searchText: afterAt, directory: "", searchFilter: afterAt };
+          }
         }
       }
     }
@@ -74,9 +107,15 @@ export function MentionInput({
       return navState.entries;
     }
     
-    return navState.entries.filter(entry => 
-      entry.name.toLowerCase().includes(searchFilter.toLowerCase())
-    );
+    return navState.entries.filter(entry => {
+      const entryDisplayName = entry.is_directory ? `${entry.name}/` : entry.name;
+      const searchLower = searchFilter.toLowerCase();
+      const entryLower = entry.name.toLowerCase();
+      const entryDisplayLower = entryDisplayName.toLowerCase();
+      
+      // Match against both the raw name and the display name (with slash for directories)
+      return entryLower.includes(searchLower) || entryDisplayLower.includes(searchLower);
+    });
   }, [navState.entries, searchFilter]);
 
   // Reset selection when search filter changes or entries change
@@ -109,9 +148,22 @@ export function MentionInput({
         navActions.loadDirectory(workingDirectory);
       }
       
+      // If we have a directory path, navigate to that directory
+      if (atTrigger.directory && atTrigger.directory !== "") {
+        const targetDir = workingDirectory + "/" + atTrigger.directory.replace(/\/$/, ""); // Remove trailing slash
+        console.log("🔍 [MentionInput] Directory path detected, navigating to:", targetDir);
+        if (navState.currentPath !== targetDir) {
+          navActions.loadDirectory(targetDir);
+        }
+        // Set the search filter to just the filename part
+        setSearchFilter(atTrigger.searchFilter || "");
+      } else {
+        // No directory, just search in current directory
+        setSearchFilter(atTrigger.searchFilter || atTrigger.searchText);
+      }
+      
       console.log("🔥 [MentionInput] Setting @ trigger state");
       setAtPosition(atTrigger.atIndex);
-      setSearchFilter(atTrigger.searchText);
       setShowFilePicker(true);
       setFilteredSelectedIndex(0);
     } else {
@@ -153,11 +205,46 @@ export function MentionInput({
     
     const mentionText = entry.is_directory ? `${entry.name}/` : entry.name;
     
-    // If this is the first mention (Tab from initial directory), just use the entry name
-    // If continuing a path, append to the existing mention
-    const newMentionText = existingMentionText.length === 0 ? mentionText : `${existingMentionText}${mentionText}`;
+    // Determine if we're completing a partial match or continuing a path
+    let newMentionText;
     
-    const newValue = `${beforeAt}@${newMentionText} ${afterAtAndMention}`;
+    if (existingMentionText.length === 0) {
+      // No existing mention, just use the entry name
+      newMentionText = mentionText;
+    } else {
+      // Check if the existing text exactly matches the selected entry
+      // This handles the case where user types "@.folder/" and presses Enter on ".folder"
+      if (existingMentionText === mentionText) {
+        // Exact match - user has already typed the complete name, don't duplicate
+        newMentionText = mentionText;
+      } else {
+        // Check if we're completing a partial match (e.g., ".gi" -> ".git")
+        // or continuing a path (e.g., ".git/" -> ".git/hooks")
+        const lastSlashIndex = existingMentionText.lastIndexOf('/');
+        
+        if (lastSlashIndex === existingMentionText.length - 1) {
+          // Existing text ends with slash, we're continuing a path
+          newMentionText = `${existingMentionText}${mentionText}`;
+        } else {
+          // No trailing slash, we're completing a partial match
+          // Replace the partial match with the full entry name
+          if (lastSlashIndex !== -1) {
+            // There's a path before the partial match
+            const pathPrefix = existingMentionText.substring(0, lastSlashIndex + 1);
+            newMentionText = `${pathPrefix}${mentionText}`;
+          } else {
+            // No path, just replace the entire partial match
+            newMentionText = mentionText;
+          }
+        }
+      }
+    }
+    
+    // Only add space after mention if it's not a folder (folders end with / and shouldn't have space)
+    const addSpace = !newMentionText.endsWith('/');
+    const newValue = addSpace 
+      ? `${beforeAt}@${newMentionText} ${afterAtAndMention}`
+      : `${beforeAt}@${newMentionText}${afterAtAndMention}`;
     
     console.log("🔥 [MentionInput] Building mention - existing:", existingMentionText, "entry:", mentionText, "final:", newMentionText);
     console.log("🔥 [MentionInput] New value:", newValue);
@@ -249,23 +336,38 @@ export function MentionInput({
       } else if (e.key === "Tab") {
         e.preventDefault();
         console.log("🔥 [MentionInput] Tab pressed");
-        if (selectedEntry && selectedEntry.is_directory) {
-          console.log("⌨️ [MentionInput] Tab: Adding folder to mentions AND navigating to directory:", selectedEntry.name);
+        
+        if (selectedEntry) {
+          const filteredEntries = getFilteredEntries();
+          const hasDirectories = filteredEntries.some(entry => entry.is_directory);
           
-          // First, add the folder to mentions (but keep picker open)
-          console.log("🔥 [MentionInput] About to call addMentionToInput with closePicker=false");
-          addMentionToInput(selectedEntry, false);
+          console.log("🎯 [MentionInput] Smart Tab logic - hasDirectories:", hasDirectories, "selectedEntry.is_directory:", selectedEntry.is_directory);
           
-          // Then navigate into the folder
-          console.log("🔥 [MentionInput] About to call navigateToFolder to show contents");
-          navActions.navigateToFolder(selectedEntry.name);
-          console.log("🔥 [MentionInput] Clearing search filter");
-          setSearchFilter(""); // Clear search when navigating
-          console.log("🔥 [MentionInput] Resetting filteredSelectedIndex to 0");
-          setFilteredSelectedIndex(0);
-          console.log("🔥 [MentionInput] Tab completed - added mention and navigated");
+          if (selectedEntry.is_directory && hasDirectories) {
+            // There are directories to navigate into, so navigate
+            console.log("⌨️ [MentionInput] Tab: Adding folder to mentions AND navigating to directory:", selectedEntry.name);
+            
+            // First, add the folder to mentions (but keep picker open)
+            console.log("🔥 [MentionInput] About to call addMentionToInput with closePicker=false");
+            addMentionToInput(selectedEntry, false);
+            
+            // Then navigate into the folder
+            console.log("🔥 [MentionInput] About to call navigateToFolder to show contents");
+            navActions.navigateToFolder(selectedEntry.name);
+            console.log("🔥 [MentionInput] Clearing search filter");
+            setSearchFilter(""); // Clear search when navigating
+            console.log("🔥 [MentionInput] Resetting filteredSelectedIndex to 0");
+            setFilteredSelectedIndex(0);
+            console.log("🔥 [MentionInput] Tab completed - added mention and navigated");
+          } else {
+            // No directories to navigate into, or selected item is a file - behave like Enter
+            console.log("⌨️ [MentionInput] Tab: No directories to navigate, selecting item like Enter:", selectedEntry.name);
+            console.log("🔥 [MentionInput] About to call handleFileSelection");
+            handleFileSelection(selectedEntry);
+            console.log("🔥 [MentionInput] Tab selection completed");
+          }
         } else {
-          console.log("🔥 [MentionInput] Tab pressed but selectedEntry is not a directory or null");
+          console.log("🔥 [MentionInput] Tab pressed but no selectedEntry");
         }
         return;
       } else if (e.key === "Escape") {

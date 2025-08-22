@@ -1,5 +1,6 @@
 import { FileText, Copy } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { type ToolCall } from "../../utils/toolCallParser";
 import { Button } from "../ui/button";
 
@@ -18,6 +19,7 @@ interface FileRendererProps {
 }
 
 export function FileRenderer({ toolCall }: FileRendererProps) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const result = toolCall.result as FileResult;
 
@@ -26,17 +28,17 @@ export function FileRenderer({ toolCall }: FileRendererProps) {
     try {
       if (toolCall.inputJsonRpc) {
         const input = JSON.parse(toolCall.inputJsonRpc);
-        return input.params?.file || input.params?.path || "unknown file";
+        return input.params?.file || input.params?.path || t("common.unknownFile");
       }
     } catch {
       // Intentionally ignore parse errors
     }
-    return result.path || "unknown file";
+    return result.path || t("common.unknownFile");
   };
 
   // Format file size
   const formatSize = (bytes?: number): string => {
-    if (!bytes) return "unknown size";
+    if (!bytes) return t("common.unknownSize");
     const units = ["B", "KB", "MB", "GB"];
     let size = bytes;
     let unitIndex = 0;
@@ -120,7 +122,7 @@ export function FileRenderer({ toolCall }: FileRendererProps) {
               className="text-xs"
             >
               <Copy className="h-3 w-3 mr-1" />
-              {copied ? "Copied!" : "Copy"}
+              {copied ? t("common.copied") : t("common.copy")}
             </Button>
           </div>
         )}
@@ -148,7 +150,7 @@ export function FileRenderer({ toolCall }: FileRendererProps) {
         </div>
       ) : (
         <div className="text-sm text-muted-foreground p-3 bg-muted/50 rounded-md text-center">
-          File content not available
+          {t("toolCalls.fileContentNotAvailable")}
         </div>
       )}
     </div>

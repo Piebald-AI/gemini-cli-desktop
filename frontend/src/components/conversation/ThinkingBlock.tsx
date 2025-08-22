@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ChevronDown, ChevronRight, Brain } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -8,6 +9,7 @@ interface ThinkingBlockProps {
 }
 
 export function ThinkingBlock({ thinking }: ThinkingBlockProps) {
+  const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
 
   if (!thinking || thinking.trim().length === 0) {
@@ -22,7 +24,7 @@ export function ThinkingBlock({ thinking }: ThinkingBlockProps) {
       >
         <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
           <Brain className="w-4 h-4" />
-          <span>Thinking</span>
+          <span>{t("common.thinking")}</span>
         </div>
         {isExpanded ? (
           <ChevronDown className="w-4 h-4 text-muted-foreground" />
