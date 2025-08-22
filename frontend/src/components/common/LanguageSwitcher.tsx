@@ -1,5 +1,5 @@
 import React from "react";
-import { ChevronDownIcon, GlobeIcon, CheckIcon } from "lucide-react";
+import { ChevronDownIcon, CheckIcon } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +14,6 @@ export interface LanguageOption {
   code: SupportedLanguage;
   name: string;
   nativeName: string;
-  flag: string;
 }
 
 const SUPPORTED_LANGUAGES: LanguageOption[] = [
@@ -22,26 +21,22 @@ const SUPPORTED_LANGUAGES: LanguageOption[] = [
     code: "en",
     name: "English",
     nativeName: "English",
-    flag: "🇺🇸",
   },
   {
     code: "zh-CN",
     name: "Simplified Chinese",
     nativeName: "简体中文",
-    flag: "🇨🇳",
   },
   {
     code: "zh-TW",
     name: "Traditional Chinese",
     nativeName: "繁體中文",
-    flag: "🇹🇼",
   },
 ];
 
 interface LanguageSwitcherProps {
   variant?: "default" | "outline" | "ghost" | "secondary";
   size?: "default" | "sm" | "lg" | "icon";
-  showFlag?: boolean;
   showText?: boolean;
   showChevron?: boolean;
   className?: string;
@@ -50,7 +45,6 @@ interface LanguageSwitcherProps {
 export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
   variant = "ghost",
   size = "default",
-  showFlag = true,
   showText = true,
   showChevron = true,
   className,
@@ -88,16 +82,6 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
         title={currentLang ? currentLang.nativeName : "Language"}
         aria-label="Language switcher"
       >
-        {!showFlag && <GlobeIcon className="h-4 w-4" />}
-        {showFlag && (
-          <span
-            className="text-base leading-none"
-            role="img"
-            aria-label={`${currentLang.nativeName} flag`}
-          >
-            {currentLang.flag}
-          </span>
-        )}
         {showText && size !== "icon" && (
           <span className="text-sm font-medium hidden sm:inline-block">
             {currentLang.nativeName}
@@ -134,13 +118,6 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
                 isSelected && "bg-accent/60 text-accent-foreground"
               )}
             >
-              <span
-                className="text-lg flex-shrink-0"
-                role="img"
-                aria-label={`${language.nativeName} flag`}
-              >
-                {language.flag}
-              </span>
               <div className="flex flex-col flex-1 gap-0.5">
                 <span
                   className={cn(

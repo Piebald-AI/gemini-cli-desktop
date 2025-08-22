@@ -207,19 +207,16 @@ export function ConversationList({
             <SelectContent>
               <SelectItem value="en">
                 <div className="flex items-center gap-2">
-                  <span>🇺🇸</span>
                   <span>English</span>
                 </div>
               </SelectItem>
               <SelectItem value="zh-CN">
                 <div className="flex items-center gap-2">
-                  <span>🇨🇳</span>
                   <span>简体中文</span>
                 </div>
               </SelectItem>
               <SelectItem value="zh-TW">
                 <div className="flex items-center gap-2">
-                  <span>🇹🇼</span>
                   <span>繁體中文</span>
                 </div>
               </SelectItem>
