@@ -27,10 +27,11 @@ import { useMessageHandler } from "./hooks/useMessageHandler";
 import { useToolCallConfirmation } from "./hooks/useToolCallConfirmation";
 import { useConversationEvents } from "./hooks/useConversationEvents";
 import { useCliInstallation } from "./hooks/useCliInstallation";
+import { useTauriMenu } from "./hooks/useTauriMenu";
 import { CliIO } from "./types";
 import "./index.css";
-import { cn } from "./lib/utils";
 import { platform } from "@tauri-apps/plugin-os";
+import { AboutDialog } from "./components/common/AboutDialog";
 
 function RootLayoutContent() {
   const [selectedModel, setSelectedModel] =
@@ -307,20 +308,31 @@ function RootLayoutContent() {
   );
 }
 
+function RootLayoutInner() {
+  // Set up Tauri menu for non-Windows desktop platforms
+  const { isAboutDialogOpen, setIsAboutDialogOpen } = useTauriMenu();
+
+  return (
+    <div className="h-screen w-full">
+      <CustomTitleBar />
+      <div className="size-full">
+        <RootLayoutContent />
+      </div>
+      {/* About Dialog for non-Windows platforms using Tauri menu */}
+      {!__WEB__ && platform() !== "windows" && (
+        <AboutDialog
+          open={isAboutDialogOpen}
+          onOpenChange={setIsAboutDialogOpen}
+        />
+      )}
+    </div>
+  );
+}
+
 function RootLayout() {
   return (
     <BackendProvider>
-      <div className="h-screen w-full">
-        <CustomTitleBar />
-        <div
-          className={cn(
-            "w-full",
-            __WEB__ || platform() !== "windows" ? "h-full" : "h-[calc(100vh)]"
-          )}
-        >
-          <RootLayoutContent />
-        </div>
-      </div>
+      <RootLayoutInner />
     </BackendProvider>
   );
 }
