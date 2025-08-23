@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { Routes, Route, Outlet, Navigate } from "react-router-dom";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { api } from "./lib/api";
 import { AppSidebar } from "./components/layout/AppSidebar";
 import { MessageInputBar } from "./components/conversation/MessageInputBar";
@@ -71,6 +72,11 @@ function RootLayoutContent() {
   useEffect(() => {
     const backendText = getBackendText(selectedBackend);
     document.title = backendText.desktopName;
+    
+    // Also update native window title on desktop platforms
+    if (!__WEB__) {
+      getCurrentWindow().setTitle(backendText.desktopName);
+    }
   }, [selectedBackend]);
 
   // Custom hooks for cleaner code

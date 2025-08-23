@@ -21,6 +21,7 @@ export const useTauriMenu = () => {
 
       const handlers = createMenuHandlers(navigate, setIsAboutDialogOpen);
       const labels = getMenuLabels(t, selectedBackend);
+      const currentPlatform = platform();
 
       try {
         // File Menu
@@ -30,19 +31,19 @@ export const useTauriMenu = () => {
             await MenuItem.new({
               id: "home",
               text: labels.home,
-              accelerator: "CmdOrCtrl+H",
+              accelerator: currentPlatform === "macos" ? "Cmd+H" : "Ctrl+H",
               action: handlers.goHome,
             }),
             await MenuItem.new({
               id: "projects",
               text: labels.projects,
-              accelerator: "CmdOrCtrl+P",
+              accelerator: currentPlatform === "macos" ? "Cmd+P" : "Ctrl+P",
               action: handlers.goProjects,
             }),
             await MenuItem.new({
               id: "mcp-servers",
               text: labels.mcpServers,
-              accelerator: "CmdOrCtrl+M",
+              accelerator: currentPlatform === "macos" ? "Cmd+M" : "Ctrl+M",
               action: handlers.goMcpServers,
             }),
           ],
@@ -63,28 +64,94 @@ export const useTauriMenu = () => {
             await MenuItem.new({
               id: "refresh",
               text: labels.refresh,
-              accelerator: "F5",
+              accelerator: currentPlatform === "macos" ? "Cmd+R" : "Ctrl+R",
               action: handlers.refresh,
             }),
           ],
         });
 
-        // Tools Menu
-        const toolsSubmenu = await Submenu.new({
-          text: labels.tools,
-          items: [
-            await MenuItem.new({
-              id: "about",
-              text: labels.about,
-              action: handlers.showAbout,
-            }),
-          ],
-        });
+        let menu;
 
-        // Create and set the main menu
-        const menu = await Menu.new({
-          items: [fileSubmenu, viewSubmenu, toolsSubmenu],
-        });
+        if (currentPlatform === "macos") {
+          // On macOS, the first submenu becomes the application submenu by default
+          // Create About submenu as the first item (becomes app menu)
+          const aboutSubmenu = await Submenu.new({
+            text: "About",
+            items: [
+              await MenuItem.new({
+                id: "about",
+                // Always use "Gemini Desktop" on macOS because the OS displays the app name in the 
+                // top menu bar, so "Gemini Desktop -> About Qwen Desktop" would be more confusing 
+                // than just keeping it consistent as "Gemini Desktop"
+                text: t("titleBar.about", { name: "Gemini Desktop" }),
+                action: handlers.showAbout,
+              }),
+              await PredefinedMenuItem.new({
+                item: "Separator",
+              }),
+              await MenuItem.new({
+                id: "quit",
+                // Same reasoning as About menu - keep consistent with OS-displayed app name
+                text: t("titleBar.quit", { name: "Gemini Desktop" }),
+                accelerator: "Cmd+Q",
+                action: handlers.quit,
+              }),
+            ],
+          });
+
+          // Create menu with About first (becomes app menu), then File and View
+          menu = await Menu.new({
+            items: [aboutSubmenu, fileSubmenu, viewSubmenu],
+          });
+        } else {
+          // Linux/Windows - add Exit to File menu and keep Tools menu with About item
+          const fileSubmenuWithExit = await Submenu.new({
+            text: labels.file,
+            items: [
+              await MenuItem.new({
+                id: "home",
+                text: labels.home,
+                accelerator: "Ctrl+H",
+                action: handlers.goHome,
+              }),
+              await MenuItem.new({
+                id: "projects",
+                text: labels.projects,
+                accelerator: "Ctrl+P",
+                action: handlers.goProjects,
+              }),
+              await MenuItem.new({
+                id: "mcp-servers",
+                text: labels.mcpServers,
+                accelerator: "Ctrl+M",
+                action: handlers.goMcpServers,
+              }),
+              await PredefinedMenuItem.new({
+                item: "Separator",
+              }),
+              await MenuItem.new({
+                id: "exit",
+                text: t("titleBar.exit"),
+                action: handlers.quit,
+              }),
+            ],
+          });
+
+          const toolsSubmenu = await Submenu.new({
+            text: labels.tools,
+            items: [
+              await MenuItem.new({
+                id: "about",
+                text: labels.about,
+                action: handlers.showAbout,
+              }),
+            ],
+          });
+
+          menu = await Menu.new({
+            items: [fileSubmenuWithExit, viewSubmenu, toolsSubmenu],
+          });
+        }
 
         await menu.setAsAppMenu();
       } catch (error) {

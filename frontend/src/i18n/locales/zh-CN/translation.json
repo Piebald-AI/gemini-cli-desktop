@@ -76,7 +76,9 @@
     "mcpServers": "MCP 服务器",
     "toggleDarkMode": "切换深色模式",
     "refresh": "刷新",
-    "about": "关于 {{name}}"
+    "about": "关于 {{name}}",
+    "quit": "退出 {{name}}",
+    "exit": "退出"
   },
 
   "projects": {

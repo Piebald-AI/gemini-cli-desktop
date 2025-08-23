@@ -18,6 +18,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_os::init())
+        .plugin(tauri_plugin_process::init())
         .setup(|app| {
             let emitter = TauriEventEmitter::new(app.handle().clone());
             let backend = GeminiBackend::new(emitter);

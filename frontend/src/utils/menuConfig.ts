@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { exit } from "@tauri-apps/plugin-process";
 import { BackendType } from "@/types/backend";
 import { getBackendText } from "@/utils/backendText";
 
@@ -9,6 +10,7 @@ export interface MenuHandler {
   toggleTheme: () => void;
   refresh: () => void;
   showAbout: () => void;
+  quit: () => void;
 }
 
 export const createMenuHandlers = (
@@ -24,6 +26,11 @@ export const createMenuHandlers = (
   },
   refresh: () => window.location.reload(),
   showAbout: () => setIsAboutDialogOpen(true),
+  quit: () => {
+    if (!__WEB__) {
+      exit();
+    }
+  },
 });
 
 export const getMenuLabels = (
