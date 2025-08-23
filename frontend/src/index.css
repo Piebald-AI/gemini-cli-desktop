@@ -2,7 +2,8 @@
 @import "tw-animate-css";
 @import "katex/dist/katex.min.css";
 
-body, html {
+body,
+html {
   overflow: hidden;
 }
 

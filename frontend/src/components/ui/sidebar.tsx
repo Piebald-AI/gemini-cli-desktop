@@ -270,9 +270,7 @@ function Sidebar({
         data-slot="sidebar-container"
         className={cn(
           "fixed z-10 hidden w-(--sidebar-width) md:flex",
-          __WEB__ || platform() !== "windows"
-            ? "top-0 h-full"
-            : "top-8 h-full",
+          __WEB__ || platform() !== "windows" ? "top-0 h-full" : "top-8 h-full",
           !isResizing &&
             "transition-[left,right,width] duration-200 ease-linear",
           side === "left"
