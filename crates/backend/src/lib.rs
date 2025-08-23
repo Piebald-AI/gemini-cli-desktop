@@ -225,7 +225,7 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
         &self,
         session_id: String,
         message: String,
-        conversation_history: String,
+        _conversation_history: String,
     ) -> BackendResult<()> {
         println!("📤 Sending message to session: {session_id}");
 
@@ -312,7 +312,7 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
     fn parse_mentions_to_content_blocks(
         &self,
         message: &str,
-        working_directory: &str,
+        _working_directory: &str,
     ) -> Vec<ContentBlock> {
         let mut blocks: Vec<ContentBlock> = Vec::new();
 
@@ -321,7 +321,7 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
         let re = regex::Regex::new(regex_pattern).unwrap();
         let mut last_end = 0;
         let captures: Vec<_> = re.captures_iter(message).collect();
-        for (capture_idx, capture) in captures.iter().enumerate() {
+        for capture in captures.iter() {
             let match_range = capture.get(0).unwrap();
             let mention_path = capture.get(1).unwrap().as_str();
 
@@ -331,10 +331,10 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
                 let char_index = match_range.start() - 1;
                 let char_before = message.chars().nth(char_index);
 
-                if let Some(c) = char_before {
-                    if !c.is_whitespace() {
-                        continue;
-                    }
+                if let Some(c) = char_before
+                    && !c.is_whitespace()
+                {
+                    continue;
                 }
             }
 
