@@ -84,7 +84,7 @@ export function DirectorySelectionDialog({
       setLoading(true);
       setError("");
 
-      let dirContents = await api.list_directory_contents(path);
+      let dirContents = await api.list_directory_contents({ path });
       setContents(dirContents);
     } catch (err) {
       setError(t("fileSystem.failedToLoadDirectory"));
@@ -118,7 +118,9 @@ export function DirectorySelectionDialog({
       setLoading(true);
       setError("");
 
-      let parentPath = await api.get_parent_directory(currentDirectory);
+      let parentPath = await api.get_parent_directory({
+        path: currentDirectory,
+      });
       if (parentPath) {
         setCurrentDirectory(parentPath);
         setPathInput(parentPath);

@@ -44,7 +44,7 @@ export const useFileSystemNavigation = (initialPath?: string) => {
         "📡 [useFileSystemNavigation] Making API call to list_directory_contents with path:",
         path
       );
-      const entries = await api.list_directory_contents(path);
+      const entries = await api.list_directory_contents({ path });
       console.log(
         "📡 [useFileSystemNavigation] API response received. Entries count:",
         entries?.length || 0
@@ -115,7 +115,9 @@ export const useFileSystemNavigation = (initialPath?: string) => {
     if (state.navigationStack.length === 0) {
       // Try to get parent directory from API
       try {
-        const parentPath = await api.get_parent_directory(state.currentPath);
+        const parentPath = await api.get_parent_directory({
+          path: state.currentPath,
+        });
         if (parentPath) {
           await loadDirectory(parentPath);
         }
