@@ -1,5 +1,5 @@
 import React, { useCallback } from "react";
-import { listen } from '@/lib/listen';
+import { listen } from "@/lib/listen";
 import { getWebSocketManager } from "../lib/webApi";
 import { Conversation, Message, CliIO } from "../types";
 import { ToolCallConfirmationRequest } from "../utils/toolCallParser";

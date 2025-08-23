@@ -188,7 +188,7 @@ export const useMessageHandler = ({
           workingDirectory: ".",
           model: selectedModel,
           backendConfig,
-          geminiAuth
+          geminiAuth,
         });
 
         await api.send_message({

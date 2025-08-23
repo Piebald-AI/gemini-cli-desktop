@@ -89,7 +89,9 @@ export const webApi: API = {
     await apiClient.post("/tool-confirmation", params);
   },
 
-  async execute_confirmed_command(params: { command: string }): Promise<string> {
+  async execute_confirmed_command(params: {
+    command: string;
+  }): Promise<string> {
     const response = await apiClient.post<string>("/execute-command", params);
     return response.data;
   },
