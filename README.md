@@ -138,6 +138,7 @@ Once the server is running, open your web browser and go to `http://localhost:18
 - **Automatic chat history saving** (Note: See related PRs [#4401](https://github.com/google-gemini/gemini-cli/pull/4401) and [#4609](https://github.com/google-gemini/gemini-cli/pull/4609) on the Gemini CLI repo.)
 - Fast **search** across all conversation contents
 - Access Gemini CLI/Qwen Code running on **remote machines** with the web UI
+- `@`-mentioning files
 
 ### Planned/in progress
 
@@ -146,7 +147,6 @@ Once the server is running, open your web browser and go to `http://localhost:18
 - Dangerous `--yolo` mode support
 - Resuming saved conversations
 - Token/cost information
-- `@`-mentioning files
 - LLxprt integration ([#24](https://github.com/Piebald-AI/gemini-desktop/issues/24))
 - Multi-modal support
 - Extension support
