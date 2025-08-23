@@ -358,6 +358,7 @@ dependencies = [
  "mockall",
  "once_cell",
  "proptest",
+ "regex",
  "serde",
  "serde_json",
  "serial_test",

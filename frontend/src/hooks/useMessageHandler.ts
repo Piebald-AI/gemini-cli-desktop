@@ -84,7 +84,10 @@ export const useMessageHandler = ({
   const handleSendMessage = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!input.trim() || !isCliInstalled) return;
+
+      if (!input.trim() || !isCliInstalled) {
+        return;
+      }
 
       const newMessage: Message = {
         id: Date.now().toString(),
@@ -123,6 +126,7 @@ export const useMessageHandler = ({
       }
 
       const messageText = input;
+
       setInput("");
 
       // Check if user is trying to use the disabled model.
@@ -196,15 +200,18 @@ export const useMessageHandler = ({
           "🔍 [useMessageHandler] Final sessionParams being sent:",
           sessionParams
         );
+
         await api.invoke("start_session", sessionParams);
 
-        await api.invoke("send_message", {
+        const sendMessageParams = {
           sessionId: convId, // Tauri auto-converts to session_id
           message: messageText,
           conversationHistory: "", // Tauri auto-converts to conversation_history
           model: selectedModel,
           backendConfig: backendConfig, // Tauri auto-converts to backend_config
-        });
+        };
+
+        await api.invoke("send_message", sendMessageParams);
 
         // Refresh process statuses after sending message
         await fetchProcessStatuses();
