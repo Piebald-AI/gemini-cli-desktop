@@ -264,7 +264,7 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Tools Menu */}
+          {/* Help Menu */}
           <DropdownMenu modal={false} open={undefined}>
             <DropdownMenuTrigger asChild className="bg-transparent">
               <button
@@ -278,7 +278,7 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
                 }
                 type="button"
               >
-                {labels.tools}
+                {labels.help}
                 <ChevronDown size={10} />
               </button>
             </DropdownMenuTrigger>

@@ -70,7 +70,7 @@
   "titleBar": {
     "file": "檔案",
     "view": "檢視",
-    "tools": "工具",
+    "help": "說明",
     "home": "首頁",
     "projects": "專案",
     "mcpServers": "MCP 伺服器",

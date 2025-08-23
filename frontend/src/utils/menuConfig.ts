@@ -42,7 +42,7 @@ export const getMenuLabels = (
   return {
     file: t("titleBar.file"),
     view: t("titleBar.view"),
-    tools: t("titleBar.tools"),
+    help: t("titleBar.help"),
     home: t("titleBar.home"),
     projects: t("titleBar.projects"),
     mcpServers: t("titleBar.mcpServers"),

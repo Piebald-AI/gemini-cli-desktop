@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 pub struct MenuLabels {
     pub file: String,
     pub view: String,
-    pub tools: String,
+    pub help: String,
     pub home: String,
     pub projects: String,
     pub mcp_servers: String,
@@ -20,7 +20,7 @@ impl Default for MenuLabels {
         Self {
             file: "File".into(),
             view: "View".into(),
-            tools: "Tools".into(),
+            help: "Help".into(),
             home: "Home".into(),
             projects: "Projects".into(),
             mcp_servers: "MCP Servers".into(),
@@ -101,8 +101,8 @@ pub fn create_app_menu(app: &AppHandle, labels: &MenuLabels) -> Result<Menu<taur
                 .build(app)?)
             .build()?;
 
-        // Tools Menu (keeps About item on Linux)
-        let tools_menu = SubmenuBuilder::new(app, &labels.tools)
+        // Help Menu (keeps About item on Linux)
+        let help_menu = SubmenuBuilder::new(app, &labels.help)
             .item(&MenuItemBuilder::with_id("about", &labels.about)
                 .build(app)?)
             .build()?;
@@ -110,7 +110,7 @@ pub fn create_app_menu(app: &AppHandle, labels: &MenuLabels) -> Result<Menu<taur
         Ok(menu
             .item(&file_menu)
             .item(&view_menu)
-            .item(&tools_menu)
+            .item(&help_menu)
             .build()?)
     }
 }

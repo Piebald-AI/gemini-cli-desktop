@@ -10,7 +10,7 @@ import { getMenuLabels } from "@/utils/menuConfig";
 interface MenuLabels {
   file: string;
   view: string;
-  tools: string;
+  help: string;
   home: string;
   projects: string;
   mcp_servers: string;
@@ -39,7 +39,7 @@ export const useTauriRustMenu = () => {
       const rustLabels: MenuLabels = {
         file: labels.file,
         view: labels.view,
-        tools: labels.tools,
+        help: labels.help,
         home: labels.home,
         projects: labels.projects,
         mcp_servers: labels.mcpServers,

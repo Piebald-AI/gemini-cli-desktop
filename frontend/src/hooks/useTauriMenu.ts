@@ -104,7 +104,7 @@ export const useTauriMenu = () => {
             items: [aboutSubmenu, fileSubmenu, viewSubmenu],
           });
         } else {
-          // Linux/Windows - add Exit to File menu and keep Tools menu with About item
+          // Linux/Windows - add Exit to File menu and keep Help menu with About item
           const fileSubmenuWithExit = await Submenu.new({
             text: labels.file,
             items: [
@@ -137,8 +137,8 @@ export const useTauriMenu = () => {
             ],
           });
 
-          const toolsSubmenu = await Submenu.new({
-            text: labels.tools,
+          const helpSubmenu = await Submenu.new({
+            text: labels.help,
             items: [
               await MenuItem.new({
                 id: "about",
@@ -149,7 +149,7 @@ export const useTauriMenu = () => {
           });
 
           menu = await Menu.new({
-            items: [fileSubmenuWithExit, viewSubmenu, toolsSubmenu],
+            items: [fileSubmenuWithExit, viewSubmenu, helpSubmenu],
           });
         }
 
