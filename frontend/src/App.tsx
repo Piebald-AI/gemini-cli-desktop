@@ -6,6 +6,7 @@ import { MessageInputBar } from "./components/conversation/MessageInputBar";
 import { AppHeader } from "./components/layout/AppHeader";
 import { CustomTitleBar } from "./components/layout/CustomTitleBar";
 import { CliWarnings } from "./components/common/CliWarnings";
+import { DirectoryPanel } from "./components/common/DirectoryPanel";
 import { SidebarInset } from "./components/ui/sidebar";
 import { ConversationContext } from "./contexts/ConversationContext";
 import {
@@ -29,8 +30,6 @@ import { useConversationEvents } from "./hooks/useConversationEvents";
 import { useCliInstallation } from "./hooks/useCliInstallation";
 import { CliIO } from "./types";
 import "./index.css";
-import { cn } from "./lib/utils";
-import { platform } from "@tauri-apps/plugin-os";
 
 function RootLayoutContent() {
   const [selectedModel, setSelectedModel] =
@@ -38,6 +37,7 @@ function RootLayoutContent() {
   const [cliIOLogs, setCliIOLogs] = useState<CliIO[]>([]);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [directoryPanelOpen, setDirectoryPanelOpen] = useState(false);
   const [workingDirectory, setWorkingDirectory] = useState<string>(".");
   const [sessionWorkingDirectories, setSessionWorkingDirectories] = useState<
     Map<string, string>
@@ -224,6 +224,17 @@ function RootLayoutContent() {
     ]
   );
 
+  const toggleDirectoryPanel = useCallback(() => {
+    setDirectoryPanelOpen((prev) => !prev);
+  }, []);
+
+  // Auto-close directory panel when active conversation ends
+  useEffect(() => {
+    if (!activeConversation && directoryPanelOpen) {
+      setDirectoryPanelOpen(false);
+    }
+  }, [activeConversation, directoryPanelOpen]);
+
   return (
     <AppSidebar
       conversations={conversations}
@@ -236,71 +247,91 @@ function RootLayoutContent() {
       onOpenChange={setSidebarOpen}
     >
       <SidebarInset>
-        <AppHeader />
+        <AppHeader
+          onDirectoryPanelToggle={toggleDirectoryPanel}
+          isDirectoryPanelOpen={directoryPanelOpen}
+          hasActiveConversation={!!activeConversation}
+        />
 
-        <div className="flex-1 flex flex-col bg-background min-h-0">
-          <CliWarnings
-            selectedModel={selectedModel}
-            isCliInstalled={isCliInstalled}
-          />
+        <div className="flex-1 flex bg-background min-h-0 h-full">
+          {/* Main content area */}
+          <div className="flex-1 flex flex-col min-w-0 h-full">
+            <CliWarnings
+              selectedModel={selectedModel}
+              isCliInstalled={isCliInstalled}
+            />
 
-          <ConversationContext.Provider
-            value={useMemo(
-              () => ({
-                conversations,
-                activeConversation,
-                currentConversation,
-                input,
-                isCliInstalled,
-                messagesContainerRef,
-                cliIOLogs,
-                handleInputChange,
-                handleSendMessage,
-                selectedModel,
-                startNewConversation,
-                handleConfirmToolCall,
-                confirmationRequests,
-              }),
-              [
-                conversations,
-                activeConversation,
-                currentConversation,
-                input,
-                isCliInstalled,
-                messagesContainerRef,
-                cliIOLogs,
-                handleInputChange,
-                handleSendMessage,
-                selectedModel,
-                startNewConversation,
-                handleConfirmToolCall,
-                confirmationRequests,
-              ]
-            )}
-          >
-            <Outlet />
-          </ConversationContext.Provider>
+            <ConversationContext.Provider
+              value={useMemo(
+                () => ({
+                  conversations,
+                  activeConversation,
+                  currentConversation,
+                  input,
+                  isCliInstalled,
+                  messagesContainerRef,
+                  cliIOLogs,
+                  handleInputChange,
+                  handleSendMessage,
+                  selectedModel,
+                  startNewConversation,
+                  handleConfirmToolCall,
+                  confirmationRequests,
+                }),
+                [
+                  conversations,
+                  activeConversation,
+                  currentConversation,
+                  input,
+                  isCliInstalled,
+                  messagesContainerRef,
+                  cliIOLogs,
+                  handleInputChange,
+                  handleSendMessage,
+                  selectedModel,
+                  startNewConversation,
+                  handleConfirmToolCall,
+                  confirmationRequests,
+                ]
+              )}
+            >
+              <Outlet />
+            </ConversationContext.Provider>
 
-          {activeConversation &&
-            processStatuses.find(
-              (status) =>
-                status.conversation_id === activeConversation && status.is_alive
-            ) && (
-              <>
-                {console.log(
-                  "📝 [App] Rendering MessageInputBar with workingDirectory:",
-                  workingDirectory
-                )}
-                <MessageInputBar
-                  input={input}
-                  isCliInstalled={isCliInstalled}
-                  cliIOLogs={cliIOLogs}
-                  handleInputChange={handleInputChange}
-                  handleSendMessage={handleSendMessage}
-                  workingDirectory={workingDirectory}
-                />
-              </>
-            )}
+            {activeConversation &&
+              processStatuses.find(
+                (status) =>
+                  status.conversation_id === activeConversation &&
+                  status.is_alive
+              ) && (
+                <>
+                  {console.log(
+                    "📝 [App] Rendering MessageInputBar with workingDirectory:",
+                    workingDirectory
+                  )}
+                  <MessageInputBar
+                    input={input}
+                    isCliInstalled={isCliInstalled}
+                    cliIOLogs={cliIOLogs}
+                    handleInputChange={handleInputChange}
+                    handleSendMessage={handleSendMessage}
+                    workingDirectory={workingDirectory}
+                  />
+                </>
+              )}
+          </div>
+
+          {/* Directory Panel */}
+          {directoryPanelOpen && activeConversation && (
+            <DirectoryPanel
+              workingDirectory={workingDirectory}
+              onDirectoryChange={(path) => {
+                console.log("📁 [App] Directory changed to:", path);
+                // Optionally update working directory or perform other actions
+              }}
+              className="w-80 flex-shrink-0"
+            />
+          )}
         </div>
       </SidebarInset>
     </AppSidebar>
@@ -312,12 +343,7 @@ function RootLayout() {
     <BackendProvider>
       <div className="h-screen w-full">
         <CustomTitleBar />
-        <div
-          className={cn(
-            "w-full",
-            __WEB__ || platform() !== "windows" ? "h-full" : "h-[calc(100vh)]"
-          )}
-        >
+        <div className="w-full h-full">
           <RootLayoutContent />
         </div>
       </div>
