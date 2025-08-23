@@ -80,7 +80,10 @@ export const useMessageHandler = ({
   const handleSendMessage = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!input.trim() || !isCliInstalled) return;
+
+      if (!input.trim() || !isCliInstalled) {
+        return;
+      }
 
       const newMessage: Message = {
         id: Date.now().toString(),
@@ -119,6 +122,7 @@ export const useMessageHandler = ({
       }
 
       const messageText = input;
+
       setInput("");
 
       // Check if user is trying to use the disabled model.

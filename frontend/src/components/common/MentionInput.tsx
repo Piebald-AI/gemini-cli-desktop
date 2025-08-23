@@ -242,6 +242,7 @@ export function MentionInput({
     }
 
     // Extract mentions from the value (for future file reading integration)
+
     const mentions = extractMentionsFromValue(newValue);
     setExtractedMentions(mentions);
 
@@ -374,15 +375,6 @@ export function MentionInput({
         entry.is_directory ? "directory" : "file"
       );
       addMentionToInput(entry, true); // Always close picker for regular selection
-
-      // TODO: Implement file reading functionality here
-      // if (entry.is_directory) {
-      //   // TODO: Read all files in folder and include in context
-      //   console.log("TODO: Read folder contents:", entry.full_path);
-      // } else {
-      //   // TODO: Read single file and include in context
-      //   console.log("TODO: Read file:", entry.full_path);
-      // }
     },
     [addMentionToInput]
   );
@@ -578,18 +570,25 @@ export function MentionInput({
 // Helper function to extract mentions from input value
 const extractMentionsFromValue = (value: string): Mention[] => {
   const mentions: Mention[] = [];
+
   const mentionRegex = /@([^\s]+)/g;
+
   let match;
+  let _matchCount = 0;
 
   while ((match = mentionRegex.exec(value)) !== null) {
+    _matchCount++;
     const mentionText = match[1];
+
     // Determine if it's a folder (ends with /) or file
     const isFolder = mentionText.endsWith("/");
 
-    mentions.push({
+    const mentionObj = {
       file: mentionText,
       type: isFolder ? "folder" : "file",
-    });
+    } as Mention;
+
+    mentions.push(mentionObj);
   }
 
   return mentions;

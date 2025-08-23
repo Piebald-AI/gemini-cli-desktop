@@ -171,10 +171,7 @@ function SidebarProvider({
             } as React.CSSProperties
           }
           className={cn(
-            "group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar flex w-full",
-            __WEB__ || platform() !== "windows"
-              ? "min-h-full"
-              : "min-h-[calc(100vh)]",
+            "group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar flex w-full h-full",
             className
           )}
           {...props}
@@ -273,9 +270,7 @@ function Sidebar({
         data-slot="sidebar-container"
         className={cn(
           "fixed z-10 hidden w-(--sidebar-width) md:flex",
-          __WEB__ || platform() !== "windows"
-            ? "top-0 h-full"
-            : "top-8 h-[calc(100vh-2rem)]",
+          __WEB__ || platform() !== "windows" ? "top-0 h-full" : "top-8 h-full",
           !isResizing &&
             "transition-[left,right,width] duration-200 ease-linear",
           side === "left"
