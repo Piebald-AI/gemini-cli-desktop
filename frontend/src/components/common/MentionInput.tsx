@@ -637,10 +637,10 @@ const extractMentionsFromValue = (value: string): Mention[] => {
   const mentionRegex = /@([^\s]+)/g;
 
   let match;
-  let matchCount = 0;
+  let _matchCount = 0;
 
   while ((match = mentionRegex.exec(value)) !== null) {
-    matchCount++;
+    _matchCount++;
     const mentionText = match[1];
 
     // Determine if it's a folder (ends with /) or file

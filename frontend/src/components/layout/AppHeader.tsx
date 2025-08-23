@@ -1,11 +1,23 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
+import { FolderTree } from "lucide-react";
 import { SmartLogo } from "../branding/SmartLogo";
 import { DesktopText } from "../branding/DesktopText";
 import { PiebaldLogo } from "../branding/PiebaldLogo";
 import { SidebarTrigger } from "../ui/sidebar";
+import { Button } from "../ui/button";
 
-export const AppHeader: React.FC = () => {
+interface AppHeaderProps {
+  onDirectoryPanelToggle?: () => void;
+  isDirectoryPanelOpen?: boolean;
+  hasActiveConversation?: boolean;
+}
+
+export const AppHeader: React.FC<AppHeaderProps> = ({
+  onDirectoryPanelToggle,
+  isDirectoryPanelOpen = false,
+  hasActiveConversation = false,
+}) => {
   const { t } = useTranslation();
 
   return (
@@ -21,9 +33,24 @@ export const AppHeader: React.FC = () => {
             </div>
           </div>
 
-          {/* Right section - Piebald branding */}
-          <div className="flex flex-1 flex-col items-end text-xs text-neutral-400">
-            <p>{t("header.fromCreatorsOf")}</p> <PiebaldLogo />
+          {/* Center section - Empty spacer */}
+          <div className="flex-1"></div>
+
+          {/* Right section - Directory Toggle + Piebald branding */}
+          <div className="flex flex-1 items-center justify-end gap-4">
+            {onDirectoryPanelToggle && hasActiveConversation && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onDirectoryPanelToggle}
+                className={`${isDirectoryPanelOpen ? "bg-muted" : ""}`}
+              >
+                <FolderTree className="h-4 w-4" />
+              </Button>
+            )}
+            <div className="flex flex-col items-end text-xs text-neutral-400">
+              <p>{t("header.fromCreatorsOf")}</p> <PiebaldLogo />
+            </div>
           </div>
         </div>
       </div>
