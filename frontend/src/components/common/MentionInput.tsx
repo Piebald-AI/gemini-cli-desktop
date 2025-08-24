@@ -34,11 +34,6 @@ export function MentionInput({
   className,
   onKeyDown,
 }: MentionInputProps) {
-  console.log(
-    "📝 [MentionInput] Component initialized with workingDirectory:",
-    workingDirectory
-  );
-
   const [showFilePicker, setShowFilePicker] = useState(false);
   const [atPosition, setAtPosition] = useState<number | null>(null);
   const [extractedMentions, setExtractedMentions] = useState<Mention[]>([]);
@@ -47,13 +42,7 @@ export function MentionInput({
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Initialize file system navigation with working directory
-  console.log(
-    "📁 [MentionInput] Initializing file system navigation with:",
-    workingDirectory
-  );
   const [navState, navActions] = useFileSystemNavigation(workingDirectory);
-
-  // Let useFileSystemNavigation handle initial loading, don't interfere with user navigation
 
   // Detect @ trigger and show file picker
   const detectAtTrigger = useCallback(
@@ -192,21 +181,6 @@ export function MentionInput({
     const newValue = e.target.value;
     const cursorPosition = e.target.selectionStart || 0;
 
-    console.log(
-      "🔥 [MentionInput] handleInputChange - newValue:",
-      JSON.stringify(newValue),
-      "cursorPosition:",
-      cursorPosition
-    );
-    console.log(
-      "🔥 [MentionInput] Current state - atPosition:",
-      atPosition,
-      "searchFilter:",
-      JSON.stringify(searchFilter),
-      "showFilePicker:",
-      showFilePicker
-    );
-
     // Detect @ trigger
     const atTrigger = detectAtTrigger(newValue, cursorPosition);
 
@@ -261,8 +235,6 @@ export function MentionInput({
       setShowFilePicker(true);
       setFilteredSelectedIndex(0);
     } else {
-      console.log("🔥 [MentionInput] No @ trigger detected - clearing state");
-      console.log("🔥 [MentionInput] Clearing @ trigger state");
       setShowFilePicker(false);
       setAtPosition(null);
       setSearchFilter("");
@@ -272,9 +244,6 @@ export function MentionInput({
     // Extract mentions from the value (for future file reading integration)
 
     const mentions = extractMentionsFromValue(newValue);
-
-    console.log("🔥 [MentionInput] Extracted mentions:", mentions);
-
     setExtractedMentions(mentions);
 
     onChange(e, newValue, newValue, mentions);
@@ -411,33 +380,9 @@ export function MentionInput({
   );
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    console.log(
-      "🔥 [MentionInput] Key pressed:",
-      e.key,
-      "showFilePicker:",
-      showFilePicker,
-      "isLoading:",
-      navState.isLoading
-    );
-
     if (showFilePicker && !navState.isLoading) {
       const filteredEntries = getFilteredEntries();
       const selectedEntry = filteredEntries[filteredSelectedIndex];
-
-      console.log(
-        "🔥 [MentionInput] Filtered entries count:",
-        filteredEntries.length
-      );
-      console.log(
-        "🔥 [MentionInput] Current filteredSelectedIndex:",
-        filteredSelectedIndex
-      );
-      console.log(
-        "🔥 [MentionInput] Selected entry:",
-        selectedEntry?.name,
-        "isDir:",
-        selectedEntry?.is_directory
-      );
 
       if (e.key === "ArrowDown") {
         e.preventDefault();
@@ -556,16 +501,8 @@ export function MentionInput({
         setFilteredSelectedIndex(0);
         return;
       }
-    } else {
-      console.log(
-        "🔥 [MentionInput] Key ignored - showFilePicker:",
-        showFilePicker,
-        "isLoading:",
-        navState.isLoading
-      );
     }
 
-    console.log("🔥 [MentionInput] Calling parent onKeyDown");
     onKeyDown?.(e);
   };
 

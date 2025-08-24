@@ -29,9 +29,10 @@ import {
   Disc,
   Database,
 } from "lucide-react";
-import { webApi, DirEntry } from "../../lib/webApi";
+import { DirEntry } from "../../lib/webApi";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
+import { api } from "@/lib/api";
 
 interface DirectorySelectionDialogProps {
   open: boolean;
@@ -66,19 +67,10 @@ export function DirectorySelectionDialog({
       setLoading(true);
       setError("");
 
-      if (__WEB__) {
-        const homeDir = await webApi.get_home_directory();
-        setCurrentDirectory(homeDir);
-        setPathInput(homeDir);
-        await loadDirectoryContents(homeDir);
-      } else {
-        // For desktop, we'll use Tauri invoke
-        const { invoke } = await import("@tauri-apps/api/core");
-        const homeDir = await invoke<string>("get_home_directory");
-        setCurrentDirectory(homeDir);
-        setPathInput(homeDir);
-        await loadDirectoryContents(homeDir);
-      }
+      let homeDir = await api.get_home_directory();
+      setCurrentDirectory(homeDir);
+      setPathInput(homeDir);
+      await loadDirectoryContents(homeDir);
     } catch (err) {
       setError(t("fileSystem.failedToLoadHome"));
       console.error("Error loading home directory:", err);
@@ -92,16 +84,7 @@ export function DirectorySelectionDialog({
       setLoading(true);
       setError("");
 
-      let dirContents: DirEntry[];
-      if (__WEB__) {
-        dirContents = await webApi.list_directory_contents(path);
-      } else {
-        const { invoke } = await import("@tauri-apps/api/core");
-        dirContents = await invoke<DirEntry[]>("list_directory_contents", {
-          path,
-        });
-      }
-
+      let dirContents = await api.list_directory_contents({ path });
       setContents(dirContents);
     } catch (err) {
       setError(t("fileSystem.failedToLoadDirectory"));
@@ -117,14 +100,7 @@ export function DirectorySelectionDialog({
       setLoading(true);
       setError("");
 
-      let volumes: DirEntry[];
-      if (__WEB__) {
-        volumes = await webApi.list_volumes();
-      } else {
-        const { invoke } = await import("@tauri-apps/api/core");
-        volumes = await invoke<DirEntry[]>("list_volumes");
-      }
-
+      let volumes = await api.list_volumes();
       setContents(volumes);
       setCurrentDirectory(""); // Clear current directory to indicate we're showing volumes
       setPathInput(t("fileSystem.computer")); // Show "Computer" as the path
@@ -142,16 +118,9 @@ export function DirectorySelectionDialog({
       setLoading(true);
       setError("");
 
-      let parentPath: string | null;
-      if (__WEB__) {
-        parentPath = await webApi.get_parent_directory(currentDirectory);
-      } else {
-        const { invoke } = await import("@tauri-apps/api/core");
-        parentPath = await invoke<string | null>("get_parent_directory", {
-          path: currentDirectory,
-        });
-      }
-
+      let parentPath = await api.get_parent_directory({
+        path: currentDirectory,
+      });
       if (parentPath) {
         setCurrentDirectory(parentPath);
         setPathInput(parentPath);

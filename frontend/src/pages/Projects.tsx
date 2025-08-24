@@ -30,9 +30,7 @@ export default function ProjectsPage() {
 
   const refreshProjects = React.useCallback(async () => {
     try {
-      const enrichedProjects = await api.invoke<EnrichedProject[]>(
-        "list_enriched_projects"
-      );
+      const enrichedProjects = await api.list_enriched_projects();
       setProjects(enrichedProjects);
     } catch (e) {
       setError(t("projects.failedToLoad"));
@@ -53,7 +51,7 @@ export default function ProjectsPage() {
       const sha256 = await generateSHA256(selectedPath);
 
       // Create or get the project (this will create metadata if it doesn't exist)
-      const project = await api.invoke<EnrichedProject>("get_project", {
+      const project = await api.get_project({
         sha256,
         externalRootPath: selectedPath,
       });

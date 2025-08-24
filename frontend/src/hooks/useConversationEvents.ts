@@ -1,5 +1,5 @@
 import React, { useCallback } from "react";
-import { api } from "../lib/api";
+import { listen } from "@/lib/listen";
 import { getWebSocketManager } from "../lib/webApi";
 import { Conversation, Message, CliIO } from "../types";
 import { ToolCallConfirmationRequest } from "../utils/toolCallParser";
@@ -234,7 +234,7 @@ export const useConversationEvents = (
       }
 
       try {
-        await api.listen<{ type: "input" | "output"; data: string }>(
+        await listen<{ type: "input" | "output"; data: string }>(
           `cli-io-${conversationId}`,
           (event) => {
             setCliIOLogs((prev) => [
@@ -280,7 +280,7 @@ export const useConversationEvents = (
         );
 
         // Listen for streaming text chunks.
-        await api.listen<string>(`ai-output-${conversationId}`, (event) => {
+        await listen<string>(`ai-output-${conversationId}`, (event) => {
           updateConversation(conversationId, (conv, lastMsg) => {
             conv.isStreaming = true;
             if (lastMsg.sender === "assistant") {
@@ -312,7 +312,7 @@ export const useConversationEvents = (
         });
 
         // Listen for thinking chunks.
-        await api.listen<string>(`ai-thought-${conversationId}`, (event) => {
+        await listen<string>(`ai-thought-${conversationId}`, (event) => {
           updateConversation(conversationId, (conv, lastMsg) => {
             conv.isStreaming = true;
             if (lastMsg.sender === "assistant") {
@@ -346,7 +346,7 @@ export const useConversationEvents = (
         console.log(
           `🔧 [EDIT-DEBUG] Registering acp-session-update listener for: ${conversationId}`
         );
-        await api.listen<EventPayload>(
+        await listen<EventPayload>(
           `acp-session-update-${conversationId}`,
           ({ payload: update }: { payload: EventPayload }) => {
             console.log(
@@ -491,7 +491,7 @@ export const useConversationEvents = (
         // Note: Tool call updates are now handled by the ACP session update listener above
 
         // Also listen for errors
-        await api.listen<string>(`ai-error-${conversationId}`, (event) => {
+        await listen<string>(`ai-error-${conversationId}`, (event) => {
           updateConversation(conversationId, (conv) => {
             conv.isStreaming = false;
             conv.messages.push({
@@ -512,7 +512,7 @@ export const useConversationEvents = (
         console.log(
           `✅ Registering listener for: acp-permission-request-${conversationId}`
         );
-        await api.listen<EventPayload>(
+        await listen<EventPayload>(
           `acp-permission-request-${conversationId}`,
           (event) => {
             console.log(
@@ -764,7 +764,7 @@ export const useConversationEvents = (
         );
 
         // Listen for turn finished events to stop streaming indicator
-        await api.listen<boolean>(`ai-turn-finished-${conversationId}`, () => {
+        await listen<boolean>(`ai-turn-finished-${conversationId}`, () => {
           updateConversation(conversationId, (conv) => {
             conv.isStreaming = false;
           });
