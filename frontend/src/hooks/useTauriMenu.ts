@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
-import { Menu, MenuItem, Submenu, PredefinedMenuItem } from "@tauri-apps/api/menu";
+import {
+  Menu,
+  MenuItem,
+  Submenu,
+  PredefinedMenuItem,
+} from "@tauri-apps/api/menu";
 import { platform } from "@tauri-apps/plugin-os";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -80,8 +85,8 @@ export const useTauriMenu = () => {
             items: [
               await MenuItem.new({
                 id: "about",
-                // Always use "Gemini Desktop" on macOS because the OS displays the app name in the 
-                // top menu bar, so "Gemini Desktop -> About Qwen Desktop" would be more confusing 
+                // Always use "Gemini Desktop" on macOS because the OS displays the app name in the
+                // top menu bar, so "Gemini Desktop -> About Qwen Desktop" would be more confusing
                 // than just keeping it consistent as "Gemini Desktop"
                 text: t("titleBar.about", { name: "Gemini Desktop" }),
                 action: handlers.showAbout,

@@ -74,7 +74,7 @@ function RootLayoutContent() {
   useEffect(() => {
     const backendText = getBackendText(selectedBackend);
     document.title = backendText.desktopName;
-    
+
     // Also update native window title on desktop platforms
     if (!__WEB__) {
       getCurrentWindow().setTitle(backendText.desktopName);

@@ -34,7 +34,7 @@ export const useTauriRustMenu = () => {
       }
 
       const labels = getMenuLabels(t, selectedBackend);
-      
+
       // Convert to snake_case for Rust
       const rustLabels: MenuLabels = {
         file: labels.file,

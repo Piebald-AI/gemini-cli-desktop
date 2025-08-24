@@ -38,7 +38,7 @@ export const getMenuLabels = (
   selectedBackend: BackendType
 ) => {
   const backendText = getBackendText(selectedBackend);
-  
+
   return {
     file: t("titleBar.file"),
     view: t("titleBar.view"),
