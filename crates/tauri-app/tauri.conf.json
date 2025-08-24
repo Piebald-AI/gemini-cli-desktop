@@ -19,28 +19,7 @@
       }
     ],
     "security": {
-      "csp": null,
-      "capabilities": [
-        {
-          "identifier": "main-capability",
-          "description": "Capability for the main window",
-          "windows": ["main"],
-          "permissions": [
-            "core:default",
-            "core:event:allow-listen",
-            "core:event:default",
-            "core:window:allow-minimize",
-            "core:window:allow-maximize",
-            "core:window:allow-close",
-            "core:window:allow-start-dragging",
-            "core:window:allow-is-maximized",
-            "core:window:allow-unmaximize",
-            "dialog:allow-open",
-            "dialog:default",
-            "opener:default"
-          ]
-        }
-      ]
+      "csp": null
     },
     "withGlobalTauri": false
   },

@@ -2,13 +2,15 @@
 
 mod commands;
 mod event_emitter;
+mod menu;
 mod state;
 
 use backend::GeminiBackend;
 use event_emitter::TauriEventEmitter;
+use menu::init_menu;
 use state::AppState;
 use std::sync::Arc;
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -16,6 +18,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_os::init())
+        .plugin(tauri_plugin_process::init())
         .setup(|app| {
             let emitter = TauriEventEmitter::new(app.handle().clone());
             let backend = GeminiBackend::new(emitter);
@@ -25,7 +28,29 @@ pub fn run() {
             };
             app.manage(app_state);
 
+            // Initialize menu with default labels (non-Windows only)
+            #[cfg(not(windows))]
+            {
+                if let Err(e) = init_menu(app.handle().clone()) {
+                    eprintln!("Failed to initialize menu: {e}");
+                }
+            }
+
             Ok(())
+        })
+        .on_menu_event(|app, event| {
+            // Get the window that triggered the event
+            if let Some(window) = app.get_webview_window("main") {
+                match event.id.as_ref() {
+                    "home" => window.emit("menu:navigate", "/").unwrap(),
+                    "projects" => window.emit("menu:navigate", "/projects").unwrap(),
+                    "mcp_servers" => window.emit("menu:navigate", "/mcp").unwrap(),
+                    "toggle_theme" => window.emit("menu:toggle-theme", ()).unwrap(),
+                    "refresh" => window.emit("menu:refresh", ()).unwrap(),
+                    "about" => window.emit("menu:about", ()).unwrap(),
+                    _ => {}
+                }
+            }
         })
         .invoke_handler(tauri::generate_handler![
             commands::check_cli_installed,
@@ -53,7 +78,9 @@ pub fn run() {
             commands::get_project_discussions,
             commands::get_settings_file_path,
             commands::read_settings_file,
-            commands::write_settings_file
+            commands::write_settings_file,
+            menu::init_menu,
+            menu::update_menu_labels
         ]);
 
     builder

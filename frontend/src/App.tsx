@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { Routes, Route, Outlet, Navigate } from "react-router-dom";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { api } from "./lib/api";
 import { AppSidebar } from "./components/layout/AppSidebar";
 import { MessageInputBar } from "./components/conversation/MessageInputBar";
@@ -28,8 +29,11 @@ import { useMessageHandler } from "./hooks/useMessageHandler";
 import { useToolCallConfirmation } from "./hooks/useToolCallConfirmation";
 import { useConversationEvents } from "./hooks/useConversationEvents";
 import { useCliInstallation } from "./hooks/useCliInstallation";
+import { useTauriMenu } from "./hooks/useTauriMenu";
 import { CliIO } from "./types";
 import "./index.css";
+import { platform } from "@tauri-apps/plugin-os";
+import { AboutDialog } from "./components/common/AboutDialog";
 
 function RootLayoutContent() {
   const [selectedModel, setSelectedModel] =
@@ -70,6 +74,11 @@ function RootLayoutContent() {
   useEffect(() => {
     const backendText = getBackendText(selectedBackend);
     document.title = backendText.desktopName;
+
+    // Also update native window title on desktop platforms
+    if (!__WEB__) {
+      getCurrentWindow().setTitle(backendText.desktopName);
+    }
   }, [selectedBackend]);
 
   // Custom hooks for cleaner code
@@ -338,15 +347,31 @@ function RootLayoutContent() {
   );
 }
 
+function RootLayoutInner() {
+  // Set up Tauri menu for non-Windows desktop platforms
+  const { isAboutDialogOpen, setIsAboutDialogOpen } = useTauriMenu();
+
+  return (
+    <div className="h-screen w-full">
+      <CustomTitleBar />
+      <div className="size-full">
+        <RootLayoutContent />
+      </div>
+      {/* About Dialog for non-Windows platforms using Tauri menu */}
+      {!__WEB__ && platform() !== "windows" && (
+        <AboutDialog
+          open={isAboutDialogOpen}
+          onOpenChange={setIsAboutDialogOpen}
+        />
+      )}
+    </div>
+  );
+}
+
 function RootLayout() {
   return (
     <BackendProvider>
-      <div className="h-screen w-full">
-        <CustomTitleBar />
-        <div className="w-full h-full">
-          <RootLayoutContent />
-        </div>
-      </div>
+      <RootLayoutInner />
     </BackendProvider>
   );
 }

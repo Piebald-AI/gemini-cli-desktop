@@ -70,13 +70,15 @@
   "titleBar": {
     "file": "檔案",
     "view": "檢視",
-    "tools": "工具",
+    "help": "說明",
     "home": "首頁",
     "projects": "專案",
     "mcpServers": "MCP 伺服器",
     "toggleDarkMode": "切換深色模式",
     "refresh": "重新整理",
-    "about": "關於 {{name}}"
+    "about": "關於 {{name}}",
+    "quit": "結束 {{name}}",
+    "exit": "結束"
   },
 
   "projects": {
