@@ -6,7 +6,7 @@ import tseslint from "@typescript-eslint/eslint-plugin";
 import tsparser from "@typescript-eslint/parser";
 
 export default [
-  { ignores: ["dist", "node_modules", "src-tauri"] },
+  { ignores: ["dist", "node_modules", "src-tauri", "tailwind.config.js"] },
   {
     files: ["**/*.{ts,tsx}"],
     languageOptions: {
