@@ -46,6 +46,7 @@ pub struct PersistentSession {
     pub message_sender: Option<mpsc::UnboundedSender<String>>,
     pub rpc_logger: Arc<dyn RpcLogger>,
     pub child: Option<Child>,
+    pub working_directory: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -245,6 +246,7 @@ async fn send_jsonrpc_request<E: EventEmitter>(
 
         let trimmed = line.trim();
         println!("🔍 RAW OUTPUT FROM GEMINI CLI: {trimmed}");
+
         let _ = rpc_logger.log_rpc(trimmed);
 
         let _ = emitter.emit(
@@ -648,6 +650,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
             message_sender: Some(message_tx.clone()),
             rpc_logger: rpc_logger.clone(),
             child: Some(child),
+            working_directory: working_directory.clone(),
         };
 
         processes.insert(session_id.clone(), persistent_session);
@@ -822,6 +825,8 @@ async fn handle_session_io_internal(
                             eprintln!("Failed to flush stdin: {e}");
                             break;
                         }
+
+
 
                         let _ = event_tx.send(InternalEvent::CliIo {
                             session_id: session_id.clone(),
@@ -1156,6 +1161,7 @@ mod tests {
             message_sender: None,
             rpc_logger: Arc::new(NoOpRpcLogger),
             child: None,
+            working_directory: ".".to_string(),
         };
 
         assert_eq!(session.conversation_id, "test-id");
@@ -1197,6 +1203,7 @@ mod tests {
             message_sender: None,
             rpc_logger: Arc::new(NoOpRpcLogger),
             child: None,
+            working_directory: ".".to_string(),
         };
 
         let status = ProcessStatus::from(&session);
@@ -1239,6 +1246,7 @@ mod tests {
                     message_sender: None,
                     rpc_logger: Arc::new(NoOpRpcLogger),
                     child: None,
+                    working_directory: ".".to_string(),
                 },
             );
         }
@@ -1278,6 +1286,7 @@ mod tests {
                     message_sender: None,
                     rpc_logger: Arc::new(NoOpRpcLogger),
                     child: None,
+                    working_directory: ".".to_string(),
                 },
             );
         }
@@ -1334,6 +1343,7 @@ mod tests {
                     message_sender: Some(tx),
                     rpc_logger: Arc::new(NoOpRpcLogger),
                     child: None,
+                    working_directory: ".".to_string(),
                 },
             );
         }
@@ -1612,6 +1622,7 @@ mod tests {
                     message_sender: None,
                     rpc_logger: Arc::new(NoOpRpcLogger),
                     child: None,
+                    working_directory: ".".to_string(),
                 },
             );
         }
@@ -1656,6 +1667,7 @@ mod tests {
                     message_sender: Some(tx),
                     rpc_logger: Arc::new(NoOpRpcLogger),
                     child: None,
+                    working_directory: ".".to_string(),
                 },
             );
         }
@@ -1714,6 +1726,7 @@ mod tests {
                             message_sender: None,
                             rpc_logger: Arc::new(NoOpRpcLogger),
                             child: None,
+                            working_directory: ".".to_string(),
                         },
                     );
                 }
@@ -1764,6 +1777,7 @@ mod tests {
                     message_sender: None,
                     rpc_logger: Arc::new(NoOpRpcLogger),
                     child: None,
+                    working_directory: ".".to_string(),
                 },
             );
         });
@@ -1842,6 +1856,7 @@ mod tests {
                         message_sender: None,
                         rpc_logger: Arc::new(NoOpRpcLogger),
                         child: None,
+                        working_directory: ".".to_string(),
                     },
                 );
             }

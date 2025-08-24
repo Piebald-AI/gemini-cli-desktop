@@ -82,15 +82,21 @@ export const sortDirectoryEntries = (entries: DirEntry[]): DirEntry[] => {
   });
 };
 
-// TODO: File reading utilities for future implementation
+// File reading is now handled automatically by the backend:
+// - When users type @filename in messages, the backend parses these @-mentions
+// - Converts them to ACP ResourceLink blocks with proper file URIs
+// - Gemini CLI then reads the actual file contents
+// This function is kept for potential future direct file reading needs
 export const readFileContent = async (_filePath: string): Promise<string> => {
-  // TODO: Implement file reading via backend API
-  throw new Error("File reading not yet implemented");
+  // Direct file reading not needed for @-mentions (handled by backend)
+  // Keeping stub for potential future use cases
+  throw new Error("Direct file reading not yet implemented");
 };
 
 export const readDirectoryContents = async (
   _directoryPath: string
 ): Promise<string[]> => {
-  // TODO: Implement recursive directory reading via backend API
-  throw new Error("Directory content reading not yet implemented");
+  // Directory reading for @-mentions is handled by backend ACP integration
+  // Backend converts @folder/ mentions to appropriate ResourceLinks
+  throw new Error("Direct directory reading not yet implemented");
 };

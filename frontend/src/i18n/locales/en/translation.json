@@ -421,7 +421,8 @@
   "header": {
     "fromCreatorsOf": "From the creators of",
     "languageSwitcher": "Change language",
-    "currentLanguage": "Current language: {{language}}"
+    "currentLanguage": "Current language: {{language}}",
+    "directoryPanel": "Directory"
   },
 
   "homeDashboard": {
@@ -500,10 +501,14 @@
   },
 
   "accessibility": {
-    "backToHome": "Back to Home",
-    "backToProjects": "Back to Projects",
+    "backToHome": "Back to home",
+    "backToProjects": "Back to projects",
     "goToParentDirectory": "Go to parent directory",
     "goToHomeDirectory": "Go to home directory",
     "endChat": "End chat"
+  },
+  "directoryPanel": {
+    "title": "Directory",
+    "noContent": "No directory content"
   }
 }

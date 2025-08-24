@@ -504,6 +504,12 @@
   "header": {
     "fromCreatorsOf": "來自創作者",
     "languageSwitcher": "切換語言",
-    "currentLanguage": "目前語言：{{language}}"
+    "currentLanguage": "目前語言：{{language}}",
+    "directoryPanel": "目錄"
+  },
+
+  "directoryPanel": {
+    "title": "目錄",
+    "noContent": "無目錄內容"
   }
 }

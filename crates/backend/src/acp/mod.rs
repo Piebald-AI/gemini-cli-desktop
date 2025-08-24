@@ -95,25 +95,11 @@ pub struct SessionPromptParams {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ContentBlock {
-    Text {
-        text: String,
-    },
-    Image {
-        data: String,
-        mime_type: String,
-    },
-    Audio {
-        data: String,
-        mime_type: String,
-    },
-    ResourceLink {
-        uri: String,
-        name: String,
-        mime_type: String,
-    },
-    Resource {
-        resource: ResourceInfo,
-    },
+    Text { text: String },
+    Image { data: String, mime_type: String },
+    Audio { data: String, mime_type: String },
+    ResourceLink { uri: String, name: String },
+    Resource { resource: ResourceInfo },
 }
 
 /// Resource information for embedded resources
@@ -121,8 +107,6 @@ pub enum ContentBlock {
 pub struct ResourceInfo {
     pub uri: String,
     pub text: String,
-    #[serde(rename = "mimeType")]
-    pub mime_type: String,
 }
 
 /// Session/update notification parameters
@@ -424,7 +408,6 @@ mod tests {
         let resource_block = ContentBlock::ResourceLink {
             uri: "file:///test.py".to_string(),
             name: "test.py".to_string(),
-            mime_type: "text/x-python".to_string(),
         };
         let serialized = serde_json::to_value(&resource_block).unwrap();
         assert_eq!(serialized["type"], "resource_link");
@@ -457,7 +440,6 @@ mod tests {
                 ContentBlock::ResourceLink {
                     uri: "file:///test.py".to_string(),
                     name: "test.py".to_string(),
-                    mime_type: "text/x-python".to_string(),
                 },
             ],
         };
