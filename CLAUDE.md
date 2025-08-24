@@ -415,13 +415,10 @@ The application implements the complete Agent Communication Protocol specificati
 
 **Initialization**
 ```typescript
-// Initialize session with client capabilities
+// Initialize session
 method: "initialize"
 params: {
-  protocolVersion: 1,
-  clientCapabilities: {
-    fs: { readTextFile: boolean, writeTextFile: boolean }
-  }
+  protocolVersion: 1
 }
 ```
 
