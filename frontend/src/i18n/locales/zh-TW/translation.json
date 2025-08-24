@@ -35,7 +35,16 @@
     "enabled": "已啟用",
     "disabled": "已停用",
     "required": "必填",
-    "optional": "選填"
+    "optional": "選填",
+    "copy": "複製",
+    "copied": "已複製！",
+    "thinking": "思考中",
+    "unknownFile": "未知檔案",
+    "unknownSize": "未知大小",
+    "currentDirectory": "目前目錄",
+    "showLess": "顯示較少",
+    "showMoreLines": "顯示更多 {{count}} 行",
+    "completedSuccessfully": "成功完成。"
   },
 
   "navigation": {
@@ -61,13 +70,15 @@
   "titleBar": {
     "file": "檔案",
     "view": "檢視",
-    "tools": "工具",
+    "help": "說明",
     "home": "首頁",
     "projects": "專案",
     "mcpServers": "MCP 伺服器",
     "toggleDarkMode": "切換深色模式",
     "refresh": "重新整理",
-    "about": "關於 {{name}}"
+    "about": "關於 {{name}}",
+    "quit": "結束 {{name}}",
+    "exit": "結束"
   },
 
   "projects": {
@@ -117,8 +128,8 @@
     "minutesAgo": "{{count}} 分鐘前",
     "hoursAgo": "{{count}} 小時前",
     "daysAgo": "{{count}} 天前",
-    "pid": "PID：{{pid}}",
-    "pidLabel": "PID：{{pid}}",
+    "pid": "處理程序 ID：{{pid}}",
+    "pidLabel": "處理程序 ID：{{pid}}",
     "active": "作用中",
     "inactive": "非作用中",
     "noConversations": "尚無對話",
@@ -190,7 +201,16 @@
     "fetchingUrls": "擷取 {{count}} 個 URL",
     "fetchingUrl": "擷取 {{url}}",
     "rejectedFetch": "擷取被駁回",
-    "failedToFetch": "擷取失敗"
+    "failedToFetch": "擷取失敗",
+    "success": "成功",
+    "searching": "搜尋中",
+    "searched": "已搜尋",
+    "fetchingContent": "擷取中",
+    "fetchedContent": "已擷取",
+    "webSearchCompleted": "網頁搜尋完成",
+    "webFetchCompleted": "網頁擷取完成",
+    "listedDirectory": "已列出目錄",
+    "fileContentNotAvailable": "檔案內容無法使用"
   },
 
   "search": {
@@ -279,7 +299,40 @@
     "enterArgument": "輸入參數",
     "enterScope": "輸入範圍",
     "enterAudience": "輸入受眾",
-    "writeArgsHere": "在此輸入參數"
+    "writeArgsHere": "在此輸入參數",
+    "basicConfiguration": "基本配置",
+    "transportType": "傳輸類型",
+    "stdioTransport": "標準輸入輸出（本地指令）",
+    "sseTransport": "SSE（伺服器推送事件）",
+    "httpTransport": "HTTP（HTTP 串流）",
+    "commandPlaceholder": "例如：python -m my_mcp_server",
+    "arguments": "參數（逗號分隔）",
+    "argumentsPlaceholder": "例如：--port, 8080, --verbose",
+    "sseUrl": "SSE URL",
+    "sseUrlPlaceholder": "http://localhost:8080/sse",
+    "httpUrlPlaceholder": "http://localhost:3000/mcp",
+    "advancedSettings": "進階設定",
+    "workingDirectoryPlaceholder": "./server-directory",
+    "authentication": "驗證",
+    "enableOAuth": "啟用 OAuth 2.0 驗證",
+    "scopesPlaceholder": "例如：read, write, admin",
+    "toolFiltering": "工具篩選",
+    "includeTools": "包含工具（白名單，逗號分隔）",
+    "excludeTools": "排除工具（黑名單，逗號分隔）",
+    "includeToolsPlaceholder": "例如：safe_tool, file_reader, data_processor",
+    "excludeToolsPlaceholder": "例如：dangerous_tool, file_deleter",
+    "toolFilteringDescription": "排除工具優先於包含工具。兩者都留空將使用所有可用工具。",
+    "notConfigured": "未配置",
+    "oauth": "OAuth",
+    "tools": "工具",
+    "enterServerName": "輸入伺服器名稱",
+    "enterCommand": "輸入指令",
+    "enterClientId": "輸入 MCP 伺服器的客戶端 ID",
+    "enterClientSecret": "輸入 MCP 伺服器的客戶端密鑰",
+    "enterAuthUrl": "輸入 MCP 伺服器的授權 URL",
+    "enterTokenUrl": "輸入 MCP 伺服器的權杖 URL",
+    "enterRedirectUri": "輸入 MCP 伺服器的重新導向 URI",
+    "enterTokenParam": "輸入 MCP 伺服器的權杖參數名稱"
   },
 
   "backend": {
@@ -377,6 +430,11 @@
       "thoughtProcess": "• 觀察 Gemini 的**思考過程**",
       "fileDiffs": "• 檢視和處理編輯請求，並顯示清楚的檔案差異"
     },
+    "feature1": "在 Gemini 模型中選擇（Gemini 2.5 Pro、Gemini 2.5 Flash、Gemini 2.5 Flash-Lite）",
+    "feature2": "使用 **Qwen.ai OAuth/自訂 OpenAI 相容提供者** 和 Qwen Code 模型",
+    "feature3": "向/從 AI 發送訊息並接收回應；處理工具呼叫請求；支援 Markdown",
+    "feature4": "觀察 Gemini 的**思考過程**",
+    "feature5": "檢視和處理編輯請求，並顯示清楚的檔案差異",
     "copyright": "© {{year}} {{appName}}。保留所有權利。",
     "fromCreators": "來自以下創作者"
   },
@@ -446,6 +504,12 @@
   "header": {
     "fromCreatorsOf": "來自創作者",
     "languageSwitcher": "切換語言",
-    "currentLanguage": "目前語言：{{language}}"
+    "currentLanguage": "目前語言：{{language}}",
+    "directoryPanel": "目錄"
+  },
+
+  "directoryPanel": {
+    "title": "目錄",
+    "noContent": "無目錄內容"
   }
 }

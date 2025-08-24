@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ChevronRight, FolderClosed } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { type ToolCall } from "../../utils/toolCallParser";
 
 interface DirectoryResult {
@@ -12,6 +13,7 @@ interface DirectoryRendererProps {
 }
 
 export function DirectoryRenderer({ toolCall }: DirectoryRendererProps) {
+  const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const result = toolCall.result as DirectoryResult;
 
@@ -41,11 +43,11 @@ export function DirectoryRenderer({ toolCall }: DirectoryRendererProps) {
         return result.message;
       }
     }
-    return "Listed directory";
+    return t("toolCalls.listedDirectory");
   };
 
   const path = getPath();
-  const displayPath = path === "." ? "current directory" : path;
+  const displayPath = path === "." ? t("common.currentDirectory") : path;
   const summary = getSummary();
 
   return (

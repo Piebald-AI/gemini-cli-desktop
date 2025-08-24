@@ -6,6 +6,10 @@ use backend::{
 use serde_json::Value;
 use tauri::{AppHandle, State};
 
+#[cfg(windows)]
+#[allow(clippy::unreadable_literal)]
+const CREATE_NO_WINDOW: u32 = 0x08000000;
+
 #[tauri::command]
 pub async fn check_cli_installed(state: State<'_, AppState>) -> Result<bool, String> {
     state
@@ -81,18 +85,24 @@ pub async fn test_gemini_command() -> Result<String, String> {
 #[tauri::command]
 pub async fn test_cli_command(cli_name: String) -> Result<String, String> {
     use tokio::process::Command;
-    let output = if cfg!(target_os = "windows") {
-        Command::new("cmd")
-            .args(["/C", &cli_name, "--help"])
-            .output()
-            .await
-            .map_err(|e| format!("Failed to run {cli_name} --help via cmd: {e}"))?
-    } else {
-        Command::new("sh")
-            .args(["-c", &format!("{cli_name} --help")])
-            .output()
-            .await
-            .map_err(|e| format!("Failed to run {cli_name} --help via shell: {e}"))?
+    let output = {
+        #[cfg(windows)]
+        {
+            Command::new("cmd.exe")
+                .args(["/C", &cli_name, "--help"])
+                .creation_flags(CREATE_NO_WINDOW)
+                .output()
+                .await
+                .map_err(|e| format!("Failed to run {cli_name} --help via cmd: {e}"))?
+        }
+        #[cfg(not(windows))]
+        {
+            Command::new("sh")
+                .args(["-lc", &format!("{cli_name} --help")])
+                .output()
+                .await
+                .map_err(|e| format!("Failed to run {cli_name} --help via shell: {e}"))?
+        }
     };
 
     let stdout = String::from_utf8_lossy(&output.stdout);
@@ -301,45 +311,51 @@ pub async fn get_project_discussions(
 #[tauri::command]
 pub async fn debug_environment() -> Result<String, String> {
     async fn test_cli_version(cli_name: &str) -> String {
-        if cfg!(target_os = "windows") {
-            match tokio::process::Command::new("cmd")
-                .args(["/C", cli_name, "--version"])
-                .output()
-                .await
+        {
+            #[cfg(windows)]
             {
-                Ok(output) if output.status.success() => {
-                    format!(
-                        "{cli_name} available via shell: {}",
-                        String::from_utf8_lossy(&output.stdout).trim()
-                    )
+                match tokio::process::Command::new("cmd.exe")
+                    .args(["/C", cli_name, "--version"])
+                    .creation_flags(CREATE_NO_WINDOW)
+                    .output()
+                    .await
+                {
+                    Ok(output) if output.status.success() => {
+                        format!(
+                            "{cli_name} available via shell: {}",
+                            String::from_utf8_lossy(&output.stdout).trim()
+                        )
+                    }
+                    Ok(output) => {
+                        format!(
+                            "{cli_name} shell test failed: {}",
+                            String::from_utf8_lossy(&output.stderr)
+                        )
+                    }
+                    Err(e) => format!("{cli_name} shell execution failed: {e}"),
                 }
-                Ok(output) => {
-                    format!(
-                        "{cli_name} shell test failed: {}",
-                        String::from_utf8_lossy(&output.stderr)
-                    )
-                }
-                Err(e) => format!("{cli_name} shell execution failed: {e}"),
             }
-        } else {
-            match tokio::process::Command::new("sh")
-                .args(["-c", &format!("{cli_name} --version")])
-                .output()
-                .await
+            #[cfg(not(windows))]
             {
-                Ok(output) if output.status.success() => {
-                    format!(
-                        "{cli_name} available via shell: {}",
-                        String::from_utf8_lossy(&output.stdout).trim()
-                    )
+                match tokio::process::Command::new("sh")
+                    .args(["-lc", &format!("{cli_name} --version")])
+                    .output()
+                    .await
+                {
+                    Ok(output) if output.status.success() => {
+                        format!(
+                            "{cli_name} available via shell: {}",
+                            String::from_utf8_lossy(&output.stdout).trim()
+                        )
+                    }
+                    Ok(output) => {
+                        format!(
+                            "{cli_name} shell test failed: {}",
+                            String::from_utf8_lossy(&output.stderr)
+                        )
+                    }
+                    Err(e) => format!("{cli_name} shell execution failed: {e}"),
                 }
-                Ok(output) => {
-                    format!(
-                        "{cli_name} shell test failed: {}",
-                        String::from_utf8_lossy(&output.stderr)
-                    )
-                }
-                Err(e) => format!("{cli_name} shell execution failed: {e}"),
             }
         }
     }
@@ -352,17 +368,23 @@ pub async fn debug_environment() -> Result<String, String> {
     let gemini_result = test_cli_version("gemini").await;
     let qwen_result = test_cli_version("qwen").await;
 
-    let system_path = if cfg!(windows) {
-        match tokio::process::Command::new("cmd")
-            .args(["/c", "echo %PATH%"])
-            .output()
-            .await
+    let system_path = {
+        #[cfg(windows)]
         {
-            Ok(output) => String::from_utf8_lossy(&output.stdout).to_string(),
-            Err(e) => format!("Failed to get system PATH: {e}"),
+            match tokio::process::Command::new("cmd.exe")
+                .args(["/c", "echo %PATH%"])
+                .creation_flags(CREATE_NO_WINDOW)
+                .output()
+                .await
+            {
+                Ok(output) => String::from_utf8_lossy(&output.stdout).to_string(),
+                Err(e) => format!("Failed to get system PATH: {e}"),
+            }
         }
-    } else {
-        "Not Windows".to_string()
+        #[cfg(not(windows))]
+        {
+            "Not Windows".to_string()
+        }
     };
 
     Ok(format!(

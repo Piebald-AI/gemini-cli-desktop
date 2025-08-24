@@ -628,7 +628,7 @@ function ToolCallDisplayComponent({
           {enhancedToolCall.inputJsonRpc && (
             <div className="mt-4">
               <div className="text-xs font-semibold text-muted-foreground mb-2">
-                Input:
+                {t("toolCalls.input")}
               </div>
               <pre className="bg-muted p-3 rounded text-xs overflow-x-auto border">
                 <code>{enhancedToolCall.inputJsonRpc}</code>
@@ -640,7 +640,7 @@ function ToolCallDisplayComponent({
           {enhancedToolCall.outputJsonRpc && (
             <div className="mt-4">
               <div className="text-xs font-semibold text-muted-foreground mb-2">
-                Output:
+                {t("toolCalls.output")}
               </div>
               <pre className="bg-muted p-3 rounded text-xs overflow-x-auto border">
                 <code>{enhancedToolCall.outputJsonRpc}</code>

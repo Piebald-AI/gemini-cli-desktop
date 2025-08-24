@@ -6,6 +6,9 @@ use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader as AsyncBufReader};
 use tokio::process::{Child, ChildStdin, ChildStdout, Command};
 use tokio::sync::mpsc;
 
+#[cfg(windows)]
+const CREATE_NO_WINDOW: u32 = 0x08000000;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct QwenConfig {
     pub api_key: String,
@@ -43,6 +46,7 @@ pub struct PersistentSession {
     pub message_sender: Option<mpsc::UnboundedSender<String>>,
     pub rpc_logger: Arc<dyn RpcLogger>,
     pub child: Option<Child>,
+    pub working_directory: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -116,17 +120,42 @@ impl SessionManager {
             if let Some(mut child) = session.child.take() {
                 drop(child.kill());
             } else if let Some(pid) = session.pid {
-                #[cfg(windows)]
-                {
-                    use std::process::Command as StdCommand;
-                    let output = StdCommand::new("taskkill")
-                        .args(["/PID", &pid.to_string(), "/F"])
-                        .output()
-                        .context("Failed to kill process")?;
+                let output = {
+                    #[cfg(windows)]
+                    {
+                        use std::os::windows::process::CommandExt;
+                        use std::process::Command as StdCommand;
 
-                    if !output.status.success() {
-                        let stderr = String::from_utf8_lossy(&output.stderr).to_string();
-                        let stderr_lower = stderr.to_lowercase();
+                        StdCommand::new("taskkill")
+                            .args(["/PID", &pid.to_string(), "/F"])
+                            .creation_flags(CREATE_NO_WINDOW)
+                            .output()
+                            .map_err(|e| {
+                                BackendError::CommandExecutionFailed(format!(
+                                    "Failed to kill process: {e}"
+                                ))
+                            })?
+                    }
+                    #[cfg(not(windows))]
+                    {
+                        use std::process::Command as StdCommand;
+
+                        StdCommand::new("kill")
+                            .args(["-9", &pid.to_string()])
+                            .output()
+                            .map_err(|e| {
+                                BackendError::CommandExecutionFailed(format!(
+                                    "Failed to kill process: {e}"
+                                ))
+                            })?
+                    }
+                };
+
+                if !output.status.success() {
+                    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+                    let stderr_lower = stderr.to_lowercase();
+                    #[cfg(windows)]
+                    {
                         // Treat "not found" as success to make kill idempotent in tests and runtime
                         if stderr_lower.contains("not found") {
                             // Consider the process already gone
@@ -134,19 +163,8 @@ impl SessionManager {
                             anyhow::bail!("Failed to kill process {pid}: {stderr}");
                         }
                     }
-                }
-
-                #[cfg(not(windows))]
-                {
-                    use std::process::Command as StdCommand;
-                    let output = StdCommand::new("kill")
-                        .args(["-9", &pid.to_string()])
-                        .output()
-                        .context("Failed to kill process")?;
-
-                    if !output.status.success() {
-                        let stderr = String::from_utf8_lossy(&output.stderr).to_string();
-                        let stderr_lower = stderr.to_lowercase();
+                    #[cfg(not(windows))]
+                    {
                         if stderr_lower.contains("no such process") {
                             // Consider the process already gone
                         } else {
@@ -185,8 +203,7 @@ async fn send_jsonrpc_request<E: EventEmitter>(
     emitter: &E,
     rpc_logger: &Arc<dyn RpcLogger>,
 ) -> Result<JsonRpcResponse> {
-    let request_json = serde_json::to_string(request)
-        .context("Failed to serialize request")?;
+    let request_json = serde_json::to_string(request).context("Failed to serialize request")?;
 
     println!("🔍 RAW INPUT TO GEMINI CLI: {request_json}");
     let _ = rpc_logger.log_rpc(&request_json);
@@ -200,10 +217,7 @@ async fn send_jsonrpc_request<E: EventEmitter>(
         .write_all(b"\n")
         .await
         .context("Failed to write newline")?;
-    stdin
-        .flush()
-        .await
-        .context("Failed to flush")?;
+    stdin.flush().await.context("Failed to flush")?;
 
     let _ = emitter.emit(
         &format!("cli-io-{session_id}"),
@@ -217,11 +231,14 @@ async fn send_jsonrpc_request<E: EventEmitter>(
     let mut line = String::new();
     let trimmed_line = loop {
         line.clear();
-        reader.read_line(&mut line).await
+        reader
+            .read_line(&mut line)
+            .await
             .context("Failed to read response")?;
 
         let trimmed = line.trim();
         println!("🔍 RAW OUTPUT FROM GEMINI CLI: {trimmed}");
+
         let _ = rpc_logger.log_rpc(trimmed);
 
         let _ = emitter.emit(
@@ -312,23 +329,24 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
             println!("🔧 [HANDSHAKE] Set OPENAI_BASE_URL: {}", config.base_url);
             println!("🔧 [HANDSHAKE] Set OPENAI_MODEL: {}", config.model);
 
-            #[cfg(target_os = "windows")]
+            #[cfg(windows)]
             {
                 println!(
-                    "🔧 [HANDSHAKE] Creating Windows Qwen command: cmd /C qwen --experimental-acp"
+                    "🔧 [HANDSHAKE] Creating Windows Qwen command: cmd.exe /C qwen --experimental-acp"
                 );
-                let mut c = Command::new("cmd");
+                let mut c = Command::new("cmd.exe");
                 c.args(["/C", "qwen", "--experimental-acp"]);
+                c.creation_flags(CREATE_NO_WINDOW);
                 c
             }
-            #[cfg(not(target_os = "windows"))]
+            #[cfg(not(windows))]
             {
                 println!(
-                    "🔧 [HANDSHAKE] Creating Unix Qwen command: sh -c 'qwen --experimental-acp'"
+                    "🔧 [HANDSHAKE] Creating Unix Qwen command: sh -lc 'qwen --experimental-acp'"
                 );
                 let mut c = Command::new("sh");
                 let qwen_command = "qwen --experimental-acp".to_string();
-                c.args(["-c", &qwen_command]);
+                c.args(["-lc", &qwen_command]);
                 c
             }
         } else {
@@ -350,13 +368,13 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
                     }
                     "vertex-ai" => {
                         if let Some(project) = &auth.vertex_project {
-                            println!("🔧 [HANDSHAKE] Setting GOOGLE_CLOUD_PROJECT: {}", project);
+                            println!("🔧 [HANDSHAKE] Setting GOOGLE_CLOUD_PROJECT: {project}");
                             unsafe {
                                 std::env::set_var("GOOGLE_CLOUD_PROJECT", project);
                             }
                         }
                         if let Some(location) = &auth.vertex_location {
-                            println!("🔧 [HANDSHAKE] Setting GOOGLE_CLOUD_LOCATION: {}", location);
+                            println!("🔧 [HANDSHAKE] Setting GOOGLE_CLOUD_LOCATION: {location}");
                             unsafe {
                                 std::env::set_var("GOOGLE_CLOUD_LOCATION", location);
                             }
@@ -373,25 +391,25 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
                 println!("🔧 [HANDSHAKE] No auth config provided, using default OAuth");
             }
 
-            #[cfg(target_os = "windows")]
+            #[cfg(windows)]
             {
                 println!(
-                    "🔧 [HANDSHAKE] Creating Windows Gemini command: cmd /C gemini --model {} --experimental-acp",
-                    model
+                    "🔧 [HANDSHAKE] Creating Windows Gemini command: cmd.exe /C gemini --model {model} --experimental-acp"
                 );
-                let mut c = Command::new("cmd");
+                let mut c = Command::new("cmd.exe");
                 c.args(["/C", "gemini", "--model", &model, "--experimental-acp"]);
+                c.creation_flags(CREATE_NO_WINDOW);
                 c
             }
-            #[cfg(not(target_os = "windows"))]
+            #[cfg(not(windows))]
             {
                 let gemini_command = format!("gemini --model {model} --experimental-acp");
                 println!(
-                    "🔧 [HANDSHAKE] Creating Unix Gemini command: sh -c '{}'",
+                    "🔧 [HANDSHAKE] Creating Unix Gemini command: sh -lc '{}'",
                     gemini_command
                 );
                 let mut c = Command::new("sh");
-                c.args(["-c", &gemini_command]);
+                c.args(["-lc", &gemini_command]);
                 c
             }
         }
@@ -409,14 +427,14 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
     println!("🔄 [HANDSHAKE] Spawning CLI process...");
     let mut child = cmd.spawn().map_err(|e| {
         let cmd_name = if is_qwen { "qwen" } else { "gemini" };
-        println!("❌ [HANDSHAKE] Failed to spawn {} process: {}", cmd_name, e);
-        #[cfg(target_os = "windows")]
+        println!("❌ [HANDSHAKE] Failed to spawn {cmd_name} process: {e}");
+        #[cfg(windows)]
         {
             anyhow::anyhow!(
                 "Session initialization failed: Failed to run {cmd_name} command via cmd: {e}"
             )
         }
-        #[cfg(not(target_os = "windows"))]
+        #[cfg(not(windows))]
         {
             anyhow::anyhow!(
                 "Session initialization failed: Failed to run {} command via shell: {e}",
@@ -428,11 +446,15 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
     println!("✅ [HANDSHAKE] CLI process spawned successfully");
 
     let pid = child.id();
-    println!("🔗 [HANDSHAKE] CLI process PID: {:?}", pid);
+    println!("🔗 [HANDSHAKE] CLI process PID: {pid:?}");
 
-    let mut stdin = child.stdin.take()
+    let mut stdin = child
+        .stdin
+        .take()
         .context("Failed to get stdin from child process")?;
-    let stdout = child.stdout.take()
+    let stdout = child
+        .stdout
+        .take()
         .context("Failed to get stdout from child process")?;
 
     let mut reader = AsyncBufReader::new(stdout);
@@ -455,8 +477,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
         jsonrpc: "2.0".to_string(),
         id: 1,
         method: "initialize".to_string(),
-        params: serde_json::to_value(init_params)
-            .context("Failed to serialize init params")?,
+        params: serde_json::to_value(init_params).context("Failed to serialize init params")?,
     };
 
     // { "jsonrpc": "2.0", "id": 1, "method": "initialize", "params": { "protocolVersion": 1, "clientCapabilities": { "fs": { "readTextFile": true, "writeTextFile": true } } } }
@@ -471,7 +492,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
     )
     .await
     .map_err(|e| {
-        println!("❌ [HANDSHAKE] Initialize request failed: {}", e);
+        println!("❌ [HANDSHAKE] Initialize request failed: {e}");
         e
     })?;
 
@@ -487,10 +508,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
         cwd: working_directory.clone(),
         mcp_servers: vec![], // No MCP servers for now
     };
-    println!(
-        "📁 [HANDSHAKE] Session params: cwd={}, mcp_servers=[], ",
-        working_directory
-    );
+    println!("📁 [HANDSHAKE] Session params: cwd={working_directory}, mcp_servers=[]");
 
     let session_request = JsonRpcRequest {
         jsonrpc: "2.0".to_string(),
@@ -532,10 +550,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
             let auth_params = AuthenticateParams {
                 method_id: auth_method_id.clone(),
             };
-            println!(
-                "🔐 [HANDSHAKE] Sending authenticate request with method: {}",
-                auth_method_id
-            );
+            println!("🔐 [HANDSHAKE] Sending authenticate request with method: {auth_method_id}");
 
             let auth_request = JsonRpcRequest {
                 jsonrpc: "2.0".to_string(),
@@ -555,7 +570,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
             )
             .await
             .map_err(|e| {
-                println!("❌ [HANDSHAKE] Authentication request failed: {}", e);
+                println!("❌ [HANDSHAKE] Authentication request failed: {e}");
                 e
             })?;
 
@@ -573,7 +588,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
             )
             .await;
         } else {
-            println!("❌ [HANDSHAKE] Session creation request failed: {}", msg);
+            println!("❌ [HANDSHAKE] Session creation request failed: {msg}");
             return Err(e);
         }
     };
@@ -610,6 +625,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
             message_sender: Some(message_tx.clone()),
             rpc_logger: rpc_logger.clone(),
             child: Some(child),
+            working_directory: working_directory.clone(),
         };
 
         processes.insert(session_id.clone(), persistent_session);
@@ -725,10 +741,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
     tokio::spawn(async move {
         // Ensure the I/O loop does not block forever if the CLI becomes silent.
         // The internal handler itself reads line-by-line and will exit on EOF.
-        println!(
-            "🔄 [HANDSHAKE] Starting I/O handler task for session: {}",
-            session_id_clone
-        );
+        println!("🔄 [HANDSHAKE] Starting I/O handler task for session: {session_id_clone}");
         handle_session_io_internal(
             session_id_clone,
             reader,
@@ -750,17 +763,11 @@ async fn handle_session_io_internal(
     processes: ProcessMap,
     event_tx: mpsc::UnboundedSender<InternalEvent>,
 ) {
-    println!(
-        "🔄 [IO-HANDLER] Starting I/O handler loop for session: {}",
-        session_id
-    );
+    println!("🔄 [IO-HANDLER] Starting I/O handler loop for session: {session_id}");
     let mut line_buffer = String::new();
 
     loop {
-        println!(
-            "🔄 [IO-HANDLER] Waiting for message or CLI output for session: {}",
-            session_id
-        );
+        println!("🔄 [IO-HANDLER] Waiting for message or CLI output for session: {session_id}");
         tokio::select! {
             message = message_rx.recv() => {
                 if let Some(message_json) = message {
@@ -794,6 +801,8 @@ async fn handle_session_io_internal(
                             break;
                         }
 
+
+
                         let _ = event_tx.send(InternalEvent::CliIo {
                             session_id: session_id.clone(),
                             payload: CliIoPayload {
@@ -823,7 +832,7 @@ async fn handle_session_io_internal(
                         break;
                     }
                     Ok(bytes_read) => {
-                        println!("📥 [SESSION-LIFECYCLE] Read {} bytes from CLI for session: {}", bytes_read, session_id);
+                        println!("📥 [SESSION-LIFECYCLE] Read {bytes_read} bytes from CLI for session: {session_id}");
                         let line = line_buffer.trim().to_string();
 
                         if let Ok(processes_guard) = processes.lock()
@@ -855,7 +864,7 @@ async fn handle_session_io_internal(
                         line_buffer.clear();
                     }
                     Err(e) => {
-                        println!("💀 [SESSION-LIFECYCLE] Error reading from CLI for session {}: {}", session_id, e);
+                        println!("💀 [SESSION-LIFECYCLE] Error reading from CLI for session {session_id}: {e}");
                         println!("💀 [SESSION-LIFECYCLE] This will cause session to become INACTIVE");
                         break;
                     }
@@ -866,22 +875,17 @@ async fn handle_session_io_internal(
 
     {
         println!(
-            "💀 [SESSION-LIFECYCLE] I/O handler exiting, marking session as INACTIVE: {}",
-            session_id
+            "💀 [SESSION-LIFECYCLE] I/O handler exiting, marking session as INACTIVE: {session_id}"
         );
         let mut processes_guard = processes.lock().unwrap();
         if let Some(session) = processes_guard.get_mut(&session_id) {
-            println!(
-                "💀 [SESSION-LIFECYCLE] Setting is_alive=false for session: {}",
-                session_id
-            );
+            println!("💀 [SESSION-LIFECYCLE] Setting is_alive=false for session: {session_id}");
             session.is_alive = false;
             session.stdin = None;
             session.message_sender = None;
         } else {
             println!(
-                "⚠️ [SESSION-LIFECYCLE] Session {} not found in processes map when trying to mark inactive",
-                session_id
+                "⚠️ [SESSION-LIFECYCLE] Session {session_id} not found in processes map when trying to mark inactive"
             );
         }
     }
@@ -1132,6 +1136,7 @@ mod tests {
             message_sender: None,
             rpc_logger: Arc::new(NoOpRpcLogger),
             child: None,
+            working_directory: ".".to_string(),
         };
 
         assert_eq!(session.conversation_id, "test-id");
@@ -1173,6 +1178,7 @@ mod tests {
             message_sender: None,
             rpc_logger: Arc::new(NoOpRpcLogger),
             child: None,
+            working_directory: ".".to_string(),
         };
 
         let status = ProcessStatus::from(&session);
@@ -1215,6 +1221,7 @@ mod tests {
                     message_sender: None,
                     rpc_logger: Arc::new(NoOpRpcLogger),
                     child: None,
+                    working_directory: ".".to_string(),
                 },
             );
         }
@@ -1254,6 +1261,7 @@ mod tests {
                     message_sender: None,
                     rpc_logger: Arc::new(NoOpRpcLogger),
                     child: None,
+                    working_directory: ".".to_string(),
                 },
             );
         }
@@ -1310,6 +1318,7 @@ mod tests {
                     message_sender: Some(tx),
                     rpc_logger: Arc::new(NoOpRpcLogger),
                     child: None,
+                    working_directory: ".".to_string(),
                 },
             );
         }
@@ -1588,6 +1597,7 @@ mod tests {
                     message_sender: None,
                     rpc_logger: Arc::new(NoOpRpcLogger),
                     child: None,
+                    working_directory: ".".to_string(),
                 },
             );
         }
@@ -1632,6 +1642,7 @@ mod tests {
                     message_sender: Some(tx),
                     rpc_logger: Arc::new(NoOpRpcLogger),
                     child: None,
+                    working_directory: ".".to_string(),
                 },
             );
         }
@@ -1690,6 +1701,7 @@ mod tests {
                             message_sender: None,
                             rpc_logger: Arc::new(NoOpRpcLogger),
                             child: None,
+                            working_directory: ".".to_string(),
                         },
                     );
                 }
@@ -1740,6 +1752,7 @@ mod tests {
                     message_sender: None,
                     rpc_logger: Arc::new(NoOpRpcLogger),
                     child: None,
+                    working_directory: ".".to_string(),
                 },
             );
         });
@@ -1818,6 +1831,7 @@ mod tests {
                         message_sender: None,
                         rpc_logger: Arc::new(NoOpRpcLogger),
                         child: None,
+                        working_directory: ".".to_string(),
                     },
                 );
             }

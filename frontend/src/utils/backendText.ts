@@ -19,7 +19,8 @@ export const getBackendText = (backend: BackendType) => {
   const t = i18n.t;
 
   // Get backend-specific names from translations
-  const backendDisplayName = t(`backend.${backend}Cli`);
+  const backendDisplayName =
+    backend === "qwen" ? t("backend.qwenCode") : t(`backend.${backend}Cli`);
   const appDisplayName = t(`backend.${backend}Desktop`);
   const backendShortname = t(`backend.${backend}`);
   const backendModelFamilyNameOrTool =

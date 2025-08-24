@@ -2,7 +2,7 @@
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Gemini Desktop",
   "version": "0.1.0",
-  "identifier": "com.piebald.gemini-desktop",
+  "identifier": "ai.piebald.gemini-desktop",
   "build": {
     "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:1420",
@@ -15,32 +15,11 @@
         "title": "Gemini Desktop",
         "width": 1280,
         "height": 730,
-        "decorations": false
+        "decorations": true
       }
     ],
     "security": {
-      "csp": null,
-      "capabilities": [
-        {
-          "identifier": "main-capability",
-          "description": "Capability for the main window",
-          "windows": ["main"],
-          "permissions": [
-            "core:default",
-            "core:event:allow-listen",
-            "core:event:default",
-            "core:window:allow-minimize",
-            "core:window:allow-maximize",
-            "core:window:allow-close",
-            "core:window:allow-start-dragging",
-            "core:window:allow-is-maximized",
-            "core:window:allow-unmaximize",
-            "dialog:allow-open",
-            "dialog:default",
-            "opener:default"
-          ]
-        }
-      ]
+      "csp": null
     },
     "withGlobalTauri": false
   },
@@ -48,6 +27,8 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "category": "DeveloperTool",
+    "publisher": "Piebald LLC",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

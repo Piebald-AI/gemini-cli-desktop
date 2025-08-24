@@ -1,4 +1,5 @@
 import { Terminal, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { type ToolCall } from "../../utils/toolCallParser";
 
 interface CommandResult {
@@ -16,6 +17,7 @@ interface CommandRendererProps {
 }
 
 export function CommandRenderer({ toolCall }: CommandRendererProps) {
+  const { t } = useTranslation();
   const result = toolCall.result as CommandResult;
 
   // Extract command from input
@@ -48,7 +50,7 @@ export function CommandRenderer({ toolCall }: CommandRendererProps) {
         color: "text-green-500",
         bgColor: "bg-green-50 dark:bg-green-950/20",
         borderColor: "border-green-200 dark:border-green-800",
-        label: "Success",
+        label: t("toolCalls.success"),
       };
     } else if (isSuccess && !hasOutput) {
       return {
@@ -56,7 +58,7 @@ export function CommandRenderer({ toolCall }: CommandRendererProps) {
         color: "text-green-500",
         bgColor: "bg-green-50 dark:bg-green-950/20",
         borderColor: "border-green-200 dark:border-green-800",
-        label: "Completed",
+        label: t("toolCalls.completed"),
       };
     } else {
       return {
@@ -64,7 +66,7 @@ export function CommandRenderer({ toolCall }: CommandRendererProps) {
         color: "text-red-500",
         bgColor: "bg-red-50 dark:bg-red-950/20",
         borderColor: "border-red-200 dark:border-red-800",
-        label: "Failed",
+        label: t("toolCalls.failed"),
       };
     }
   };

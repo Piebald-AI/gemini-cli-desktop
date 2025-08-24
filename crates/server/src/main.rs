@@ -208,6 +208,7 @@ struct AppState {
 // =====================================
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct StartSessionRequest {
     session_id: String,
     working_directory: Option<String>,
@@ -217,6 +218,7 @@ struct StartSessionRequest {
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct SendMessageRequest {
     session_id: String,
     message: String,
@@ -227,11 +229,13 @@ struct SendMessageRequest {
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct KillProcessRequest {
     conversation_id: String,
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct ToolConfirmationRequest {
     session_id: String,
     request_id: u32,
@@ -240,32 +244,38 @@ struct ToolConfirmationRequest {
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct ExecuteCommandRequest {
     command: String,
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct GenerateTitleRequest {
     message: String,
     model: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct ValidateDirectoryRequest {
     path: String,
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct IsHomeDirectoryRequest {
     path: String,
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct ListDirectoryRequest {
     path: String,
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct GetParentDirectoryRequest {
     path: String,
 }
@@ -311,7 +321,7 @@ async fn list_projects(
 }
 
 #[get("/projects-enriched")]
-async fn list_projects_enriched(
+async fn list_enriched_projects(
     state: &State<AppState>,
 ) -> Result<Json<Vec<EnrichedProject>>, Status> {
     let backend = state.backend.lock().await;
@@ -391,12 +401,24 @@ async fn check_cli_installed(state: &State<AppState>) -> Result<Json<bool>, Stat
 #[post("/start-session", data = "<request>")]
 async fn start_session(request: Json<StartSessionRequest>, state: &State<AppState>) -> Status {
     let req = request.into_inner();
-    println!("🎯 [SESSION-REQUEST] Received start_session request for: {}", req.session_id);
-    println!("🎯 [SESSION-REQUEST] Working directory: {:?}", req.working_directory);
+    println!(
+        "🎯 [SESSION-REQUEST] Received start_session request for: {}",
+        req.session_id
+    );
+    println!(
+        "🎯 [SESSION-REQUEST] Working directory: {:?}",
+        req.working_directory
+    );
     println!("🎯 [SESSION-REQUEST] Model: {:?}", req.model);
-    println!("🎯 [SESSION-REQUEST] Backend config present: {}", req.backend_config.is_some());
-    println!("🎯 [SESSION-REQUEST] Gemini auth present: {}", req.gemini_auth.is_some());
-    
+    println!(
+        "🎯 [SESSION-REQUEST] Backend config present: {}",
+        req.backend_config.is_some()
+    );
+    println!(
+        "🎯 [SESSION-REQUEST] Gemini auth present: {}",
+        req.gemini_auth.is_some()
+    );
+
     let backend = state.backend.lock().await;
 
     // If working_directory is provided, initialize a session with that directory
@@ -418,11 +440,11 @@ async fn start_session(request: Json<StartSessionRequest>, state: &State<AppStat
             Ok(_) => {
                 println!("✅ [SESSION-REQUEST] Session initialization completed successfully");
                 Status::Ok
-            },
+            }
             Err(e) => {
-                println!("❌ [SESSION-REQUEST] Session initialization failed: {}", e);
+                println!("❌ [SESSION-REQUEST] Session initialization failed: {e}");
                 Status::InternalServerError
-            },
+            }
         }
     } else {
         // For compatibility with existing frontend, just check if CLI is installed
@@ -487,19 +509,28 @@ async fn get_process_statuses(state: &State<AppState>) -> Result<Json<Vec<Proces
     let backend = state.backend.lock().await;
     match backend.get_process_statuses() {
         Ok(statuses) => {
-            println!("🌐 [API-STATUS] Returning {} statuses to frontend:", statuses.len());
+            println!(
+                "🌐 [API-STATUS] Returning {} statuses to frontend:",
+                statuses.len()
+            );
             for status in &statuses {
-                println!("🌐 [API-STATUS]   - {}: {} (PID: {:?})", 
-                         status.conversation_id, 
-                         if status.is_alive { "ACTIVE" } else { "INACTIVE" },
-                         status.pid);
+                println!(
+                    "🌐 [API-STATUS]   - {}: {} (PID: {:?})",
+                    status.conversation_id,
+                    if status.is_alive {
+                        "ACTIVE"
+                    } else {
+                        "INACTIVE"
+                    },
+                    status.pid
+                );
             }
             Ok(Json(statuses))
-        },
+        }
         Err(e) => {
-            println!("❌ [API-STATUS] Failed to get statuses: {}", e);
+            println!("❌ [API-STATUS] Failed to get statuses: {e}");
             Err(Status::InternalServerError)
-        },
+        }
     }
 }
 
@@ -719,7 +750,7 @@ fn rocket() -> _ {
             get_recent_chats,
             search_chats,
             list_projects,
-            list_projects_enriched,
+            list_enriched_projects,
             get_enriched_project_http,
             get_project_discussions,
         ],

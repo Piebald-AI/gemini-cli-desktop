@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Globe, ChevronRight, Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { type ToolCall } from "../../utils/toolCallParser";
 
 interface WebToolResult {
@@ -12,6 +13,7 @@ interface WebToolRendererProps {
 }
 
 export function WebToolRenderer({ toolCall }: WebToolRendererProps) {
+  const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const result = toolCall.result as WebToolResult;
 
@@ -39,7 +41,9 @@ export function WebToolRenderer({ toolCall }: WebToolRendererProps) {
         return result.message;
       }
     }
-    return isWebSearch ? "Web search completed" : "Web fetch completed";
+    return isWebSearch
+      ? t("toolCalls.webSearchCompleted")
+      : t("toolCalls.webFetchCompleted");
   };
 
   // Get description for the tool
@@ -49,7 +53,10 @@ export function WebToolRenderer({ toolCall }: WebToolRendererProps) {
       const query =
         toolCall.label?.match(/Searching the web for: "([^"]+)"/)?.[1] ||
         "query";
-      const verb = toolCall.status === "running" ? "Searching" : "Searched";
+      const verb =
+        toolCall.status === "running"
+          ? t("toolCalls.searching")
+          : t("toolCalls.searched");
       return `${verb} web for "${query}"`;
     } else if (isWebFetch) {
       // Extract URL from label or parameters
@@ -71,7 +78,10 @@ export function WebToolRenderer({ toolCall }: WebToolRendererProps) {
         }
       }
 
-      const verb = toolCall.status === "running" ? "Fetching" : "Fetched";
+      const verb =
+        toolCall.status === "running"
+          ? t("toolCalls.fetchingContent")
+          : t("toolCalls.fetchedContent");
       return `${verb} content from ${displayUrl}`;
     }
     return toolCall.status === "running"

@@ -46,6 +46,8 @@ pub use projects::{
 pub use rpc::{JsonRpcError, JsonRpcRequest, JsonRpcResponse, RpcLogger};
 pub use search::{MessageMatch, RecentChat, SearchFilters, SearchResult};
 pub use security::{execute_terminal_command, is_command_safe};
+use std::path::Path;
+
 pub use session::{
     GeminiAuthConfig, PersistentSession, ProcessStatus, QwenConfig, SessionManager,
     initialize_session,
@@ -56,6 +58,9 @@ use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio::process::Command;
+
+#[cfg(windows)]
+const CREATE_NO_WINDOW: u32 = 0x08000000;
 
 /// Main backend interface for Gemini CLI functionality
 pub struct GeminiBackend<E: EventEmitter> {
@@ -166,16 +171,22 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
 
     /// Check if Gemini CLI is installed and available
     pub async fn check_cli_installed(&self) -> Result<bool> {
-        let result = if cfg!(target_os = "windows") {
-            Command::new("cmd")
-                .args(["/C", "gemini", "--version"])
-                .output()
-                .await
-        } else {
-            Command::new("sh")
-                .args(["-c", "gemini --version"])
-                .output()
-                .await
+        let result = {
+            #[cfg(windows)]
+            {
+                Command::new("cmd.exe")
+                    .args(["/C", "gemini", "--version"])
+                    .creation_flags(CREATE_NO_WINDOW)
+                    .output()
+                    .await
+            }
+            #[cfg(not(windows))]
+            {
+                Command::new("sh")
+                    .args(["-lc", "gemini --version"])
+                    .output()
+                    .await
+            }
         };
 
         match result {
@@ -246,12 +257,24 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
         let acp_session_id = acp_session_id
             .context("No ACP session ID available")?;
 
-        // Create ACP prompt content blocks
-        let prompt_blocks = vec![ContentBlock::Text { text: message }];
+        // Get working directory from session
+        let working_directory = {
+            let processes = self.session_manager.get_processes();
+            let processes = processes.lock().map_err(|_| {
+                BackendError::SessionInitFailed("Failed to lock processes".to_string())
+            })?;
 
+            processes
+                .get(&session_id)
+                .map(|s| s.working_directory.clone())
+                .unwrap_or_else(|| ".".to_string())
+        };
+
+        // Parse @-mentions and create ACP prompt content blocks
+        let prompt_blocks = self.parse_mentions_to_content_blocks(&message, &working_directory);
         let prompt_params = SessionPromptParams {
-            session_id: acp_session_id,
-            prompt: prompt_blocks,
+            session_id: acp_session_id.clone(),
+            prompt: prompt_blocks.clone(),
         };
 
         let request_id = {
@@ -261,12 +284,13 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
             id
         };
 
+        let params_value = serde_json::to_value(prompt_params)
+            .map_err(|e| BackendError::JsonError(e.to_string()))?;
         let prompt_request = JsonRpcRequest {
             jsonrpc: "2.0".to_string(),
             id: request_id,
             method: "session/prompt".to_string(),
-            params: serde_json::to_value(prompt_params)
-                .context("Failed to serialize prompt parameters")?,
+            params: params_value,
         };
 
         let request_json = serde_json::to_string(&prompt_request)
@@ -278,6 +302,87 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
 
         println!("✅ ACP session/prompt sent to session: {session_id}");
         Ok(())
+    }
+
+    /// Parse @-mentions in a message and convert to ACP ContentBlocks
+    fn parse_mentions_to_content_blocks(
+        &self,
+        message: &str,
+        _working_directory: &str,
+    ) -> Vec<ContentBlock> {
+        let mut blocks: Vec<ContentBlock> = Vec::new();
+
+        // Regex to match @-mentions (files/folders)
+        let regex_pattern = r"@([^\s,;!?\(\)\[\]\{\}]+)";
+        let re = regex::Regex::new(regex_pattern).unwrap();
+        let mut last_end = 0;
+        let captures: Vec<_> = re.captures_iter(message).collect();
+        for capture in captures.iter() {
+            let match_range = capture.get(0).unwrap();
+            let mention_path = capture.get(1).unwrap().as_str();
+
+            // Check if this @ is part of an email address (has non-whitespace before it)
+
+            if match_range.start() > 0 {
+                let char_index = match_range.start() - 1;
+                let char_before = message.chars().nth(char_index);
+
+                if let Some(c) = char_before
+                    && !c.is_whitespace()
+                {
+                    continue;
+                }
+            }
+
+            // Add text before the @-mention
+
+            if match_range.start() > last_end {
+                let text_before = &message[last_end..match_range.start()];
+                if !text_before.is_empty() {
+                    let text_block = ContentBlock::Text {
+                        text: text_before.to_string(),
+                    };
+                    blocks.push(text_block);
+                }
+            }
+
+            // Create the resource link for the @-mention
+            // Get the filename for the name field
+            let file_name_os = Path::new(mention_path).file_name();
+            let name_str = file_name_os.and_then(|n| n.to_str());
+            let name = name_str.unwrap_or(mention_path).to_string();
+
+            // Use the mention path as-is for the URI (relative path)
+            let uri = mention_path.to_string();
+
+            let resource_link = ContentBlock::ResourceLink {
+                uri: uri.clone(),
+                name: name.clone(),
+            };
+            blocks.push(resource_link);
+
+            last_end = match_range.end();
+        }
+
+        // Add any remaining text after the last @-mention
+        if last_end < message.len() {
+            let remaining_text = &message[last_end..];
+            if !remaining_text.is_empty() {
+                let text_block = ContentBlock::Text {
+                    text: remaining_text.to_string(),
+                };
+                blocks.push(text_block);
+            }
+        }
+
+        // If no @-mentions were found, return the original message as a single text block
+        if blocks.is_empty() {
+            let text_block = ContentBlock::Text {
+                text: message.to_string(),
+            };
+            blocks.push(text_block);
+        }
+        blocks
     }
 
     /// Handle tool call confirmation response
@@ -407,22 +512,28 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
 
         let model_to_use = model.unwrap_or_else(|| "gemini-2.5-flash".to_string());
 
-        let mut child = if cfg!(target_os = "windows") {
-            Command::new("cmd")
-                .args(["/C", "gemini", "--model", &model_to_use])
-                .stdin(std::process::Stdio::piped())
-                .stdout(std::process::Stdio::piped())
-                .stderr(std::process::Stdio::piped())
-                .spawn()
-                .context("Failed to spawn Gemini CLI process on Windows")?
-        } else {
-            Command::new("gemini")
-                .args(["--model", &model_to_use])
-                .stdin(std::process::Stdio::piped())
-                .stdout(std::process::Stdio::piped())
-                .stderr(std::process::Stdio::piped())
-                .spawn()
-                .context("Failed to spawn Gemini CLI process")?
+        let mut child = {
+            #[cfg(windows)]
+            {
+                Command::new("cmd.exe")
+                    .args(["/C", "gemini", "--model", &model_to_use])
+                    .stdin(std::process::Stdio::piped())
+                    .stdout(std::process::Stdio::piped())
+                    .stderr(std::process::Stdio::piped())
+                    .creation_flags(CREATE_NO_WINDOW)
+                    .spawn()
+                    .map_err(|e| BackendError::CommandExecutionFailed(e.to_string()))?
+            }
+            #[cfg(not(windows))]
+            {
+                Command::new("gemini")
+                    .args(["--model", &model_to_use])
+                    .stdin(std::process::Stdio::piped())
+                    .stdout(std::process::Stdio::piped())
+                    .stderr(std::process::Stdio::piped())
+                    .spawn()
+                    .map_err(|e| BackendError::CommandExecutionFailed(e.to_string()))?
+            }
         };
 
         if let Some(stdin) = child.stdin.take() {
@@ -478,15 +589,15 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
     /// Kill a process by conversation ID
     pub fn kill_process(&self, conversation_id: &str) -> Result<()> {
         let result = self.session_manager.kill_process(conversation_id);
-        
+
         // Emit real-time status change after killing process
-        if result.is_ok() {
-            if let Ok(statuses) = self.session_manager.get_process_statuses() {
-                println!("📡 [STATUS-WS] Emitting process status change after killing process");
-                let _ = self.emitter.emit("process-status-changed", &statuses);
-            }
+        if result.is_ok()
+            && let Ok(statuses) = self.session_manager.get_process_statuses()
+        {
+            println!("📡 [STATUS-WS] Emitting process status change after killing process");
+            let _ = self.emitter.emit("process-status-changed", &statuses);
         }
-        
+
         result
     }
 
@@ -563,5 +674,209 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
         project_id: &str,
     ) -> Result<Vec<RecentChat>> {
         search::get_project_discussions(project_id).await
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::events::MockEventEmitter;
+
+    // Helper function to create a test backend
+    fn create_test_backend() -> GeminiBackend<MockEventEmitter> {
+        let emitter = MockEventEmitter::new();
+        GeminiBackend::new(emitter)
+    }
+
+    #[test]
+    fn test_parse_single_mention() {
+        let backend = create_test_backend();
+        let message = "Please explain @README.md file";
+        let blocks = backend.parse_mentions_to_content_blocks(message, "/project");
+
+        assert_eq!(blocks.len(), 3);
+
+        // First block should be text before mention
+        match &blocks[0] {
+            ContentBlock::Text { text } => assert_eq!(text, "Please explain "),
+            _ => panic!("Expected Text block"),
+        }
+
+        // Second block should be resource link
+        match &blocks[1] {
+            ContentBlock::ResourceLink { uri, name } => {
+                assert_eq!(name, "README.md");
+                assert_eq!(uri, "README.md");
+            }
+            _ => panic!("Expected ResourceLink block"),
+        }
+
+        // Third block should be text after mention
+        match &blocks[2] {
+            ContentBlock::Text { text } => assert_eq!(text, " file"),
+            _ => panic!("Expected Text block"),
+        }
+    }
+
+    #[test]
+    fn test_parse_multiple_mentions() {
+        let backend = create_test_backend();
+        let message = "Compare @config.json with @package.json files";
+        let blocks = backend.parse_mentions_to_content_blocks(message, "/app");
+
+        assert_eq!(blocks.len(), 5);
+
+        // Check structure: text, resource, text, resource, text
+        match &blocks[0] {
+            ContentBlock::Text { text } => assert_eq!(text, "Compare "),
+            _ => panic!("Expected Text block"),
+        }
+
+        match &blocks[1] {
+            ContentBlock::ResourceLink { name, .. } => {
+                assert_eq!(name, "config.json");
+            }
+            _ => panic!("Expected ResourceLink block"),
+        }
+
+        match &blocks[2] {
+            ContentBlock::Text { text } => assert_eq!(text, " with "),
+            _ => panic!("Expected Text block"),
+        }
+
+        match &blocks[3] {
+            ContentBlock::ResourceLink { name, .. } => {
+                assert_eq!(name, "package.json");
+            }
+            _ => panic!("Expected ResourceLink block"),
+        }
+
+        match &blocks[4] {
+            ContentBlock::Text { text } => assert_eq!(text, " files"),
+            _ => panic!("Expected Text block"),
+        }
+    }
+
+    #[test]
+    fn test_parse_no_mentions() {
+        let backend = create_test_backend();
+        let message = "Hello world, no mentions here!";
+        let blocks = backend.parse_mentions_to_content_blocks(message, "/home");
+
+        assert_eq!(blocks.len(), 1);
+
+        match &blocks[0] {
+            ContentBlock::Text { text } => assert_eq!(text, message),
+            _ => panic!("Expected single Text block"),
+        }
+    }
+
+    #[test]
+    fn test_parse_mention_with_path() {
+        let backend = create_test_backend();
+        let message = "Check @src/main.rs for details";
+        let blocks = backend.parse_mentions_to_content_blocks(message, "/project");
+
+        assert_eq!(blocks.len(), 3);
+
+        match &blocks[1] {
+            ContentBlock::ResourceLink { uri, name } => {
+                assert_eq!(name, "main.rs");
+                assert_eq!(uri, "src/main.rs");
+            }
+            _ => panic!("Expected ResourceLink block"),
+        }
+    }
+
+    #[test]
+    fn test_parse_mention_at_start() {
+        let backend = create_test_backend();
+        let message = "@index.html is the entry point";
+        let blocks = backend.parse_mentions_to_content_blocks(message, "/web");
+
+        assert_eq!(blocks.len(), 2);
+
+        match &blocks[0] {
+            ContentBlock::ResourceLink { name, .. } => {
+                assert_eq!(name, "index.html");
+            }
+            _ => panic!("Expected ResourceLink block"),
+        }
+
+        match &blocks[1] {
+            ContentBlock::Text { text } => assert_eq!(text, " is the entry point"),
+            _ => panic!("Expected Text block"),
+        }
+    }
+
+    #[test]
+    fn test_parse_mention_at_end() {
+        let backend = create_test_backend();
+        let message = "The configuration is in @settings.yaml";
+        let blocks = backend.parse_mentions_to_content_blocks(message, "/config");
+
+        assert_eq!(blocks.len(), 2);
+
+        match &blocks[0] {
+            ContentBlock::Text { text } => assert_eq!(text, "The configuration is in "),
+            _ => panic!("Expected Text block"),
+        }
+
+        match &blocks[1] {
+            ContentBlock::ResourceLink { name, .. } => {
+                assert_eq!(name, "settings.yaml");
+            }
+            _ => panic!("Expected ResourceLink block"),
+        }
+    }
+
+    #[test]
+    fn test_parse_email_not_mention() {
+        let backend = create_test_backend();
+        let message = "Contact me@company.com for help";
+        let blocks = backend.parse_mentions_to_content_blocks(message, "/home");
+
+        // Email should not be parsed as mention due to lack of space before @
+        assert_eq!(blocks.len(), 1);
+
+        match &blocks[0] {
+            ContentBlock::Text { text } => assert_eq!(text, message),
+            _ => panic!("Expected single Text block"),
+        }
+    }
+
+    #[test]
+    fn test_parse_different_file_types() {
+        let backend = create_test_backend();
+
+        // Test Python file
+        let message = "See @script.py";
+        let blocks = backend.parse_mentions_to_content_blocks(message, "/");
+        match &blocks[1] {
+            ContentBlock::ResourceLink { .. } => {
+                // Just verify it's a ResourceLink
+            }
+            _ => panic!("Expected ResourceLink"),
+        }
+
+        // Test TypeScript file
+        let message = "Check @app.ts";
+        let blocks = backend.parse_mentions_to_content_blocks(message, "/");
+        match &blocks[1] {
+            ContentBlock::ResourceLink { .. } => {
+                // Just verify it's a ResourceLink
+            }
+            _ => panic!("Expected ResourceLink"),
+        }
+
+        // Test unknown extension defaults to text/plain
+        let message = "Review @data.xyz";
+        let blocks = backend.parse_mentions_to_content_blocks(message, "/");
+        match &blocks[1] {
+            ContentBlock::ResourceLink { .. } => {
+                // Just verify it's a ResourceLink
+            }
+            _ => panic!("Expected ResourceLink"),
+        }
     }
 }

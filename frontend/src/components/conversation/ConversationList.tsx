@@ -1,16 +1,7 @@
 import { useTranslation } from "react-i18next";
-import { Badge } from "../ui/badge";
+
 import { Button } from "../ui/button";
-import { Card, CardHeader, CardContent } from "../ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-  DialogTrigger,
-} from "../ui/dialog";
+
 import {
   Select,
   SelectContent,
@@ -21,9 +12,9 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { Input } from "../ui/input";
 import { Checkbox } from "../ui/checkbox";
-import { X, MessageCircle, Clock, AlertTriangle } from "lucide-react";
+import { X, MessageCircle, AlertTriangle } from "lucide-react";
 import { useState, useCallback } from "react";
-import { webApi, SearchResult, SearchFilters } from "../../lib/webApi";
+import { SearchResult, SearchFilters } from "../../lib/webApi";
 import { SearchInput } from "../common/SearchInput";
 import { SearchResults } from "../common/SearchResults";
 import { useSidebar } from "../ui/sidebar";
@@ -31,6 +22,8 @@ import { GeminiAuthMethod } from "../../types/backend";
 import { useBackend, useBackendConfig } from "../../contexts/BackendContext";
 import { getBackendText } from "../../utils/backendText";
 import type { Conversation, ProcessStatus } from "../../types";
+import { api } from "@/lib/api";
+import { ProcessCard } from "./ProcessCard";
 
 interface ConversationListProps {
   conversations: Conversation[];
@@ -98,15 +91,7 @@ export function ConversationList({
 
       setIsSearching(true);
       try {
-        const results = __WEB__
-          ? await webApi.search_chats({ query, filters })
-          : await (async () => {
-              const { invoke } = await import("@tauri-apps/api/core");
-              return await invoke<SearchResult[]>("search_chats", {
-                query,
-                filters,
-              });
-            })();
+        const results = await api.search_chats({ query, filters });
         setSearchResults(results);
       } catch (error) {
         console.error("Search failed:", error);
@@ -207,19 +192,16 @@ export function ConversationList({
             <SelectContent>
               <SelectItem value="en">
                 <div className="flex items-center gap-2">
-                  <span>🇺🇸</span>
                   <span>English</span>
                 </div>
               </SelectItem>
               <SelectItem value="zh-CN">
                 <div className="flex items-center gap-2">
-                  <span>🇨🇳</span>
                   <span>简体中文</span>
                 </div>
               </SelectItem>
               <SelectItem value="zh-TW">
                 <div className="flex items-center gap-2">
-                  <span>🇹🇼</span>
                   <span>繁體中文</span>
                 </div>
               </SelectItem>
@@ -507,135 +489,18 @@ export function ConversationList({
               const isSelected = activeConversation === conversation.id;
 
               return (
-                <Card
+                <ProcessCard
                   key={conversation.id}
-                  className={`cursor-pointer transition-all hover:shadow-md ${
-                    isSelected
-                      ? "ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                      : "hover:bg-gray-100 dark:hover:bg-gray-700"
-                  }`}
-                  onClick={async () =>
-                    await onConversationSelect(conversation.id)
-                  }
-                >
-                  <CardHeader className="p-3 pb-2 py-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate wrap-normal">
-                          {conversation.title.length > 20
-                            ? conversation.title.slice(0, 35) + "..."
-                            : conversation.title}
-                        </h3>
-                        <div className="flex items-center gap-2 mt-1 justify-between">
-                          {/* Process Status Badge */}
-                          <div className="flex items-center gap-1">
-                            {isActive ? (
-                              <Badge
-                                variant="secondary"
-                                className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs px-2 py-0.5"
-                              >
-                                <div className="w-2 h-2 bg-green-500 rounded-full mr-1" />
-                                {processStatus?.pid
-                                  ? t("conversations.pidLabel", {
-                                      pid: processStatus.pid,
-                                    })
-                                  : t("conversations.active")}
-                                {/* End Chat Button */}
-                                {isActive && (
-                                  <Dialog
-                                    open={
-                                      selectedConversationForEnd?.id ===
-                                      conversation.id
-                                    }
-                                    onOpenChange={(open) => {
-                                      if (!open)
-                                        setSelectedConversationForEnd(null);
-                                    }}
-                                  >
-                                    <DialogTrigger asChild>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-4 w-4 p-0 ml-2 text-red-500 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-950/70"
-                                        onClick={(e) => {
-                                          e.stopPropagation(); // Prevent conversation selection
-                                          setSelectedConversationForEnd({
-                                            id: conversation.id,
-                                            title: conversation.title,
-                                          });
-                                        }}
-                                        title={t("conversations.endChat")}
-                                      >
-                                        <X className="h-4 w-4" />
-                                      </Button>
-                                    </DialogTrigger>
-                                    <DialogContent>
-                                      <DialogHeader>
-                                        <DialogTitle>
-                                          {t("conversations.endChat")}
-                                        </DialogTitle>
-                                        <DialogDescription>
-                                          {t("conversations.endChatConfirm", {
-                                            title: conversation.title,
-                                          })}
-                                        </DialogDescription>
-                                      </DialogHeader>
-                                      <DialogFooter>
-                                        <Button
-                                          variant="outline"
-                                          onClick={() =>
-                                            setSelectedConversationForEnd(null)
-                                          }
-                                        >
-                                          {t("common.cancel")}
-                                        </Button>
-                                        <Button
-                                          variant="destructive"
-                                          onClick={() => {
-                                            onKillProcess(conversation.id);
-                                            setSelectedConversationForEnd(null);
-                                          }}
-                                        >
-                                          {t("conversations.endChat")}
-                                        </Button>
-                                      </DialogFooter>
-                                    </DialogContent>
-                                  </Dialog>
-                                )}
-                              </Badge>
-                            ) : (
-                              <Badge
-                                variant="secondary"
-                                className="bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 text-xs px-2 py-0.5"
-                              >
-                                <div className="w-2 h-2 bg-gray-400 rounded-full mr-1" />
-                                {t("conversations.inactive")}
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Clock className="h-3 w-3 text-gray-400" />
-                            <span className="text-xs text-gray-500 dark:text-gray-400">
-                              {formatLastUpdated(conversation.lastUpdated)}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </CardHeader>
-
-                  <CardContent className="p-3 pb-0">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {t("conversations.messageCount", {
-                            count: conversation.messages.length,
-                          })}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                  conversation={conversation}
+                  processStatus={processStatus}
+                  isActive={isActive}
+                  isSelected={isSelected}
+                  onConversationSelect={(id) => void onConversationSelect(id)}
+                  onKillProcess={onKillProcess}
+                  selectedConversationForEnd={selectedConversationForEnd}
+                  setSelectedConversationForEnd={setSelectedConversationForEnd}
+                  formatLastUpdated={formatLastUpdated}
+                />
               );
             })
         )}

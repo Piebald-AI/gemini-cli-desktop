@@ -1,76 +1,11 @@
 import axios from "axios";
+import { API } from "./api";
 
 // Create axios client with base URL /api
 const apiClient = axios.create({
   baseURL: "/api",
   timeout: 30000, // 30 second timeout
 });
-
-// Types matching the server's request/response types
-interface StartSessionRequest {
-  session_id: string;
-  working_directory?: string;
-  model?: string;
-  backend_config?: {
-    api_key: string;
-    base_url: string;
-    model: string;
-  };
-  gemini_auth?: {
-    method: string;
-    api_key?: string;
-    vertex_project?: string;
-    vertex_location?: string;
-  };
-}
-
-interface SendMessageRequest {
-  session_id: string;
-  message: string;
-  conversation_history: string;
-  model?: string;
-  backend_config?: {
-    api_key: string;
-    base_url: string;
-    model: string;
-  };
-}
-
-interface KillProcessRequest {
-  conversation_id: string;
-}
-
-interface ToolConfirmationRequest {
-  session_id: string;
-  request_id: number;
-  tool_call_id: string;
-  outcome: string;
-}
-
-interface ExecuteCommandRequest {
-  command: string;
-}
-
-interface GenerateTitleRequest {
-  message: string;
-  model?: string;
-}
-
-interface ValidateDirectoryRequest {
-  path: string;
-}
-
-interface IsHomeDirectoryRequest {
-  path: string;
-}
-
-interface ListDirectoryRequest {
-  path: string;
-}
-
-interface GetParentDirectoryRequest {
-  path: string;
-}
 
 export interface DirEntry {
   name: string;
@@ -97,36 +32,29 @@ interface ProcessStatus {
 }
 
 // Web API functions that mirror Tauri invoke calls
-export const webApi = {
+export const webApi: API = {
   async check_cli_installed(): Promise<boolean> {
     const response = await apiClient.get<boolean>("/check-cli-installed");
     return response.data;
   },
 
-  async start_session(
-    sessionId: string,
-    workingDirectory?: string,
-    model?: string,
+  async start_session(params: {
+    sessionId: string;
+    workingDirectory?: string;
+    model?: string;
     backendConfig?: {
       api_key: string;
       base_url: string;
       model: string;
-    },
+    };
     geminiAuth?: {
       method: string;
       api_key?: string;
       vertex_project?: string;
       vertex_location?: string;
-    }
-  ): Promise<void> {
-    const request: StartSessionRequest = {
-      session_id: sessionId,
-      working_directory: workingDirectory,
-      model: model,
-      backend_config: backendConfig,
-      gemini_auth: geminiAuth,
     };
-    await apiClient.post("/start-session", request);
+  }): Promise<void> {
+    await apiClient.post("/start-session", params);
   },
 
   async send_message(params: {
@@ -140,14 +68,7 @@ export const webApi = {
       model: string;
     };
   }): Promise<void> {
-    const request: SendMessageRequest = {
-      session_id: params.sessionId,
-      message: params.message,
-      conversation_history: params.conversationHistory,
-      model: params.model,
-      backend_config: params.backendConfig,
-    };
-    await apiClient.post("/send-message", request);
+    await apiClient.post("/send-message", params);
   },
 
   async get_process_statuses(): Promise<ProcessStatus[]> {
@@ -156,10 +77,7 @@ export const webApi = {
   },
 
   async kill_process(params: { conversationId: string }): Promise<void> {
-    const request: KillProcessRequest = {
-      conversation_id: params.conversationId,
-    };
-    await apiClient.post("/kill-process", request);
+    await apiClient.post("/kill-process", params);
   },
 
   async send_tool_call_confirmation_response(params: {
@@ -168,18 +86,13 @@ export const webApi = {
     toolCallId: string;
     outcome: string;
   }): Promise<void> {
-    const request: ToolConfirmationRequest = {
-      session_id: params.sessionId,
-      request_id: params.requestId,
-      tool_call_id: params.toolCallId,
-      outcome: params.outcome,
-    };
-    await apiClient.post("/tool-confirmation", request);
+    await apiClient.post("/tool-confirmation", params);
   },
 
-  async execute_confirmed_command(command: string): Promise<string> {
-    const request: ExecuteCommandRequest = { command };
-    const response = await apiClient.post<string>("/execute-command", request);
+  async execute_confirmed_command(params: {
+    command: string;
+  }): Promise<string> {
+    const response = await apiClient.post<string>("/execute-command", params);
     return response.data;
   },
 
@@ -187,28 +100,22 @@ export const webApi = {
     message: string;
     model?: string;
   }): Promise<string> {
-    const request: GenerateTitleRequest = {
-      message: params.message,
-      model: params.model,
-    };
-    const response = await apiClient.post<string>("/generate-title", request);
+    const response = await apiClient.post<string>("/generate-title", params);
     return response.data;
   },
 
-  async validate_directory(path: string): Promise<boolean> {
-    const request: ValidateDirectoryRequest = { path };
+  async validate_directory(params: { path: string }): Promise<boolean> {
     const response = await apiClient.post<boolean>(
       "/validate-directory",
-      request
+      params
     );
     return response.data;
   },
 
-  async is_home_directory(path: string): Promise<boolean> {
-    const request: IsHomeDirectoryRequest = { path };
+  async is_home_directory(params: { path: string }): Promise<boolean> {
     const response = await apiClient.post<boolean>(
       "/is-home-directory",
-      request
+      params
     );
     return response.data;
   },
@@ -218,39 +125,20 @@ export const webApi = {
     return response.data;
   },
 
-  async get_parent_directory(path: string): Promise<string | null> {
-    const request: GetParentDirectoryRequest = { path };
+  async get_parent_directory(params: { path: string }): Promise<string | null> {
     const response = await apiClient.post<string | null>(
       "/get-parent-directory",
-      request
+      params
     );
     return response.data;
   },
 
-  async list_directory_contents(path: string): Promise<DirEntry[]> {
-    console.log("🌍 [webApi] list_directory_contents called with path:", path);
-    const request: ListDirectoryRequest = { path };
-    console.log("🌍 [webApi] Making POST request to /list-directory with:", request);
-    
-    try {
-      const response = await apiClient.post<DirEntry[]>(
-        "/list-directory",
-        request
-      );
-      console.log("🌍 [webApi] Response received:", response.status, response.data);
-      console.log("🌍 [webApi] Response data length:", response.data?.length || 0);
-      return response.data;
-    } catch (error) {
-      console.error("🌍 [webApi] Error in list_directory_contents:", error);
-      if (axios.isAxiosError(error)) {
-        console.error("🌍 [webApi] Axios error details:", {
-          status: error.response?.status,
-          statusText: error.response?.statusText,
-          data: error.response?.data
-        });
-      }
-      throw error;
-    }
+  async list_directory_contents(params: { path: string }): Promise<DirEntry[]> {
+    const response = await apiClient.post<DirEntry[]>(
+      "/list-directory",
+      params
+    );
+    return response.data;
   },
 
   async list_volumes(): Promise<DirEntry[]> {
@@ -288,7 +176,7 @@ export const webApi = {
     return response.data;
   },
 
-  async get_project_discussions(project_id: string): Promise<
+  async get_project_discussions(params: { projectId: string }): Promise<
     {
       id: string;
       title: string;
@@ -303,11 +191,11 @@ export const webApi = {
         started_at_iso?: string;
         message_count?: number;
       }[]
-    >("/projects/" + project_id + "/discussions");
+    >("/projects/" + params.projectId + "/discussions");
     return response.data;
   },
 
-  async list_projects_enriched(): Promise<EnrichedProject[]> {
+  async list_enriched_projects(): Promise<EnrichedProject[]> {
     const response =
       await apiClient.get<EnrichedProject[]>("/projects-enriched");
     return response.data;
@@ -383,7 +271,6 @@ export interface EnrichedProject {
   root_path: string;
   metadata: ProjectMetadata;
 }
-
 
 // WebSocket event types and management
 interface WebSocketEvent<T = unknown> {

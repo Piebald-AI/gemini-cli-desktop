@@ -1,5 +1,5 @@
 import React, { useCallback } from "react";
-import { api } from "../lib/api";
+import { listen } from "@/lib/listen";
 import { getWebSocketManager } from "../lib/webApi";
 import { Conversation, Message, CliIO } from "../types";
 import { ToolCallConfirmationRequest } from "../utils/toolCallParser";
@@ -48,7 +48,11 @@ type LegacyResult = LegacyDiffResult | LegacyGenericResult;
 
 // Event payload types for ACP session updates
 interface SessionUpdateEventPayload {
-  sessionUpdate: "tool_call" | "tool_call_update" | "agent_message_chunk" | "agent_thought_chunk";
+  sessionUpdate:
+    | "tool_call"
+    | "tool_call_update"
+    | "agent_message_chunk"
+    | "agent_thought_chunk";
   toolCallId?: string;
   kind?: string;
   title?: string;
@@ -75,19 +79,29 @@ interface PermissionRequestEventPayload {
       locations?: ToolLocation[];
     };
     question?: string;
-    options?: string[] | { optionId: string; name: string; kind: "allow_once" | "allow_always" | "reject_once" | "reject_always"; }[];
+    options?:
+      | string[]
+      | {
+          optionId: string;
+          name: string;
+          kind: "allow_once" | "allow_always" | "reject_once" | "reject_always";
+        }[];
   };
 }
 
 type EventPayload = SessionUpdateEventPayload | PermissionRequestEventPayload;
 
 // Type guards for event payload discrimination
-function isSessionUpdateEvent(payload: EventPayload): payload is SessionUpdateEventPayload {
-  return 'sessionUpdate' in payload;
+function isSessionUpdateEvent(
+  payload: EventPayload
+): payload is SessionUpdateEventPayload {
+  return "sessionUpdate" in payload;
 }
 
-function isPermissionRequestEvent(payload: EventPayload): payload is PermissionRequestEventPayload {
-  return 'request_id' in payload && 'request' in payload;
+function isPermissionRequestEvent(
+  payload: EventPayload
+): payload is PermissionRequestEventPayload {
+  return "request_id" in payload && "request" in payload;
 }
 
 // Helper functions for ACP conversion - CORRECTED with verified tool names
@@ -220,7 +234,7 @@ export const useConversationEvents = (
       }
 
       try {
-        await api.listen<{ type: "input" | "output"; data: string }>(
+        await listen<{ type: "input" | "output"; data: string }>(
           `cli-io-${conversationId}`,
           (event) => {
             setCliIOLogs((prev) => [
@@ -266,7 +280,7 @@ export const useConversationEvents = (
         );
 
         // Listen for streaming text chunks.
-        await api.listen<string>(`ai-output-${conversationId}`, (event) => {
+        await listen<string>(`ai-output-${conversationId}`, (event) => {
           updateConversation(conversationId, (conv, lastMsg) => {
             conv.isStreaming = true;
             if (lastMsg.sender === "assistant") {
@@ -298,7 +312,7 @@ export const useConversationEvents = (
         });
 
         // Listen for thinking chunks.
-        await api.listen<string>(`ai-thought-${conversationId}`, (event) => {
+        await listen<string>(`ai-thought-${conversationId}`, (event) => {
           updateConversation(conversationId, (conv, lastMsg) => {
             conv.isStreaming = true;
             if (lastMsg.sender === "assistant") {
@@ -332,7 +346,7 @@ export const useConversationEvents = (
         console.log(
           `🔧 [EDIT-DEBUG] Registering acp-session-update listener for: ${conversationId}`
         );
-        await api.listen<EventPayload>(
+        await listen<EventPayload>(
           `acp-session-update-${conversationId}`,
           ({ payload: update }: { payload: EventPayload }) => {
             console.log(
@@ -340,7 +354,9 @@ export const useConversationEvents = (
               update
             );
             if (!isSessionUpdateEvent(update)) {
-              console.warn("Received non-session-update event on session-update channel");
+              console.warn(
+                "Received non-session-update event on session-update channel"
+              );
               return;
             }
             if (update.sessionUpdate === "tool_call") {
@@ -355,11 +371,11 @@ export const useConversationEvents = (
                   update.kind,
                   update.title,
                   update.locations,
-                  update.toolCallId || ''
+                  update.toolCallId || ""
                 );
 
                 const newToolCall: ToolCall = {
-                  id: update.toolCallId || '',
+                  id: update.toolCallId || "",
                   name: toolName,
                   parameters: { locations: update.locations },
                   status: mapAcpStatus(update.status),
@@ -420,17 +436,18 @@ export const useConversationEvents = (
                           preservedConfirmationRequest;
 
                         // Handle content updates - but don't overwrite user rejections
-                        if (
-                          update.content &&
-                          !isCurrentlyRejected
-                        ) {
-                          if (Array.isArray(update.content) && update.content.length > 0) {
+                        if (update.content && !isCurrentlyRejected) {
+                          if (
+                            Array.isArray(update.content) &&
+                            update.content.length > 0
+                          ) {
                             const contentItem = update.content[0];
                             if (
                               contentItem.type === "content" &&
                               contentItem.content.type === "text"
                             ) {
-                              msgPart.toolCall.result = contentItem.content.text;
+                              msgPart.toolCall.result =
+                                contentItem.content.text;
                               console.log(
                                 "🔧 [EDIT-DEBUG] Updated tool call with text result:",
                                 contentItem.content.text.substring(0, 100)
@@ -474,7 +491,7 @@ export const useConversationEvents = (
         // Note: Tool call updates are now handled by the ACP session update listener above
 
         // Also listen for errors
-        await api.listen<string>(`ai-error-${conversationId}`, (event) => {
+        await listen<string>(`ai-error-${conversationId}`, (event) => {
           updateConversation(conversationId, (conv) => {
             conv.isStreaming = false;
             conv.messages.push({
@@ -495,7 +512,7 @@ export const useConversationEvents = (
         console.log(
           `✅ Registering listener for: acp-permission-request-${conversationId}`
         );
-        await api.listen<EventPayload>(
+        await listen<EventPayload>(
           `acp-permission-request-${conversationId}`,
           (event) => {
             console.log(
@@ -503,12 +520,14 @@ export const useConversationEvents = (
               event
             );
             console.log("🔍 DEBUG: Event payload:", event.payload);
-            
+
             if (!isPermissionRequestEvent(event.payload)) {
-              console.warn("Received non-permission-request event on permission-request channel");
+              console.warn(
+                "Received non-permission-request event on permission-request channel"
+              );
               return;
             }
-            
+
             console.log("🔍 DEBUG: Request object:", event.payload.request);
             console.log(
               "🔍 DEBUG: ToolCall object:",
@@ -552,11 +571,16 @@ export const useConversationEvents = (
               // Create the confirmation request object
               const confirmationRequest: ToolCallConfirmationRequest = {
                 requestId: parseInt(request_id, 10),
-                sessionId: request.sessionId || '',
+                sessionId: request.sessionId || "",
                 toolCallId: toolCallId,
-                label: request.toolCall.title || request.toolCall.name || 'Unknown Tool',
+                label:
+                  request.toolCall.title ||
+                  request.toolCall.name ||
+                  "Unknown Tool",
                 icon: "", // ACP doesn't use icons
-                content: convertAcpContentToLegacy(request.toolCall.content || []),
+                content: convertAcpContentToLegacy(
+                  request.toolCall.content || []
+                ),
                 confirmation: {
                   type:
                     request.toolCall.kind === "edit"
@@ -569,19 +593,37 @@ export const useConversationEvents = (
                 },
                 locations: (request.toolCall.locations || []).map(
                   (loc: ToolLocation) => ({
-                    path: loc.file || loc.directory || 'unknown',
+                    path: loc.file || loc.directory || "unknown",
                   })
                 ),
                 inputJsonRpc: window.pendingToolCallInput,
                 // Include ACP permission options for enhanced approval flows
-                options: Array.isArray(request.options) 
-                  ? typeof request.options[0] === 'string'
+                options: Array.isArray(request.options)
+                  ? typeof request.options[0] === "string"
                     ? (request.options as string[]).map((opt, idx) => ({
                         optionId: `option_${idx}`,
                         name: opt,
-                        kind: (idx < 2 ? (idx === 0 ? 'allow_once' : 'allow_always') : (idx === 2 ? 'reject_once' : 'reject_always')) as "allow_once" | "allow_always" | "reject_once" | "reject_always"
+                        kind: (idx < 2
+                          ? idx === 0
+                            ? "allow_once"
+                            : "allow_always"
+                          : idx === 2
+                            ? "reject_once"
+                            : "reject_always") as
+                          | "allow_once"
+                          | "allow_always"
+                          | "reject_once"
+                          | "reject_always",
                       }))
-                    : request.options as { optionId: string; name: string; kind: "allow_once" | "allow_always" | "reject_once" | "reject_always"; }[]
+                    : (request.options as {
+                        optionId: string;
+                        name: string;
+                        kind:
+                          | "allow_once"
+                          | "allow_always"
+                          | "reject_once"
+                          | "reject_always";
+                      }[])
                   : [],
               };
 
@@ -603,7 +645,10 @@ export const useConversationEvents = (
                   name: toolName,
                   parameters: { locations: request.toolCall.locations || [] },
                   status: mapAcpStatus(request.toolCall.status),
-                  label: request.toolCall.title || request.toolCall.name || 'Unknown Tool',
+                  label:
+                    request.toolCall.title ||
+                    request.toolCall.name ||
+                    "Unknown Tool",
                   confirmationRequest: confirmationRequest, // Attach immediately
                 };
 
@@ -674,11 +719,16 @@ export const useConversationEvents = (
             // Also store in the confirmation requests Map for backward compatibility
             const legacyConfirmationRequest: ToolCallConfirmationRequest = {
               requestId: parseInt(request_id, 10),
-              sessionId: request.sessionId || '',
+              sessionId: request.sessionId || "",
               toolCallId: toolCallId,
-              label: request.toolCall.title || request.toolCall.name || 'Unknown Tool',
+              label:
+                request.toolCall.title ||
+                request.toolCall.name ||
+                "Unknown Tool",
               icon: "", // ACP doesn't use icons
-              content: convertAcpContentToLegacy(request.toolCall.content || []),
+              content: convertAcpContentToLegacy(
+                request.toolCall.content || []
+              ),
               confirmation: {
                 type:
                   request.toolCall.kind === "edit"
@@ -691,7 +741,7 @@ export const useConversationEvents = (
               },
               locations: (request.toolCall.locations || []).map(
                 (loc: ToolLocation) => ({
-                  path: loc.file || loc.directory || 'unknown',
+                  path: loc.file || loc.directory || "unknown",
                 })
               ),
               inputJsonRpc: window.pendingToolCallInput,
@@ -714,7 +764,7 @@ export const useConversationEvents = (
         );
 
         // Listen for turn finished events to stop streaming indicator
-        await api.listen<boolean>(`ai-turn-finished-${conversationId}`, () => {
+        await listen<boolean>(`ai-turn-finished-${conversationId}`, () => {
           updateConversation(conversationId, (conv) => {
             conv.isStreaming = false;
           });

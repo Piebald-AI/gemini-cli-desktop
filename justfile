@@ -40,8 +40,8 @@ dev:
 
 [group('desktop')]
 [working-directory("frontend")]
-build:
-    pnpm tauri build
+build *args:
+    pnpm tauri build {{args}}
 
 ### WEB
 

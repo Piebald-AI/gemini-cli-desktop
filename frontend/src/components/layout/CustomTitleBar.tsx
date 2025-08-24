@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { platform } from "@tauri-apps/plugin-os";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import { QwenIcon } from "@/components/branding/QwenIcon";
 import { GeminiIcon } from "@/components/branding/GeminiIcon";
 import { useBackend } from "@/contexts/BackendContext";
 import { getBackendText } from "@/utils/backendText";
+import { createMenuHandlers, getMenuLabels } from "@/utils/menuConfig";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -22,18 +25,12 @@ import {
   Info,
   ChevronDown,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { AboutDialog } from "@/components/common/AboutDialog";
 
 interface CustomTitleBarProps {
   title?: string;
   className?: string;
 }
-
-// Environment detection
-const isDesktop = () => {
-  return typeof window !== "undefined" && "__TAURI__" in window;
-};
 
 export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
   title,
@@ -49,32 +46,9 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
   // Dynamic title based on backend
   const dynamicTitle = title || backendText.desktopName;
 
-  // Navigation handlers - these actually work
-  const handleGoHome = () => {
-    navigate("/");
-  };
-
-  const handleGoProjects = () => {
-    navigate("/projects");
-  };
-
-  const handleGoMcpServers = () => {
-    navigate("/mcp");
-  };
-
-  // View handlers - these actually work
-  const handleToggleTheme = () => {
-    const html = document.documentElement;
-    html.classList.toggle("dark");
-  };
-
-  const handleRefresh = () => {
-    window.location.reload();
-  };
-
-  const handleAbout = () => {
-    setIsAboutDialogOpen(true);
-  };
+  // Use shared menu handlers
+  const handlers = createMenuHandlers(navigate, setIsAboutDialogOpen);
+  const labels = getMenuLabels(t, selectedBackend);
 
   // Always run hooks first - never conditionally
   useEffect(() => {
@@ -102,10 +76,8 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
     };
   }, []);
 
-  // Render in desktop environment OR development mode for testing
-  const shouldRender = isDesktop() || import.meta.env.DEV;
-
-  if (!shouldRender) {
+  // Only show in the desktop app on Windows.
+  if (__WEB__ || platform() !== "windows") {
     return null;
   }
 
@@ -199,7 +171,7 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
                 }
                 type="button"
               >
-                {t("titleBar.file")}
+                {labels.file}
                 <ChevronDown size={10} />
               </button>
             </DropdownMenuTrigger>
@@ -217,25 +189,25 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
               }
             >
               <DropdownMenuItem
-                onClick={handleGoHome}
+                onClick={handlers.goHome}
                 className="flex items-center gap-2 text-xs"
               >
                 <Home size={14} />
-                {t("titleBar.home")}
+                {labels.home}
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={handleGoProjects}
+                onClick={handlers.goProjects}
                 className="flex items-center gap-2 text-xs"
               >
                 <FolderOpen size={14} />
-                {t("titleBar.projects")}
+                {labels.projects}
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={handleGoMcpServers}
+                onClick={handlers.goMcpServers}
                 className="flex items-center gap-2 text-xs"
               >
                 <Server size={14} />
-                {t("titleBar.mcpServers")}
+                {labels.mcpServers}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -254,7 +226,7 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
                 }
                 type="button"
               >
-                {t("titleBar.view")}
+                {labels.view}
                 <ChevronDown size={10} />
               </button>
             </DropdownMenuTrigger>
@@ -272,19 +244,19 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
               }
             >
               <DropdownMenuItem
-                onClick={handleToggleTheme}
+                onClick={handlers.toggleTheme}
                 className="flex items-center gap-2 text-xs"
               >
                 <Moon size={14} />
-                {t("titleBar.toggleDarkMode")}
+                {labels.toggleDarkMode}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                onClick={handleRefresh}
+                onClick={handlers.refresh}
                 className="flex items-center gap-2 text-xs"
               >
                 <RotateCcw size={14} />
-                {t("titleBar.refresh")}
+                {labels.refresh}
                 <span className="ml-auto text-xs text-muted-foreground">
                   F5
                 </span>
@@ -292,7 +264,7 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Tools Menu */}
+          {/* Help Menu */}
           <DropdownMenu modal={false} open={undefined}>
             <DropdownMenuTrigger asChild className="bg-transparent">
               <button
@@ -306,7 +278,7 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
                 }
                 type="button"
               >
-                {t("titleBar.tools")}
+                {labels.help}
                 <ChevronDown size={10} />
               </button>
             </DropdownMenuTrigger>
@@ -324,11 +296,11 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
               }
             >
               <DropdownMenuItem
-                onClick={handleAbout}
+                onClick={handlers.showAbout}
                 className="flex items-center gap-2 text-xs"
               >
                 <Info size={14} />
-                {t("titleBar.about", { name: backendText.desktopName })}
+                {labels.about}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

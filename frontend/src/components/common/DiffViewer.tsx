@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import {
   createLineDiffWithWords,
@@ -24,6 +25,7 @@ export function DiffViewer({
   className,
   onStatsCalculated,
 }: DiffViewerProps) {
+  const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Use enhanced word-level diff algorithm
@@ -163,8 +165,10 @@ export function DiffViewer({
           )}
           <span className="text-xs text-muted-foreground">
             {isExpanded
-              ? "Show less"
-              : `Show ${diffLines.length - maxLines} more lines`}
+              ? t("common.showLess")
+              : t("common.showMoreLines", {
+                  count: diffLines.length - maxLines,
+                })}
           </span>
         </div>
       )}

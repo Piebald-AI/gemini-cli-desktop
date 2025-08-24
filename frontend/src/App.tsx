@@ -1,11 +1,13 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { Routes, Route, Outlet, Navigate } from "react-router-dom";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { api } from "./lib/api";
 import { AppSidebar } from "./components/layout/AppSidebar";
 import { MessageInputBar } from "./components/conversation/MessageInputBar";
 import { AppHeader } from "./components/layout/AppHeader";
 import { CustomTitleBar } from "./components/layout/CustomTitleBar";
 import { CliWarnings } from "./components/common/CliWarnings";
+import { DirectoryPanel } from "./components/common/DirectoryPanel";
 import { SidebarInset } from "./components/ui/sidebar";
 import { ConversationContext } from "./contexts/ConversationContext";
 import {
@@ -13,7 +15,6 @@ import {
   useApiConfig,
   useBackend,
 } from "./contexts/BackendContext";
-import { SessionParams } from "./types/backend";
 import { getBackendText } from "./utils/backendText";
 import { HomeDashboard } from "./pages/HomeDashboard";
 import ProjectsPage from "./pages/Projects";
@@ -27,8 +28,11 @@ import { useMessageHandler } from "./hooks/useMessageHandler";
 import { useToolCallConfirmation } from "./hooks/useToolCallConfirmation";
 import { useConversationEvents } from "./hooks/useConversationEvents";
 import { useCliInstallation } from "./hooks/useCliInstallation";
+import { useTauriMenu } from "./hooks/useTauriMenu";
 import { CliIO } from "./types";
 import "./index.css";
+import { platform } from "@tauri-apps/plugin-os";
+import { AboutDialog } from "./components/common/AboutDialog";
 
 function RootLayoutContent() {
   const [selectedModel, setSelectedModel] =
@@ -36,19 +40,25 @@ function RootLayoutContent() {
   const [cliIOLogs, setCliIOLogs] = useState<CliIO[]>([]);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [directoryPanelOpen, setDirectoryPanelOpen] = useState(false);
   const [workingDirectory, setWorkingDirectory] = useState<string>(".");
-  const [sessionWorkingDirectories, setSessionWorkingDirectories] = useState<Map<string, string>>(new Map());
+  const [sessionWorkingDirectories, setSessionWorkingDirectories] = useState<
+    Map<string, string>
+  >(new Map());
 
   // Get the current working directory (default fallback)
   useEffect(() => {
     const getCurrentWorkingDirectory = async () => {
       console.log("🏠 [App] Initializing default working directory...");
       try {
-        const cwd = await api.invoke<string>("get_home_directory");
+        const cwd = await api.get_home_directory();
         console.log("🏠 [App] Got home directory from API:", cwd);
         setWorkingDirectory(cwd);
       } catch (error) {
-        console.warn("🏠 [App] Failed to get working directory, using current directory:", error);
+        console.warn(
+          "🏠 [App] Failed to get working directory, using current directory:",
+          error
+        );
         setWorkingDirectory(".");
       }
     };
@@ -63,6 +73,11 @@ function RootLayoutContent() {
   useEffect(() => {
     const backendText = getBackendText(selectedBackend);
     document.title = backendText.desktopName;
+
+    // Also update native window title on desktop platforms
+    if (!__WEB__) {
+      getCurrentWindow().setTitle(backendText.desktopName);
+    }
   }, [selectedBackend]);
 
   // Custom hooks for cleaner code
@@ -112,10 +127,17 @@ function RootLayoutContent() {
     if (activeConversation) {
       const sessionWd = sessionWorkingDirectories.get(activeConversation);
       if (sessionWd) {
-        console.log("🏠 [App] Using session working directory for", activeConversation, ":", sessionWd);
+        console.log(
+          "🏠 [App] Using session working directory for",
+          activeConversation,
+          ":",
+          sessionWd
+        );
         setWorkingDirectory(sessionWd);
       } else {
-        console.log("🏠 [App] No session working directory found, using default");
+        console.log(
+          "🏠 [App] No session working directory found, using default"
+        );
       }
     }
   }, [activeConversation, sessionWorkingDirectories]);
@@ -140,26 +162,29 @@ function RootLayoutContent() {
 
       // Store working directory for this session
       if (workingDirectory) {
-        console.log("🏠 [App] Storing working directory for session", convId, ":", workingDirectory);
-        setSessionWorkingDirectories(prev => new Map(prev.set(convId, workingDirectory)));
+        console.log(
+          "🏠 [App] Storing working directory for session",
+          convId,
+          ":",
+          workingDirectory
+        );
+        setSessionWorkingDirectories(
+          (prev) => new Map(prev.set(convId, workingDirectory))
+        );
       }
 
       if (workingDirectory) {
         console.log("Debug - apiConfig:", apiConfig);
         console.log("Debug - selectedBackend:", selectedBackend);
 
-        // Prepare session parameters based on backend type
-        const sessionParams: SessionParams = {
-          sessionId: convId, // Tauri auto-converts to session_id
-          workingDirectory: workingDirectory, // Tauri auto-converts to working_directory
-          model: selectedModel,
-        };
+        let backendConfig;
+        let geminiAuth;
 
         // For Qwen backend, pass full backend_config
         // For Gemini backend, pass geminiAuth with the appropriate configuration
         if (selectedBackend === "qwen") {
           // Always ensure backend_config is set for Qwen to trigger qwen CLI
-          sessionParams.backendConfig = {
+          backendConfig = {
             // Tauri auto-converts to backend_config
             api_key: apiConfig?.api_key || "", // Empty string if OAuth
             base_url: apiConfig?.base_url || "https://openrouter.ai/api/v1",
@@ -167,7 +192,7 @@ function RootLayoutContent() {
           };
         } else if (selectedBackend === "gemini") {
           const geminiConfig = backendState.configs.gemini;
-          sessionParams.geminiAuth = {
+          geminiAuth = {
             // Tauri auto-converts to gemini_auth
             method: geminiConfig.authMethod,
             api_key:
@@ -185,7 +210,13 @@ function RootLayoutContent() {
           };
         }
 
-        await api.invoke("start_session", sessionParams);
+        await api.start_session({
+          sessionId: convId,
+          workingDirectory,
+          model: selectedModel,
+          backendConfig,
+          geminiAuth,
+        });
       }
 
       await setupEventListenerForConversation(convId);
@@ -203,6 +234,17 @@ function RootLayoutContent() {
     ]
   );
 
+  const toggleDirectoryPanel = useCallback(() => {
+    setDirectoryPanelOpen((prev) => !prev);
+  }, []);
+
+  // Auto-close directory panel when active conversation ends
+  useEffect(() => {
+    if (!activeConversation && directoryPanelOpen) {
+      setDirectoryPanelOpen(false);
+    }
+  }, [activeConversation, directoryPanelOpen]);
+
   return (
     <AppSidebar
       conversations={conversations}
@@ -215,83 +257,122 @@ function RootLayoutContent() {
       onOpenChange={setSidebarOpen}
     >
       <SidebarInset>
-        <AppHeader />
+        <AppHeader
+          onDirectoryPanelToggle={toggleDirectoryPanel}
+          isDirectoryPanelOpen={directoryPanelOpen}
+          hasActiveConversation={!!activeConversation}
+        />
 
-        <div className="flex-1 flex flex-col bg-background min-h-0">
-          <CliWarnings
-            selectedModel={selectedModel}
-            isCliInstalled={isCliInstalled}
-          />
+        <div className="flex-1 flex bg-background min-h-0 h-full">
+          {/* Main content area */}
+          <div className="flex-1 flex flex-col min-w-0 h-full">
+            <CliWarnings
+              selectedModel={selectedModel}
+              isCliInstalled={isCliInstalled}
+            />
 
-          <ConversationContext.Provider
-            value={useMemo(
-              () => ({
-                conversations,
-                activeConversation,
-                currentConversation,
-                input,
-                isCliInstalled,
-                messagesContainerRef,
-                cliIOLogs,
-                handleInputChange,
-                handleSendMessage,
-                selectedModel,
-                startNewConversation,
-                handleConfirmToolCall,
-                confirmationRequests,
-              }),
-              [
-                conversations,
-                activeConversation,
-                currentConversation,
-                input,
-                isCliInstalled,
-                messagesContainerRef,
-                cliIOLogs,
-                handleInputChange,
-                handleSendMessage,
-                selectedModel,
-                startNewConversation,
-                handleConfirmToolCall,
-                confirmationRequests,
-              ]
-            )}
-          >
-            <Outlet />
-          </ConversationContext.Provider>
+            <ConversationContext.Provider
+              value={useMemo(
+                () => ({
+                  conversations,
+                  activeConversation,
+                  currentConversation,
+                  input,
+                  isCliInstalled,
+                  messagesContainerRef,
+                  cliIOLogs,
+                  handleInputChange,
+                  handleSendMessage,
+                  selectedModel,
+                  startNewConversation,
+                  handleConfirmToolCall,
+                  confirmationRequests,
+                }),
+                [
+                  conversations,
+                  activeConversation,
+                  currentConversation,
+                  input,
+                  isCliInstalled,
+                  messagesContainerRef,
+                  cliIOLogs,
+                  handleInputChange,
+                  handleSendMessage,
+                  selectedModel,
+                  startNewConversation,
+                  handleConfirmToolCall,
+                  confirmationRequests,
+                ]
+              )}
+            >
+              <Outlet />
+            </ConversationContext.Provider>
 
-          {activeConversation &&
-            processStatuses.find(
-              (status) =>
-                status.conversation_id === activeConversation && status.is_alive
-            ) && (
-              <>
-                {console.log("📝 [App] Rendering MessageInputBar with workingDirectory:", workingDirectory)}
-                <MessageInputBar
-                  input={input}
-                  isCliInstalled={isCliInstalled}
-                  cliIOLogs={cliIOLogs}
-                  handleInputChange={handleInputChange}
-                  handleSendMessage={handleSendMessage}
-                  workingDirectory={workingDirectory}
-                />
-              </>
-            )}
+            {activeConversation &&
+              processStatuses.find(
+                (status) =>
+                  status.conversation_id === activeConversation &&
+                  status.is_alive
+              ) && (
+                <>
+                  {console.log(
+                    "📝 [App] Rendering MessageInputBar with workingDirectory:",
+                    workingDirectory
+                  )}
+                  <MessageInputBar
+                    input={input}
+                    isCliInstalled={isCliInstalled}
+                    cliIOLogs={cliIOLogs}
+                    handleInputChange={handleInputChange}
+                    handleSendMessage={handleSendMessage}
+                    workingDirectory={workingDirectory}
+                  />
+                </>
+              )}
+          </div>
+
+          {/* Directory Panel */}
+          {directoryPanelOpen && activeConversation && (
+            <DirectoryPanel
+              workingDirectory={workingDirectory}
+              onDirectoryChange={(path) => {
+                console.log("📁 [App] Directory changed to:", path);
+                // Optionally update working directory or perform other actions
+              }}
+              className="w-80 flex-shrink-0"
+            />
+          )}
         </div>
       </SidebarInset>
     </AppSidebar>
   );
 }
 
+function RootLayoutInner() {
+  // Set up Tauri menu for non-Windows desktop platforms
+  const { isAboutDialogOpen, setIsAboutDialogOpen } = useTauriMenu();
+
+  return (
+    <div className="h-screen w-full">
+      <CustomTitleBar />
+      <div className="size-full">
+        <RootLayoutContent />
+      </div>
+      {/* About Dialog for non-Windows platforms using Tauri menu */}
+      {!__WEB__ && platform() !== "windows" && (
+        <AboutDialog
+          open={isAboutDialogOpen}
+          onOpenChange={setIsAboutDialogOpen}
+        />
+      )}
+    </div>
+  );
+}
+
 function RootLayout() {
   return (
     <BackendProvider>
-      <div className="h-screen w-full">
-        <CustomTitleBar />
-        <div className="h-[calc(100vh-2rem)] w-full">
-          <RootLayoutContent />
-        </div>
-      </div>
+      <RootLayoutInner />
     </BackendProvider>
   );
 }

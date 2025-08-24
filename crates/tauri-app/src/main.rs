@@ -4,5 +4,6 @@
 use gemini_desktop_lib::run;
 
 fn main() {
+    let _ = fix_path_env::fix_all_vars();
     run();
 }

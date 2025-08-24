@@ -7,6 +7,16 @@
     "core:default",
     "core:event:allow-listen",
     "core:event:default",
-    "opener:default"
+    "core:window:allow-minimize",
+    "core:window:allow-maximize",
+    "core:window:allow-close",
+    "core:window:allow-set-title",
+    "core:window:allow-start-dragging",
+    "core:window:allow-is-maximized",
+    "core:window:allow-unmaximize",
+    "dialog:allow-open",
+    "dialog:default",
+    "opener:default",
+    "process:allow-exit"
   ]
 }
