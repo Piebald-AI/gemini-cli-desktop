@@ -107,3 +107,12 @@ export type BackendAction =
   | { type: "CLEAR_VALIDATION_ERROR"; backend: string }
   | { type: "RESET_CONFIG"; backend: BackendType }
   | { type: "LOAD_FROM_STORAGE"; state: BackendState };
+
+export interface GitInfo {
+  current_directory: string;
+  branch: string;
+  status: string;
+  is_clean: boolean;
+  has_uncommitted_changes: boolean;
+  has_untracked_files: boolean;
+}

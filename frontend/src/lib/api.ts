@@ -132,6 +132,11 @@ export const api = {
           return webApi.list_directory_contents(args) as Promise<T>;
         case "list_volumes":
           return webApi.list_volumes() as Promise<T>;
+        case "get_git_info":
+          if (!args) throw new Error("Missing arguments for get_git_info");
+          const pathArg = typeof args === "string" ? args : (args as any).path;
+          if (!pathArg) throw new Error("get_git_info missing path argument");
+          return webApi.get_git_info(pathArg) as Promise<T>;
         case "list_projects":
           return webApi.list_projects(args) as Promise<T>;
         case "get_project_discussions":

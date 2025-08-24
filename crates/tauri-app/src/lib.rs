@@ -69,6 +69,7 @@ pub fn run() {
             commands::get_parent_directory,
             commands::list_directory_contents,
             commands::list_volumes,
+            commands::get_git_info,
             commands::debug_environment,
             commands::get_recent_chats,
             commands::search_chats,

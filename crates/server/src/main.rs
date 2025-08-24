@@ -17,7 +17,7 @@ use tokio::sync::{Mutex, mpsc as tokio_mpsc};
 
 // Import backend functionality
 use backend::{
-    DirEntry, EnrichedProject, EventEmitter, GeminiBackend, ProcessStatus, RecentChat,
+    DirEntry, EnrichedProject, EventEmitter, GeminiBackend, GitInfo, ProcessStatus, RecentChat,
     SearchFilters, SearchResult,
 };
 
@@ -266,6 +266,11 @@ struct ListDirectoryRequest {
 
 #[derive(Serialize, Deserialize)]
 struct GetParentDirectoryRequest {
+    path: String,
+}
+
+#[derive(Serialize, Deserialize)]
+struct GetGitInfoRequest {
     path: String,
 }
 
@@ -651,6 +656,18 @@ async fn list_volumes(state: &State<AppState>) -> Result<Json<Vec<DirEntry>>, St
     }
 }
 
+#[post("/get-git-info", data = "<request>")]
+async fn get_git_info(
+    request: Json<GetGitInfoRequest>,
+    state: &State<AppState>,
+) -> Result<Json<Option<GitInfo>>, Status> {
+    let backend = state.backend.lock().await;
+    match backend.get_git_info(request.path.clone()).await {
+        Ok(git_info) => Ok(Json(git_info)),
+        Err(_) => Err(Status::InternalServerError),
+    }
+}
+
 // =====================================
 // WebSocket Route Handler
 // =====================================
@@ -736,6 +753,7 @@ fn rocket() -> _ {
             get_parent_directory,
             list_directory_contents,
             list_volumes,
+            get_git_info,
             get_recent_chats,
             search_chats,
             list_projects,

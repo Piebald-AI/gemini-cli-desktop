@@ -9,6 +9,7 @@ import { getBackendText } from "../utils/backendText";
 import { ArrowLeft, Plus, Loader2 } from "lucide-react";
 import { EnrichedProject } from "../lib/webApi";
 import { useTranslation } from "react-i18next";
+import { GitInfo } from "../components/common/GitInfo";
 
 type Discussion = {
   id: string;
@@ -133,6 +134,13 @@ export default function ProjectDetailPage() {
               </>
             )}
           </div>
+
+          {/* Git Information */}
+          {projectData && (
+            <div className="mt-4">
+              <GitInfo directory={projectData.metadata.path} />
+            </div>
+          )}
 
           <div className="mt-6 space-y-3">
             <div className="flex items-center justify-between">

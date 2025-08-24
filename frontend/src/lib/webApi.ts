@@ -1,4 +1,5 @@
 import axios from "axios";
+import { GitInfo } from "../types/backend";
 
 // Create axios client with base URL /api
 const apiClient = axios.create({
@@ -69,6 +70,10 @@ interface ListDirectoryRequest {
 }
 
 interface GetParentDirectoryRequest {
+  path: string;
+}
+
+interface GetGitInfoRequest {
   path: string;
 }
 
@@ -265,6 +270,12 @@ export const webApi = {
 
   async list_volumes(): Promise<DirEntry[]> {
     const response = await apiClient.get<DirEntry[]>("/list-volumes");
+    return response.data;
+  },
+
+  async get_git_info(path: string): Promise<GitInfo | null> {
+    const request: GetGitInfoRequest = { path };
+    const response = await apiClient.post<GitInfo | null>("/get-git-info", request);
     return response.data;
   },
 
