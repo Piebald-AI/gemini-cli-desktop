@@ -1,10 +1,10 @@
-import * as CollapsiblePrimitive from "@radix-ui/react-collapsible"
-import { ComponentProps } from "react"
+import * as CollapsiblePrimitive from "@radix-ui/react-collapsible";
+import { ComponentProps } from "react";
 
 function Collapsible({
   ...props
 }: ComponentProps<typeof CollapsiblePrimitive.Root>) {
-  return <CollapsiblePrimitive.Root data-slot="collapsible" {...props} />
+  return <CollapsiblePrimitive.Root data-slot="collapsible" {...props} />;
 }
 
 function CollapsibleTrigger({
@@ -15,7 +15,7 @@ function CollapsibleTrigger({
       data-slot="collapsible-trigger"
       {...props}
     />
-  )
+  );
 }
 
 function CollapsibleContent({
@@ -26,7 +26,7 @@ function CollapsibleContent({
       data-slot="collapsible-content"
       {...props}
     />
-  )
+  );
 }
 
-export { Collapsible, CollapsibleTrigger, CollapsibleContent }
+export { Collapsible, CollapsibleTrigger, CollapsibleContent };
