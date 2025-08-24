@@ -32,7 +32,7 @@ pub fn run() {
             #[cfg(not(windows))]
             {
                 if let Err(e) = init_menu(app.handle().clone()) {
-                    eprintln!("Failed to initialize menu: {}", e);
+                    eprintln!("Failed to initialize menu: {e}");
                 }
             }
 
