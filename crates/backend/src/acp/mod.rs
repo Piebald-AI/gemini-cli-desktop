@@ -10,7 +10,6 @@ pub struct InitializeParams {
     pub protocol_version: u32,
 }
 
-
 /// Initialize response result
 #[derive(Debug, Serialize, Deserialize)]
 pub struct InitializeResult {

@@ -25,9 +25,9 @@ pub struct GeminiAuthConfig {
 }
 
 use crate::acp::{
-    AuthenticateParams, ContentBlock, InitializeParams,
-    InitializeResult, SessionNewParams, SessionNewResult, SessionPromptResult,
-    SessionRequestPermissionParams, SessionUpdate, SessionUpdateParams,
+    AuthenticateParams, ContentBlock, InitializeParams, InitializeResult, SessionNewParams,
+    SessionNewResult, SessionPromptResult, SessionRequestPermissionParams, SessionUpdate,
+    SessionUpdateParams,
 };
 use crate::cli::StreamAssistantMessageChunkParams;
 use crate::events::{
