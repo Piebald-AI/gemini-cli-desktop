@@ -8,23 +8,6 @@ use serde::{Deserialize, Serialize};
 pub struct InitializeParams {
     #[serde(rename = "protocolVersion")]
     pub protocol_version: u32,
-    #[serde(rename = "clientCapabilities")]
-    pub client_capabilities: ClientCapabilities,
-}
-
-/// Client capabilities for ACP protocol
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ClientCapabilities {
-    pub fs: FileSystemCapabilities,
-}
-
-/// File system capabilities
-#[derive(Debug, Serialize, Deserialize)]
-pub struct FileSystemCapabilities {
-    #[serde(rename = "readTextFile")]
-    pub read_text_file: bool,
-    #[serde(rename = "writeTextFile")]
-    pub write_text_file: bool,
 }
 
 /// Initialize response result
@@ -312,23 +295,11 @@ mod tests {
     fn test_initialize_params_serialization() {
         let params = InitializeParams {
             protocol_version: 1,
-            client_capabilities: ClientCapabilities {
-                fs: FileSystemCapabilities {
-                    read_text_file: true,
-                    write_text_file: true,
-                },
-            },
         };
 
         let serialized = serde_json::to_value(&params).unwrap();
         let expected = json!({
-            "protocolVersion": 1,
-            "clientCapabilities": {
-                "fs": {
-                    "readTextFile": true,
-                    "writeTextFile": true
-                }
-            }
+            "protocolVersion": 1
         });
 
         assert_eq!(serialized, expected);
@@ -554,20 +525,10 @@ mod tests {
         // 1. Initialize
         let init_params = InitializeParams {
             protocol_version: 1,
-            client_capabilities: ClientCapabilities {
-                fs: FileSystemCapabilities {
-                    read_text_file: true,
-                    write_text_file: true,
-                },
-            },
         };
 
         let init_serialized = serde_json::to_value(&init_params).unwrap();
         assert_eq!(init_serialized["protocolVersion"], 1);
-        assert_eq!(
-            init_serialized["clientCapabilities"]["fs"]["readTextFile"],
-            true
-        );
 
         // 2. Authenticate
         let auth_params = AuthenticateParams {
