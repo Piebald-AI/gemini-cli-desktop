@@ -2,6 +2,10 @@
 @import "tw-animate-css";
 @import "katex/dist/katex.min.css";
 
+@plugin "@tailwindcss/typography";
+
+@config "../tailwind.config.js";
+
 body,
 html {
   overflow: hidden;

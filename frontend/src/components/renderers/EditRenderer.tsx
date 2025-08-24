@@ -167,7 +167,7 @@ export function EditRenderer({ toolCall, onConfirm }: EditRendererProps) {
   return (
     <div className="my-4">
       <Card
-        className={`py-0 ${
+        className={`py-3 ${
           isUserRejected(toolCall)
             ? "border-red-200 dark:border-red-800"
             : isFailed
