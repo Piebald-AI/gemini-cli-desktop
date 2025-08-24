@@ -2946,8 +2946,7 @@ dependencies = [
 [[package]]
 name = "muda"
 version = "0.17.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "01c1738382f66ed56b3b9c8119e794a2e23148ac8ea214eda86622d4cb9d415a"
+source = "git+https://github.com/Piebald-AI/muda?branch=fix-top-level-submenu-padding-issue#fad5c5edbac16b4dd610cb670d2fa1fe611eaeff"
 dependencies = [
  "crossbeam-channel",
  "dpi",
@@ -5353,6 +5352,7 @@ dependencies = [
  "tauri-plugin-dialog",
  "tauri-plugin-opener",
  "tauri-plugin-os",
+ "tauri-plugin-process",
  "tokio",
  "uuid",
 ]
@@ -5515,6 +5515,16 @@ dependencies = [
  "tauri",
  "tauri-plugin",
  "thiserror 2.0.12",
+]
+
+[[package]]
+name = "tauri-plugin-process"
+version = "2.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7461c622a5ea00eb9cd9f7a08dbd3bf79484499fd5c21aa2964677f64ca651ab"
+dependencies = [
+ "tauri",
+ "tauri-plugin",
 ]
 
 [[package]]

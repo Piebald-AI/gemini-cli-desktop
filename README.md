@@ -75,7 +75,8 @@ On Linux, you'll need a few extra packages for the desktop app to build correctl
        libjavascriptcoregtk-4.1-dev \
        libatk1.0-dev \
        libsoup-3.0-dev \
-       libwebkit2gtk-4.1-dev
+       libwebkit2gtk-4.1-dev \
+       librsvg2-dev
     ```
 
 ### 2. Clone the Repository

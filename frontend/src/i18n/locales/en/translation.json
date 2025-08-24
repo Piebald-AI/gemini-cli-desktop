@@ -70,13 +70,15 @@
   "titleBar": {
     "file": "File",
     "view": "View",
-    "tools": "Tools",
+    "help": "Help",
     "home": "Home",
     "projects": "Projects",
     "mcpServers": "MCP Servers",
     "toggleDarkMode": "Toggle Dark Mode",
     "refresh": "Refresh",
-    "about": "About {{name}}"
+    "about": "About {{name}}",
+    "quit": "Quit {{name}}",
+    "exit": "Exit"
   },
 
   "projects": {
