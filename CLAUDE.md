@@ -431,7 +431,10 @@ The application implements the complete Agent Communication Protocol specificati
 // Initialize session
 method: "initialize"
 params: {
-  protocolVersion: 1
+  protocolVersion: 1,
+  clientCapabilities: {
+    fs: { readTextFile: boolean, writeTextFile: boolean }
+  }
 }
 ```
 
@@ -486,11 +489,11 @@ export interface API {
   send_message(params: MessageParams): Promise<void>;
   get_process_statuses(): Promise<ProcessStatus[]>;
   kill_process(params: { conversationId: string }): Promise<void>;
-  
+
   // Tool call confirmation
   send_tool_call_confirmation_response(params: ConfirmationParams): Promise<void>;
   execute_confirmed_command(params: { command: string }): Promise<string>;
-  
+
   // Project and chat management
   get_recent_chats(): Promise<RecentChat[]>;
   search_chats(params: SearchParams): Promise<SearchResult[]>;
@@ -498,7 +501,7 @@ export interface API {
   get_project_discussions(params: { projectId: string }): Promise<Discussion[]>;
   list_enriched_projects(): Promise<EnrichedProject[]>;
   get_project(params: ProjectParams): Promise<EnrichedProject>;
-  
+
   // File system operations
   validate_directory(params: { path: string }): Promise<boolean>;
   is_home_directory(params: { path: string }): Promise<boolean>;
@@ -506,7 +509,7 @@ export interface API {
   get_parent_directory(params: { path: string }): Promise<string | null>;
   list_directory_contents(params: { path: string }): Promise<DirEntry[]>;
   list_volumes(): Promise<DirEntry[]>;
-  
+
   // Utilities
   generate_conversation_title(params: TitleParams): Promise<string>;
 }
