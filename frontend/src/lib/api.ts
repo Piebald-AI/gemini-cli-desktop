@@ -124,8 +124,13 @@ export const api = new Proxy(
             );
           }
         } catch (error) {
-          console.log(error);
+          console.error(
+            `Error while calling ${prop} with arguments ${args}:`,
+            error
+          );
+
           let errorString: string | null = null;
+
           // With the web version, we're using a server.  So the errors are going to be returned
           // as AxiosError objects.
           if (__WEB__) {
@@ -133,21 +138,13 @@ export const api = new Proxy(
               errorString = error.response.data.error;
             }
           }
+
           // Otherwise, we're running Tauri commands, so whatever we return from the commands
           // will be the error.
-          else {
-            if (typeof error === "string") {
-              errorString = error;
-            } else {
-              errorString = `${error}`;
-            }
-          }
-
           if (!errorString) {
             errorString = `${error}`;
           }
 
-          console.error("API invoke error:", errorString);
           toast.error(errorString);
           throw error;
         }
