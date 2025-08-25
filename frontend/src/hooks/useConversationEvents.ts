@@ -442,12 +442,14 @@ export const useConversationEvents = (
                             update.content.length > 0
                           ) {
                             // Use the existing convertAcpContentToLegacy function to properly handle diff content
-                            const legacyResult = convertAcpContentToLegacy(update.content);
+                            const legacyResult = convertAcpContentToLegacy(
+                              update.content
+                            );
                             console.log(
                               "🔧 [EDIT-DEBUG] Converted ACP content:",
                               legacyResult
                             );
-                            
+
                             // Convert LegacyResult to ToolCallResult format
                             if (legacyResult.type === "diff") {
                               msgPart.toolCall.result = {
@@ -461,7 +463,8 @@ export const useConversationEvents = (
                                 legacyResult.path
                               );
                             } else if (legacyResult.type === "generic") {
-                              msgPart.toolCall.result = legacyResult.newText || "";
+                              msgPart.toolCall.result =
+                                legacyResult.newText || "";
                               console.log(
                                 "🔧 [EDIT-DEBUG] Updated tool call with generic text result"
                               );

@@ -418,7 +418,10 @@ async fn start_session(request: Json<StartSessionRequest>, state: &State<AppStat
         req.gemini_auth.is_some()
     );
     if let Some(ref auth) = req.gemini_auth {
-        println!("🔔 YOLO-DEBUG Server: Received gemini_auth: method={}, yolo={:?}", auth.method, auth.yolo);
+        println!(
+            "🔔 YOLO-DEBUG Server: Received gemini_auth: method={}, yolo={:?}",
+            auth.method, auth.yolo
+        );
     }
 
     let backend = state.backend.lock().await;
