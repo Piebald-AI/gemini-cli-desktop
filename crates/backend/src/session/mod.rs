@@ -29,9 +29,9 @@ pub struct GeminiAuthConfig {
 }
 
 use crate::acp::{
-    AuthenticateParams, ClientCapabilities, ContentBlock, FileSystemCapabilities, InitializeParams,
-    InitializeResult, SessionNewParams, SessionNewResult, SessionPromptResult,
-    SessionRequestPermissionParams, SessionUpdate, SessionUpdateParams,
+    AuthenticateParams, ContentBlock, InitializeParams, InitializeResult, SessionNewParams,
+    SessionNewResult, SessionPromptResult, SessionRequestPermissionParams, SessionUpdate,
+    SessionUpdateParams,
 };
 use crate::cli::StreamAssistantMessageChunkParams;
 use crate::events::{
@@ -611,14 +611,8 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
     println!("🤝 [HANDSHAKE] Step 1/3: Sending initialize request");
     let init_params = InitializeParams {
         protocol_version: 1,
-        client_capabilities: ClientCapabilities {
-            fs: FileSystemCapabilities {
-                read_text_file: true,
-                write_text_file: true,
-            },
-        },
     };
-    println!("🤝 [HANDSHAKE] Initialize params: protocol_version=1, fs capabilities enabled");
+    println!("🤝 [HANDSHAKE] Initialize params: protocol_version=1");
 
     let init_request = JsonRpcRequest {
         jsonrpc: "2.0".to_string(),
@@ -630,7 +624,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
         })?,
     };
 
-    // { "jsonrpc": "2.0", "id": 1, "method": "initialize", "params": { "protocolVersion": 1, "clientCapabilities": { "fs": { "readTextFile": true, "writeTextFile": true } } } }
+    // { "jsonrpc": "2.0", "id": 1, "method": "initialize", "params": { "protocolVersion": 1 } }
 
     // The initialize message may end up getting sent before Gemini has fully started up, so we'll
     // loop and sleep for a short time until we get a JSON response back from Gemini.

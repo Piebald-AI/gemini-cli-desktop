@@ -50,12 +50,7 @@ export function DirectoryPanel({
     async (path: string): Promise<TreeNode[]> => {
       try {
         console.log("📁 [DirectoryPanel] Loading contents for:", path);
-        const entries = await api.invoke<DirEntry[]>(
-          "list_directory_contents",
-          {
-            path,
-          }
-        );
+        const entries = await api.list_directory_contents({ path });
 
         // Sort entries: directories first, then files, both alphabetically
         const sortedEntries = entries.sort((a, b) => {
