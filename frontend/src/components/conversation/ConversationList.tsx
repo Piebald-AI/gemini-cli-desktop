@@ -14,7 +14,7 @@ import { Input } from "../ui/input";
 import { Checkbox } from "../ui/checkbox";
 import { X, MessageCircle, AlertTriangle } from "lucide-react";
 import { useState, useCallback } from "react";
-import { webApi, SearchResult, SearchFilters } from "../../lib/webApi";
+import { SearchResult, SearchFilters } from "../../lib/webApi";
 import { SearchInput } from "../common/SearchInput";
 import { SearchResults } from "../common/SearchResults";
 import { useSidebar } from "../ui/sidebar";
@@ -22,6 +22,7 @@ import { GeminiAuthMethod } from "../../types/backend";
 import { useBackend, useBackendConfig } from "../../contexts/BackendContext";
 import { getBackendText } from "../../utils/backendText";
 import type { Conversation, ProcessStatus } from "../../types";
+import { api } from "@/lib/api";
 import { ProcessCard } from "./ProcessCard";
 
 interface ConversationListProps {
@@ -90,15 +91,7 @@ export function ConversationList({
 
       setIsSearching(true);
       try {
-        const results = __WEB__
-          ? await webApi.search_chats({ query, filters })
-          : await (async () => {
-              const { invoke } = await import("@tauri-apps/api/core");
-              return await invoke<SearchResult[]>("search_chats", {
-                query,
-                filters,
-              });
-            })();
+        const results = await api.search_chats({ query, filters });
         setSearchResults(results);
       } catch (error) {
         console.error("Search failed:", error);
@@ -467,6 +460,23 @@ export function ConversationList({
                   {t("conversations.cloudShellInfo")}
                 </p>
               )}
+
+              {/* YOLO Mode Checkbox */}
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="yolo-checkbox"
+                  checked={geminiConfig.yolo || false}
+                  onCheckedChange={(checked) => {
+                    updateGeminiConfig({ yolo: checked === true });
+                  }}
+                />
+                <label
+                  htmlFor="yolo-checkbox"
+                  className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer"
+                >
+                  {t("conversations.yoloMode")}
+                </label>
+              </div>
             </div>
           </>
         )}

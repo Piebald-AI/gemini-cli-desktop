@@ -314,8 +314,8 @@ mod tests {
             protocol_version: 1,
             client_capabilities: ClientCapabilities {
                 fs: FileSystemCapabilities {
-                    read_text_file: true,
-                    write_text_file: true,
+                    read_text_file: false,
+                    write_text_file: false,
                 },
             },
         };
@@ -325,8 +325,8 @@ mod tests {
             "protocolVersion": 1,
             "clientCapabilities": {
                 "fs": {
-                    "readTextFile": true,
-                    "writeTextFile": true
+                    "readTextFile": false,
+                    "writeTextFile": false
                 }
             }
         });
@@ -556,8 +556,8 @@ mod tests {
             protocol_version: 1,
             client_capabilities: ClientCapabilities {
                 fs: FileSystemCapabilities {
-                    read_text_file: true,
-                    write_text_file: true,
+                    read_text_file: false,
+                    write_text_file: false,
                 },
             },
         };

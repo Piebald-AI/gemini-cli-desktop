@@ -31,7 +31,7 @@ export const useToolCallConfirmation = ({
       }
 
       try {
-        await api.invoke("send_tool_call_confirmation_response", {
+        await api.send_tool_call_confirmation_response({
           sessionId: confirmationRequest.sessionId,
           requestId: confirmationRequest.requestId,
           toolCallId: toolCallId,

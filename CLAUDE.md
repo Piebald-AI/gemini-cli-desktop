@@ -161,6 +161,19 @@ The project is organized as a Rust workspace with three main crates:
   - API abstraction (Tauri vs REST)
   - Event handling and state synchronization
   - Error boundary and retry logic
+
+#### API Layer (`lib/`)
+- **`api.ts`** - Unified API interface with TypeScript proxy
+  - Single API interface for both desktop (Tauri) and web (REST) modes
+  - Runtime environment detection with `__WEB__` flag
+  - Type-safe method invocation with generic type system
+  - Comprehensive API method definitions for all backend operations
+- **`webApi.ts`** - Web-specific REST API implementation
+  - Axios-based HTTP client with 30-second timeout
+  - Complete REST endpoint implementations mirroring Tauri commands
+  - WebSocket management for real-time events
+  - Connection handling with automatic reconnection logic
+  - Type definitions for all data structures (DirEntry, RecentChat, SearchResult, etc.)
 - **`ConversationContext.tsx`** - Chat state management
   - Message history and pagination
   - Tool call confirmation state
@@ -415,7 +428,7 @@ The application implements the complete Agent Communication Protocol specificati
 
 **Initialization**
 ```typescript
-// Initialize session with client capabilities
+// Initialize session
 method: "initialize"
 params: {
   protocolVersion: 1,
@@ -463,33 +476,81 @@ params: {
 - `session/request_permission` - User approval required
 - Options: Allow Once, Allow Always, Reject Once, Reject Always
 
-### REST API Endpoints
+### API Architecture
 
-#### Session Management
+#### Unified API Interface (`api.ts`)
+The application uses a sophisticated proxy-based API system that automatically routes calls to either Tauri commands (desktop) or REST endpoints (web) based on the runtime environment:
+
+```typescript
+export interface API {
+  // CLI and session management
+  check_cli_installed(): Promise<boolean>;
+  start_session(params: SessionParams): Promise<void>;
+  send_message(params: MessageParams): Promise<void>;
+  get_process_statuses(): Promise<ProcessStatus[]>;
+  kill_process(params: { conversationId: string }): Promise<void>;
+
+  // Tool call confirmation
+  send_tool_call_confirmation_response(params: ConfirmationParams): Promise<void>;
+  execute_confirmed_command(params: { command: string }): Promise<string>;
+
+  // Project and chat management
+  get_recent_chats(): Promise<RecentChat[]>;
+  search_chats(params: SearchParams): Promise<SearchResult[]>;
+  list_projects(params?: PaginationParams): Promise<ProjectsResponse>;
+  get_project_discussions(params: { projectId: string }): Promise<Discussion[]>;
+  list_enriched_projects(): Promise<EnrichedProject[]>;
+  get_project(params: ProjectParams): Promise<EnrichedProject>;
+
+  // File system operations
+  validate_directory(params: { path: string }): Promise<boolean>;
+  is_home_directory(params: { path: string }): Promise<boolean>;
+  get_home_directory(): Promise<string>;
+  get_parent_directory(params: { path: string }): Promise<string | null>;
+  list_directory_contents(params: { path: string }): Promise<DirEntry[]>;
+  list_volumes(): Promise<DirEntry[]>;
+
+  // Utilities
+  generate_conversation_title(params: TitleParams): Promise<string>;
+}
+```
+
+#### REST API Endpoints (Web Mode)
+
+**Session Management**
 - `POST /api/start-session` - Initialize new session
 - `POST /api/send-message` - Send message to AI
 - `GET /api/process-statuses` - List active sessions
 - `POST /api/kill-process` - Terminate session
 
-#### Tool Confirmation
+**Tool Confirmation**
 - `POST /api/tool-confirmation` - Send user approval
 - `POST /api/execute-command` - Execute approved command
 
-#### Project Management
+**Project Management**
 - `GET /api/projects` - List projects with pagination
 - `GET /api/projects-enriched` - Detailed project metadata
 - `GET /api/projects/{id}/discussions` - Chat history
-- `POST /api/search-chats` - Full-text search
+- `GET /api/recent-chats` - Fetch recent chat sessions
+- `POST /api/search-chats` - Full-text search across chats
 
-#### File System
+**File System**
 - `POST /api/validate-directory` - Check directory validity
+- `POST /api/is-home-directory` - Check if path is home directory
+- `GET /api/get-home-directory` - User home path
+- `POST /api/get-parent-directory` - Get parent directory path
 - `POST /api/list-directory` - Directory contents
 - `GET /api/list-volumes` - Available drives/volumes
-- `GET /api/get-home-directory` - User home path
 
-#### Utilities
+**Utilities**
 - `GET /api/check-cli-installed` - CLI availability check
 - `POST /api/generate-title` - AI-generated chat titles
+
+#### WebSocket Integration (`webApi.ts`)
+- **Real-time events**: WebSocket connection at `/api/ws`
+- **Automatic reconnection**: Exponential backoff with max 5 attempts
+- **Event management**: Type-safe event listener system
+- **Connection lifecycle**: Promise-based connection readiness
 
 ### Event System
 
@@ -687,6 +748,11 @@ gemini-desktop/
 
 ### Recent Improvements
 
+- **Major API Refactoring**: Complete restructure of the API layer with unified interface
+  - **Proxy-based API**: Single API interface that automatically routes to Tauri or REST based on runtime environment
+  - **Type Safety**: Full TypeScript generics system for method parameters and return types
+  - **WebSocket Manager**: Comprehensive WebSocket handling with automatic reconnection and event management
+  - **Error Handling**: Centralized error handling with try-catch blocks and logging
 - **Enhanced JSON Parsing**: Session management now includes robust handling of non-JSON CLI output lines, improving reliability when reading from Gemini CLI
 - **React 19 Upgrade**: Frontend upgraded to React 19.1 with improved type safety and performance
 - **Adaptive Process Polling**: Enhanced process manager with intelligent polling intervals

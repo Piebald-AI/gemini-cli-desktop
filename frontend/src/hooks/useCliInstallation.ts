@@ -15,7 +15,7 @@ export const useCliInstallation = (backend: BackendType) => {
           return;
         }
 
-        const installed = await api.invoke<boolean>("check_cli_installed");
+        const installed = await api.check_cli_installed();
         setIsCliInstalled(installed);
       } catch (error) {
         console.error("Failed to check CLI installation:", error);

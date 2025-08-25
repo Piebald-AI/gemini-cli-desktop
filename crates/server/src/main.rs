@@ -207,6 +207,7 @@ struct AppState {
 // =====================================
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct StartSessionRequest {
     session_id: String,
     working_directory: Option<String>,
@@ -216,6 +217,7 @@ struct StartSessionRequest {
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct SendMessageRequest {
     session_id: String,
     message: String,
@@ -226,11 +228,13 @@ struct SendMessageRequest {
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct KillProcessRequest {
     conversation_id: String,
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct ToolConfirmationRequest {
     session_id: String,
     request_id: u32,
@@ -239,32 +243,38 @@ struct ToolConfirmationRequest {
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct ExecuteCommandRequest {
     command: String,
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct GenerateTitleRequest {
     message: String,
     model: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct ValidateDirectoryRequest {
     path: String,
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct IsHomeDirectoryRequest {
     path: String,
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct ListDirectoryRequest {
     path: String,
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct GetParentDirectoryRequest {
     path: String,
 }
@@ -315,7 +325,7 @@ async fn list_projects(
 }
 
 #[get("/projects-enriched")]
-async fn list_projects_enriched(
+async fn list_enriched_projects(
     state: &State<AppState>,
 ) -> Result<Json<Vec<EnrichedProject>>, Status> {
     let backend = state.backend.lock().await;
@@ -412,6 +422,12 @@ async fn start_session(request: Json<StartSessionRequest>, state: &State<AppStat
         "🎯 [SESSION-REQUEST] Gemini auth present: {}",
         req.gemini_auth.is_some()
     );
+    if let Some(ref auth) = req.gemini_auth {
+        println!(
+            "🔔 YOLO-DEBUG Server: Received gemini_auth: method={}, yolo={:?}",
+            auth.method, auth.yolo
+        );
+    }
 
     let backend = state.backend.lock().await;
 
@@ -469,6 +485,12 @@ async fn send_message(request: Json<SendMessageRequest>, state: &State<AppState>
         .any(|status| status.conversation_id == req.session_id && status.is_alive);
 
     if !session_exists && req.backend_config.is_some() {
+        println!("🚀 YOLO-DEBUG: send_message creating new session for backend_config");
+        if let Some(ref auth) = req.gemini_auth {
+            println!("🚀 YOLO-DEBUG: send_message gemini_auth: {:?}", auth);
+        } else {
+            println!("🚀 YOLO-DEBUG: send_message NO gemini_auth provided!");
+        }
         let model = req
             .model
             .unwrap_or_else(|| "gemini-2.0-flash-exp".to_string());
@@ -757,7 +779,7 @@ fn rocket() -> _ {
             get_recent_chats,
             search_chats,
             list_projects,
-            list_projects_enriched,
+            list_enriched_projects,
             get_enriched_project_http,
             get_project_discussions,
         ],
