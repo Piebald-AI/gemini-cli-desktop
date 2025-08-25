@@ -460,6 +460,23 @@ export function ConversationList({
                   {t("conversations.cloudShellInfo")}
                 </p>
               )}
+
+              {/* YOLO Mode Checkbox */}
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="yolo-checkbox"
+                  checked={geminiConfig.yolo || false}
+                  onCheckedChange={(checked) => {
+                    updateGeminiConfig({ yolo: checked === true });
+                  }}
+                />
+                <label
+                  htmlFor="yolo-checkbox"
+                  className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer"
+                >
+                  {t("conversations.yoloMode")}
+                </label>
+              </div>
             </div>
           </>
         )}

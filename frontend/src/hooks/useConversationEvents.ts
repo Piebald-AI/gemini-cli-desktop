@@ -441,21 +441,33 @@ export const useConversationEvents = (
                             Array.isArray(update.content) &&
                             update.content.length > 0
                           ) {
-                            const contentItem = update.content[0];
-                            if (
-                              contentItem.type === "content" &&
-                              contentItem.content.type === "text"
-                            ) {
-                              msgPart.toolCall.result =
-                                contentItem.content.text;
+                            // Use the existing convertAcpContentToLegacy function to properly handle diff content
+                            const legacyResult = convertAcpContentToLegacy(
+                              update.content
+                            );
+                            console.log(
+                              "🔧 [EDIT-DEBUG] Converted ACP content:",
+                              legacyResult
+                            );
+
+                            // Convert LegacyResult to ToolCallResult format
+                            if (legacyResult.type === "diff") {
+                              msgPart.toolCall.result = {
+                                file_path: legacyResult.path,
+                                old_string: legacyResult.oldText,
+                                new_string: legacyResult.newText,
+                                success: true,
+                              };
                               console.log(
-                                "🔧 [EDIT-DEBUG] Updated tool call with text result:",
-                                contentItem.content.text.substring(0, 100)
+                                "🔧 [EDIT-DEBUG] Updated tool call with diff result for:",
+                                legacyResult.path
                               );
-                            } else if (contentItem.type === "diff") {
-                              // For diff content, just store as text with formatting
-                              const diffResult = `Diff for ${contentItem.path}:\nOld: ${contentItem.old_text}\nNew: ${contentItem.new_text}`;
-                              msgPart.toolCall.result = diffResult;
+                            } else if (legacyResult.type === "generic") {
+                              msgPart.toolCall.result =
+                                legacyResult.newText || "";
+                              console.log(
+                                "🔧 [EDIT-DEBUG] Updated tool call with generic text result"
+                              );
                             }
                           } else if (typeof update.content === "string") {
                             msgPart.toolCall.result = update.content;
