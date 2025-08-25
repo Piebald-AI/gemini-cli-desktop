@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { api } from "../lib/api";
 import { ToolCallConfirmationRequest } from "../utils/toolCallParser";
 import { Conversation, Message } from "../types";
+import { toast } from "sonner";
 
 interface UseToolCallConfirmationProps {
   activeConversation: string | null;
@@ -27,6 +28,9 @@ export const useToolCallConfirmation = ({
           "No confirmation request found for toolCallId:",
           toolCallId
         );
+        toast.error("Tool Confirmation Failed", {
+          description: `No confirmation request found for tool call ${toolCallId}`
+        });
         return;
       }
 
@@ -110,6 +114,9 @@ export const useToolCallConfirmation = ({
         });
       } catch (error) {
         console.error("Failed to send tool call confirmation:", error);
+        toast.error("Tool Confirmation Failed", {
+          description: `Failed to send confirmation for tool call: ${error instanceof Error ? error.message : String(error)}`
+        });
       }
     },
     [confirmationRequests, activeConversation, updateConversation]

@@ -130,11 +130,7 @@ impl SessionManager {
                             .args(["/PID", &pid.to_string(), "/F"])
                             .creation_flags(CREATE_NO_WINDOW)
                             .output()
-                            .map_err(|e| {
-                                BackendError::CommandExecutionFailed(format!(
-                                    "Failed to kill process: {e}"
-                                ))
-                            })?
+                            .context("Failed to kill process")?
                     }
                     #[cfg(not(windows))]
                     {
@@ -143,11 +139,7 @@ impl SessionManager {
                         StdCommand::new("kill")
                             .args(["-9", &pid.to_string()])
                             .output()
-                            .map_err(|e| {
-                                BackendError::CommandExecutionFailed(format!(
-                                    "Failed to kill process: {e}"
-                                ))
-                            })?
+                            .context("Failed to kill process")?
                     }
                 };
 

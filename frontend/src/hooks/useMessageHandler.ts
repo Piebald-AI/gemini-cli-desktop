@@ -2,6 +2,7 @@ import React, { useState, useCallback } from "react";
 import { api } from "../lib/api";
 import { Message, Conversation } from "../types";
 import { useBackend } from "../contexts/BackendContext";
+import { toast } from "sonner";
 
 interface UseMessageHandlerProps {
   activeConversation: string | null;
@@ -71,6 +72,9 @@ export const useMessageHandler = ({
           });
         } catch (error) {
           console.error("Failed to generate conversation title:", error);
+          toast.warning("Title Generation Failed", {
+            description: "Failed to automatically generate conversation title"
+          });
         }
       }
     },
@@ -203,6 +207,11 @@ export const useMessageHandler = ({
         await fetchProcessStatuses();
       } catch (error) {
         console.error("Failed to send message:", error);
+        
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        toast.error("Message Send Failed", {
+          description: `Failed to send message: ${errorMessage}`
+        });
 
         updateConversation(convId, (conv) => {
           conv.messages.push({

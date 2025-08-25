@@ -9,6 +9,8 @@ import {
   webApi,
 } from "./webApi";
 import { ProcessStatus } from "@/types";
+import { toast } from "sonner";
+import { AxiosError } from "axios";
 
 declare global {
   interface Window {
@@ -108,14 +110,46 @@ export const api = new Proxy(
   },
   {
     get<T extends APICommand>(_target: unknown, prop: T) {
-      return (args: APIParameters<T>) => {
-        if (__WEB__) {
-          const fn = webApi[prop] as (
-            args: APIParameters<T>
-          ) => APIReturnType<T>;
-          return fn(args);
-        } else {
-          return invoke<Awaited<APIReturnType<T>>>(prop, args as InvokeArgs);
+      return async (args: APIParameters<T>) => {
+        try {
+          if (__WEB__) {
+            const fn = webApi[prop] as (
+              args: APIParameters<T>
+            ) => APIReturnType<T>;
+            return await fn(args);
+          } else {
+            return await invoke<Awaited<APIReturnType<T>>>(
+              prop,
+              args as InvokeArgs
+            );
+          }
+        } catch (error) {
+          console.log(error);
+          let errorString: string | null = null;
+          // With the web version, we're using a server.  So the errors are going to be returned
+          // as AxiosError objects.
+          if (__WEB__) {
+            if (error instanceof AxiosError && error.response) {
+              errorString = error.response.data.error;
+            }
+          }
+          // Otherwise, we're running Tauri commands, so whatever we return from the commands
+          // will be the error.
+          else {
+            if (typeof error === "string") {
+              errorString = error;
+            } else {
+              errorString = `${error}`;
+            }
+          }
+
+          if (!errorString) {
+            errorString = `${error}`;
+          }
+
+          console.error("API invoke error:", errorString);
+          toast.error(errorString);
+          throw error;
         }
       };
     },

@@ -31,7 +31,7 @@ export const useFileSystemNavigation = (initialPath?: string) => {
     error: null,
     navigationStack: [],
   });
-
+  
   const loadDirectory = useCallback(async (path: string) => {
     console.log(
       "📁 [useFileSystemNavigation] loadDirectory called with path:",
@@ -79,12 +79,8 @@ export const useFileSystemNavigation = (initialPath?: string) => {
         sortedEntries.length
       );
     } catch (err) {
-      console.error(
-        "❌ [useFileSystemNavigation] Failed to load directory:",
-        err
-      );
-      console.error("❌ [useFileSystemNavigation] Error details:", err);
-      setState((prev) => ({
+      console.error("❌ [useFileSystemNavigation] Failed to load directory:", err);
+      setState(prev => ({
         ...prev,
         isLoading: false,
         error: err instanceof Error ? err.message : "Failed to load directory",

@@ -112,7 +112,7 @@ export const CliWarnings: React.FC<CliWarningsProps> = ({
         <div className="p-4">
           <Alert
             variant="destructive"
-            className="bg-red-50 border-red-300 dark:bg-red-950 dark:border-red-700 text-red-300"
+            className="bg-red-50 border-red-300 dark:bg-red-950 dark:border-red-700 dark:text-red-300"
           >
             <AlertCircleIcon />
             <AlertTitle>{backendText.cliNotFound}</AlertTitle>

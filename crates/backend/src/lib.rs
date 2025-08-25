@@ -54,7 +54,6 @@ pub use session::{
 };
 // Standard library imports
 use anyhow::{Context, Result};
-use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio::process::Command;
@@ -86,17 +85,13 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
     // =====================================
 
     /// Emit CLI I/O event
-    pub fn emit_cli_io(
-        &self,
-        session_id: &str,
-        io_type: CliIoType,
-        data: &str,
-    ) -> Result<()> {
+    pub fn emit_cli_io(&self, session_id: &str, io_type: CliIoType, data: &str) -> Result<()> {
         let payload = CliIoPayload {
             io_type,
             data: data.to_string(),
         };
-        self.emitter.emit(&format!("cli-io-{session_id}"), payload)
+        self.emitter
+            .emit(&format!("cli-io-{session_id}"), payload)
             .context("Failed to emit CLI I/O event")
     }
 
@@ -128,16 +123,13 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
     }
 
     /// Emit tool call update event
-    pub fn emit_tool_call_update(
-        &self,
-        session_id: &str,
-        update: &ToolCallUpdate,
-    ) -> Result<()> {
-        self.emitter.emit(
-            &format!("gemini-tool-call-update-{session_id}"),
-            update.clone(),
-        )
-        .context("Failed to emit tool call update event")
+    pub fn emit_tool_call_update(&self, session_id: &str, update: &ToolCallUpdate) -> Result<()> {
+        self.emitter
+            .emit(
+                &format!("gemini-tool-call-update-{session_id}"),
+                update.clone(),
+            )
+            .context("Failed to emit tool call update event")
     }
 
     /// Emit tool call confirmation event
@@ -146,11 +138,12 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
         session_id: &str,
         confirmation: &ToolCallConfirmationRequest,
     ) -> Result<()> {
-        self.emitter.emit(
-            &format!("gemini-tool-call-confirmation-{session_id}"),
-            confirmation.clone(),
-        )
-        .context("Failed to emit tool call confirmation event")
+        self.emitter
+            .emit(
+                &format!("gemini-tool-call-confirmation-{session_id}"),
+                confirmation.clone(),
+            )
+            .context("Failed to emit tool call confirmation event")
     }
 
     /// Emit error event
@@ -165,7 +158,8 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
 
     /// Emit command result event
     pub fn emit_command_result(&self, result: &CommandResult) -> Result<()> {
-        self.emitter.emit("command-result", result.clone())
+        self.emitter
+            .emit("command-result", result.clone())
             .context("Failed to emit command result event")
     }
 
@@ -238,7 +232,8 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
 
         let (message_sender, acp_session_id) = {
             let processes = self.session_manager.get_processes();
-            let processes = processes.lock()
+            let processes = processes
+                .lock()
                 .map_err(|_| anyhow::anyhow!("Failed to lock processes mutex"))?;
 
             if let Some(session) = processes.get(&session_id) {
@@ -251,18 +246,14 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
             }
         };
 
-        let message_sender = message_sender
-            .context("No message sender available")?;
+        let message_sender = message_sender.context("No message sender available")?;
 
-        let acp_session_id = acp_session_id
-            .context("No ACP session ID available")?;
+        let acp_session_id = acp_session_id.context("No ACP session ID available")?;
 
         // Get working directory from session
         let working_directory = {
             let processes = self.session_manager.get_processes();
-            let processes = processes.lock().map_err(|_| {
-                BackendError::SessionInitFailed("Failed to lock processes".to_string())
-            })?;
+            let processes = processes.lock().unwrap();
 
             processes
                 .get(&session_id)
@@ -284,8 +275,8 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
             id
         };
 
-        let params_value = serde_json::to_value(prompt_params)
-            .map_err(|e| BackendError::JsonError(e.to_string()))?;
+        let params_value =
+            serde_json::to_value(prompt_params).context("Failed to serialize prompt params")?;
         let prompt_request = JsonRpcRequest {
             jsonrpc: "2.0".to_string(),
             id: request_id,
@@ -293,8 +284,8 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
             params: params_value,
         };
 
-        let request_json = serde_json::to_string(&prompt_request)
-            .context("Failed to serialize prompt request")?;
+        let request_json =
+            serde_json::to_string(&prompt_request).context("Failed to serialize prompt request")?;
 
         message_sender
             .send(request_json)
@@ -396,7 +387,8 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
         // Find the conversation ID that corresponds to this ACP session ID
         let conversation_id = {
             let processes = self.session_manager.get_processes();
-            let processes = processes.lock()
+            let processes = processes
+                .lock()
                 .map_err(|_| anyhow::anyhow!("Failed to lock processes mutex"))?;
 
             let mut found_conversation_id = None;
@@ -409,8 +401,9 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
                 }
             }
 
-            found_conversation_id
-                .context(format!("No conversation found for ACP session ID: {acp_session_id}"))?
+            found_conversation_id.context(format!(
+                "No conversation found for ACP session ID: {acp_session_id}"
+            ))?
         };
 
         // Convert outcome string to ACP PermissionOutcome
@@ -435,10 +428,7 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
         session::send_response_to_cli(
             &conversation_id,
             request_id,
-            Some(
-                serde_json::to_value(response_data)
-                    .context("Failed to serialize response data")?,
-            ),
+            Some(serde_json::to_value(response_data).context("Failed to serialize response data")?),
             None,
             self.session_manager.get_processes(),
         )
@@ -522,7 +512,7 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
                     .stderr(std::process::Stdio::piped())
                     .creation_flags(CREATE_NO_WINDOW)
                     .spawn()
-                    .map_err(|e| BackendError::CommandExecutionFailed(e.to_string()))?
+                    .context("Failed to spawn Gemini CLI process")?
             }
             #[cfg(not(windows))]
             {
@@ -532,7 +522,7 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
                     .stdout(std::process::Stdio::piped())
                     .stderr(std::process::Stdio::piped())
                     .spawn()
-                    .map_err(|e| BackendError::CommandExecutionFailed(e.to_string()))?
+                    .context("Failed to spawn Gemini CLI process")?
             }
         };
 
@@ -543,8 +533,7 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
                 .write_all(prompt.as_bytes())
                 .await
                 .context("Failed to write prompt to stdin")?;
-            stdin.shutdown().await
-                .context("Failed to shutdown stdin")?;
+            stdin.shutdown().await.context("Failed to shutdown stdin")?;
         }
 
         let output = child
@@ -669,10 +658,7 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
     }
 
     /// Get discussions for a specific project
-    pub async fn get_project_discussions(
-        &self,
-        project_id: &str,
-    ) -> Result<Vec<RecentChat>> {
+    pub async fn get_project_discussions(&self, project_id: &str) -> Result<Vec<RecentChat>> {
         search::get_project_discussions(project_id).await
     }
 }

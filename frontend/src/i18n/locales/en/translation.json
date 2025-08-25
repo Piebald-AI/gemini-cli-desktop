@@ -56,7 +56,11 @@
   },
 
   "dashboard": {
-    "tagline": "Your ideas for the future are just a click away.",
+    "tagline": "{{appName}} brought to your desktop and your browser.",
+    "user": "User",
+    "generating": "Generating...",
+    "rawJsonButton": "Raw JSON",
+    "rawJsonTitle": "Message Raw JSON",
     "projectsCard": {
       "title": "Projects",
       "description": "Manage your projects, view past discussions."
@@ -375,7 +379,7 @@
     "mcpToolExecution": "MCP tools, included in this MCP server, that {{backendName}} may execute.",
     "mcpToolExclusion": "MCP tools, included in this MCP server, that {{backendName}} may not execute. Takes precedence over Included Tools.",
     "mcpCommandDescription": "Command executed by {{backendName}} to start the MCP server.",
-    "projectsDescription": "All of your previous discussions with {{appName}}, right here."
+    "projectsDescription": "All of your previous discussions with {{appName}}."
   },
 
   "validation": {
@@ -423,14 +427,6 @@
     "languageSwitcher": "Change language",
     "currentLanguage": "Current language: {{language}}",
     "directoryPanel": "Directory"
-  },
-
-  "homeDashboard": {
-    "tagline": "Your ideas for the future are just a click away.",
-    "user": "User",
-    "generating": "Generating...",
-    "rawJsonButton": "Raw JSON",
-    "rawJsonTitle": "Message Raw JSON"
   },
 
   "about": {

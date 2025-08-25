@@ -1,19 +1,21 @@
-use anyhow::Context;
+use anyhow::{Context, Error as AnyhowError};
 use include_dir::{Dir, include_dir};
 use rocket::{
-    Shutdown, State, get,
+    Request, Response, Shutdown, State, get,
     http::{ContentType, Status},
-    post, routes,
+    post,
+    response::{self, Responder},
+    routes,
     serde::json::Json,
 };
 use rocket_ws::{Message, Stream, WebSocket};
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
 use std::sync::mpsc;
 use std::sync::{
     Arc,
     atomic::{AtomicU64, Ordering},
 };
+use std::{io::Cursor, path::PathBuf};
 use tokio::sync::{Mutex, mpsc as tokio_mpsc};
 
 // Import backend functionality
@@ -280,6 +282,37 @@ struct GetParentDirectoryRequest {
     path: String,
 }
 
+#[derive(Debug)]
+pub struct AnyhowResponder(pub AnyhowError);
+
+impl<'r> Responder<'r, 'static> for AnyhowResponder {
+    fn respond_to(self, _: &'r Request<'_>) -> response::Result<'static> {
+        // Use :#? for full error chain formatting
+        let error_message = format!("{{\"error\":\"{:#}\"}}", self.0);
+
+        // Log the full error chain for debugging
+        eprintln!("Error occurred: {:#}", self.0);
+
+        Response::build()
+            .status(Status::InternalServerError)
+            .header(rocket::http::ContentType::Plain)
+            .sized_body(error_message.len(), Cursor::new(error_message))
+            .ok()
+    }
+}
+
+// Implement From trait for easy conversion
+impl<E> From<E> for AnyhowResponder
+where
+    E: Into<AnyhowError>,
+{
+    fn from(error: E) -> Self {
+        AnyhowResponder(error.into())
+    }
+}
+
+pub type AppResult<T> = std::result::Result<T, AnyhowResponder>;
+
 /// Serves the frontend for Gemini Desktop from the embedded built files.
 #[get("/<path..>")]
 fn index(path: PathBuf) -> Result<(ContentType, &'static [u8]), Status> {
@@ -305,30 +338,31 @@ async fn list_projects(
     limit: Option<u32>,
     offset: Option<u32>,
     state: &State<AppState>,
-) -> Result<Json<serde_json::Value>, Status> {
+) -> AppResult<Json<serde_json::Value>> {
     let lim = limit.unwrap_or(25);
     let off = offset.unwrap_or(0);
     let backend = state.backend.lock().await;
-    match backend.list_projects(lim, off).await {
-        Ok(resp) => {
-            let v = serde_json::to_value(resp)
-                .map_err(|_e| Status::InternalServerError)
-                .unwrap();
-            Ok(Json(v))
-        }
-        Err(_e) => Err(Status::InternalServerError),
-    }
+
+    Ok(Json(
+        serde_json::to_value(
+            backend
+                .list_projects(lim, off)
+                .await
+                .context("Failed to list projects")?,
+        )
+        .context("Failed to serialize projects")?,
+    ))
 }
 
 #[get("/projects-enriched")]
-async fn list_enriched_projects(
-    state: &State<AppState>,
-) -> Result<Json<Vec<EnrichedProject>>, Status> {
+async fn list_enriched_projects(state: &State<AppState>) -> AppResult<Json<Vec<EnrichedProject>>> {
     let backend = state.backend.lock().await;
-    match backend.list_enriched_projects().await {
-        Ok(list) => Ok(Json(list)),
-        Err(_e) => Err(Status::InternalServerError),
-    }
+    Ok(Json(
+        backend
+            .list_enriched_projects()
+            .await
+            .context("Failed to list projects")?,
+    ))
 }
 
 #[get("/project?<sha256>&<external_root_path>")]
@@ -336,36 +370,39 @@ async fn get_enriched_project_http(
     state: &State<AppState>,
     sha256: String,
     external_root_path: String,
-) -> Result<Json<EnrichedProject>, Status> {
+) -> AppResult<Json<EnrichedProject>> {
     let backend = state.backend.lock().await;
-    match backend
-        .get_enriched_project(sha256, external_root_path)
-        .await
-    {
-        Ok(p) => Ok(Json(p)),
-        Err(_e) => Err(Status::InternalServerError),
-    }
+    Ok(Json(
+        backend
+            .get_enriched_project(sha256, external_root_path)
+            .await
+            .context("Failed to get project")?,
+    ))
 }
 
 #[get("/projects/<project_id>/discussions")]
 async fn get_project_discussions(
     project_id: &str,
     state: &State<AppState>,
-) -> Result<Json<Vec<RecentChat>>, Status> {
+) -> AppResult<Json<Vec<RecentChat>>> {
     let backend = state.backend.lock().await;
-    match backend.get_project_discussions(project_id).await {
-        Ok(discussions) => Ok(Json(discussions)),
-        Err(_e) => Err(Status::InternalServerError),
-    }
+    Ok(Json(
+        backend
+            .get_project_discussions(project_id)
+            .await
+            .context("Failed to get project discussions")?,
+    ))
 }
 
 #[get("/recent-chats")]
-async fn get_recent_chats(state: &State<AppState>) -> Result<Json<Vec<RecentChat>>, Status> {
+async fn get_recent_chats(state: &State<AppState>) -> AppResult<Json<Vec<RecentChat>>> {
     let backend = state.backend.lock().await;
-    match backend.get_recent_chats().await {
-        Ok(chats) => Ok(Json(chats)),
-        Err(_) => Err(Status::InternalServerError),
-    }
+    Ok(Json(
+        backend
+            .get_recent_chats()
+            .await
+            .context("Failed to get recent chats")?,
+    ))
 }
 
 #[derive(Deserialize)]
@@ -378,47 +415,33 @@ struct SearchChatsRequest {
 async fn search_chats(
     request: Json<SearchChatsRequest>,
     state: &State<AppState>,
-) -> Result<Json<Vec<SearchResult>>, Status> {
+) -> AppResult<Json<Vec<SearchResult>>> {
     let backend = state.backend.lock().await;
-    match backend
-        .search_chats(request.query.clone(), request.filters.clone())
-        .await
-    {
-        Ok(results) => Ok(Json(results)),
-        Err(_) => Err(Status::InternalServerError),
-    }
+    Ok(Json(
+        backend
+            .search_chats(request.query.clone(), request.filters.clone())
+            .await
+            .context("Failed to search chats")?,
+    ))
 }
 
 #[get("/check-cli-installed")]
-async fn check_cli_installed(state: &State<AppState>) -> Result<Json<bool>, Status> {
+async fn check_cli_installed(state: &State<AppState>) -> AppResult<Json<bool>> {
     let backend = state.backend.lock().await;
-    match backend.check_cli_installed().await {
-        Ok(result) => Ok(Json(result)),
-        Err(_) => Err(Status::InternalServerError),
-    }
+    Ok(Json(
+        backend
+            .check_cli_installed()
+            .await
+            .context("Failed to check CLI installation")?,
+    ))
 }
 
 #[post("/start-session", data = "<request>")]
-async fn start_session(request: Json<StartSessionRequest>, state: &State<AppState>) -> Status {
+async fn start_session(
+    request: Json<StartSessionRequest>,
+    state: &State<AppState>,
+) -> AppResult<()> {
     let req = request.into_inner();
-    println!(
-        "🎯 [SESSION-REQUEST] Received start_session request for: {}",
-        req.session_id
-    );
-    println!(
-        "🎯 [SESSION-REQUEST] Working directory: {:?}",
-        req.working_directory
-    );
-    println!("🎯 [SESSION-REQUEST] Model: {:?}", req.model);
-    println!(
-        "🎯 [SESSION-REQUEST] Backend config present: {}",
-        req.backend_config.is_some()
-    );
-    println!(
-        "🎯 [SESSION-REQUEST] Gemini auth present: {}",
-        req.gemini_auth.is_some()
-    );
-
     let backend = state.backend.lock().await;
 
     // If working_directory is provided, initialize a session with that directory
@@ -426,8 +449,7 @@ async fn start_session(request: Json<StartSessionRequest>, state: &State<AppStat
         let model = req
             .model
             .unwrap_or_else(|| "gemini-2.0-flash-exp".to_string());
-        println!("🎯 [SESSION-REQUEST] Attempting to initialize session with backend...");
-        match backend
+        backend
             .initialize_session(
                 req.session_id,
                 working_directory,
@@ -436,33 +458,13 @@ async fn start_session(request: Json<StartSessionRequest>, state: &State<AppStat
                 req.gemini_auth.clone(),
             )
             .await
-        {
-            Ok(_) => {
-                println!("✅ [SESSION-REQUEST] Session initialization completed successfully");
-                Status::Ok
-            }
-            Err(e) => {
-                println!("❌ [SESSION-REQUEST] Session initialization failed: {e}");
-                Status::InternalServerError
-            }
-        }
-    } else {
-        // For compatibility with existing frontend, just check if CLI is installed
-        match backend.check_cli_installed().await {
-            Ok(available) => {
-                if available {
-                    Status::Ok
-                } else {
-                    Status::ServiceUnavailable
-                }
-            }
-            Err(_) => Status::InternalServerError,
-        }
+            .context("Failed to initialize session")?;
     }
+    Ok(())
 }
 
 #[post("/send-message", data = "<request>")]
-async fn send_message(request: Json<SendMessageRequest>, state: &State<AppState>) -> Status {
+async fn send_message(request: Json<SendMessageRequest>, state: &State<AppState>) -> AppResult<()> {
     let req = request.into_inner();
 
     let backend = state.backend.lock().await;
@@ -479,7 +481,7 @@ async fn send_message(request: Json<SendMessageRequest>, state: &State<AppState>
             .model
             .unwrap_or_else(|| "gemini-2.0-flash-exp".to_string());
         // Initialize session with minimal working directory (current directory)
-        match backend
+        backend
             .initialize_session(
                 req.session_id.clone(),
                 ".".to_string(),
@@ -488,69 +490,41 @@ async fn send_message(request: Json<SendMessageRequest>, state: &State<AppState>
                 req.gemini_auth,
             )
             .await
-        {
-            Ok(_) => {}
-            Err(_) => return Status::InternalServerError,
-        }
+            .context("Failed to initialize session")?;
     }
 
-    match backend
+    Ok(backend
         .send_message(req.session_id, req.message, req.conversation_history)
         .await
-    {
-        Ok(_) => Status::Ok,
-        Err(_) => Status::InternalServerError,
-    }
+        .context("Failed to send message")?)
 }
 
 #[get("/process-statuses")]
-async fn get_process_statuses(state: &State<AppState>) -> Result<Json<Vec<ProcessStatus>>, Status> {
-    println!("🌐 [API-STATUS] Frontend requesting process statuses...");
+async fn get_process_statuses(state: &State<AppState>) -> AppResult<Json<Vec<ProcessStatus>>> {
     let backend = state.backend.lock().await;
-    match backend.get_process_statuses() {
-        Ok(statuses) => {
-            println!(
-                "🌐 [API-STATUS] Returning {} statuses to frontend:",
-                statuses.len()
-            );
-            for status in &statuses {
-                println!(
-                    "🌐 [API-STATUS]   - {}: {} (PID: {:?})",
-                    status.conversation_id,
-                    if status.is_alive {
-                        "ACTIVE"
-                    } else {
-                        "INACTIVE"
-                    },
-                    status.pid
-                );
-            }
-            Ok(Json(statuses))
-        }
-        Err(e) => {
-            println!("❌ [API-STATUS] Failed to get statuses: {e}");
-            Err(Status::InternalServerError)
-        }
-    }
+    Ok(Json(
+        backend
+            .get_process_statuses()
+            .context("Failed to get process statuses")?,
+    ))
 }
 
 #[post("/kill-process", data = "<request>")]
-async fn kill_process(request: Json<KillProcessRequest>, state: &State<AppState>) -> Status {
+async fn kill_process(request: Json<KillProcessRequest>, state: &State<AppState>) -> AppResult<()> {
     let backend = state.backend.lock().await;
-    match backend.kill_process(&request.conversation_id) {
-        Ok(_) => Status::Ok,
-        Err(_) => Status::InternalServerError,
-    }
+    Ok(backend
+        .kill_process(&request.conversation_id)
+        .context("Failed to kill process")?)
 }
 
 #[post("/tool-confirmation", data = "<request>")]
 async fn send_tool_call_confirmation_response(
     request: Json<ToolConfirmationRequest>,
     state: &State<AppState>,
-) -> Status {
+) -> AppResult<()> {
     let req = request.into_inner();
     let backend = state.backend.lock().await;
-    match backend
+    Ok(backend
         .handle_tool_confirmation(
             req.session_id,
             req.request_id,
@@ -558,108 +532,114 @@ async fn send_tool_call_confirmation_response(
             req.outcome,
         )
         .await
-    {
-        Ok(_) => Status::Ok,
-        Err(_) => Status::InternalServerError,
-    }
+        .context("Failed to send tool call confirmation response")?)
 }
 
 #[post("/execute-command", data = "<request>")]
 async fn execute_confirmed_command(
     request: Json<ExecuteCommandRequest>,
     state: &State<AppState>,
-) -> Result<Json<String>, Status> {
+) -> AppResult<Json<String>> {
     let backend = state.backend.lock().await;
-    match backend
-        .execute_confirmed_command(request.command.clone())
-        .await
-    {
-        Ok(output) => Ok(Json(output)),
-        Err(_) => Err(Status::InternalServerError),
-    }
+    Ok(Json(
+        backend
+            .execute_confirmed_command(request.command.clone())
+            .await
+            .context("Failed to execute confirmed command")?,
+    ))
 }
 
 #[post("/generate-title", data = "<request>")]
 async fn generate_conversation_title(
     request: Json<GenerateTitleRequest>,
     state: &State<AppState>,
-) -> Result<Json<String>, Status> {
+) -> AppResult<Json<String>> {
     let req = request.into_inner();
     let backend = state.backend.lock().await;
-    match backend
-        .generate_conversation_title(req.message, req.model)
-        .await
-    {
-        Ok(title) => Ok(Json(title)),
-        Err(_) => Err(Status::InternalServerError),
-    }
+    Ok(Json(
+        backend
+            .generate_conversation_title(req.message, req.model)
+            .await
+            .context("Failed to generate conversation title")?,
+    ))
 }
 
 #[post("/validate-directory", data = "<request>")]
 async fn validate_directory(
     request: Json<ValidateDirectoryRequest>,
     state: &State<AppState>,
-) -> Result<Json<bool>, Status> {
+) -> AppResult<Json<bool>> {
     let backend = state.backend.lock().await;
-    match backend.validate_directory(request.path.clone()).await {
-        Ok(valid) => Ok(Json(valid)),
-        Err(_) => Err(Status::InternalServerError),
-    }
+    Ok(Json(
+        backend
+            .validate_directory(request.path.clone())
+            .await
+            .context("Failed to validate directory")?,
+    ))
 }
 
 #[post("/is-home-directory", data = "<request>")]
 async fn is_home_directory(
     request: Json<IsHomeDirectoryRequest>,
     state: &State<AppState>,
-) -> Result<Json<bool>, Status> {
+) -> AppResult<Json<bool>> {
     let backend = state.backend.lock().await;
-    match backend.is_home_directory(request.path.clone()).await {
-        Ok(is_home) => Ok(Json(is_home)),
-        Err(_) => Err(Status::InternalServerError),
-    }
+    Ok(Json(
+        backend
+            .is_home_directory(request.path.clone())
+            .await
+            .context("Failed to check if directory is home directory")?,
+    ))
 }
 
 #[get("/get-home-directory")]
-async fn get_home_directory(state: &State<AppState>) -> Result<Json<String>, Status> {
+async fn get_home_directory(state: &State<AppState>) -> AppResult<Json<String>> {
     let backend = state.backend.lock().await;
-    match backend.get_home_directory().await {
-        Ok(home_path) => Ok(Json(home_path)),
-        Err(_) => Err(Status::InternalServerError),
-    }
+    Ok(Json(
+        backend
+            .get_home_directory()
+            .await
+            .context("Failed to get home directory")?,
+    ))
 }
 
 #[post("/get-parent-directory", data = "<request>")]
 async fn get_parent_directory(
     request: Json<GetParentDirectoryRequest>,
     state: &State<AppState>,
-) -> Result<Json<Option<String>>, Status> {
+) -> AppResult<Json<Option<String>>> {
     let backend = state.backend.lock().await;
-    match backend.get_parent_directory(request.path.clone()).await {
-        Ok(parent_path) => Ok(Json(parent_path)),
-        Err(_) => Err(Status::InternalServerError),
-    }
+    Ok(Json(
+        backend
+            .get_parent_directory(request.path.clone())
+            .await
+            .context("Failed to get parent directory")?,
+    ))
 }
 
 #[post("/list-directory", data = "<request>")]
 async fn list_directory_contents(
     request: Json<ListDirectoryRequest>,
     state: &State<AppState>,
-) -> Json<Vec<DirEntry>> {
+) -> AppResult<Json<Vec<DirEntry>>> {
     let backend = state.backend.lock().await;
-    let contents = backend
-        .list_directory_contents(request.path.clone())
-        .await
-        .unwrap();
-    Json(contents)
+    Ok(Json(
+        backend
+            .list_directory_contents(request.path.clone())
+            .await
+            .context("Failed to list directory contents")?,
+    ))
 }
 
 #[get("/list-volumes")]
-async fn list_volumes(state: &State<AppState>) -> Result<Json<Vec<DirEntry>>, Status> {
+async fn list_volumes(state: &State<AppState>) -> AppResult<Json<Vec<DirEntry>>> {
     let backend = state.backend.lock().await;
-    match backend.list_volumes().await {
-        Ok(volumes) => Ok(Json(volumes)),
-        Err(_) => Err(Status::InternalServerError),
-    }
+    Ok(Json(
+        backend
+            .list_volumes()
+            .await
+            .context("Failed to list volumes")?,
+    ))
 }
 
 // =====================================

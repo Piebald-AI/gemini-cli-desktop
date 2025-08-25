@@ -56,7 +56,11 @@
   },
 
   "dashboard": {
-    "tagline": "您對未來的想法只需一次點擊即可實現。",
+    "tagline": "{{appName}} 已經來到您的桌面和瀏覽器。",
+    "user": "使用者",
+    "generating": "產生中...",
+    "rawJsonButton": "原始 JSON",
+    "rawJsonTitle": "訊息原始 JSON",
     "projectsCard": {
       "title": "專案",
       "description": "管理您的專案，檢視過往討論。"
@@ -375,7 +379,7 @@
     "mcpToolExecution": "此 MCP 伺服器中包含的 {{backendName}} 可能執行的 MCP 工具。",
     "mcpToolExclusion": "此 MCP 伺服器中包含的 {{backendName}} 可能不執行的 MCP 工具。優先於包含的工具。",
     "mcpCommandDescription": "{{backendName}} 執行的啟動 MCP 伺服器的指令。",
-    "projectsDescription": "您與 {{appName}} 的所有先前討論，都在這裡。"
+    "projectsDescription": "您與 {{appName}} 的所有先前討論。"
   },
 
   "validation": {
@@ -491,14 +495,6 @@
     "goToParentDirectory": "前往上層資料夾",
     "goToHomeDirectory": "前往主資料夾",
     "endChat": "結束聊天"
-  },
-
-  "homeDashboard": {
-    "tagline": "您對未來的想法只需一次點擊即可實現。",
-    "user": "使用者",
-    "generating": "產生中...",
-    "rawJsonButton": "原始 JSON",
-    "rawJsonTitle": "訊息原始 JSON"
   },
 
   "header": {
