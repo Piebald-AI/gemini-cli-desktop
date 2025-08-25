@@ -36,12 +36,12 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
   title,
   className,
 }) => {
-  const [isMaximized, setIsMaximized] = useState(false);
-  const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
   const navigate = useNavigate();
   const { selectedBackend } = useBackend();
   const backendText = getBackendText(selectedBackend);
   const { t } = useTranslation();
+  const [isMaximized, setIsMaximized] = useState(false);
+  const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
 
   // Dynamic title based on backend
   const dynamicTitle = title || backendText.desktopName;
@@ -50,21 +50,39 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
   const handlers = createMenuHandlers(navigate, setIsAboutDialogOpen);
   const labels = getMenuLabels(t, selectedBackend);
 
-  // Always run hooks first - never conditionally
+  // Determine if we should show the title bar
+  const shouldShow = React.useMemo(() => {
+    if (__WEB__) {
+      return false;
+    }
+    try {
+      return platform() === "windows";
+    } catch {
+      return false;
+    }
+  }, []);
+
+  // Window listener setup - only runs when shouldShow is true
   useEffect(() => {
+    if (!shouldShow) return;
+
     let unlisten: (() => void) | undefined;
 
     const setupWindowListener = async () => {
-      const appWindow = getCurrentWindow();
+      try {
+        const appWindow = getCurrentWindow();
 
-      // Check initial maximized state
-      const initialMaximized = await appWindow.isMaximized();
-      setIsMaximized(initialMaximized);
+        // Check initial maximized state
+        const initialMaximized = await appWindow.isMaximized();
+        setIsMaximized(initialMaximized);
 
-      // Listen for window resize events to update maximize/restore button
-      unlisten = await appWindow.onResized(() => {
-        appWindow.isMaximized().then(setIsMaximized);
-      });
+        // Listen for window resize events to update maximize/restore button
+        unlisten = await appWindow.onResized(() => {
+          appWindow.isMaximized().then(setIsMaximized);
+        });
+      } catch (error) {
+        console.error("Failed to setup window listener:", error);
+      }
     };
 
     setupWindowListener();
@@ -74,10 +92,10 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
         unlisten();
       }
     };
-  }, []);
+  }, [shouldShow]);
 
-  // Only show in the desktop app on Windows.
-  if (__WEB__ || platform() !== "windows") {
+  // Early return after all hooks have been called
+  if (!shouldShow) {
     return null;
   }
 
