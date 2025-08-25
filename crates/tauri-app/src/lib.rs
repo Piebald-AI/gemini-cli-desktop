@@ -7,7 +7,6 @@ mod state;
 
 use backend::GeminiBackend;
 use event_emitter::TauriEventEmitter;
-use menu::init_menu;
 use state::AppState;
 use std::sync::Arc;
 use tauri::{Emitter, Manager};
@@ -31,7 +30,7 @@ pub fn run() {
             // Initialize menu with default labels (non-Windows only)
             #[cfg(not(windows))]
             {
-                if let Err(e) = init_menu(app.handle().clone()) {
+                if let Err(e) = menu::init_menu(app.handle().clone()) {
                     eprintln!("Failed to initialize menu: {e}");
                 }
             }

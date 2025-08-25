@@ -7,6 +7,15 @@ import rehypeRaw from "rehype-raw";
 import { Code } from "@/components/ui/code";
 import CodeBlock from "@/components/common/CodeBlock";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../ui/table";
 
 // Helper function to determine if a URL is external
 function isExternalUrl(href: string): boolean {
@@ -40,73 +49,9 @@ export function MarkdownRenderer({
   isStreaming?: boolean;
 }) {
   return (
-    <div className="prose prose-stone prose-sm max-w-none dark:prose-invert text-sm break-words overflow-wrap-anywhere">
+    <div className="prose prose-neutral prose-sm max-w-none dark:prose-invert text-sm break-words overflow-wrap-anywhere">
       <ReactMarkdown
         components={{
-          // Headers
-          h1: (props) => (
-            <h1
-              className="text-3xl font-bold mt-6 mb-4 text-foreground"
-              {...props}
-            />
-          ),
-          h2: (props) => (
-            <h2
-              className="text-2xl font-bold mt-5 mb-3 text-foreground"
-              {...props}
-            />
-          ),
-          h3: (props) => (
-            <h3
-              className="text-xl font-bold mt-4 mb-2 text-foreground"
-              {...props}
-            />
-          ),
-          h4: (props) => (
-            <h4
-              className="text-lg font-bold mt-3 mb-2 text-foreground"
-              {...props}
-            />
-          ),
-          h5: (props) => (
-            <h5
-              className="text-base font-bold mt-2 mb-1 text-foreground"
-              {...props}
-            />
-          ),
-          h6: (props) => (
-            <h6
-              className="text-sm font-bold mt-2 mb-1 text-foreground"
-              {...props}
-            />
-          ),
-          // Lists
-          ul: (props) => (
-            <ul
-              className="list-disc list-outside pl-6 my-4 space-y-1 text-foreground"
-              {...props}
-            />
-          ),
-          ol: (props) => (
-            <ol
-              className="list-decimal list-outside pl-6 my-4 space-y-1 text-foreground"
-              {...props}
-            />
-          ),
-          li: (props) => <li className="text-foreground my-3" {...props} />,
-          // Blockquotes
-          blockquote: (props) => (
-            <blockquote
-              className="border-l-4 border-primary pl-4 py-2 my-4 bg-muted/50 rounded-r text-muted-foreground italic"
-              {...props}
-            />
-          ),
-          // Horizontal rule
-          hr: (props) => <hr className="my-6 border-border" {...props} />,
-          // Paragraphs
-          p: (props) => (
-            <p className="my-3 text-foreground leading-relaxed" {...props} />
-          ),
           code: ({ children, className }) => {
             const content = (children as string) || "";
 
@@ -162,25 +107,23 @@ export function MarkdownRenderer({
               {children}
             </a>
           ),
-          table: (props) => (
+          table: ({ node: _node, ...props }) => (
             <div className="rounded-md overflow-hidden border border-neutral-200 dark:border-neutral-800 max-w-full">
               <div className="overflow-x-auto w-full">
-                <table className="not-prose w-full text-sm" {...props} />
+                <Table className="not-prose" {...props} />
               </div>
             </div>
           ),
-          thead: (props) => <thead {...props} />,
-          tbody: (props) => <tbody {...props} />,
-          tr: (props) => <tr {...props} />,
-          th: (props) => (
-            <th
-              className="border-b border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800 px-4 py-3 text-left font-medium text-gray-900 dark:text-neutral-100"
-              {...props}
-            />
+          thead: ({ node: _node, ...props }) => <TableHeader {...props} />,
+          tbody: ({ node: _node, ...props }) => <TableBody {...props} />,
+          tfoot: ({ node: _node, ...props }) => <TableFooter {...props} />,
+          tr: ({ node: _node, ...props }) => <TableRow {...props} />,
+          th: ({ node: _node, ...props }) => (
+            <TableHead className="p-3" {...props} />
           ),
-          td: (props) => (
-            <td
-              className="border-b border-gray-200 dark:border-neutral-700 px-4 py-3 text-gray-700 dark:text-neutral-300 align-top text-wrap break-words"
+          td: ({ node: _node, ...props }) => (
+            <TableCell
+              className="align-top p-3 text-wrap break-words"
               {...props}
             />
           ),
