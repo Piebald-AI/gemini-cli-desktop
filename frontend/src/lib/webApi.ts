@@ -1,6 +1,5 @@
 import axios from "axios";
 import { API } from "./api";
-import { GitInfo } from "../types/backend";
 
 // Create axios client with base URL /api
 const apiClient = axios.create({
@@ -147,8 +146,20 @@ export const webApi: API = {
     return response.data;
   },
 
-  async get_git_info(params: { path: string }): Promise<{ branch?: string; status?: string; ahead?: number; behind?: number; }> {
-    const response = await apiClient.post<{ branch?: string; status?: string; ahead?: number; behind?: number; }>("/get-git-info", params);
+  async get_git_info(params: {
+    path: string;
+  }): Promise<{
+    branch?: string;
+    status?: string;
+    ahead?: number;
+    behind?: number;
+  }> {
+    const response = await apiClient.post<{
+      branch?: string;
+      status?: string;
+      ahead?: number;
+      behind?: number;
+    }>("/get-git-info", params);
     return response.data;
   },
 
