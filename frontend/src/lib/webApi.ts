@@ -21,6 +21,7 @@ interface StartSessionRequest {
     api_key?: string;
     vertex_project?: string;
     vertex_location?: string;
+    yolo?: boolean;
   };
 }
 
@@ -117,6 +118,7 @@ export const webApi = {
       api_key?: string;
       vertex_project?: string;
       vertex_location?: string;
+      yolo?: boolean;
     }
   ): Promise<void> {
     const request: StartSessionRequest = {

@@ -163,6 +163,7 @@ export const api = {
               api_key?: string;
               vertex_project?: string;
               vertex_location?: string;
+              yolo?: boolean;
             };
           };
           return webApi.start_session(

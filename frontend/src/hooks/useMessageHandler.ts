@@ -192,7 +192,9 @@ export const useMessageHandler = ({
               geminiConfig.authMethod === "vertex-ai"
                 ? geminiConfig.vertexLocation
                 : undefined,
+            yolo: geminiConfig.yolo || false,
           };
+          console.log("🔔 YOLO-DEBUG useMessageHandler: Sending gemini_auth config:", JSON.stringify(sessionParams.gemini_auth, null, 2));
         }
 
         // Initialize session (it will skip if already initialized)

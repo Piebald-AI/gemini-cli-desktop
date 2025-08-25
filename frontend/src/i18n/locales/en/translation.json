@@ -155,6 +155,7 @@
     "locationRegion": "Location/Region",
     "oauthLimits": "1000 free requests per day, 60 free requests per minute.",
     "cloudShellInfo": "This method works automatically in Google Cloud Shell environments",
+    "yoloMode": "YOLO Mode",
     "stillWaiting": "Still waitin'...",
     "messageCount": "{{count}} message",
     "messageCount_other": "{{count}} messages"

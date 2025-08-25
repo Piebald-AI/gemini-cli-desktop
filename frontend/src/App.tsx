@@ -212,7 +212,9 @@ function RootLayoutContent() {
               geminiConfig.authMethod === "vertex-ai"
                 ? geminiConfig.vertexLocation
                 : undefined,
+            yolo: geminiConfig.yolo || false,
           };
+          console.log("🔔 YOLO-DEBUG Frontend: Sending gemini_auth config:", JSON.stringify(sessionParams.gemini_auth, null, 2));
         }
 
         await api.invoke("start_session", sessionParams);
