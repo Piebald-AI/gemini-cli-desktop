@@ -4,7 +4,9 @@ use std::process::Stdio;
 use std::sync::{Arc, Mutex};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader as AsyncBufReader};
 use tokio::process::{Child, ChildStdin, ChildStdout, Command};
+use tokio::select;
 use tokio::sync::mpsc;
+use tokio::time::{Duration, sleep};
 
 #[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x08000000;
@@ -22,6 +24,7 @@ pub struct GeminiAuthConfig {
     pub api_key: Option<String>,
     pub vertex_project: Option<String>,
     pub vertex_location: Option<String>,
+    pub yolo: Option<bool>,
 }
 
 use crate::acp::{
@@ -194,7 +197,7 @@ async fn send_jsonrpc_request<E: EventEmitter>(
     session_id: &str,
     emitter: &E,
     rpc_logger: &Arc<dyn RpcLogger>,
-) -> Result<JsonRpcResponse> {
+) -> Result<Option<JsonRpcResponse>> {
     let request_json = serde_json::to_string(request).context("Failed to serialize request")?;
 
     println!("🔍 RAW INPUT TO GEMINI CLI: {request_json}");
@@ -223,13 +226,19 @@ async fn send_jsonrpc_request<E: EventEmitter>(
     let mut line = String::new();
     let trimmed_line = loop {
         line.clear();
-        reader
-            .read_line(&mut line)
-            .await
-            .context("Failed to read response")?;
+        select! {
+            result = reader.read_line(&mut line) => {
+                if let Err(e) = result {
+                    anyhow::bail!("Failed to read response: {e}");
+                }
+            }
+            _ = sleep(Duration::from_secs(5)) => {
+                return Ok(None);
+            }
+        }
 
         let trimmed = line.trim();
-        println!("🔍 RAW OUTPUT FROM GEMINI CLI: {trimmed}");
+        print!("🔍 RAW OUTPUT FROM GEMINI CLI: [[ {trimmed}");
 
         let _ = rpc_logger.log_rpc(trimmed);
 
@@ -243,18 +252,20 @@ async fn send_jsonrpc_request<E: EventEmitter>(
 
         // Skip non-JSON lines like "Data collection is disabled."
         if trimmed.is_empty() || (!trimmed.starts_with('{') && !trimmed.starts_with('[')) {
-            println!("🔍 Skipping non-JSON line: {trimmed}");
+            println!(" ]] not JSON, skipping");
             continue;
         }
 
         // Try to parse as JSON - if it fails, continue reading
         if serde_json::from_str::<serde_json::Value>(trimmed).is_ok() {
+            println!(" ]] valid JSON");
             break trimmed.to_string();
         } else {
-            println!("🔍 Line is not valid JSON, continuing: {trimmed}");
+            println!(" ]] not JSON");
             continue;
         }
     };
+    println!("Out of loop");
 
     let response = serde_json::from_str::<JsonRpcResponse>(&trimmed_line)
         .context("Failed to parse response")?;
@@ -263,7 +274,7 @@ async fn send_jsonrpc_request<E: EventEmitter>(
         anyhow::bail!("CLI Error: {error:?}");
     }
 
-    Ok(response)
+    Ok(Some(response))
 }
 
 pub async fn initialize_session<E: EventEmitter + 'static>(
@@ -385,21 +396,47 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
 
             #[cfg(windows)]
             {
-                println!(
-                    "🔧 [HANDSHAKE] Creating Windows Gemini command: cmd.exe /C gemini --model {model} --experimental-acp"
-                );
+                let yolo_flag = gemini_auth.as_ref().and_then(|a| a.yolo).unwrap_or(false);
+                // Use the working gemini executable path instead of just "gemini"
+                let gemini_path = r"gemini";
+                let mut args = vec!["/C", gemini_path, "--model", &model];
+                if yolo_flag {
+                    args.push("--yolo");
+                }
+                args.push("--experimental-acp");
+
+                let command_display = if yolo_flag {
+                    format!(
+                        "cmd.exe /C {} --model {model} --yolo --experimental-acp",
+                        gemini_path
+                    )
+                } else {
+                    format!(
+                        "cmd.exe /C {} --model {model} --experimental-acp",
+                        gemini_path
+                    )
+                };
+                println!("🔧 [HANDSHAKE] Creating Windows Gemini command: {command_display}");
+                println!("🚀 YOLO-DEBUG: Full args array: {:?}", args);
+
                 let mut c = Command::new("cmd.exe");
-                c.args(["/C", "gemini", "--model", &model, "--experimental-acp"]);
+                c.args(args);
                 c.creation_flags(CREATE_NO_WINDOW);
                 c
             }
             #[cfg(not(windows))]
             {
-                let gemini_command = format!("gemini --model {model} --experimental-acp");
+                let yolo_flag = gemini_auth.as_ref().and_then(|a| a.yolo).unwrap_or(false);
+                let gemini_command = if yolo_flag {
+                    format!("gemini --model {model} --yolo --experimental-acp")
+                } else {
+                    format!("gemini --model {model} --experimental-acp")
+                };
                 println!(
                     "🔧 [HANDSHAKE] Creating Unix Gemini command: sh -lc '{}'",
                     gemini_command
                 );
+                println!("🚀 YOLO-DEBUG: Full command string: {}", gemini_command);
                 let mut c = Command::new("sh");
                 c.args(["-lc", &gemini_command]);
                 c
@@ -417,6 +454,104 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
     }
 
     println!("🔄 [HANDSHAKE] Spawning CLI process...");
+    println!("🚀 YOLO-DEBUG: About to spawn command: {:?}", cmd);
+
+    println!("🚀 YOLO-DEBUG: Testing CLI version before spawn...");
+    let version_output = {
+        #[cfg(windows)]
+        {
+            Command::new("cmd.exe")
+                .args(["/C", "gemini", "--version"])
+                .creation_flags(CREATE_NO_WINDOW)
+                .output()
+                .await
+        }
+        #[cfg(not(windows))]
+        {
+            Command::new("sh")
+                .args(["-lc", "gemini --version"])
+                .output()
+                .await
+        }
+    };
+    if let Ok(output) = version_output {
+        println!(
+            "🚀 YOLO-DEBUG: Desktop app CLI version: {}",
+            String::from_utf8_lossy(&output.stdout)
+        );
+    } else {
+        println!("🚀 YOLO-DEBUG: Failed to get CLI version");
+    }
+
+    // Check which gemini executable is being used
+    println!("🚀 YOLO-DEBUG: Testing which gemini executable...");
+    let which_output = {
+        #[cfg(windows)]
+        {
+            Command::new("cmd.exe")
+                .args(["/C", "where", "gemini"])
+                .creation_flags(CREATE_NO_WINDOW)
+                .output()
+                .await
+        }
+        #[cfg(not(windows))]
+        {
+            Command::new("sh")
+                .args(["-lc", "which gemini"])
+                .output()
+                .await
+        }
+    };
+    if let Ok(output) = which_output {
+        println!(
+            "🚀 YOLO-DEBUG: Desktop app gemini path: {}",
+            String::from_utf8_lossy(&output.stdout)
+        );
+        let paths = String::from_utf8_lossy(&output.stdout);
+        let first_path = paths.lines().next().unwrap_or("unknown");
+        println!(
+            "🚀 YOLO-DEBUG: First gemini executable (the one that will be used): {}",
+            first_path
+        );
+    } else {
+        println!("🚀 YOLO-DEBUG: Failed to get gemini path");
+    }
+
+    // Test if the first gemini supports --yolo --experimental-acp
+    println!("🚀 YOLO-DEBUG: Testing if first gemini supports --help...");
+    let help_output = {
+        #[cfg(windows)]
+        {
+            Command::new("cmd.exe")
+                .args(["/C", "gemini", "--help"])
+                .creation_flags(CREATE_NO_WINDOW)
+                .output()
+                .await
+        }
+        #[cfg(not(windows))]
+        {
+            Command::new("sh")
+                .args(["-lc", "gemini --help"])
+                .output()
+                .await
+        }
+    };
+    if let Ok(output) = help_output {
+        let help_text = String::from_utf8_lossy(&output.stdout);
+        let has_yolo = help_text.contains("yolo") || help_text.contains("YOLO");
+        let has_acp = help_text.contains("experimental-acp") || help_text.contains("acp");
+        println!(
+            "🚀 YOLO-DEBUG: First gemini supports --yolo: {}, supports --experimental-acp: {}",
+            has_yolo, has_acp
+        );
+        if !has_yolo || !has_acp {
+            println!(
+                "🚀 YOLO-DEBUG: ⚠️  PROBLEM FOUND: This gemini executable doesn't support YOLO/ACP flags!"
+            );
+        }
+    } else {
+        println!("🚀 YOLO-DEBUG: Failed to get gemini help");
+    }
     let mut child = cmd.spawn().map_err(|e| {
         let cmd_name = if is_qwen { "qwen" } else { "gemini" };
         println!("❌ [HANDSHAKE] Failed to spawn {cmd_name} process: {e}");
@@ -468,19 +603,42 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
 
     // { "jsonrpc": "2.0", "id": 1, "method": "initialize", "params": { "protocolVersion": 1 } }
 
-    let init_response = send_jsonrpc_request(
-        &init_request,
-        &mut stdin,
-        &mut reader,
-        &session_id,
-        &emitter,
-        &rpc_logger,
-    )
-    .await
-    .map_err(|e| {
-        println!("❌ [HANDSHAKE] Initialize request failed: {e}");
-        e
-    })?;
+    // The initialize message may end up getting sent before Gemini has fully started up, so we'll
+    // loop and sleep for a short time until we get a JSON response back from Gemini.
+    let init_response;
+    let mut retries = 0;
+    loop {
+        retries += 1;
+        if retries == 5 {
+            anyhow::bail!("Max number of retries reached");
+        }
+        let init_response_result = send_jsonrpc_request(
+            &init_request,
+            &mut stdin,
+            &mut reader,
+            &session_id,
+            &emitter,
+            &rpc_logger,
+        )
+        .await
+        .map_err(|e| {
+            println!("❌ [HANDSHAKE] Initialize request failed: {e}");
+            e
+        });
+
+        // `None` indicates that we haven't gotten any JSON response from Gemini yet.
+        match init_response_result {
+            Ok(None) => {
+                println!("No response received yet; sending again");
+                sleep(Duration::from_millis(500)).await;
+            }
+            Ok(Some(res)) => {
+                init_response = res;
+                break;
+            }
+            Err(e) => return Err(e),
+        }
+    }
 
     let _init_result: InitializeResult =
         serde_json::from_value(init_response.result.unwrap_or_default())
@@ -581,9 +739,12 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
 
     let session_response = session_response?;
 
-    let session_result: SessionNewResult =
-        serde_json::from_value(session_response.result.unwrap_or_default())
-            .context("Failed to parse session result")?;
+    let session_result: SessionNewResult = if let Some(result) = session_response {
+        serde_json::from_value(result.result.unwrap_or_default())
+            .context("Failed to parse session result")?
+    } else {
+        anyhow::bail!("No JSON returned from initialize request");
+    };
 
     println!(
         "✅ [HANDSHAKE] Step 3/3: ACP session created successfully with ID: {}",
@@ -986,8 +1147,12 @@ async fn handle_cli_output_line(
                                 kind,
                             } => {
                                 println!(
-                                    "🔧 [EDIT-DEBUG] Backend received ToolCall from CLI: tool_call_id={tool_call_id}, status={status:?}, title={title}"
+                                    "🚀 YOLO-DEBUG: Backend received ToolCall from CLI: tool_call_id={tool_call_id}, status={status:?}, title={title}"
                                 );
+                                println!(
+                                    "🚀 YOLO-DEBUG: In YOLO mode, this should execute without permission requests!"
+                                );
+                                println!("🚀 YOLO-DEBUG: ToolCall kind: {:?}", kind);
 
                                 // Emit pure ACP SessionUpdate event - no legacy conversion
                                 let emit_result = event_tx.send(InternalEvent::AcpSessionUpdate {
@@ -1042,12 +1207,13 @@ async fn handle_cli_output_line(
                     }
                 }
                 "session/request_permission" => {
-                    println!("🔔 BACKEND: Received session/request_permission from CLI");
-                    println!("🔔 BACKEND: JSON value: {json_value:?}");
+                    println!("🔔 YOLO-DEBUG: Received session/request_permission from CLI");
+                    println!("🔔 YOLO-DEBUG: This should NOT happen in YOLO mode!");
+                    println!("🔔 YOLO-DEBUG: JSON value: {json_value:?}");
                     // First try to parse and log what fails
                     let params_value = json_value.get("params").cloned().unwrap_or_default();
                     println!(
-                        "🔔 BACKEND: Trying to parse params: {}",
+                        "🔔 YOLO-DEBUG: Trying to parse params: {}",
                         serde_json::to_string_pretty(&params_value)
                             .unwrap_or("failed to stringify".to_string())
                     );
@@ -1056,11 +1222,15 @@ async fn handle_cli_output_line(
                         serde_json::from_value::<SessionRequestPermissionParams>(params_value)
                         && let Some(id) = json_value.get("id").and_then(|i| i.as_u64())
                     {
-                        println!("🔔 BACKEND: Successfully parsed permission request with id={id}");
                         println!(
-                            "🔔 BACKEND: Tool call ID in request: {}",
+                            "🔔 YOLO-DEBUG: Successfully parsed permission request with id={id}"
+                        );
+                        println!("🔔 YOLO-DEBUG: THIS SHOULD NOT HAPPEN IN YOLO MODE!");
+                        println!(
+                            "🔔 YOLO-DEBUG: Tool call ID in request: {}",
                             params.tool_call.tool_call_id
                         );
+                        println!("🔔 YOLO-DEBUG: Request details: {:?}", params);
                         // Emit pure ACP permission request - no legacy conversion
                         let _ = event_tx.send(InternalEvent::AcpPermissionRequest {
                             session_id: session_id.to_string(),
@@ -1068,7 +1238,7 @@ async fn handle_cli_output_line(
                             request: params,
                         });
                         println!(
-                            "🔔 BACKEND: Sent InternalEvent::AcpPermissionRequest to event_tx"
+                            "🔔 YOLO-DEBUG: Sent InternalEvent::AcpPermissionRequest to event_tx (THIS IS THE PROBLEM!)"
                         );
                     } else {
                         // Try to get the specific parsing error

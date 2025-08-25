@@ -159,6 +159,7 @@
     "locationRegion": "位置/區域",
     "oauthLimits": "每日 1000 次免費請求，每分鐘 60 次免費請求。",
     "cloudShellInfo": "此方式在 Google Cloud Shell 環境中自動運作",
+    "yoloMode": "YOLO 模式",
     "stillWaiting": "仍在等待中...",
     "messageCount": "{{count}} 則訊息",
     "messageCount_other": "{{count}} 則訊息"

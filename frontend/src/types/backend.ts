@@ -16,6 +16,7 @@ export interface GeminiConfig {
   // Vertex AI specific fields
   vertexProject?: string;
   vertexLocation?: string;
+  yolo?: boolean;
 }
 
 export interface QwenConfig {
@@ -54,6 +55,7 @@ export interface GeminiAuth {
   api_key?: string;
   vertex_project?: string;
   vertex_location?: string;
+  yolo?: boolean;
 }
 
 export interface BackendConfigParams {
