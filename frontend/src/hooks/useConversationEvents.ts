@@ -117,7 +117,14 @@ function getToolNameFromKind(
   switch (kind) {
     case "read":
       // ACP has multiple read tools - try to detect which one based on context
-      if (title && title.toLowerCase().includes("directory")) {
+      // Check tool call ID first for more reliable identification
+      if (toolCallId && toolCallId.startsWith("read_many_files")) {
+        return "read_many_files";
+      } else if (toolCallId && toolCallId.startsWith("list_directory")) {
+        return "list_directory";
+      } else if (toolCallId && toolCallId.startsWith("read_file")) {
+        return "read_file";
+      } else if (title && title.toLowerCase().includes("directory") && !title.toLowerCase().includes("target dir")) {
         return "list_directory"; // CORRECTED: ACP uses "list_directory", not "ls"
       } else if (locations && locations.length > 1) {
         return "read_many_files";
