@@ -58,13 +58,15 @@ export function ReadManyFilesRenderer({
     if (files.length === 0 && toolCall.label) {
       const title = toolCall.label;
       // Extract patterns from title like "Will attempt to read and concatenate files using patterns: \n**/Cargo.toml\n"
-      const patternsMatch = title.match(/using patterns:\s*(.*?)\s*\(within target directory/s);
+      const patternsMatch = title.match(
+        /using patterns:\s*(.*?)\s*\(within target directory/s
+      );
       if (patternsMatch && patternsMatch[1]) {
         // Split by newlines and clean up
         files = patternsMatch[1]
-          .split('\n')
-          .map(line => line.trim())
-          .filter(line => line && !line.startsWith('('));
+          .split("\n")
+          .map((line) => line.trim())
+          .filter((line) => line && !line.startsWith("("));
       }
     }
 
@@ -77,7 +79,7 @@ export function ReadManyFilesRenderer({
   // Extract processed files and count from result
   const getResultInfo = (): { fileCount: number; files: string[] } => {
     let resultText = "";
-    
+
     // Handle different result formats
     if (typeof toolCall.result === "string") {
       resultText = toolCall.result;
@@ -93,9 +95,11 @@ export function ReadManyFilesRenderer({
       const fileCount = countMatch ? parseInt(countMatch[1], 10) : 0;
 
       // Extract processed files from text like "**Processed Files:**\n- `file1`\n- `file2`"
-      const filesMatch = resultText.match(/\*\*Processed Files:\*\*\n((?:- `.+`\n?)*)/);
+      const filesMatch = resultText.match(
+        /\*\*Processed Files:\*\*\n((?:- `.+`\n?)*)/
+      );
       let files: string[] = [];
-      
+
       if (filesMatch && filesMatch[1]) {
         files = filesMatch[1]
           .split("\n")

@@ -124,7 +124,11 @@ function getToolNameFromKind(
         return "list_directory";
       } else if (toolCallId && toolCallId.startsWith("read_file")) {
         return "read_file";
-      } else if (title && title.toLowerCase().includes("directory") && !title.toLowerCase().includes("target dir")) {
+      } else if (
+        title &&
+        title.toLowerCase().includes("directory") &&
+        !title.toLowerCase().includes("target dir")
+      ) {
         return "list_directory"; // CORRECTED: ACP uses "list_directory", not "ls"
       } else if (locations && locations.length > 1) {
         return "read_many_files";
