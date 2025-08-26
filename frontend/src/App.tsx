@@ -3,7 +3,10 @@ import { Routes, Route, Outlet, Navigate } from "react-router-dom";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { api } from "./lib/api";
 import { AppSidebar } from "./components/layout/AppSidebar";
-import { MessageInputBar } from "./components/conversation/MessageInputBar";
+import {
+  MessageInputBar,
+  MessageInputBarRef,
+} from "./components/conversation/MessageInputBar";
 import { AppHeader } from "./components/layout/AppHeader";
 import { CustomTitleBar } from "./components/layout/CustomTitleBar";
 import { CliWarnings } from "./components/common/CliWarnings";
@@ -46,6 +49,7 @@ function RootLayoutContent() {
   const [sessionWorkingDirectories, setSessionWorkingDirectories] = useState<
     Map<string, string>
   >(new Map());
+  const messageInputBarRef = useRef<MessageInputBarRef>(null);
 
   // Get the current working directory (default fallback)
   useEffect(() => {
@@ -246,6 +250,21 @@ function RootLayoutContent() {
     }
   }, [activeConversation, directoryPanelOpen]);
 
+  // Handle mention insertion from DirectoryPanel
+  const handleMentionInsert = useCallback((mention: string) => {
+    console.log("📁 [App] Received mention insertion request:", mention);
+    console.log(
+      "📁 [App] messageInputBarRef.current:",
+      !!messageInputBarRef.current
+    );
+    if (messageInputBarRef.current) {
+      console.log("📁 [App] Calling insertMention on MessageInputBar");
+      messageInputBarRef.current.insertMention(mention);
+    } else {
+      console.log("📁 [App] MessageInputBar ref is null!");
+    }
+  }, []);
+
   return (
     <AppSidebar
       conversations={conversations}
@@ -321,6 +340,7 @@ function RootLayoutContent() {
                     workingDirectory
                   )}
                   <MessageInputBar
+                    ref={messageInputBarRef}
                     input={input}
                     isCliInstalled={isCliInstalled}
                     cliIOLogs={cliIOLogs}
@@ -340,6 +360,7 @@ function RootLayoutContent() {
                 console.log("📁 [App] Directory changed to:", path);
                 // Optionally update working directory or perform other actions
               }}
+              onMentionInsert={handleMentionInsert}
               className="w-80 flex-shrink-0"
             />
           )}

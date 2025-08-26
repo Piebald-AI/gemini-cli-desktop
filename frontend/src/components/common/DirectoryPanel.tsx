@@ -7,9 +7,10 @@ import {
   Loader2,
   AlertCircle,
   RefreshCw,
+  Plus,
 } from "lucide-react";
 import { Button } from "../ui/button";
-import { ScrollArea } from "../ui/scroll-area";
+import { ScrollArea, ScrollBar } from "../ui/scroll-area";
 import { api } from "../../lib/api";
 
 interface DirEntry {
@@ -32,18 +33,94 @@ interface TreeNode extends DirEntry {
 interface DirectoryPanelProps {
   workingDirectory: string;
   onDirectoryChange?: (path: string) => void;
+  onMentionInsert?: (mention: string) => void;
   className?: string;
 }
 
 export function DirectoryPanel({
   workingDirectory,
   onDirectoryChange,
+  onMentionInsert,
   className = "",
 }: DirectoryPanelProps) {
   const { t } = useTranslation();
   const [rootNode, setRootNode] = useState<TreeNode | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Calculate relative path from working directory
+  const getRelativePath = useCallback(
+    (fullPath: string) => {
+      // Normalize paths by replacing backslashes with forward slashes
+      const normalizedWorkingDir = workingDirectory.replace(/\\/g, "/");
+      const normalizedFullPath = fullPath.replace(/\\/g, "/");
+
+      // Remove working directory prefix
+      if (normalizedFullPath.startsWith(normalizedWorkingDir)) {
+        let relativePath = normalizedFullPath.slice(
+          normalizedWorkingDir.length
+        );
+        // Remove leading slash if present
+        if (relativePath.startsWith("/")) {
+          relativePath = relativePath.slice(1);
+        }
+        return relativePath || ".";
+      }
+
+      // If not under working directory, return the full path
+      return fullPath;
+    },
+    [workingDirectory]
+  );
+
+  // Handle file click to insert mention
+  const handleFileClick = useCallback(
+    (node: TreeNode) => {
+      console.log(
+        "📁 [DirectoryPanel] File clicked:",
+        node.name,
+        "onMentionInsert:",
+        !!onMentionInsert
+      );
+      if (!onMentionInsert) {
+        console.log("📁 [DirectoryPanel] No onMentionInsert callback provided");
+        return;
+      }
+
+      const relativePath = getRelativePath(node.full_path);
+      console.log(
+        "📁 [DirectoryPanel] Inserting mention:",
+        `@${relativePath} `
+      );
+      onMentionInsert(`@${relativePath} `);
+    },
+    [onMentionInsert, getRelativePath]
+  );
+
+  // Handle folder plus button click to insert mention
+  const handleFolderPlusClick = useCallback(
+    (node: TreeNode, event: React.MouseEvent) => {
+      console.log(
+        "📁 [DirectoryPanel] Plus button clicked for folder:",
+        node.name
+      );
+      event.stopPropagation(); // Prevent folder expansion
+      if (!onMentionInsert) {
+        console.log(
+          "📁 [DirectoryPanel] No onMentionInsert callback for plus button"
+        );
+        return;
+      }
+
+      const relativePath = getRelativePath(node.full_path);
+      console.log(
+        "📁 [DirectoryPanel] Inserting folder mention:",
+        `@${relativePath}/ `
+      );
+      onMentionInsert(`@${relativePath}/ `);
+    },
+    [onMentionInsert, getRelativePath]
+  );
 
   // Load directory contents
   const loadDirectoryContents = useCallback(
@@ -205,15 +282,17 @@ export function DirectoryPanel({
       return (
         <div key={node.full_path}>
           <div
-            className={`flex items-center gap-2 py-1 pr-2 hover:bg-muted/50 cursor-pointer text-sm rounded-sm transition-colors`}
+            className={`flex items-center gap-2 py-1 pr-2 hover:bg-muted/50 cursor-pointer text-sm rounded-sm transition-colors relative group`}
             style={{
               paddingLeft: `${depth * 24}px`,
             }}
             onClick={() => {
               if (node.is_directory) {
                 toggleDirectory(node, []);
+                onDirectoryChange?.(node.full_path);
+              } else {
+                handleFileClick(node);
               }
-              onDirectoryChange?.(node.full_path);
             }}
           >
             {/* Loading/Error Icon for directories */}
@@ -240,13 +319,22 @@ export function DirectoryPanel({
 
             {/* Name */}
             <span
-              className={`truncate ${
-                node.is_directory ? "text-foreground" : "text-muted-foreground"
-              }`}
+              className="text-foreground flex-1 whitespace-nowrap"
               title={node.name}
             >
               {node.name}
             </span>
+
+            {/* Plus button for folders on hover */}
+            {node.is_directory && onMentionInsert && (
+              <button
+                onClick={(e) => handleFolderPlusClick(node, e)}
+                className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground"
+                title="Add folder mention"
+              >
+                <Plus className="h-3 w-3" />
+              </button>
+            )}
 
             {/* Symlink indicator */}
             {node.is_symlink && (
@@ -265,7 +353,13 @@ export function DirectoryPanel({
         </div>
       );
     },
-    [toggleDirectory, onDirectoryChange]
+    [
+      toggleDirectory,
+      onDirectoryChange,
+      handleFileClick,
+      handleFolderPlusClick,
+      onMentionInsert,
+    ]
   );
 
   return (
@@ -290,8 +384,8 @@ export function DirectoryPanel({
       </div>
 
       {/* Tree Content */}
-      <ScrollArea className="flex-1 overflow-y-auto">
-        <div className="p-2">
+      <ScrollArea className="flex-1 overflow-hidden">
+        <div className="p-2 min-w-max">
           {isLoading && !rootNode ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -312,6 +406,8 @@ export function DirectoryPanel({
             </div>
           )}
         </div>
+        <ScrollBar orientation="horizontal" />
+        <ScrollBar orientation="vertical" />
       </ScrollArea>
     </div>
   );
