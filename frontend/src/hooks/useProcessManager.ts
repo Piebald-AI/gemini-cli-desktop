@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from "react";
 import { api } from "../lib/api";
 import { listen } from "../lib/listen";
 import { ProcessStatus } from "../types";
-import { toast } from "sonner";
 
 export const useProcessManager = () => {
   const [processStatuses, setProcessStatuses] = useState<ProcessStatus[]>([]);
@@ -50,9 +49,6 @@ export const useProcessManager = () => {
         await fetchProcessStatuses();
       } catch (error) {
         console.error("Failed to kill process:", error);
-        toast.error("Kill Process Failed", {
-          description: `Failed to terminate process for conversation ${conversationId}`,
-        });
       }
     },
     [fetchProcessStatuses]

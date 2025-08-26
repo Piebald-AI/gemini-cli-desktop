@@ -192,9 +192,7 @@ export const HomeDashboard: React.FC = () => {
             <DesktopText size="large" />
           </div>
 
-          <p className="text-muted-foreground mb-6">
-            {backendText.tagline}
-          </p>
+          <p className="text-muted-foreground mb-6">{backendText.tagline}</p>
 
           {/* Dashboard tiles */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-3xl">

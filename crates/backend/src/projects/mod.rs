@@ -141,8 +141,7 @@ fn read_project_metadata(root_sha: &str) -> Result<ProjectMetadata> {
     if !path.exists() {
         anyhow::bail!("project.json not found");
     }
-    let content = std::fs::read_to_string(&path)
-        .context("Failed to read project metadata file")?;
+    let content = std::fs::read_to_string(&path).context("Failed to read project metadata file")?;
     serde_json::from_str::<ProjectMetadata>(&content)
         .context("Failed to parse project metadata JSON")
 }
@@ -152,16 +151,14 @@ fn write_project_metadata(sha256: &str, meta: &ProjectMetadata) -> Result<()> {
         anyhow::bail!("projects root not found");
     };
     if let Some(dir) = json_path.parent() {
-        std::fs::create_dir_all(dir)
-            .context("Failed to create project metadata directory")?;
+        std::fs::create_dir_all(dir).context("Failed to create project metadata directory")?;
     }
     let tmp_path = json_path.with_extension("json.tmp");
-    let content = serde_json::to_string_pretty(meta)
-        .context("Failed to serialize project metadata")?;
+    let content =
+        serde_json::to_string_pretty(meta).context("Failed to serialize project metadata")?;
     std::fs::write(&tmp_path, content.as_bytes())
         .context("Failed to write temporary project metadata file")?;
-    std::fs::rename(&tmp_path, &json_path)
-        .context("Failed to rename project metadata file")?;
+    std::fs::rename(&tmp_path, &json_path).context("Failed to rename project metadata file")?;
     Ok(())
 }
 
@@ -294,8 +291,7 @@ pub fn list_projects(limit: u32, offset: u32) -> Result<ProjectsResponse> {
     }
 
     let mut all_ids: Vec<String> = Vec::new();
-    for entry in fs::read_dir(&root)
-        .context("Failed to read projects directory")? {
+    for entry in fs::read_dir(&root).context("Failed to read projects directory")? {
         let entry = match entry {
             Ok(e) => e,
             Err(_) => continue,
@@ -423,8 +419,7 @@ pub fn list_enriched_projects() -> Result<Vec<EnrichedProject>> {
         return Ok(vec![]);
     }
     let mut all_ids: Vec<String> = Vec::new();
-    for entry in fs::read_dir(&root)
-        .context("Failed to read projects directory")? {
+    for entry in fs::read_dir(&root).context("Failed to read projects directory")? {
         let entry = match entry {
             Ok(e) => e,
             Err(_) => continue,
@@ -721,7 +716,12 @@ mod tests {
 
         let result = read_project_metadata("test");
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Project not found"));
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("Project not found")
+        );
     }
 
     #[test]
@@ -732,7 +732,12 @@ mod tests {
 
         let result = read_project_metadata("nonexistent");
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Project not found"));
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("Project not found")
+        );
     }
 
     #[test]
@@ -800,7 +805,12 @@ mod tests {
         let metadata = ProjectMetadata::default();
         let result = write_project_metadata("test", &metadata);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Project not found"));
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("Project not found")
+        );
     }
 
     #[test]
@@ -930,7 +940,12 @@ mod tests {
 
         let result = ensure_project_metadata("nonexistent", None);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Project not found"));
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("Project not found")
+        );
     }
 
     #[test]

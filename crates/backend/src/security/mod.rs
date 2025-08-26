@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use tokio::process::Command;
 
 #[allow(clippy::too_many_lines)]
@@ -381,7 +381,11 @@ mod tests {
         assert!(result.is_err(), "Dangerous command should be blocked");
 
         let error = result.unwrap_err();
-        assert!(error.to_string().contains("Command not allowed for security reasons"));
+        assert!(
+            error
+                .to_string()
+                .contains("Command not allowed for security reasons")
+        );
     }
 
     #[tokio::test]
@@ -394,9 +398,9 @@ mod tests {
         let error = result.unwrap_err();
         let error_msg = error.to_string();
         assert!(
-            error_msg.contains("Command not allowed for security reasons") ||
-            error_msg.contains("Failed to execute command") ||
-            error_msg.contains("Command execution failed")
+            error_msg.contains("Command not allowed for security reasons")
+                || error_msg.contains("Failed to execute command")
+                || error_msg.contains("Command execution failed")
         );
     }
 

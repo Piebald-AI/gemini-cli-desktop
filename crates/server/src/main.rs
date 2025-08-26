@@ -479,7 +479,7 @@ async fn send_message(request: Json<SendMessageRequest>, state: &State<AppState>
     if !session_exists && req.backend_config.is_some() {
         println!("🚀 YOLO-DEBUG: send_message creating new session for backend_config");
         if let Some(ref auth) = req.gemini_auth {
-            println!("🚀 YOLO-DEBUG: send_message gemini_auth: {:?}", auth);
+            println!("🚀 YOLO-DEBUG: send_message gemini_auth: {auth:?}");
         } else {
             println!("🚀 YOLO-DEBUG: send_message NO gemini_auth provided!");
         }

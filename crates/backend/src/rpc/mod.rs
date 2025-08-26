@@ -99,8 +99,7 @@ impl FileRpcLogger {
             .join("projects")
             .join(&project_hash);
 
-        fs::create_dir_all(&log_dir)
-            .context("Failed to create log directory")?;
+        fs::create_dir_all(&log_dir).context("Failed to create log directory")?;
 
         // Note: ensure_project_metadata will be called from projects module
         let _ = crate::projects::ensure_project_metadata(
