@@ -13,6 +13,24 @@ export interface MenuHandler {
   quit: () => void;
 }
 
+export interface MenuShortcut {
+  key: string;
+  ctrlKey?: boolean;
+  altKey?: boolean;
+  shiftKey?: boolean;
+  display: string;
+}
+
+export const menuShortcuts: Record<string, MenuShortcut | undefined> = {
+  goHome: { key: "h", ctrlKey: true, display: "Ctrl+H" },
+  goProjects: { key: "p", ctrlKey: true, display: "Ctrl+P" },
+  goMcpServers: { key: "m", ctrlKey: true, display: "Ctrl+M" },
+  toggleTheme: undefined, // No accelerator in Linux menu
+  refresh: { key: "r", ctrlKey: true, display: "Ctrl+R" },
+  showAbout: undefined, // No accelerator in Linux menu
+  quit: undefined, // No accelerator in Linux menu for Exit
+};
+
 export const createMenuHandlers = (
   navigate: ReturnType<typeof useNavigate>,
   setIsAboutDialogOpen: (open: boolean) => void
