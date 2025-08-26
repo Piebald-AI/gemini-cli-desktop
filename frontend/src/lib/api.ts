@@ -92,6 +92,14 @@ export interface API {
     sha256: string;
     externalRootPath: string;
   }): Promise<EnrichedProject>;
+  get_git_info(params: { path: string }): Promise<{
+    current_directory: string;
+    branch: string;
+    status: string;
+    is_clean: boolean;
+    has_uncommitted_changes: boolean;
+    has_untracked_files: boolean;
+  } | null>;
 }
 
 export type APICommand = keyof API;

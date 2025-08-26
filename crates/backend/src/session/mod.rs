@@ -504,7 +504,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
         let paths = String::from_utf8_lossy(&output.stdout);
         let first_path = paths.lines().next().unwrap_or("unknown");
         println!(
-            "🚀 YOLO-DEBUG: First gemini executable (the one that will be used): {first_path}",
+            "🚀 YOLO-DEBUG: First gemini executable (the one that will be used): {first_path}"
         );
     } else {
         println!("🚀 YOLO-DEBUG: Failed to get gemini path");

@@ -13,6 +13,7 @@ import { Send, Info, ImagePlus } from "lucide-react";
 import { useBackend } from "../../contexts/BackendContext";
 import { getBackendText } from "../../utils/backendText";
 import { CliIO } from "../../types";
+import { GitInfo } from "../common/GitInfo";
 
 interface MessageInputBarProps {
   input: string;
@@ -44,6 +45,12 @@ export const MessageInputBar: React.FC<MessageInputBarProps> = ({
       <div className="px-6 py-3 w-full">
         <form className="flex gap-2 items-end" onSubmit={handleSendMessage}>
           <div className="flex-1 relative">
+            {/* Git info - positioned above input */}
+            {workingDirectory && workingDirectory !== "." && (
+              <div className="absolute -top-6 left-0">
+                <GitInfo directory={workingDirectory} compact={true} />
+              </div>
+            )}
             <MentionInput
               value={input}
               onChange={handleInputChange}

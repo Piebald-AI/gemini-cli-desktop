@@ -20,7 +20,7 @@ use tokio::sync::{Mutex, mpsc as tokio_mpsc};
 
 // Import backend functionality
 use backend::{
-    DirEntry, EnrichedProject, EventEmitter, GeminiBackend, ProcessStatus, RecentChat,
+    DirEntry, EnrichedProject, EventEmitter, GeminiBackend, GitInfo, ProcessStatus, RecentChat,
     SearchFilters, SearchResult,
 };
 
@@ -286,6 +286,12 @@ struct ListFilesRecursiveRequest {
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct GetParentDirectoryRequest {
+    path: String,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct GetGitInfoRequest {
     path: String,
 }
 
@@ -668,6 +674,18 @@ async fn list_volumes(state: &State<AppState>) -> AppResult<Json<Vec<DirEntry>>>
     ))
 }
 
+#[post("/get-git-info", data = "<request>")]
+async fn get_git_info(
+    request: Json<GetGitInfoRequest>,
+    state: &State<AppState>,
+) -> Result<Json<Option<GitInfo>>, Status> {
+    let backend = state.backend.lock().await;
+    match backend.get_git_info(request.path.clone()).await {
+        Ok(git_info) => Ok(Json(git_info)),
+        Err(_) => Err(Status::InternalServerError),
+    }
+}
+
 // =====================================
 // WebSocket Route Handler
 // =====================================
@@ -754,6 +772,7 @@ fn rocket() -> _ {
             list_directory_contents,
             list_files_recursive,
             list_volumes,
+            get_git_info,
             get_recent_chats,
             search_chats,
             list_projects,
