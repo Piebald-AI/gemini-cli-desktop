@@ -739,6 +739,22 @@ gemini-desktop/
 - **Comprehensive error handling** with `thiserror`
 - **Async/await patterns** throughout
 
+#### Windows-Specific Command Execution
+- **IMPORTANT**: When executing commands on Windows that spawn `cmd.exe`:
+  - **Always use `creation_flags`** to hide console windows
+  - For `tokio::process::Command`: Use `.creation_flags(0x08000000)` (`CREATE_NO_WINDOW`)
+  - For `std::process::Command`: Add `use std::os::windows::process::CommandExt;` and use `.creation_flags(0x08000000)` (`CREATE_NO_WINDOW`)
+  - This prevents console windows from flashing on screen during command execution
+  - Example:
+    ```rust
+    #[cfg(windows)]
+    command.creation_flags(0x08000000); // CREATE_NO_WINDOW
+    ```
+  - This applies to ALL commands that might spawn console windows, including:
+    - CLI availability checks
+    - Process spawning for Gemini/Qwen backends
+    - Any system command execution
+
 #### TypeScript Code
 - **Strict mode** enabled for maximum type safety
 - **ESLint rules** with React and accessibility plugins

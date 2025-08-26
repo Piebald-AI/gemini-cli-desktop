@@ -26,7 +26,7 @@
   "plugins": {},
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": ["appimage", "deb", "dmg", "rpm"],
     "category": "DeveloperTool",
     "publisher": "Piebald LLC",
     "icon": [
