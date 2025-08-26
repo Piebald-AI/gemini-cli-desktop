@@ -672,7 +672,7 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
     }
 
     /// Get git repository information for a directory
-    pub async fn get_git_info(&self, directory: String) -> BackendResult<Option<GitInfo>> {
+    pub async fn get_git_info(&self, directory: String) -> Result<Option<GitInfo>> {
         filesystem::get_git_info(directory).await
     }
 }

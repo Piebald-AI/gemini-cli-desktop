@@ -146,8 +146,25 @@ export const api = new Proxy(
           // With the web version, we're using a server.  So the errors are going to be returned
           // as AxiosError objects.
           if (__WEB__) {
-            if (error instanceof AxiosError && error.response) {
-              errorString = error.response.data.error;
+            if (
+              error instanceof AxiosError &&
+              error.response &&
+              error.response.data.error
+            ) {
+              // If it's a `{ error: "<error message>" }`, then it's returned from our server.
+              if (typeof error.response.data.error === "string") {
+                errorString = error.response.data.error;
+              }
+              // Otherwise, if it's `{ error: { description: "<error message>" } }`, then it's
+              // either a browser or Axios error.
+              else if (error.response.data.error.description) {
+                errorString = error.response.data.error.description;
+              }
+              // Else, we have an error, and we don't know its structure, but we know it's more
+              // informative than just the whole error object.
+              else {
+                errorString = `${error.response.data.error}`;
+              }
             }
           }
 
