@@ -232,7 +232,7 @@ async fn send_jsonrpc_request<E: EventEmitter>(
                     anyhow::bail!("Failed to read response: {e}");
                 }
             }
-            _ = sleep(Duration::from_secs(5)) => {
+            _ = sleep(Duration::from_secs(10)) => {
                 return Ok(None);
             }
         }
@@ -605,9 +605,11 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
     // loop and sleep for a short time until we get a JSON response back from Gemini.
     let init_response;
     let mut retries = 0;
+    // Increased from 5 to 20 retries to allow for longer Gemini startup times
+    const MAX_RETRIES: u32 = 20;
     loop {
         retries += 1;
-        if retries == 5 {
+        if retries == MAX_RETRIES {
             anyhow::bail!("Max number of retries reached");
         }
         let init_response_result = send_jsonrpc_request(
@@ -628,7 +630,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
         match init_response_result {
             Ok(None) => {
                 println!("No response received yet; sending again");
-                sleep(Duration::from_millis(500)).await;
+                sleep(Duration::from_secs(2)).await;
             }
             Ok(Some(res)) => {
                 init_response = res;

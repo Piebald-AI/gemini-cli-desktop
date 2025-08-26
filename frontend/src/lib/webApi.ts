@@ -4,7 +4,7 @@ import { API } from "./api";
 // Create axios client with base URL /api
 const apiClient = axios.create({
   baseURL: "/api",
-  timeout: 30000, // 30 second timeout
+  timeout: 120000, // Increased to 2 minutes timeout to accommodate slow Gemini startup
 });
 
 export interface DirEntry {
