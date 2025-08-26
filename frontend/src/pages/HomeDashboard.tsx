@@ -49,141 +49,141 @@ export const HomeDashboard: React.FC = () => {
           >
             <div className="space-y-8 pb-4">
               {currentConversation.messages.map((message, index) => (
-              <div
-                key={message.id}
-                className={`w-full ${
-                  message.sender === "user" ? "flex justify-start" : ""
-                }`}
-              >
-                <div className="w-full">
-                  {/* Header with logo and timestamp */}
-                  <div className="flex items-center gap-2 mb-4">
-                    {message.sender === "assistant" ? (
-                      <div>
-                        <SmartLogo />
-                      </div>
-                    ) : (
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="size-5.5 flex items-center justify-center overflow-hidden rounded-full"
-                            style={{
-                              background:
-                                "radial-gradient(circle, #346bf1 0%, #3186ff 50%, #4fa0ff 100%)",
-                            }}
-                          >
-                            <UserRound className="size-4" />
+                <div
+                  key={message.id}
+                  className={`w-full ${
+                    message.sender === "user" ? "flex justify-start" : ""
+                  }`}
+                >
+                  <div className="w-full">
+                    {/* Header with logo and timestamp */}
+                    <div className="flex items-center gap-2 mb-4">
+                      {message.sender === "assistant" ? (
+                        <div>
+                          <SmartLogo />
+                        </div>
+                      ) : (
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="size-5.5 flex items-center justify-center overflow-hidden rounded-full"
+                              style={{
+                                background:
+                                  "radial-gradient(circle, #346bf1 0%, #3186ff 50%, #4fa0ff 100%)",
+                              }}
+                            >
+                              <UserRound className="size-4" />
+                            </div>
+                            {t("homeDashboard.user")}
                           </div>
-                          {t("homeDashboard.user")}
                         </div>
-                      </div>
-                    )}
-                    <span className="text-xs text-muted-foreground">
-                      {message.timestamp.toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </span>
-                  </div>
+                      )}
+                      <span className="text-xs text-muted-foreground">
+                        {message.timestamp.toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </div>
 
-                  {message.parts.map((msgPart) =>
-                    msgPart.type === "thinking" ? (
-                      <ThinkingBlock thinking={msgPart.thinking} />
-                    ) : msgPart.type === "text" ? (
-                      /* Message Content */
-                      <div className="text-sm text-gray-900 dark:text-gray-100 mb-2">
-                        <MessageContent
-                          content={msgPart.text}
-                          sender={message.sender}
-                          isStreaming={
-                            currentConversation?.isStreaming &&
-                            index === currentConversation.messages.length - 1
-                          }
-                        />
-                      </div>
-                    ) : msgPart.type === "toolCall" ? (
-                      <>
-                        {(() => {
-                          const hasConfirmation = confirmationRequests.has(
-                            msgPart.toolCall.id
-                          );
-                          const confirmationRequest = confirmationRequests.get(
-                            msgPart.toolCall.id
-                          );
+                    {message.parts.map((msgPart) =>
+                      msgPart.type === "thinking" ? (
+                        <ThinkingBlock thinking={msgPart.thinking} />
+                      ) : msgPart.type === "text" ? (
+                        /* Message Content */
+                        <div className="text-sm text-gray-900 dark:text-gray-100 mb-2">
+                          <MessageContent
+                            content={msgPart.text}
+                            sender={message.sender}
+                            isStreaming={
+                              currentConversation?.isStreaming &&
+                              index === currentConversation.messages.length - 1
+                            }
+                          />
+                        </div>
+                      ) : msgPart.type === "toolCall" ? (
+                        <>
+                          {(() => {
+                            const hasConfirmation = confirmationRequests.has(
+                              msgPart.toolCall.id
+                            );
+                            const confirmationRequest =
+                              confirmationRequests.get(msgPart.toolCall.id);
 
-                          // Force type assertion to debug the issue
-                          const confirmationRequestTyped =
-                            confirmationRequest as
-                              | ToolCallConfirmationRequest
-                              | undefined;
-                          console.log(
-                            "Confirmation request typed:",
-                            confirmationRequestTyped
-                          );
+                            // Force type assertion to debug the issue
+                            const confirmationRequestTyped =
+                              confirmationRequest as
+                                | ToolCallConfirmationRequest
+                                | undefined;
+                            console.log(
+                              "Confirmation request typed:",
+                              confirmationRequestTyped
+                            );
 
-                          // Try with explicit undefined check
-                          const finalConfirmationRequest = confirmationRequest
-                            ? confirmationRequest
-                            : undefined;
+                            // Try with explicit undefined check
+                            const finalConfirmationRequest = confirmationRequest
+                              ? confirmationRequest
+                              : undefined;
 
-                          return (
-                            <ToolCallDisplay
-                              key={`${msgPart.toolCall.id}-${hasConfirmation}-${Date.now()}`}
-                              toolCall={msgPart.toolCall}
-                              hasConfirmationRequest={hasConfirmation}
-                              confirmationRequest={finalConfirmationRequest}
-                              confirmationRequests={confirmationRequests}
-                              onConfirm={handleConfirmToolCall}
-                            />
-                          );
-                        })()}
-                      </>
-                    ) : null
-                  )}
-
-                  {currentConversation.isStreaming &&
-                    index === currentConversation.messages.length - 1 &&
-                    message.parts.some(
-                      (part) => part.type === "text" || part.type === "thinking"
-                    ) && (
-                      <div className="text-gray-400 italic text-xs">
-                        <span className="animate-pulse">●</span>{" "}
-                        {t("homeDashboard.generating")}
-                      </div>
+                            return (
+                              <ToolCallDisplay
+                                key={`${msgPart.toolCall.id}-${hasConfirmation}-${Date.now()}`}
+                                toolCall={msgPart.toolCall}
+                                hasConfirmationRequest={hasConfirmation}
+                                confirmationRequest={finalConfirmationRequest}
+                                confirmationRequests={confirmationRequests}
+                                onConfirm={handleConfirmToolCall}
+                              />
+                            );
+                          })()}
+                        </>
+                      ) : null
                     )}
 
-                  {/* Info button for raw JSON */}
-                  <div className="mt-2 flex justify-start">
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
-                        >
-                          <Info className="h-3 w-3 mr-1" />
-                          {t("homeDashboard.rawJsonButton")}
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                        <DialogHeader>
-                          <DialogTitle>
-                            {t("homeDashboard.rawJsonTitle")}
-                          </DialogTitle>
-                        </DialogHeader>
-                        <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
-                          <pre className="text-xs whitespace-pre-wrap break-all font-mono">
-                            {JSON.stringify(message, null, 2)}
-                          </pre>
+                    {currentConversation.isStreaming &&
+                      index === currentConversation.messages.length - 1 &&
+                      message.parts.some(
+                        (part) =>
+                          part.type === "text" || part.type === "thinking"
+                      ) && (
+                        <div className="text-gray-400 italic text-xs">
+                          <span className="animate-pulse">●</span>{" "}
+                          {t("homeDashboard.generating")}
                         </div>
-                      </DialogContent>
-                    </Dialog>
+                      )}
+
+                    {/* Info button for raw JSON */}
+                    <div className="mt-2 flex justify-start">
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+                          >
+                            <Info className="h-3 w-3 mr-1" />
+                            {t("homeDashboard.rawJsonButton")}
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                          <DialogHeader>
+                            <DialogTitle>
+                              {t("homeDashboard.rawJsonTitle")}
+                            </DialogTitle>
+                          </DialogHeader>
+                          <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
+                            <pre className="text-xs whitespace-pre-wrap break-all font-mono">
+                              {JSON.stringify(message, null, 2)}
+                            </pre>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
         )
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center text-center p-4">

@@ -21,7 +21,7 @@ export const NewChatPlaceholder: React.FC = () => {
           {t("newChatPlaceholder.descriptionBefore")}
           <Code>{model || "AI"}</Code>
           {t("newChatPlaceholder.descriptionAfter", {
-            backendName: backendText.name
+            backendName: backendText.name,
           })}
         </p>
       </div>
