@@ -227,6 +227,19 @@ pub async fn list_directory_contents(
 }
 
 #[tauri::command]
+pub async fn list_files_recursive(
+    path: String,
+    max_depth: Option<usize>,
+    state: State<'_, AppState>,
+) -> Result<Vec<DirEntry>, String> {
+    state
+        .backend
+        .list_files_recursive(path, max_depth)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 pub async fn list_volumes(state: State<'_, AppState>) -> Result<Vec<DirEntry>, String> {
     state
         .backend
