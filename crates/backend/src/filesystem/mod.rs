@@ -750,7 +750,7 @@ mod tests {
         fs::write(root_path.join("file1.txt"), "content").unwrap();
         fs::write(root_path.join("file2.log"), "log content").unwrap(); // Should be ignored
         fs::write(root_path.join("README.md"), "readme").unwrap();
-        
+
         let build_dir = root_path.join("build");
         fs::create_dir(&build_dir).unwrap(); // Should be ignored
         fs::write(build_dir.join("output.txt"), "build output").unwrap();

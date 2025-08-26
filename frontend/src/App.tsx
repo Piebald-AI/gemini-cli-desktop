@@ -3,7 +3,10 @@ import { Routes, Route, Outlet, Navigate } from "react-router-dom";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { api } from "./lib/api";
 import { AppSidebar } from "./components/layout/AppSidebar";
-import { MessageInputBar, MessageInputBarRef } from "./components/conversation/MessageInputBar";
+import {
+  MessageInputBar,
+  MessageInputBarRef,
+} from "./components/conversation/MessageInputBar";
 import { AppHeader } from "./components/layout/AppHeader";
 import { CustomTitleBar } from "./components/layout/CustomTitleBar";
 import { CliWarnings } from "./components/common/CliWarnings";
@@ -249,7 +252,10 @@ function RootLayoutContent() {
   // Handle mention insertion from DirectoryPanel
   const handleMentionInsert = useCallback((mention: string) => {
     console.log("📁 [App] Received mention insertion request:", mention);
-    console.log("📁 [App] messageInputBarRef.current:", !!messageInputBarRef.current);
+    console.log(
+      "📁 [App] messageInputBarRef.current:",
+      !!messageInputBarRef.current
+    );
     if (messageInputBarRef.current) {
       console.log("📁 [App] Calling insertMention on MessageInputBar");
       messageInputBarRef.current.insertMention(mention);

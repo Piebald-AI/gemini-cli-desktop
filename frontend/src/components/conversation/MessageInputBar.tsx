@@ -33,128 +33,145 @@ export interface MessageInputBarRef {
   insertMention: (mention: string) => void;
 }
 
-export const MessageInputBar = forwardRef<MessageInputBarRef, MessageInputBarProps>(({
-  input,
-  isCliInstalled,
-  cliIOLogs,
-  handleInputChange,
-  handleSendMessage,
-  workingDirectory = ".",
-}, ref) => {
-  const { t } = useTranslation();
-  const { selectedBackend } = useBackend();
-  const backendText = getBackendText(selectedBackend);
-  const mentionInputRef = useRef<MentionInputRef>(null);
-
-  // Expose the insertMention method via ref
-  useImperativeHandle(ref, () => ({
-    insertMention: (mention: string) => {
-      console.log("📝 [MessageInputBar] Received insertMention:", mention);
-      console.log("📝 [MessageInputBar] mentionInputRef.current:", !!mentionInputRef.current);
-      if (mentionInputRef.current) {
-        console.log("📝 [MessageInputBar] Calling insertMention on MentionInput");
-        mentionInputRef.current.insertMention(mention);
-      } else {
-        console.log("📝 [MessageInputBar] MentionInput ref is null!");
-      }
+export const MessageInputBar = forwardRef<
+  MessageInputBarRef,
+  MessageInputBarProps
+>(
+  (
+    {
+      input,
+      isCliInstalled,
+      cliIOLogs,
+      handleInputChange,
+      handleSendMessage,
+      workingDirectory = ".",
     },
-  }), []);
+    ref
+  ) => {
+    const { t } = useTranslation();
+    const { selectedBackend } = useBackend();
+    const backendText = getBackendText(selectedBackend);
+    const mentionInputRef = useRef<MentionInputRef>(null);
 
-  return (
-    <div className="sticky bottom-0 bg-white dark:bg-neutral-900 flex items-center">
-      <div className="px-6 py-3 w-full">
-        <form className="flex gap-2 items-end" onSubmit={handleSendMessage}>
-          <div className="flex-1 relative">
-            {/* Git info - positioned above input */}
-            {workingDirectory && workingDirectory !== "." && (
-              <div className="absolute -top-6 left-0">
-                <GitInfo directory={workingDirectory} compact={true} />
-              </div>
-            )}
-            <MentionInput
-              ref={mentionInputRef}
-              value={input}
-              onChange={handleInputChange}
-              workingDirectory={workingDirectory}
-              placeholder={
-                isCliInstalled === false
-                  ? backendText.cliNotFound
-                  : t("messageInput.placeholder")
-              }
-              disabled={isCliInstalled === false}
-              className="h-9 w-full"
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSendMessage(e);
+    // Expose the insertMention method via ref
+    useImperativeHandle(
+      ref,
+      () => ({
+        insertMention: (mention: string) => {
+          console.log("📝 [MessageInputBar] Received insertMention:", mention);
+          console.log(
+            "📝 [MessageInputBar] mentionInputRef.current:",
+            !!mentionInputRef.current
+          );
+          if (mentionInputRef.current) {
+            console.log(
+              "📝 [MessageInputBar] Calling insertMention on MentionInput"
+            );
+            mentionInputRef.current.insertMention(mention);
+          } else {
+            console.log("📝 [MessageInputBar] MentionInput ref is null!");
+          }
+        },
+      }),
+      []
+    );
+
+    return (
+      <div className="sticky bottom-0 bg-white dark:bg-neutral-900 flex items-center">
+        <div className="px-6 py-3 w-full">
+          <form className="flex gap-2 items-end" onSubmit={handleSendMessage}>
+            <div className="flex-1 relative">
+              {/* Git info - positioned above input */}
+              {workingDirectory && workingDirectory !== "." && (
+                <div className="absolute -top-6 left-0">
+                  <GitInfo directory={workingDirectory} compact={true} />
+                </div>
+              )}
+              <MentionInput
+                ref={mentionInputRef}
+                value={input}
+                onChange={handleInputChange}
+                workingDirectory={workingDirectory}
+                placeholder={
+                  isCliInstalled === false
+                    ? backendText.cliNotFound
+                    : t("messageInput.placeholder")
                 }
-              }}
-            />
-          </div>
-          <Button
-            type="submit"
-            disabled={isCliInstalled === false || !input.trim()}
-            size="icon"
-          >
-            <Send />
-          </Button>
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button
-                type="button"
-                size="icon"
-                variant="outline"
-                title={t("messageInput.viewCliLogs")}
-              >
-                <Info className="h-4 w-4" />
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>{t("messageInput.cliLogsTitle")}</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-2 max-h-96 overflow-y-auto">
-                {cliIOLogs.map((log, index) => (
-                  <div key={index} className="border rounded p-2">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span
-                        className={`text-xs font-mono px-2 py-1 rounded ${
-                          log.type === "input"
-                            ? "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200"
-                            : "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200"
-                        }`}
-                      >
-                        {log.type === "input"
-                          ? t("messageInput.logTypeIn")
-                          : t("messageInput.logTypeOut")}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {log.timestamp.toLocaleTimeString()}
-                      </span>
-                      <span className="text-xs text-muted-foreground font-mono">
-                        {log.conversationId}
-                      </span>
+                disabled={isCliInstalled === false}
+                className="h-9 w-full"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage(e);
+                  }
+                }}
+              />
+            </div>
+            <Button
+              type="submit"
+              disabled={isCliInstalled === false || !input.trim()}
+              size="icon"
+            >
+              <Send />
+            </Button>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="outline"
+                  title={t("messageInput.viewCliLogs")}
+                >
+                  <Info className="h-4 w-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>{t("messageInput.cliLogsTitle")}</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {cliIOLogs.map((log, index) => (
+                    <div key={index} className="border rounded p-2">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span
+                          className={`text-xs font-mono px-2 py-1 rounded ${
+                            log.type === "input"
+                              ? "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200"
+                              : "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200"
+                          }`}
+                        >
+                          {log.type === "input"
+                            ? t("messageInput.logTypeIn")
+                            : t("messageInput.logTypeOut")}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {log.timestamp.toLocaleTimeString()}
+                        </span>
+                        <span className="text-xs text-muted-foreground font-mono">
+                          {log.conversationId}
+                        </span>
+                      </div>
+                      <pre className="text-xs whitespace-pre-wrap break-all font-mono bg-white dark:bg-gray-900 p-2 rounded border">
+                        {log.data}
+                      </pre>
                     </div>
-                    <pre className="text-xs whitespace-pre-wrap break-all font-mono bg-white dark:bg-gray-900 p-2 rounded border">
-                      {log.data}
-                    </pre>
-                  </div>
-                ))}
-                {cliIOLogs.length === 0 && (
-                  <div className="text-center text-muted-foreground py-8">
-                    {t("messageInput.noLogsMessage")}
-                  </div>
-                )}
-              </div>
-            </DialogContent>
-          </Dialog>
-          <Button type="button" disabled={true} size="icon" variant="outline">
-            <ImagePlus />
-          </Button>
-        </form>
+                  ))}
+                  {cliIOLogs.length === 0 && (
+                    <div className="text-center text-muted-foreground py-8">
+                      {t("messageInput.noLogsMessage")}
+                    </div>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
+            <Button type="button" disabled={true} size="icon" variant="outline">
+              <ImagePlus />
+            </Button>
+          </form>
+        </div>
       </div>
-    </div>
-  );
-});
+    );
+  }
+);
 
 MessageInputBar.displayName = "MessageInputBar";

@@ -49,51 +49,78 @@ export function DirectoryPanel({
   const [error, setError] = useState<string | null>(null);
 
   // Calculate relative path from working directory
-  const getRelativePath = useCallback((fullPath: string) => {
-    // Normalize paths by replacing backslashes with forward slashes
-    const normalizedWorkingDir = workingDirectory.replace(/\\/g, '/');
-    const normalizedFullPath = fullPath.replace(/\\/g, '/');
-    
-    // Remove working directory prefix
-    if (normalizedFullPath.startsWith(normalizedWorkingDir)) {
-      let relativePath = normalizedFullPath.slice(normalizedWorkingDir.length);
-      // Remove leading slash if present
-      if (relativePath.startsWith('/')) {
-        relativePath = relativePath.slice(1);
+  const getRelativePath = useCallback(
+    (fullPath: string) => {
+      // Normalize paths by replacing backslashes with forward slashes
+      const normalizedWorkingDir = workingDirectory.replace(/\\/g, "/");
+      const normalizedFullPath = fullPath.replace(/\\/g, "/");
+
+      // Remove working directory prefix
+      if (normalizedFullPath.startsWith(normalizedWorkingDir)) {
+        let relativePath = normalizedFullPath.slice(
+          normalizedWorkingDir.length
+        );
+        // Remove leading slash if present
+        if (relativePath.startsWith("/")) {
+          relativePath = relativePath.slice(1);
+        }
+        return relativePath || ".";
       }
-      return relativePath || '.';
-    }
-    
-    // If not under working directory, return the full path
-    return fullPath;
-  }, [workingDirectory]);
+
+      // If not under working directory, return the full path
+      return fullPath;
+    },
+    [workingDirectory]
+  );
 
   // Handle file click to insert mention
-  const handleFileClick = useCallback((node: TreeNode) => {
-    console.log("📁 [DirectoryPanel] File clicked:", node.name, "onMentionInsert:", !!onMentionInsert);
-    if (!onMentionInsert) {
-      console.log("📁 [DirectoryPanel] No onMentionInsert callback provided");
-      return;
-    }
-    
-    const relativePath = getRelativePath(node.full_path);
-    console.log("📁 [DirectoryPanel] Inserting mention:", `@${relativePath} `);
-    onMentionInsert(`@${relativePath} `);
-  }, [onMentionInsert, getRelativePath]);
+  const handleFileClick = useCallback(
+    (node: TreeNode) => {
+      console.log(
+        "📁 [DirectoryPanel] File clicked:",
+        node.name,
+        "onMentionInsert:",
+        !!onMentionInsert
+      );
+      if (!onMentionInsert) {
+        console.log("📁 [DirectoryPanel] No onMentionInsert callback provided");
+        return;
+      }
+
+      const relativePath = getRelativePath(node.full_path);
+      console.log(
+        "📁 [DirectoryPanel] Inserting mention:",
+        `@${relativePath} `
+      );
+      onMentionInsert(`@${relativePath} `);
+    },
+    [onMentionInsert, getRelativePath]
+  );
 
   // Handle folder plus button click to insert mention
-  const handleFolderPlusClick = useCallback((node: TreeNode, event: React.MouseEvent) => {
-    console.log("📁 [DirectoryPanel] Plus button clicked for folder:", node.name);
-    event.stopPropagation(); // Prevent folder expansion
-    if (!onMentionInsert) {
-      console.log("📁 [DirectoryPanel] No onMentionInsert callback for plus button");
-      return;
-    }
-    
-    const relativePath = getRelativePath(node.full_path);
-    console.log("📁 [DirectoryPanel] Inserting folder mention:", `@${relativePath}/ `);
-    onMentionInsert(`@${relativePath}/ `);
-  }, [onMentionInsert, getRelativePath]);
+  const handleFolderPlusClick = useCallback(
+    (node: TreeNode, event: React.MouseEvent) => {
+      console.log(
+        "📁 [DirectoryPanel] Plus button clicked for folder:",
+        node.name
+      );
+      event.stopPropagation(); // Prevent folder expansion
+      if (!onMentionInsert) {
+        console.log(
+          "📁 [DirectoryPanel] No onMentionInsert callback for plus button"
+        );
+        return;
+      }
+
+      const relativePath = getRelativePath(node.full_path);
+      console.log(
+        "📁 [DirectoryPanel] Inserting folder mention:",
+        `@${relativePath}/ `
+      );
+      onMentionInsert(`@${relativePath}/ `);
+    },
+    [onMentionInsert, getRelativePath]
+  );
 
   // Load directory contents
   const loadDirectoryContents = useCallback(
@@ -326,7 +353,13 @@ export function DirectoryPanel({
         </div>
       );
     },
-    [toggleDirectory, onDirectoryChange, handleFileClick, handleFolderPlusClick, onMentionInsert]
+    [
+      toggleDirectory,
+      onDirectoryChange,
+      handleFileClick,
+      handleFolderPlusClick,
+      onMentionInsert,
+    ]
   );
 
   return (
