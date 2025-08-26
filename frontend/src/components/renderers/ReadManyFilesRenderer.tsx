@@ -54,28 +54,63 @@ export function ReadManyFilesRenderer({
       }
     }
 
+    // Final fallback: extract patterns from the label/title
+    if (files.length === 0 && toolCall.label) {
+      const title = toolCall.label;
+      // Extract patterns from title like "Will attempt to read and concatenate files using patterns: \n**/Cargo.toml\n"
+      const patternsMatch = title.match(
+        /using patterns:\s*(.*?)\s*\(within target directory/s
+      );
+      if (patternsMatch && patternsMatch[1]) {
+        // Split by newlines and clean up
+        files = patternsMatch[1]
+          .split("\n")
+          .map((line) => line.trim())
+          .filter((line) => line && !line.startsWith("("));
+      }
+    }
+
     return {
       fileCount: files.length,
       files,
     };
   };
 
-  // Extract processed files from result
-  const getProcessedFiles = (): string[] => {
-    if (result.markdown) {
-      // Parse the markdown result to extract processed files
-      const match = result.markdown.match(
+  // Extract processed files and count from result
+  const getResultInfo = (): { fileCount: number; files: string[] } => {
+    let resultText = "";
+
+    // Handle different result formats
+    if (typeof toolCall.result === "string") {
+      resultText = toolCall.result;
+    } else if (result.markdown) {
+      resultText = result.markdown;
+    } else if (result.content) {
+      resultText = result.content;
+    }
+
+    if (resultText) {
+      // Extract file count from text like "Successfully read and concatenated content from **4 file(s)**."
+      const countMatch = resultText.match(/from \*\*(\d+) file\(s\)\*\*/);
+      const fileCount = countMatch ? parseInt(countMatch[1], 10) : 0;
+
+      // Extract processed files from text like "**Processed Files:**\n- `file1`\n- `file2`"
+      const filesMatch = resultText.match(
         /\*\*Processed Files:\*\*\n((?:- `.+`\n?)*)/
       );
-      if (match && match[1]) {
-        return match[1]
+      let files: string[] = [];
+
+      if (filesMatch && filesMatch[1]) {
+        files = filesMatch[1]
           .split("\n")
           .map((line) => line.replace(/^- `(.+)`$/, "$1"))
           .filter((line) => line.trim() && !line.startsWith("- "));
       }
+
+      return { fileCount, files };
     }
 
-    return [];
+    return { fileCount: 0, files: [] };
   };
 
   // Get status message
@@ -89,14 +124,13 @@ export function ReadManyFilesRenderer({
     return "";
   };
 
-  const { fileCount, files } = getFileInfo();
-  const processedFiles = getProcessedFiles();
+  const { fileCount: inputFileCount, files: inputFiles } = getFileInfo();
+  const { fileCount: resultFileCount, files: resultFiles } = getResultInfo();
   const statusMessage = getStatusMessage();
 
-  // Use processed files if available, otherwise fall back to input files
-  const displayFiles = processedFiles.length > 0 ? processedFiles : files;
-  const displayCount =
-    processedFiles.length > 0 ? processedFiles.length : fileCount;
+  // Use result info if available (when completed), otherwise fall back to input info
+  const displayFiles = resultFiles.length > 0 ? resultFiles : inputFiles;
+  const displayCount = resultFileCount > 0 ? resultFileCount : inputFileCount;
 
   return (
     <div className="mt-4">
