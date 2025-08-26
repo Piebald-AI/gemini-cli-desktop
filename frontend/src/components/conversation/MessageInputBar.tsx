@@ -78,15 +78,16 @@ export const MessageInputBar = forwardRef<
 
     return (
       <div className="sticky bottom-0 bg-white dark:bg-neutral-900 flex items-center">
-        <div className="px-6 py-3 w-full">
-          <form className="flex gap-2 items-end" onSubmit={handleSendMessage}>
+        <div className="px-6 pb-3 pt-2 w-full">
+          {/* Git info - positioned above input */}
+          {workingDirectory && workingDirectory !== "." && (
+            <GitInfo directory={workingDirectory} compact={true} />
+          )}
+          <form
+            className="flex gap-2 items-end mt-2"
+            onSubmit={handleSendMessage}
+          >
             <div className="flex-1 relative">
-              {/* Git info - positioned above input */}
-              {workingDirectory && workingDirectory !== "." && (
-                <div className="absolute -top-6 left-0">
-                  <GitInfo directory={workingDirectory} compact={true} />
-                </div>
-              )}
               <MentionInput
                 ref={mentionInputRef}
                 value={input}

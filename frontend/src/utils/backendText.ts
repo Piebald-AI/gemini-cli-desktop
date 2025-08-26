@@ -64,5 +64,6 @@ export const getBackendText = (backend: BackendType) => {
       appName: appDisplayName,
     }),
     tagline: t("dashboard.tagline", { appName: backendDisplayName }),
+    loginInstructions: t("warnings.loginInstructions"),
   };
 };
