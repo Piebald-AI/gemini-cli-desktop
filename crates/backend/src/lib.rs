@@ -38,7 +38,7 @@ pub use events::{
     ToolCallLocation,
     ToolCallUpdate,
 };
-pub use filesystem::{DirEntry, VolumeType};
+pub use filesystem::{DirEntry, GitInfo, VolumeType};
 pub use projects::{
     EnrichedProject, ProjectListItem, ProjectMetadata, ProjectMetadataView, ProjectsResponse,
     TouchThrottle, ensure_project_metadata, list_enriched_projects, list_projects,
@@ -690,6 +690,11 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
         project_id: &str,
     ) -> BackendResult<Vec<RecentChat>> {
         search::get_project_discussions(project_id).await
+    }
+
+    /// Get git repository information for a directory
+    pub async fn get_git_info(&self, directory: String) -> BackendResult<Option<GitInfo>> {
+        filesystem::get_git_info(directory).await
     }
 }
 

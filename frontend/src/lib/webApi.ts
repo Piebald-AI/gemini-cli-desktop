@@ -157,6 +157,25 @@ export const webApi: API = {
     return response.data;
   },
 
+  async get_git_info(params: { path: string }): Promise<{
+    current_directory: string;
+    branch: string;
+    status: string;
+    is_clean: boolean;
+    has_uncommitted_changes: boolean;
+    has_untracked_files: boolean;
+  } | null> {
+    const response = await apiClient.post<{
+      current_directory: string;
+      branch: string;
+      status: string;
+      is_clean: boolean;
+      has_uncommitted_changes: boolean;
+      has_untracked_files: boolean;
+    } | null>("/api/get-git-info", params);
+    return response.data;
+  },
+
   // Fetch recent chats for web mode via REST endpoint
   async get_recent_chats(): Promise<RecentChat[]> {
     const response = await apiClient.get<RecentChat[]>("/recent-chats");

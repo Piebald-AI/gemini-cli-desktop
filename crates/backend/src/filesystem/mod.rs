@@ -3,6 +3,7 @@ use ignore::WalkBuilder;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
+use tokio::process::Command;
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "snake_case")]
@@ -25,6 +26,16 @@ pub struct DirEntry {
     pub is_symlink: bool,
     pub symlink_target: Option<String>,
     pub volume_type: Option<VolumeType>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GitInfo {
+    pub current_directory: String,
+    pub branch: String,
+    pub status: String,
+    pub is_clean: bool,
+    pub has_uncommitted_changes: bool,
+    pub has_untracked_files: bool,
 }
 
 pub async fn validate_directory(path: String) -> BackendResult<bool> {
@@ -286,6 +297,121 @@ pub async fn list_volumes() -> BackendResult<Vec<DirEntry>> {
     }
 
     Ok(volumes)
+}
+
+pub async fn get_git_info(directory: String) -> BackendResult<Option<GitInfo>> {
+    let path = Path::new(&directory);
+    if !path.exists() || !path.is_dir() {
+        return Ok(None);
+    }
+
+    // Check if this is a git repository by looking for .git directory
+    let git_dir = path.join(".git");
+    if !git_dir.exists() {
+        return Ok(None);
+    }
+
+    let current_directory = path.to_string_lossy().to_string();
+
+    // Get current branch
+    let branch_output = Command::new("git")
+        .arg("branch")
+        .arg("--show-current")
+        .current_dir(path)
+        .output()
+        .await;
+
+    let branch = if let Ok(output) = branch_output {
+        if output.status.success() {
+            String::from_utf8_lossy(&output.stdout).trim().to_string()
+        } else {
+            // Fallback to symbolic-ref if branch --show-current fails
+            let symbolic_ref_output = Command::new("git")
+                .arg("symbolic-ref")
+                .arg("--short")
+                .arg("HEAD")
+                .current_dir(path)
+                .output()
+                .await;
+
+            if let Ok(ref_output) = symbolic_ref_output {
+                if ref_output.status.success() {
+                    String::from_utf8_lossy(&ref_output.stdout)
+                        .trim()
+                        .to_string()
+                } else {
+                    "HEAD".to_string() // Detached HEAD state
+                }
+            } else {
+                "unknown".to_string()
+            }
+        }
+    } else {
+        "unknown".to_string()
+    };
+
+    // Get git status
+    let status_output = Command::new("git")
+        .arg("status")
+        .arg("--porcelain")
+        .arg("--branch")
+        .current_dir(path)
+        .output()
+        .await;
+
+    let (status, is_clean, has_uncommitted_changes, has_untracked_files) =
+        if let Ok(output) = status_output {
+            if output.status.success() {
+                let status_text = String::from_utf8_lossy(&output.stdout);
+                let lines: Vec<&str> = status_text.lines().collect();
+
+                // Parse the status output
+                let mut has_changes = false;
+                let mut has_untracked = false;
+
+                for line in &lines {
+                    if line.starts_with("##") {
+                        // Branch line - we don't need to store this for now
+                    } else if !line.is_empty() {
+                        // File status line
+                        if line.starts_with("??") {
+                            has_untracked = true;
+                        } else {
+                            has_changes = true;
+                        }
+                    }
+                }
+
+                let is_clean = !has_changes && !has_untracked;
+                let status_desc = if is_clean {
+                    "clean".to_string()
+                } else {
+                    let mut parts = Vec::new();
+                    if has_changes {
+                        parts.push("modified files");
+                    }
+                    if has_untracked {
+                        parts.push("untracked files");
+                    }
+                    parts.join(", ")
+                };
+
+                (status_desc, is_clean, has_changes, has_untracked)
+            } else {
+                ("unknown".to_string(), false, false, false)
+            }
+        } else {
+            ("unknown".to_string(), false, false, false)
+        };
+
+    Ok(Some(GitInfo {
+        current_directory,
+        branch,
+        status,
+        is_clean,
+        has_uncommitted_changes,
+        has_untracked_files,
+    }))
 }
 
 #[cfg(test)]
