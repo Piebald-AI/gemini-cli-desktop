@@ -79,7 +79,7 @@ export const HomeDashboard: React.FC = () => {
                             >
                               <UserRound className="size-4" />
                             </div>
-                            {t("homeDashboard.user")}
+                            {t("dashboard.user")}
                           </div>
                         </div>
                       )}
@@ -153,7 +153,7 @@ export const HomeDashboard: React.FC = () => {
                       ) && (
                         <div className="text-gray-400 italic text-xs">
                           <span className="animate-pulse">●</span>{" "}
-                          {t("homeDashboard.generating")}
+                          {t("dashboard.generating")}
                         </div>
                       )}
 
@@ -167,13 +167,13 @@ export const HomeDashboard: React.FC = () => {
                             className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
                           >
                             <Info className="h-3 w-3 mr-1" />
-                            {t("homeDashboard.rawJsonButton")}
+                            {t("dashboard.rawJsonButton")}
                           </Button>
                         </DialogTrigger>
                         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                           <DialogHeader>
                             <DialogTitle>
-                              {t("homeDashboard.rawJsonTitle")}
+                              {t("dashboard.rawJsonTitle")}
                             </DialogTitle>
                           </DialogHeader>
                           <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
