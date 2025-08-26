@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { GitBranch, FolderOpen, CheckCircle, AlertCircle } from "lucide-react";
 import { Card, CardContent } from "../ui/card";
 import { Badge } from "../ui/badge";
@@ -21,7 +21,7 @@ export function GitInfo({ directory, className = "", compact = false }: GitInfoP
       try {
         setLoading(true);
         setError(null);
-        const info = await api.invoke<GitInfoType | null>("get_git_info", { path: directory });
+        const info = await api.get_git_info({ path: directory });
         setGitInfo(info);
       } catch (err) {
         console.error("Failed to fetch git info:", err);
@@ -89,8 +89,8 @@ export function GitInfo({ directory, className = "", compact = false }: GitInfoP
             <FolderOpen className="h-4 w-4" />
             <div className="flex flex-col gap-1">
               <span className="font-medium">Not a git repository</span>
-              <span className="text-xs opacity-75 truncate" title={gitInfo?.current_directory || directory}>
-                {gitInfo?.current_directory || directory}
+              <span className="text-xs opacity-75 truncate" title={directory}>
+                {directory}
               </span>
             </div>
           </div>

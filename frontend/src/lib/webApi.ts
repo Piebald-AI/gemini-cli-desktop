@@ -149,17 +149,21 @@ export const webApi: API = {
   async get_git_info(params: {
     path: string;
   }): Promise<{
-    branch?: string;
-    status?: string;
-    ahead?: number;
-    behind?: number;
-  }> {
+    current_directory: string;
+    branch: string;
+    status: string;
+    is_clean: boolean;
+    has_uncommitted_changes: boolean;
+    has_untracked_files: boolean;
+  } | null> {
     const response = await apiClient.post<{
-      branch?: string;
-      status?: string;
-      ahead?: number;
-      behind?: number;
-    }>("/get-git-info", params);
+      current_directory: string;
+      branch: string;
+      status: string;
+      is_clean: boolean;
+      has_uncommitted_changes: boolean;
+      has_untracked_files: boolean;
+    } | null>("/api/get-git-info", params);
     return response.data;
   },
 
