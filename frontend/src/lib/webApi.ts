@@ -146,9 +146,7 @@ export const webApi: API = {
     return response.data;
   },
 
-  async get_git_info(params: {
-    path: string;
-  }): Promise<{
+  async get_git_info(params: { path: string }): Promise<{
     current_directory: string;
     branch: string;
     status: string;

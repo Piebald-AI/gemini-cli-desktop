@@ -11,7 +11,11 @@ interface GitInfoProps {
   compact?: boolean;
 }
 
-export function GitInfo({ directory, className = "", compact = false }: GitInfoProps) {
+export function GitInfo({
+  directory,
+  className = "",
+  compact = false,
+}: GitInfoProps) {
   const [gitInfo, setGitInfo] = useState<GitInfoType | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,7 +43,9 @@ export function GitInfo({ directory, className = "", compact = false }: GitInfoP
   if (loading) {
     if (compact) {
       return (
-        <div className={`flex items-center gap-1 text-xs text-gray-500 ${className}`}>
+        <div
+          className={`flex items-center gap-1 text-xs text-gray-500 ${className}`}
+        >
           <GitBranch className="h-3 w-3 animate-pulse" />
           <span>...</span>
         </div>
@@ -60,7 +66,9 @@ export function GitInfo({ directory, className = "", compact = false }: GitInfoP
   if (error) {
     if (compact) {
       return (
-        <div className={`flex items-center gap-1 text-xs text-red-500 ${className}`}>
+        <div
+          className={`flex items-center gap-1 text-xs text-red-500 ${className}`}
+        >
           <AlertCircle className="h-3 w-3" />
           <span>Git error</span>
         </div>
@@ -107,15 +115,20 @@ export function GitInfo({ directory, className = "", compact = false }: GitInfoP
   };
 
   const getStatusIcon = () => {
-    if (gitInfo.is_clean) return <CheckCircle className="h-4 w-4 text-green-600" />;
+    if (gitInfo.is_clean)
+      return <CheckCircle className="h-4 w-4 text-green-600" />;
     return <AlertCircle className="h-4 w-4 text-yellow-600" />;
   };
 
   const getStatusBadge = () => {
     if (gitInfo.is_clean) {
-      return <Badge variant="outline" className="text-green-600 border-green-300">clean</Badge>;
+      return (
+        <Badge variant="outline" className="text-green-600 border-green-300">
+          clean
+        </Badge>
+      );
     }
-    
+
     const statusItems = [];
     if (gitInfo.has_uncommitted_changes) {
       statusItems.push("modified");
@@ -123,7 +136,7 @@ export function GitInfo({ directory, className = "", compact = false }: GitInfoP
     if (gitInfo.has_untracked_files) {
       statusItems.push("untracked");
     }
-    
+
     return (
       <Badge variant="outline" className="text-yellow-600 border-yellow-300">
         {statusItems.join(", ")}
@@ -141,10 +154,15 @@ export function GitInfo({ directory, className = "", compact = false }: GitInfoP
     };
 
     return (
-      <div className={`flex items-center gap-1 text-xs text-gray-600 ${className}`} title={`${gitInfo.current_directory} - ${gitInfo.status}`}>
+      <div
+        className={`flex items-center gap-1 text-xs text-gray-600 ${className}`}
+        title={`${gitInfo.current_directory} - ${gitInfo.status}`}
+      >
         <GitBranch className="h-3 w-3 text-gray-500" />
         <span className="font-mono truncate max-w-24">{gitInfo.branch}</span>
-        <div className={`w-1.5 h-1.5 rounded-full ${getStatusColor().replace('text-', 'bg-')}`} />
+        <div
+          className={`w-1.5 h-1.5 rounded-full ${getStatusColor().replace("text-", "bg-")}`}
+        />
       </div>
     );
   }
@@ -156,16 +174,24 @@ export function GitInfo({ directory, className = "", compact = false }: GitInfoP
           {/* Directory */}
           <div className="flex items-center gap-2 text-sm">
             <FolderOpen className="h-4 w-4 text-gray-500" />
-            <span className="font-medium truncate" title={gitInfo.current_directory}>
-              {gitInfo.current_directory.split('/').pop() || gitInfo.current_directory.split('\\').pop() || gitInfo.current_directory}
+            <span
+              className="font-medium truncate"
+              title={gitInfo.current_directory}
+            >
+              {gitInfo.current_directory.split("/").pop() ||
+                gitInfo.current_directory.split("\\").pop() ||
+                gitInfo.current_directory}
             </span>
           </div>
-          
+
           {/* Branch and status */}
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
               <GitBranch className="h-4 w-4 text-gray-500 flex-shrink-0" />
-              <span className="text-sm font-mono truncate" title={gitInfo.branch}>
+              <span
+                className="text-sm font-mono truncate"
+                title={gitInfo.branch}
+              >
                 {gitInfo.branch}
               </span>
             </div>
