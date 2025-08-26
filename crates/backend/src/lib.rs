@@ -620,6 +620,15 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
         filesystem::list_directory_contents(path).await
     }
 
+    /// List files recursively with gitignore support
+    pub async fn list_files_recursive(
+        &self,
+        path: String,
+        max_depth: Option<usize>,
+    ) -> BackendResult<Vec<DirEntry>> {
+        filesystem::list_files_recursive(path, max_depth).await
+    }
+
     /// Get recent chats
     pub async fn get_recent_chats(&self) -> Result<Vec<RecentChat>> {
         search::get_recent_chats().await

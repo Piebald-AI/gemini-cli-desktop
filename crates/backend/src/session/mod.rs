@@ -28,9 +28,9 @@ pub struct GeminiAuthConfig {
 }
 
 use crate::acp::{
-    AuthenticateParams, ContentBlock, InitializeParams, InitializeResult, SessionNewParams,
-    SessionNewResult, SessionPromptResult, SessionRequestPermissionParams, SessionUpdate,
-    SessionUpdateParams,
+    AuthenticateParams, ClientCapabilities, ContentBlock, FileSystemCapabilities, InitializeParams,
+    InitializeResult, SessionNewParams, SessionNewResult, SessionPromptResult,
+    SessionRequestPermissionParams, SessionUpdate, SessionUpdateParams,
 };
 use crate::cli::StreamAssistantMessageChunkParams;
 use crate::events::{
@@ -406,9 +406,9 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
                 args.push("--experimental-acp");
 
                 let command_display = if yolo_flag {
-                    format!("cmd.exe /C {gemini_path} --model {model} --yolo --experimental-acp",)
+                    format!("cmd.exe /C {gemini_path} --model {model} --yolo --experimental-acp")
                 } else {
-                    format!("cmd.exe /C {gemini_path} --model {model} --experimental-acp",)
+                    format!("cmd.exe /C {gemini_path} --model {model} --experimental-acp")
                 };
                 println!("🔧 [HANDSHAKE] Creating Windows Gemini command: {command_display}");
                 println!("🚀 YOLO-DEBUG: Full args array: {args:?}");
@@ -504,7 +504,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
         let paths = String::from_utf8_lossy(&output.stdout);
         let first_path = paths.lines().next().unwrap_or("unknown");
         println!(
-            "🚀 YOLO-DEBUG: First gemini executable (the one that will be used): {first_path}"
+            "🚀 YOLO-DEBUG: First gemini executable (the one that will be used): {first_path}",
         );
     } else {
         println!("🚀 YOLO-DEBUG: Failed to get gemini path");
@@ -583,6 +583,12 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
     println!("🤝 [HANDSHAKE] Step 1/3: Sending initialize request");
     let init_params = InitializeParams {
         protocol_version: 1,
+        client_capabilities: ClientCapabilities {
+            fs: FileSystemCapabilities {
+                read_text_file: false,
+                write_text_file: false,
+            },
+        },
     };
     println!("🤝 [HANDSHAKE] Initialize params: protocol_version=1");
 
@@ -593,7 +599,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
         params: serde_json::to_value(init_params).context("Failed to serialize init params")?,
     };
 
-    // { "jsonrpc": "2.0", "id": 1, "method": "initialize", "params": { "protocolVersion": 1 } }
+    // { "jsonrpc": "2.0", "id": 1, "method": "initialize", "params": { "protocolVersion": 1, "clientCapabilities": { "fs": { "readTextFile": true, "writeTextFile": true } } } }
 
     // The initialize message may end up getting sent before Gemini has fully started up, so we'll
     // loop and sleep for a short time until we get a JSON response back from Gemini.

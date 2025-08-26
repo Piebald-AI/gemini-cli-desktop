@@ -278,6 +278,13 @@ struct ListDirectoryRequest {
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+struct ListFilesRecursiveRequest {
+    path: String,
+    max_depth: Option<usize>,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct GetParentDirectoryRequest {
     path: String,
 }
@@ -637,6 +644,19 @@ async fn list_directory_contents(
     ))
 }
 
+#[post("/list-files-recursive", data = "<request>")]
+async fn list_files_recursive(
+    request: Json<ListFilesRecursiveRequest>,
+    state: &State<AppState>,
+) -> Json<Vec<DirEntry>> {
+    let backend = state.backend.lock().await;
+    let contents = backend
+        .list_files_recursive(request.path.clone(), request.max_depth)
+        .await
+        .unwrap();
+    Json(contents)
+}
+
 #[get("/list-volumes")]
 async fn list_volumes(state: &State<AppState>) -> AppResult<Json<Vec<DirEntry>>> {
     let backend = state.backend.lock().await;
@@ -732,6 +752,7 @@ fn rocket() -> _ {
             get_home_directory,
             get_parent_directory,
             list_directory_contents,
+            list_files_recursive,
             list_volumes,
             get_recent_chats,
             search_chats,

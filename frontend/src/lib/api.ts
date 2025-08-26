@@ -65,6 +65,10 @@ export interface API {
   get_home_directory(): Promise<string>;
   get_parent_directory(params: { path: string }): Promise<string | null>;
   list_directory_contents(params: { path: string }): Promise<DirEntry[]>;
+  list_files_recursive(params: {
+    path: string;
+    max_depth?: number;
+  }): Promise<DirEntry[]>;
   list_volumes(): Promise<DirEntry[]>;
   get_recent_chats(): Promise<RecentChat[]>;
   search_chats(params: {
