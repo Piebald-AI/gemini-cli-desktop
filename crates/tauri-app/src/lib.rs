@@ -67,6 +67,7 @@ pub fn run() {
             commands::get_home_directory,
             commands::get_parent_directory,
             commands::list_directory_contents,
+            commands::list_files_recursive,
             commands::list_volumes,
             commands::get_git_info,
             commands::debug_environment,
