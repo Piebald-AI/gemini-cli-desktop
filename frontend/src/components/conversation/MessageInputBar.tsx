@@ -83,7 +83,10 @@ export const MessageInputBar = forwardRef<
           {workingDirectory && workingDirectory !== "." && (
             <GitInfo directory={workingDirectory} compact={true} />
           )}
-          <form className="flex gap-2 items-end mt-2" onSubmit={handleSendMessage}>
+          <form
+            className="flex gap-2 items-end mt-2"
+            onSubmit={handleSendMessage}
+          >
             <div className="flex-1 relative">
               <MentionInput
                 ref={mentionInputRef}
