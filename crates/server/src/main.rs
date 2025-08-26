@@ -289,17 +289,18 @@ struct GetParentDirectoryRequest {
 /// Serves the frontend for Gemini Desktop from the embedded built files.
 #[get("/<path..>")]
 fn index(path: PathBuf) -> Result<(ContentType, &'static [u8]), Status> {
-    let mut path = path.to_str().unwrap().trim();
-    if path.is_empty() {
-        path = "index.html";
-    }
+    let file = FRONTEND_DIR
+        .get_file(&path)
+        .or_else(|| FRONTEND_DIR.get_file("index.html"))
+        .ok_or(Status::NotFound)?;
 
-    let file = FRONTEND_DIR.get_file(path).ok_or(Status::NotFound)?;
+    let content_type = if let Some(extension) = path.extension() {
+        ContentType::from_extension(extension.to_str().unwrap()).unwrap()
+    } else {
+        ContentType::HTML
+    };
 
-    Ok((
-        ContentType::from_extension(path.split('.').next_back().unwrap()).unwrap(),
-        file.contents(),
-    ))
+    Ok((content_type, file.contents()))
 }
 
 // =====================================
