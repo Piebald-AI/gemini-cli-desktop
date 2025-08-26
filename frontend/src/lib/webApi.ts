@@ -141,6 +141,17 @@ export const webApi: API = {
     return response.data;
   },
 
+  async list_files_recursive(params: {
+    path: string;
+    max_depth?: number;
+  }): Promise<DirEntry[]> {
+    const response = await apiClient.post<DirEntry[]>(
+      "/list-files-recursive",
+      params
+    );
+    return response.data;
+  },
+
   async list_volumes(): Promise<DirEntry[]> {
     const response = await apiClient.get<DirEntry[]>("/list-volumes");
     return response.data;

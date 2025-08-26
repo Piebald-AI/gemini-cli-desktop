@@ -17,6 +17,7 @@ export default defineConfig({
   },
   build: {
     target: "esnext",
+    emptyOutDir: false,
   },
   define: {
     // eslint-disable-next-line no-undef
