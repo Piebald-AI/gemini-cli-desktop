@@ -23,65 +23,86 @@ export const useRecursiveFileSearch = (initialPath?: string) => {
     error: null,
   });
 
-  const loadFiles = useCallback(async (path: string, maxDepth: number = 1) => {
-    console.log(
-      "🔍 [HOOK] loadFiles called with path:",
-      path,
-      "maxDepth:",
-      maxDepth
-    );
-    console.log("🔍 [HOOK] Current state before loading:", {
-      rootPath: state.rootPath,
-      allFiles: state.allFiles.length,
-      isLoading: state.isLoading,
-      error: state.error,
-    });
+  // Helper function to get relative path
+  const getRelativePath = useCallback((fullPath: string, rootPath: string) => {
+    const workingDirNormalized = rootPath.replace(/\\/g, "/");
+    const entryPathNormalized = fullPath.replace(/\\/g, "/");
 
-    setState((prev) => ({ ...prev, isLoading: true, error: null }));
-    console.log("🔍 [HOOK] Set loading state to true");
-
-    try {
-      console.log("📡 [HOOK] About to call api.list_files_recursive");
-      const files = await api.list_files_recursive({
-        path,
-        max_depth: maxDepth,
-      });
-      console.log("📡 [HOOK] API call completed successfully");
-      console.log("📡 [HOOK] Received files:", files?.length || 0, "entries");
-      if (files && files.length > 0) {
-        console.log(
-          "📡 [HOOK] First 3 files:",
-          files
-            .slice(0, 3)
-            .map((f) => `${f.name} (${f.is_directory ? "dir" : "file"})`)
-        );
-      }
-
-      setState((prev) => ({
-        ...prev,
-        rootPath: path,
-        allFiles: files || [],
-        isLoading: false,
-        error: null,
-      }));
-
-      console.log(
-        "✅ [HOOK] State updated successfully. New file count:",
-        files?.length || 0
+    if (entryPathNormalized.startsWith(workingDirNormalized)) {
+      let relativePath = entryPathNormalized.substring(
+        workingDirNormalized.length
       );
-    } catch (err) {
-      console.error("❌ [HOOK] API call failed with error:", err);
-      console.error("❌ [HOOK] Error details:", {
-        message: err instanceof Error ? err.message : String(err),
-        stack: err instanceof Error ? err.stack : undefined,
-      });
-      setState((prev) => ({
-        ...prev,
-        isLoading: false,
-        error: err instanceof Error ? err.message : "Failed to load files",
-      }));
+      if (relativePath.startsWith("/")) {
+        relativePath = relativePath.substring(1);
+      }
+      return relativePath;
     }
+
+    return fullPath;
   }, []);
+
+  const loadFiles = useCallback(
+    async (path: string, maxDepth: number = 1) => {
+      console.log(
+        "🔍 [HOOK] loadFiles called with path:",
+        path,
+        "maxDepth:",
+        maxDepth
+      );
+      console.log("🔍 [HOOK] Current state before loading:", {
+        rootPath: state.rootPath,
+        allFiles: state.allFiles.length,
+        isLoading: state.isLoading,
+        error: state.error,
+      });
+
+      setState((prev) => ({ ...prev, isLoading: true, error: null }));
+      console.log("🔍 [HOOK] Set loading state to true");
+
+      try {
+        console.log("📡 [HOOK] About to call api.list_files_recursive");
+        const files = await api.list_files_recursive({
+          path,
+          max_depth: maxDepth,
+        });
+        console.log("📡 [HOOK] API call completed successfully");
+        console.log("📡 [HOOK] Received files:", files?.length || 0, "entries");
+        if (files && files.length > 0) {
+          console.log(
+            "📡 [HOOK] First 3 files:",
+            files
+              .slice(0, 3)
+              .map((f) => `${f.name} (${f.is_directory ? "dir" : "file"})`)
+          );
+        }
+
+        setState((prev) => ({
+          ...prev,
+          rootPath: path,
+          allFiles: files || [],
+          isLoading: false,
+          error: null,
+        }));
+
+        console.log(
+          "✅ [HOOK] State updated successfully. New file count:",
+          files?.length || 0
+        );
+      } catch (err) {
+        console.error("❌ [HOOK] API call failed with error:", err);
+        console.error("❌ [HOOK] Error details:", {
+          message: err instanceof Error ? err.message : String(err),
+          stack: err instanceof Error ? err.stack : undefined,
+        });
+        setState((prev) => ({
+          ...prev,
+          isLoading: false,
+          error: err instanceof Error ? err.message : "Failed to load files",
+        }));
+      }
+    },
+    [state.allFiles.length, state.error, state.isLoading, state.rootPath]
+  );
 
   const searchFiles = useCallback(
     (query: string): DirEntry[] => {
@@ -203,26 +224,8 @@ export const useRecursiveFileSearch = (initialPath?: string) => {
 
       return sortedFiltered;
     },
-    [state.allFiles, state.rootPath]
+    [getRelativePath, state.allFiles, state.rootPath]
   );
-
-  // Helper function to get relative path
-  const getRelativePath = useCallback((fullPath: string, rootPath: string) => {
-    const workingDirNormalized = rootPath.replace(/\\/g, "/");
-    const entryPathNormalized = fullPath.replace(/\\/g, "/");
-
-    if (entryPathNormalized.startsWith(workingDirNormalized)) {
-      let relativePath = entryPathNormalized.substring(
-        workingDirNormalized.length
-      );
-      if (relativePath.startsWith("/")) {
-        relativePath = relativePath.substring(1);
-      }
-      return relativePath;
-    }
-
-    return fullPath;
-  }, []);
 
   const reset = useCallback(() => {
     setState({

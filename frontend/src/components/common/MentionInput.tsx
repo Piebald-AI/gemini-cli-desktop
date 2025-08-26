@@ -114,14 +114,6 @@ export function MentionInput({
       const cursorPosition = inputRef.current?.selectionStart || value.length;
       const afterAtAndMention = value.substring(cursorPosition);
 
-      // Find the existing mention text (everything after @ until space or end)
-      const afterAtPos = value.substring(atPosition + 1);
-      const spaceIndex = afterAtPos.indexOf(" ");
-      const existingMentionText =
-        spaceIndex === -1 ? afterAtPos : afterAtPos.substring(0, spaceIndex);
-
-      const mentionText = entry.is_directory ? `${entry.name}/` : entry.name;
-
       // For recursive search, we use the relative path from the working directory
       const workingDirectoryNormalized = workingDirectory.replace(/\\/g, "/");
       const entryPathNormalized = entry.full_path.replace(/\\/g, "/");
@@ -168,7 +160,7 @@ export function MentionInput({
         setTimeout(() => inputRef.current?.focus(), 0);
       }
     },
-    [atPosition, value, extractedMentions, onChange]
+    [atPosition, value, workingDirectory, extractedMentions, onChange]
   );
 
   const handleFileSelection = useCallback(
