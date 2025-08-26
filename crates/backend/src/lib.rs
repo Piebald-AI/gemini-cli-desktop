@@ -625,7 +625,7 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
         &self,
         path: String,
         max_depth: Option<usize>,
-    ) -> BackendResult<Vec<DirEntry>> {
+    ) -> Result<Vec<DirEntry>> {
         filesystem::list_files_recursive(path, max_depth).await
     }
 

@@ -1,5 +1,4 @@
 use anyhow::Result;
-use crate::types::BackendResult;
 use ignore::WalkBuilder;
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -206,7 +205,7 @@ pub async fn list_files_recursive(
     Ok(entries)
 }
 
-pub async fn list_volumes() -> BackendResult<Vec<DirEntry>> {
+pub async fn list_volumes() -> Result<Vec<DirEntry>> {
     let mut volumes = Vec::new();
 
     #[cfg(windows)]
