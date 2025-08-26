@@ -16,7 +16,7 @@ pub async fn check_cli_installed(state: State<'_, AppState>) -> Result<bool, Str
         .backend
         .check_cli_installed()
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| format!("{e:#}"))
 }
 
 #[tauri::command]
@@ -40,22 +40,13 @@ pub async fn start_session(
                 gemini_auth,
             )
             .await
-            .map_err(|e| e.to_string())
+            .map_err(|e| format!("{e:#}"))
     } else {
         // Skip CLI check if using Qwen backend
         if backend_config.is_some() {
             Ok(())
         } else {
-            let available = state
-                .backend
-                .check_cli_installed()
-                .await
-                .map_err(|e| e.to_string())?;
-            if available {
-                Ok(())
-            } else {
-                Err("CLI not available".to_string())
-            }
+            Err("Failed to get backend config".to_string())
         }
     }
 }
@@ -74,7 +65,7 @@ pub async fn send_message(
         .backend
         .send_message(session_id, message, conversation_history)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| format!("{e:#}"))
 }
 
 #[tauri::command]
@@ -121,7 +112,7 @@ pub async fn get_process_statuses(
     state
         .backend
         .get_process_statuses()
-        .map_err(|e| e.to_string())
+        .map_err(|e| format!("{e:#}"))
 }
 
 #[tauri::command]
@@ -132,7 +123,7 @@ pub async fn kill_process(
     state
         .backend
         .kill_process(&conversation_id)
-        .map_err(|e| e.to_string())
+        .map_err(|e| format!("{e:#}"))
 }
 
 #[tauri::command]
@@ -147,7 +138,7 @@ pub async fn send_tool_call_confirmation_response(
         .backend
         .handle_tool_confirmation(session_id, request_id, tool_call_id, outcome)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| format!("{e:#}"))
 }
 
 #[tauri::command]
@@ -159,7 +150,7 @@ pub async fn execute_confirmed_command(
         .backend
         .execute_confirmed_command(command)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| format!("{e:#}"))
 }
 
 #[tauri::command]
@@ -172,7 +163,7 @@ pub async fn generate_conversation_title(
         .backend
         .generate_conversation_title(message, model)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| format!("{e:#}"))
 }
 
 #[tauri::command]
@@ -181,7 +172,7 @@ pub async fn validate_directory(path: String, state: State<'_, AppState>) -> Res
         .backend
         .validate_directory(path)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| format!("{e:#}"))
 }
 
 #[tauri::command]
@@ -190,7 +181,7 @@ pub async fn is_home_directory(path: String, state: State<'_, AppState>) -> Resu
         .backend
         .is_home_directory(path)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| format!("{e:#}"))
 }
 
 #[tauri::command]
@@ -199,7 +190,7 @@ pub async fn get_home_directory(state: State<'_, AppState>) -> Result<String, St
         .backend
         .get_home_directory()
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| format!("{e:#}"))
 }
 
 #[tauri::command]
@@ -211,7 +202,7 @@ pub async fn get_parent_directory(
         .backend
         .get_parent_directory(path)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| format!("{e:#}"))
 }
 
 #[tauri::command]
@@ -223,7 +214,7 @@ pub async fn list_directory_contents(
         .backend
         .list_directory_contents(path)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| format!("{e:#}"))
 }
 
 #[tauri::command]
@@ -245,7 +236,7 @@ pub async fn list_volumes(state: State<'_, AppState>) -> Result<Vec<DirEntry>, S
         .backend
         .list_volumes()
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| format!("{e:#}"))
 }
 
 #[tauri::command]
@@ -266,7 +257,7 @@ pub async fn get_recent_chats(state: State<'_, AppState>) -> Result<Vec<RecentCh
         .backend
         .get_recent_chats()
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| format!("{e:#}"))
 }
 
 #[tauri::command]
@@ -279,7 +270,7 @@ pub async fn search_chats(
         .backend
         .search_chats(query, filters)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| format!("{e:#}"))
 }
 
 #[tauri::command]
@@ -294,7 +285,7 @@ pub async fn list_projects(
         .backend
         .list_projects(lim, off)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| format!("{e:#}"))
 }
 
 #[tauri::command]
@@ -305,7 +296,7 @@ pub async fn list_enriched_projects(
         .backend
         .list_enriched_projects()
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| format!("{e:#}"))
 }
 
 #[tauri::command]
@@ -318,7 +309,7 @@ pub async fn get_project(
         .backend
         .get_enriched_project(sha256, external_root_path)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| format!("{e:#}"))
 }
 
 #[tauri::command]
@@ -330,7 +321,7 @@ pub async fn get_project_discussions(
         .backend
         .get_project_discussions(&project_id)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| format!("{e:#}"))
 }
 
 #[tauri::command]

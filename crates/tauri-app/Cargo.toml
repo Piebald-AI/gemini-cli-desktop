@@ -20,6 +20,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
+anyhow = "1.0.99"
 glob = "0.3"
 chrono = { version = "0.4", features = ["clock", "serde"] }
 dirs = "5"

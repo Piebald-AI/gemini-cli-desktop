@@ -12,6 +12,7 @@ import { CustomTitleBar } from "./components/layout/CustomTitleBar";
 import { CliWarnings } from "./components/common/CliWarnings";
 import { DirectoryPanel } from "./components/common/DirectoryPanel";
 import { SidebarInset } from "./components/ui/sidebar";
+import { Toaster } from "./components/ui/sonner";
 import { ConversationContext } from "./contexts/ConversationContext";
 import {
   BackendProvider,
@@ -400,15 +401,18 @@ function RootLayout() {
 
 function App() {
   return (
-    <Routes>
-      <Route element={<RootLayout />}>
-        <Route index element={<HomeDashboard />} />
-        <Route path="projects" element={<ProjectsPage />} />
-        <Route path="projects/:id" element={<ProjectDetailPage />} />
-        <Route path="mcp" element={<McpServersPage />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Route>
-    </Routes>
+    <>
+      <Routes>
+        <Route element={<RootLayout />}>
+          <Route index element={<HomeDashboard />} />
+          <Route path="projects" element={<ProjectsPage />} />
+          <Route path="projects/:id" element={<ProjectDetailPage />} />
+          <Route path="mcp" element={<McpServersPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
+      </Routes>
+      <Toaster richColors />
+    </>
   );
 }
 

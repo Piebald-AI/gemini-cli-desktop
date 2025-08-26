@@ -1,4 +1,4 @@
-use crate::types::BackendResult;
+use anyhow::Result;
 use ignore::WalkBuilder;
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -38,12 +38,12 @@ pub struct GitInfo {
     pub has_untracked_files: bool,
 }
 
-pub async fn validate_directory(path: String) -> BackendResult<bool> {
+pub async fn validate_directory(path: String) -> Result<bool> {
     let path = Path::new(&path);
     Ok(path.exists() && path.is_dir())
 }
 
-pub async fn is_home_directory(path: String) -> BackendResult<bool> {
+pub async fn is_home_directory(path: String) -> Result<bool> {
     let home = std::env::var("HOME")
         .or_else(|_| std::env::var("USERPROFILE"))
         .unwrap_or_else(|_| ".".to_string());
@@ -54,19 +54,19 @@ pub async fn is_home_directory(path: String) -> BackendResult<bool> {
     Ok(home_path == check_path)
 }
 
-pub async fn get_home_directory() -> BackendResult<String> {
+pub async fn get_home_directory() -> Result<String> {
     let home = std::env::var("HOME")
         .or_else(|_| std::env::var("USERPROFILE"))
         .unwrap_or_else(|_| ".".to_string());
     Ok(home)
 }
 
-pub async fn get_parent_directory(path: String) -> BackendResult<Option<String>> {
+pub async fn get_parent_directory(path: String) -> Result<Option<String>> {
     let path = Path::new(&path);
     Ok(path.parent().map(|p| p.to_string_lossy().to_string()))
 }
 
-pub async fn list_directory_contents(path: String) -> BackendResult<Vec<DirEntry>> {
+pub async fn list_directory_contents(path: String) -> Result<Vec<DirEntry>> {
     let mut entries = Vec::new();
     let dir_path = Path::new(&path);
 
@@ -157,10 +157,7 @@ pub async fn list_directory_contents(path: String) -> BackendResult<Vec<DirEntry
     Ok(entries)
 }
 
-pub async fn list_files_recursive(
-    path: String,
-    max_depth: Option<usize>,
-) -> BackendResult<Vec<DirEntry>> {
+pub async fn list_files_recursive(path: String, max_depth: Option<usize>) -> Result<Vec<DirEntry>> {
     let mut entries = Vec::new();
     let root_path = Path::new(&path);
 
@@ -249,7 +246,7 @@ pub async fn list_files_recursive(
     Ok(entries)
 }
 
-pub async fn list_volumes() -> BackendResult<Vec<DirEntry>> {
+pub async fn list_volumes() -> Result<Vec<DirEntry>> {
     let mut volumes = Vec::new();
 
     #[cfg(windows)]
@@ -332,7 +329,7 @@ pub async fn list_volumes() -> BackendResult<Vec<DirEntry>> {
     Ok(volumes)
 }
 
-pub async fn get_git_info(directory: String) -> BackendResult<Option<GitInfo>> {
+pub async fn get_git_info(directory: String) -> Result<Option<GitInfo>> {
     let path = Path::new(&directory);
     if !path.exists() || !path.is_dir() {
         return Ok(None);

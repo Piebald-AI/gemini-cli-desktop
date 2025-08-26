@@ -156,6 +156,18 @@ The project is organized as a Rust workspace with three main crates:
   - Dark/light mode toggle support
   - Enhanced sidebar component with resize handle and drag-to-resize functionality
 
+#### API Layer
+- **`api.ts`** - Unified API abstraction layer
+  - Cross-platform command routing (Tauri vs Web)
+  - Type-safe command validation with runtime checks
+  - Comprehensive error handling with toast notifications
+  - Support for all backend commands with proper argument validation
+- **`webApi.ts`** - Web-specific REST API implementation
+  - Axios-based HTTP client with 30-second timeout
+  - Automatic error interceptors with user-friendly toast messages
+  - WebSocket management with reconnection logic
+  - Complete REST endpoint coverage matching Tauri commands
+
 #### Context and State Management
 - **`BackendContext.tsx`** - Primary communication layer
   - API abstraction (Tauri vs REST)
@@ -193,6 +205,16 @@ The project is organized as a Rust workspace with three main crates:
 - **`useToolCallConfirmation.ts`** - User approval workflow
 - **`use-mobile.ts`** - Responsive design utilities
 
+#### Utilities and Helpers
+- **`utils/toolCallParser.ts`** - Tool call parsing and validation
+- **`utils/toolInputParser.ts`** - Tool input formatting and validation
+- **`utils/wordDiff.ts`** - Word-level text difference calculation
+- **`utils/backendDefaults.ts`** - Default backend configuration values
+- **`utils/backendText.ts`** - Backend-specific text and messaging
+- **`utils/backendValidation.ts`** - Backend configuration validation
+- **`utils/mcpValidation.ts`** - Model Context Protocol validation
+- **`utils/helpers.ts`** - General utility functions
+
 ## Technology Stack
 
 ### Backend Technologies
@@ -216,7 +238,7 @@ The project is organized as a Rust workspace with three main crates:
 - **React Router 7.8** - Client-side routing
 - **React Mentions** - @-mention support in text inputs
 - **React Syntax Highlighter** - Code syntax highlighting
-- **Axios 1.11** - HTTP client with interceptors
+- **Axios 1.11** - HTTP client with automatic error handling and toast notifications
 - **Lucide React** - Icon library
 - **KaTeX** - Math rendering support
 - **Highlight.js** - Code syntax highlighting
@@ -570,7 +592,22 @@ api.listen<EventPayload>("event_name", (event) => {
   payload: any,
   sequence: number  // For ordering
 }
+
+// WebSocket connection management
+const manager = getWebSocketManager();
+const unsubscribe = await webListen<EventPayload>("event_name", (event) => {
+  console.log(event.payload);
+});
+
+// Cleanup
+unsubscribe();
 ```
+
+**Connection Features**:
+- Automatic reconnection with exponential backoff (max 5 attempts)
+- Connection state promises for reliable event setup
+- Event listener lifecycle management
+- Graceful degradation and error recovery
 
 ## Deployment
 

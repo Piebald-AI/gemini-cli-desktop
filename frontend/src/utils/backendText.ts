@@ -63,5 +63,6 @@ export const getBackendText = (backend: BackendType) => {
     loginNotSupportedTitle: t("warnings.loginNotSupported", {
       appName: appDisplayName,
     }),
+    tagline: t("dashboard.tagline", { appName: backendDisplayName }),
   };
 };

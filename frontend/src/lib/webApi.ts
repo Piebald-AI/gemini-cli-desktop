@@ -33,78 +33,43 @@ interface ProcessStatus {
 
 // Web API functions that mirror Tauri invoke calls
 export const webApi: API = {
-  async check_cli_installed(): Promise<boolean> {
+  async check_cli_installed() {
     const response = await apiClient.get<boolean>("/check-cli-installed");
     return response.data;
   },
 
-  async start_session(params: {
-    sessionId: string;
-    workingDirectory?: string;
-    model?: string;
-    backendConfig?: {
-      api_key: string;
-      base_url: string;
-      model: string;
-    };
-    geminiAuth?: {
-      method: string;
-      api_key?: string;
-      vertex_project?: string;
-      vertex_location?: string;
-    };
-  }): Promise<void> {
+  async start_session(params) {
     await apiClient.post("/start-session", params);
   },
 
-  async send_message(params: {
-    sessionId: string;
-    message: string;
-    conversationHistory: string;
-    model?: string;
-    backendConfig?: {
-      api_key: string;
-      base_url: string;
-      model: string;
-    };
-  }): Promise<void> {
+  async send_message(params) {
     await apiClient.post("/send-message", params);
   },
 
-  async get_process_statuses(): Promise<ProcessStatus[]> {
+  async get_process_statuses() {
     const response = await apiClient.get<ProcessStatus[]>("/process-statuses");
     return response.data;
   },
 
-  async kill_process(params: { conversationId: string }): Promise<void> {
+  async kill_process(params) {
     await apiClient.post("/kill-process", params);
   },
 
-  async send_tool_call_confirmation_response(params: {
-    sessionId: string;
-    requestId: number;
-    toolCallId: string;
-    outcome: string;
-  }): Promise<void> {
+  async send_tool_call_confirmation_response(params) {
     await apiClient.post("/tool-confirmation", params);
   },
 
-  async execute_confirmed_command(params: {
-    command: string;
-  }): Promise<string> {
+  async execute_confirmed_command(params) {
     const response = await apiClient.post<string>("/execute-command", params);
     return response.data;
   },
 
-  async generate_conversation_title(params: {
-    message: string;
-    model?: string;
-  }): Promise<string> {
+  async generate_conversation_title(params) {
     const response = await apiClient.post<string>("/generate-title", params);
     return response.data;
   },
 
-  async validate_directory(params: { path: string }): Promise<boolean> {
+  async validate_directory(params) {
     const response = await apiClient.post<boolean>(
       "/validate-directory",
       params
@@ -112,7 +77,7 @@ export const webApi: API = {
     return response.data;
   },
 
-  async is_home_directory(params: { path: string }): Promise<boolean> {
+  async is_home_directory(params) {
     const response = await apiClient.post<boolean>(
       "/is-home-directory",
       params
@@ -120,12 +85,12 @@ export const webApi: API = {
     return response.data;
   },
 
-  async get_home_directory(): Promise<string> {
+  async get_home_directory() {
     const response = await apiClient.get<string>("/get-home-directory");
     return response.data;
   },
 
-  async get_parent_directory(params: { path: string }): Promise<string | null> {
+  async get_parent_directory(params) {
     const response = await apiClient.post<string | null>(
       "/get-parent-directory",
       params
@@ -133,7 +98,7 @@ export const webApi: API = {
     return response.data;
   },
 
-  async list_directory_contents(params: { path: string }): Promise<DirEntry[]> {
+  async list_directory_contents(params) {
     const response = await apiClient.post<DirEntry[]>(
       "/list-directory",
       params
@@ -157,36 +122,19 @@ export const webApi: API = {
     return response.data;
   },
 
-  async get_git_info(params: { path: string }): Promise<{
-    current_directory: string;
-    branch: string;
-    status: string;
-    is_clean: boolean;
-    has_uncommitted_changes: boolean;
-    has_untracked_files: boolean;
-  } | null> {
-    const response = await apiClient.post<{
-      current_directory: string;
-      branch: string;
-      status: string;
-      is_clean: boolean;
-      has_uncommitted_changes: boolean;
-      has_untracked_files: boolean;
-    } | null>("/api/get-git-info", params);
+  async get_git_info(params) {
+    const response = await apiClient.post("/get-git-info", params);
     return response.data;
   },
 
   // Fetch recent chats for web mode via REST endpoint
-  async get_recent_chats(): Promise<RecentChat[]> {
+  async get_recent_chats() {
     const response = await apiClient.get<RecentChat[]>("/recent-chats");
     return response.data;
   },
 
   // Search across chats for web mode via REST endpoint
-  async search_chats(params: {
-    query: string;
-    filters?: SearchFilters;
-  }): Promise<SearchResult[]> {
+  async search_chats(params) {
     const response = await apiClient.post<SearchResult[]>(
       "/search-chats",
       params
@@ -194,10 +142,7 @@ export const webApi: API = {
     return response.data;
   },
 
-  async list_projects(params?: {
-    limit?: number;
-    offset?: number;
-  }): Promise<ProjectsResponse> {
+  async list_projects(params) {
     const limit = params?.limit ?? 25;
     const offset = params?.offset ?? 0;
     const response = await apiClient.get<ProjectsResponse>("/projects", {
@@ -206,14 +151,7 @@ export const webApi: API = {
     return response.data;
   },
 
-  async get_project_discussions(params: { projectId: string }): Promise<
-    {
-      id: string;
-      title: string;
-      started_at_iso?: string;
-      message_count?: number;
-    }[]
-  > {
+  async get_project_discussions(params) {
     const response = await apiClient.get<
       {
         id: string;
@@ -225,16 +163,13 @@ export const webApi: API = {
     return response.data;
   },
 
-  async list_enriched_projects(): Promise<EnrichedProject[]> {
+  async list_enriched_projects() {
     const response =
       await apiClient.get<EnrichedProject[]>("/projects-enriched");
     return response.data;
   },
 
-  async get_project(params: {
-    sha256: string;
-    externalRootPath: string;
-  }): Promise<EnrichedProject> {
+  async get_project(params) {
     const response = await apiClient.get<EnrichedProject>("/project", {
       params: {
         sha256: params.sha256,
