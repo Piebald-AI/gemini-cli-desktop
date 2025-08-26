@@ -747,7 +747,7 @@ gemini-desktop/
   - This prevents console windows from flashing on screen during command execution
   - Example:
     ```rust
-    #[cfg(target_os = "windows")]
+    #[cfg(windows)]
     command.creation_flags(0x08000000); // CREATE_NO_WINDOW
     ```
   - This applies to ALL commands that might spawn console windows, including:

@@ -5,6 +5,7 @@ use std::fs;
 use std::path::Path;
 use tokio::process::Command;
 
+#[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x08000000;
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
@@ -351,7 +352,7 @@ pub async fn get_git_info(directory: String) -> Result<Option<GitInfo>> {
         .arg("branch")
         .arg("--show-current")
         .current_dir(path);
-    #[cfg(target_os = "windows")]
+    #[cfg(windows)]
     branch_output_cmd.creation_flags(CREATE_NO_WINDOW);
     let branch_output = branch_output_cmd.output().await;
 
@@ -366,7 +367,7 @@ pub async fn get_git_info(directory: String) -> Result<Option<GitInfo>> {
                 .arg("--short")
                 .arg("HEAD")
                 .current_dir(path);
-            #[cfg(target_os = "windows")]
+            #[cfg(windows)]
             symbolic_ref_cmd.creation_flags(CREATE_NO_WINDOW);
             let symbolic_ref_output = symbolic_ref_cmd.output().await;
 
@@ -393,7 +394,7 @@ pub async fn get_git_info(directory: String) -> Result<Option<GitInfo>> {
         .arg("--porcelain")
         .arg("--branch")
         .current_dir(path);
-    #[cfg(target_os = "windows")]
+    #[cfg(windows)]
     status_output_cmd.creation_flags(CREATE_NO_WINDOW);
     let status_output = status_output_cmd.output().await;
 
@@ -745,7 +746,7 @@ mod tests {
         // Initialize a git repository for the ignore crate to work properly
         let mut git_command = std::process::Command::new("git");
         git_command.args(&["init"]).current_dir(root_path);
-        #[cfg(target_os = "windows")]
+        #[cfg(windows)]
         git_command.creation_flags(CREATE_NO_WINDOW);
         git_command.output().expect("Failed to initialize git repo");
 
@@ -898,7 +899,7 @@ mod tests {
         // Initialize a git repository for the ignore crate to work properly
         let mut git_command = std::process::Command::new("git");
         git_command.args(&["init"]).current_dir(root_path);
-        #[cfg(target_os = "windows")]
+        #[cfg(windows)]
         git_command.creation_flags(CREATE_NO_WINDOW);
         git_command.output().expect("Failed to initialize git repo");
 
@@ -961,7 +962,7 @@ mod tests {
         // Initialize git repo
         let mut git_command = std::process::Command::new("git");
         git_command.args(&["init"]).current_dir(root_path);
-        #[cfg(target_os = "windows")]
+        #[cfg(windows)]
         git_command.creation_flags(CREATE_NO_WINDOW);
         git_command.output().expect("Failed to initialize git repo");
 
@@ -1012,7 +1013,7 @@ mod tests {
         // Initialize git repo
         let mut git_command = std::process::Command::new("git");
         git_command.args(&["init"]).current_dir(root_path);
-        #[cfg(target_os = "windows")]
+        #[cfg(windows)]
         git_command.creation_flags(CREATE_NO_WINDOW);
         git_command.output().expect("Failed to initialize git repo");
 
