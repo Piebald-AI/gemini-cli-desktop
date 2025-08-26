@@ -511,5 +511,13 @@
   "directoryPanel": {
     "title": "Directory",
     "noContent": "No directory content"
+  },
+
+  "newChatPlaceholder": {
+    "title": "Ready to start chatting",
+    "description": "Type your message below to begin a conversation with {{model}} using {{backendName}}.",
+    "descriptionBefore": "Type your message below to begin a conversation with ",
+    "descriptionAfter": " using {{backendName}}.",
+    "tip": "Try asking questions about your code, documentation, or any programming topics"
   }
 }

@@ -5,6 +5,7 @@ import { useConversation } from "../contexts/ConversationContext";
 import { MessageContent } from "../components/conversation/MessageContent";
 import { ThinkingBlock } from "../components/conversation/ThinkingBlock";
 import { ToolCallDisplay } from "../components/common/ToolCallDisplay";
+import { NewChatPlaceholder } from "../components/conversation/NewChatPlaceholder";
 import { SmartLogo } from "../components/branding/SmartLogo";
 import { SmartLogoCenter } from "../components/branding/SmartLogoCenter";
 import { DesktopText } from "../components/branding/DesktopText";
@@ -39,12 +40,15 @@ export const HomeDashboard: React.FC = () => {
   return (
     <>
       {currentConversation ? (
-        <div
-          ref={messagesContainerRef as React.RefObject<HTMLDivElement>}
-          className="flex-1 min-h-0 overflow-y-auto p-6 relative"
-        >
-          <div className="space-y-8 pb-4">
-            {currentConversation.messages.map((message, index) => (
+        currentConversation.messages.length === 0 ? (
+          <NewChatPlaceholder />
+        ) : (
+          <div
+            ref={messagesContainerRef as React.RefObject<HTMLDivElement>}
+            className="flex-1 min-h-0 overflow-y-auto p-6 relative"
+          >
+            <div className="space-y-8 pb-4">
+              {currentConversation.messages.map((message, index) => (
               <div
                 key={message.id}
                 className={`w-full ${
@@ -180,6 +184,7 @@ export const HomeDashboard: React.FC = () => {
             ))}
           </div>
         </div>
+        )
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
           <div className="flex flex-row items-center mb-4 gap-2">

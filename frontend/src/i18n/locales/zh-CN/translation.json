@@ -512,5 +512,13 @@
   "directoryPanel": {
     "title": "目录",
     "noContent": "无目录内容"
+  },
+
+  "newChatPlaceholder": {
+    "title": "准备开始聊天",
+    "description": "在下方输入消息，开始与 {{model}} 使用 {{backendName}} 对话。",
+    "descriptionBefore": "在下方输入消息，开始与 ",
+    "descriptionAfter": " 使用 {{backendName}} 对话。",
+    "tip": "尝试询问关于代码、文档或任何编程话题的问题"
   }
 }
