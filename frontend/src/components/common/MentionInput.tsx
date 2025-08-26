@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, forwardRef, useImperativeHandle } from "react";
 import { Input } from "../ui/input";
 import { cn } from "@/lib/utils";
 import { useRecursiveFileSearch } from "@/hooks/useRecursiveFileSearch";
@@ -25,7 +25,11 @@ interface MentionInputProps {
   onKeyDown?: (event: React.KeyboardEvent) => void;
 }
 
-export function MentionInput({
+export interface MentionInputRef {
+  insertMention: (mentionText: string) => void;
+}
+
+export const MentionInput = forwardRef<MentionInputRef, MentionInputProps>(({
   value,
   onChange,
   workingDirectory = ".",
@@ -33,7 +37,7 @@ export function MentionInput({
   disabled = false,
   className,
   onKeyDown,
-}: MentionInputProps) {
+}, ref) => {
   const [showFilePicker, setShowFilePicker] = useState(false);
   const [atPosition, setAtPosition] = useState<number | null>(null);
   const [extractedMentions, setExtractedMentions] = useState<Mention[]>([]);
@@ -218,6 +222,47 @@ export function MentionInput({
     [handleFileSelection]
   );
 
+  // Programmatically insert a mention (for external components like DirectoryPanel)
+  const insertMention = useCallback((mentionText: string) => {
+    console.log("💬 [MentionInput] insertMention called with:", mentionText);
+    console.log("💬 [MentionInput] Current value:", value);
+    console.log("💬 [MentionInput] inputRef.current:", !!inputRef.current);
+
+    const cursorPosition = inputRef.current?.selectionStart || value.length;
+    const beforeCursor = value.substring(0, cursorPosition);
+    const afterCursor = value.substring(cursorPosition);
+
+    console.log("💬 [MentionInput] Cursor position:", cursorPosition);
+    console.log("💬 [MentionInput] Before cursor:", beforeCursor);
+    console.log("💬 [MentionInput] After cursor:", afterCursor);
+
+    // Insert the mention at the cursor position
+    const newValue = `${beforeCursor}${mentionText}${afterCursor}`;
+    console.log("💬 [MentionInput] New value:", newValue);
+
+    // Extract mentions from the new value
+    const mentions = extractMentionsFromValue(newValue);
+    setExtractedMentions(mentions);
+
+    console.log("💬 [MentionInput] Calling onChange with new value");
+    onChange(null, newValue, newValue, mentions);
+
+    // Focus back to input and position cursor after the inserted text
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+        const newCursorPosition = cursorPosition + mentionText.length;
+        inputRef.current.setSelectionRange(newCursorPosition, newCursorPosition);
+        console.log("💬 [MentionInput] Set cursor to position:", newCursorPosition);
+      }
+    }, 0);
+  }, [value, onChange]);
+
+  // Expose the insertMention method via ref
+  useImperativeHandle(ref, () => ({
+    insertMention,
+  }), [insertMention]);
+
   return (
     <div className={cn("relative", className)}>
       {/* File picker dropdown */}
@@ -244,7 +289,7 @@ export function MentionInput({
       />
     </div>
   );
-}
+});
 
 // Helper function to extract mentions from input value
 const extractMentionsFromValue = (value: string): Mention[] => {
@@ -272,3 +317,5 @@ const extractMentionsFromValue = (value: string): Mention[] => {
 
   return mentions;
 };
+
+MentionInput.displayName = "MentionInput";

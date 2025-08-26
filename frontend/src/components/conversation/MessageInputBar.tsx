@@ -1,4 +1,4 @@
-import React from "react";
+import React, { forwardRef, useImperativeHandle, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../ui/button";
 import {
@@ -8,7 +8,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "../ui/dialog";
-import { MentionInput } from "../common/MentionInput";
+import { MentionInput, MentionInputRef } from "../common/MentionInput";
 import { Send, Info, ImagePlus } from "lucide-react";
 import { useBackend } from "../../contexts/BackendContext";
 import { getBackendText } from "../../utils/backendText";
@@ -29,17 +29,37 @@ interface MessageInputBarProps {
   workingDirectory?: string;
 }
 
-export const MessageInputBar: React.FC<MessageInputBarProps> = ({
+export interface MessageInputBarRef {
+  insertMention: (mention: string) => void;
+}
+
+export const MessageInputBar = forwardRef<MessageInputBarRef, MessageInputBarProps>(({
   input,
   isCliInstalled,
   cliIOLogs,
   handleInputChange,
   handleSendMessage,
   workingDirectory = ".",
-}) => {
+}, ref) => {
   const { t } = useTranslation();
   const { selectedBackend } = useBackend();
   const backendText = getBackendText(selectedBackend);
+  const mentionInputRef = useRef<MentionInputRef>(null);
+
+  // Expose the insertMention method via ref
+  useImperativeHandle(ref, () => ({
+    insertMention: (mention: string) => {
+      console.log("📝 [MessageInputBar] Received insertMention:", mention);
+      console.log("📝 [MessageInputBar] mentionInputRef.current:", !!mentionInputRef.current);
+      if (mentionInputRef.current) {
+        console.log("📝 [MessageInputBar] Calling insertMention on MentionInput");
+        mentionInputRef.current.insertMention(mention);
+      } else {
+        console.log("📝 [MessageInputBar] MentionInput ref is null!");
+      }
+    },
+  }), []);
+
   return (
     <div className="sticky bottom-0 bg-white dark:bg-neutral-900 flex items-center">
       <div className="px-6 py-3 w-full">
@@ -52,6 +72,7 @@ export const MessageInputBar: React.FC<MessageInputBarProps> = ({
               </div>
             )}
             <MentionInput
+              ref={mentionInputRef}
               value={input}
               onChange={handleInputChange}
               workingDirectory={workingDirectory}
@@ -134,4 +155,6 @@ export const MessageInputBar: React.FC<MessageInputBarProps> = ({
       </div>
     </div>
   );
-};
+});
+
+MessageInputBar.displayName = "MessageInputBar";

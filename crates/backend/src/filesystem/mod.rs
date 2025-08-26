@@ -74,45 +74,78 @@ pub async fn list_directory_contents(path: String) -> BackendResult<Vec<DirEntry
         return Ok(entries);
     }
 
-    let read_dir = std::fs::read_dir(dir_path)?;
+    // Use the ignore crate's WalkBuilder for proper gitignore support
+    let mut builder = WalkBuilder::new(dir_path);
+    builder
+        .max_depth(Some(1)) // Only list immediate children (not recursive)
+        .git_ignore(true) // Respect .gitignore files
+        .git_global(true) // Respect global git ignore
+        .git_exclude(true) // Respect .git/info/exclude
+        .hidden(false) // Show hidden files/directories (except .git which is handled by git_ignore)
+        .parents(true); // Respect gitignore files in parent directories
 
-    for entry in read_dir {
-        let entry = entry?;
-        let metadata = entry.metadata()?;
-        let file_name = entry.file_name().to_string_lossy().to_string();
-        let full_path = entry.path().to_string_lossy().to_string();
+    // Collect entries using the ignore crate
+    for result in builder.build() {
+        match result {
+            Ok(entry) => {
+                let entry_path = entry.path();
 
-        let modified = metadata
-            .modified()
-            .ok()
-            .and_then(|time| time.duration_since(std::time::UNIX_EPOCH).ok())
-            .map(|duration| duration.as_secs());
+                // Skip the root directory itself
+                if entry_path == dir_path {
+                    continue;
+                }
 
-        let size = if metadata.is_file() {
-            Some(metadata.len())
-        } else {
-            None
-        };
+                // Only process immediate children (depth 1)
+                if entry_path.parent() != Some(dir_path) {
+                    continue;
+                }
 
-        let is_symlink = metadata.is_symlink();
-        let symlink_target = if is_symlink {
-            std::fs::read_link(entry.path())
-                .ok()
-                .map(|p| p.to_string_lossy().to_string())
-        } else {
-            None
-        };
+                let metadata = match entry_path.metadata() {
+                    Ok(metadata) => metadata,
+                    Err(_) => continue, // Skip files we can't read metadata for
+                };
 
-        entries.push(DirEntry {
-            name: file_name,
-            is_directory: metadata.is_dir(),
-            full_path,
-            size,
-            modified,
-            is_symlink,
-            symlink_target,
-            volume_type: None,
-        });
+                let file_name = entry_path
+                    .file_name()
+                    .unwrap_or_default()
+                    .to_string_lossy()
+                    .to_string();
+                let full_path = entry_path.to_string_lossy().to_string();
+
+                let modified = metadata
+                    .modified()
+                    .ok()
+                    .and_then(|time| time.duration_since(std::time::UNIX_EPOCH).ok())
+                    .map(|duration| duration.as_secs());
+
+                let size = if metadata.is_file() {
+                    Some(metadata.len())
+                } else {
+                    None
+                };
+
+                let is_symlink = metadata.is_symlink();
+                let symlink_target = if is_symlink {
+                    fs::read_link(entry_path)
+                        .ok()
+                        .map(|p| p.to_string_lossy().to_string())
+                } else {
+                    None
+                };
+
+                entries.push(DirEntry {
+                    name: file_name,
+                    is_directory: metadata.is_dir(),
+                    full_path,
+                    size,
+                    modified,
+                    is_symlink,
+                    symlink_target,
+                    volume_type: None,
+                });
+            }
+            Err(_) => continue, // Skip entries we can't read
+        }
     }
 
     entries.sort_by(|a, b| match (a.is_directory, b.is_directory) {
@@ -696,6 +729,52 @@ mod tests {
             .as_secs();
         let modified = entry.modified.unwrap();
         assert!(now - modified < 60, "Modified time should be recent");
+    }
+
+    #[tokio::test]
+    async fn test_list_directory_contents_respects_gitignore() {
+        let temp_dir = TempDir::new().unwrap();
+        let root_path = temp_dir.path();
+
+        // Initialize a git repository for the ignore crate to work properly
+        std::process::Command::new("git")
+            .args(&["init"])
+            .current_dir(root_path)
+            .output()
+            .expect("Failed to initialize git repo");
+
+        // Create .gitignore that ignores *.log files and the build/ directory
+        fs::write(root_path.join(".gitignore"), "*.log\nbuild/\n").unwrap();
+
+        // Create files and directories
+        fs::write(root_path.join("file1.txt"), "content").unwrap();
+        fs::write(root_path.join("file2.log"), "log content").unwrap(); // Should be ignored
+        fs::write(root_path.join("README.md"), "readme").unwrap();
+        
+        let build_dir = root_path.join("build");
+        fs::create_dir(&build_dir).unwrap(); // Should be ignored
+        fs::write(build_dir.join("output.txt"), "build output").unwrap();
+
+        let src_dir = root_path.join("src");
+        fs::create_dir(&src_dir).unwrap(); // Should be visible
+        fs::write(src_dir.join("main.rs"), "fn main() {}").unwrap();
+
+        // List directory contents
+        let result = list_directory_contents(root_path.to_string_lossy().to_string()).await;
+        assert!(result.is_ok());
+
+        let entries = result.unwrap();
+        let entry_names: Vec<&str> = entries.iter().map(|e| e.name.as_str()).collect();
+
+        // Should include:
+        assert!(entry_names.contains(&"file1.txt"));
+        assert!(entry_names.contains(&"README.md"));
+        assert!(entry_names.contains(&"src"));
+        assert!(entry_names.contains(&".gitignore")); // .gitignore itself should be visible
+
+        // Should NOT include (filtered by gitignore):
+        assert!(!entry_names.contains(&"file2.log")); // Filtered by *.log pattern
+        assert!(!entry_names.contains(&"build")); // Filtered by build/ pattern
     }
 
     #[tokio::test]
