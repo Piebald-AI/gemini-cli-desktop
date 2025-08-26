@@ -50,6 +50,7 @@ pub struct PersistentSession {
     pub rpc_logger: Arc<dyn RpcLogger>,
     pub child: Option<Child>,
     pub working_directory: String,
+    pub backend_type: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -58,6 +59,7 @@ pub struct ProcessStatus {
     pub pid: Option<u32>,
     pub created_at: u64,
     pub is_alive: bool,
+    pub backend_type: String,
 }
 
 impl From<&PersistentSession> for ProcessStatus {
@@ -67,6 +69,7 @@ impl From<&PersistentSession> for ProcessStatus {
             pid: session.pid,
             created_at: session.created_at,
             is_alive: session.is_alive,
+            backend_type: session.backend_type.clone(),
         }
     }
 }
@@ -98,13 +101,14 @@ impl SessionManager {
         );
         for status in &statuses {
             println!(
-                "📊 [STATUS-CHECK]   - {}: {} (PID: {:?}, created: {})",
+                "📊 [STATUS-CHECK]   - {}: {} {} (PID: {:?}, created: {})",
                 status.conversation_id,
                 if status.is_alive {
                     "ACTIVE"
                 } else {
                     "INACTIVE"
                 },
+                status.backend_type.to_uppercase(),
                 status.pid,
                 status.created_at
             );
@@ -759,6 +763,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
             anyhow::anyhow!("Session initialization failed: Failed to lock processes")
         })?;
 
+        let backend_type = if backend_config.is_some() { "qwen" } else { "gemini" };
         let persistent_session = PersistentSession {
             conversation_id: session_id.clone(),
             acp_session_id: Some(session_result.session_id.clone()),
@@ -773,13 +778,14 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
             rpc_logger: rpc_logger.clone(),
             child: Some(child),
             working_directory: working_directory.clone(),
+            backend_type: backend_type.to_string(),
         };
 
         processes.insert(session_id.clone(), persistent_session);
-        println!("💾 [HANDSHAKE] Session stored successfully - marking as ALIVE");
+        println!("💾 [HANDSHAKE] {} session stored successfully - marking as ALIVE", backend_type.to_uppercase());
         println!(
-            "💾 [HANDSHAKE] Session details: conversation_id={}, acp_session_id={}, pid={:?}, is_alive=true",
-            session_id, session_result.session_id, pid
+            "💾 [HANDSHAKE] Session details: conversation_id={}, backend={}, acp_session_id={}, pid={:?}, is_alive=true",
+            session_id, backend_type.to_uppercase(), session_result.session_id, pid
         );
     }
 
@@ -1293,6 +1299,7 @@ mod tests {
             rpc_logger: Arc::new(NoOpRpcLogger),
             child: None,
             working_directory: ".".to_string(),
+            backend_type: "gemini".to_string(),
         };
 
         assert_eq!(session.conversation_id, "test-id");
@@ -1311,6 +1318,7 @@ mod tests {
             pid: Some(12345),
             created_at: 1640995200,
             is_alive: true,
+            backend_type: "gemini".to_string(),
         };
 
         let json = serde_json::to_string(&status).unwrap();
@@ -1335,6 +1343,7 @@ mod tests {
             rpc_logger: Arc::new(NoOpRpcLogger),
             child: None,
             working_directory: ".".to_string(),
+            backend_type: "gemini".to_string(),
         };
 
         let status = ProcessStatus::from(&session);
@@ -1378,6 +1387,7 @@ mod tests {
                     rpc_logger: Arc::new(NoOpRpcLogger),
                     child: None,
                     working_directory: ".".to_string(),
+                    backend_type: "gemini".to_string(),
                 },
             );
         }
@@ -1418,6 +1428,7 @@ mod tests {
                     rpc_logger: Arc::new(NoOpRpcLogger),
                     child: None,
                     working_directory: ".".to_string(),
+                    backend_type: "gemini".to_string(),
                 },
             );
         }
@@ -1475,6 +1486,7 @@ mod tests {
                     rpc_logger: Arc::new(NoOpRpcLogger),
                     child: None,
                     working_directory: ".".to_string(),
+                    backend_type: "gemini".to_string(),
                 },
             );
         }
@@ -1754,6 +1766,7 @@ mod tests {
                     rpc_logger: Arc::new(NoOpRpcLogger),
                     child: None,
                     working_directory: ".".to_string(),
+                    backend_type: "gemini".to_string(),
                 },
             );
         }
@@ -1799,6 +1812,7 @@ mod tests {
                     rpc_logger: Arc::new(NoOpRpcLogger),
                     child: None,
                     working_directory: ".".to_string(),
+                    backend_type: "gemini".to_string(),
                 },
             );
         }
@@ -1858,6 +1872,7 @@ mod tests {
                             rpc_logger: Arc::new(NoOpRpcLogger),
                             child: None,
                             working_directory: ".".to_string(),
+                            backend_type: "gemini".to_string(),
                         },
                     );
                 }
@@ -1909,6 +1924,7 @@ mod tests {
                     rpc_logger: Arc::new(NoOpRpcLogger),
                     child: None,
                     working_directory: ".".to_string(),
+                    backend_type: "gemini".to_string(),
                 },
             );
         });
@@ -1988,6 +2004,7 @@ mod tests {
                         rpc_logger: Arc::new(NoOpRpcLogger),
                         child: None,
                         working_directory: ".".to_string(),
+                        backend_type: "gemini".to_string(),
                     },
                 );
             }
