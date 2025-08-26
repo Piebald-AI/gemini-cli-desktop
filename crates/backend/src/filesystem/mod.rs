@@ -457,8 +457,8 @@ mod tests {
     use super::*;
     use std::fs;
     use std::io::Write;
-    use std::time::{SystemTime, UNIX_EPOCH};
     use std::os::windows::process::CommandExt;
+    use std::time::{SystemTime, UNIX_EPOCH};
     use tempfile::{NamedTempFile, TempDir};
 
     #[test]
@@ -744,13 +744,10 @@ mod tests {
 
         // Initialize a git repository for the ignore crate to work properly
         let mut git_command = std::process::Command::new("git");
-        git_command
-            .args(&["init"])
-            .current_dir(root_path);
+        git_command.args(&["init"]).current_dir(root_path);
         #[cfg(target_os = "windows")]
         git_command.creation_flags(CREATE_NO_WINDOW);
-        git_command.output()
-            .expect("Failed to initialize git repo");
+        git_command.output().expect("Failed to initialize git repo");
 
         // Create .gitignore that ignores *.log files and the build/ directory
         fs::write(root_path.join(".gitignore"), "*.log\nbuild/\n").unwrap();
@@ -900,13 +897,10 @@ mod tests {
 
         // Initialize a git repository for the ignore crate to work properly
         let mut git_command = std::process::Command::new("git");
-        git_command
-            .args(&["init"])
-            .current_dir(root_path);
+        git_command.args(&["init"]).current_dir(root_path);
         #[cfg(target_os = "windows")]
         git_command.creation_flags(CREATE_NO_WINDOW);
-        git_command.output()
-            .expect("Failed to initialize git repo");
+        git_command.output().expect("Failed to initialize git repo");
 
         // Create directory structure:
         // root/
@@ -966,13 +960,10 @@ mod tests {
 
         // Initialize git repo
         let mut git_command = std::process::Command::new("git");
-        git_command
-            .args(&["init"])
-            .current_dir(root_path);
+        git_command.args(&["init"]).current_dir(root_path);
         #[cfg(target_os = "windows")]
         git_command.creation_flags(CREATE_NO_WINDOW);
-        git_command.output()
-            .expect("Failed to initialize git repo");
+        git_command.output().expect("Failed to initialize git repo");
 
         // Create structure:
         // root/
@@ -1020,13 +1011,10 @@ mod tests {
 
         // Initialize git repo
         let mut git_command = std::process::Command::new("git");
-        git_command
-            .args(&["init"])
-            .current_dir(root_path);
+        git_command.args(&["init"]).current_dir(root_path);
         #[cfg(target_os = "windows")]
         git_command.creation_flags(CREATE_NO_WINDOW);
-        git_command.output()
-            .expect("Failed to initialize git repo");
+        git_command.output().expect("Failed to initialize git repo");
 
         // Create deeply nested structure with multiple .gitignore files
         // root/
