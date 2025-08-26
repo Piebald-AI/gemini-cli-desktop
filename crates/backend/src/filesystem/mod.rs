@@ -157,10 +157,7 @@ pub async fn list_directory_contents(path: String) -> Result<Vec<DirEntry>> {
     Ok(entries)
 }
 
-pub async fn list_files_recursive(
-    path: String,
-    max_depth: Option<usize>,
-) -> Result<Vec<DirEntry>> {
+pub async fn list_files_recursive(path: String, max_depth: Option<usize>) -> Result<Vec<DirEntry>> {
     let mut entries = Vec::new();
     let root_path = Path::new(&path);
 
