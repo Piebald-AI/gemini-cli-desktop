@@ -425,18 +425,12 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
                 args.push("--experimental-acp");
 
                 let command_display = if yolo_flag {
-                    format!(
-                        "cmd.exe /C {} --model {model} --yolo --experimental-acp",
-                        gemini_path
-                    )
+                    format!("cmd.exe /C {gemini_path} --model {model} --yolo --experimental-acp")
                 } else {
-                    format!(
-                        "cmd.exe /C {} --model {model} --experimental-acp",
-                        gemini_path
-                    )
+                    format!("cmd.exe /C {gemini_path} --model {model} --experimental-acp")
                 };
                 println!("🔧 [HANDSHAKE] Creating Windows Gemini command: {command_display}");
-                println!("🚀 YOLO-DEBUG: Full args array: {:?}", args);
+                println!("🚀 YOLO-DEBUG: Full args array: {args:?}");
 
                 let mut c = Command::new("cmd.exe");
                 c.args(args);
@@ -473,7 +467,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
     }
 
     println!("🔄 [HANDSHAKE] Spawning CLI process...");
-    println!("🚀 YOLO-DEBUG: About to spawn command: {:?}", cmd);
+    println!("🚀 YOLO-DEBUG: About to spawn command: {cmd:?}");
 
     println!("🚀 YOLO-DEBUG: Testing CLI version before spawn...");
     let version_output = {
@@ -529,8 +523,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
         let paths = String::from_utf8_lossy(&output.stdout);
         let first_path = paths.lines().next().unwrap_or("unknown");
         println!(
-            "🚀 YOLO-DEBUG: First gemini executable (the one that will be used): {}",
-            first_path
+            "🚀 YOLO-DEBUG: First gemini executable (the one that will be used): {first_path}"
         );
     } else {
         println!("🚀 YOLO-DEBUG: Failed to get gemini path");
@@ -560,8 +553,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
         let has_yolo = help_text.contains("yolo") || help_text.contains("YOLO");
         let has_acp = help_text.contains("experimental-acp") || help_text.contains("acp");
         println!(
-            "🚀 YOLO-DEBUG: First gemini supports --yolo: {}, supports --experimental-acp: {}",
-            has_yolo, has_acp
+            "🚀 YOLO-DEBUG: First gemini supports --yolo: {has_yolo}, supports --experimental-acp: {has_acp}"
         );
         if !has_yolo || !has_acp {
             println!(
@@ -1196,7 +1188,7 @@ async fn handle_cli_output_line(
                                 println!(
                                     "🚀 YOLO-DEBUG: In YOLO mode, this should execute without permission requests!"
                                 );
-                                println!("🚀 YOLO-DEBUG: ToolCall kind: {:?}", kind);
+                                println!("🚀 YOLO-DEBUG: ToolCall kind: {kind:?}");
 
                                 // Emit pure ACP SessionUpdate event - no legacy conversion
                                 let emit_result = event_tx.send(InternalEvent::AcpSessionUpdate {
@@ -1274,7 +1266,7 @@ async fn handle_cli_output_line(
                             "🔔 YOLO-DEBUG: Tool call ID in request: {}",
                             params.tool_call.tool_call_id
                         );
-                        println!("🔔 YOLO-DEBUG: Request details: {:?}", params);
+                        println!("🔔 YOLO-DEBUG: Request details: {params:?}");
                         // Emit pure ACP permission request - no legacy conversion
                         let _ = event_tx.send(InternalEvent::AcpPermissionRequest {
                             session_id: session_id.to_string(),

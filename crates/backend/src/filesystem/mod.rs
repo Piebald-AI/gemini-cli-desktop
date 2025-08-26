@@ -223,7 +223,7 @@ pub async fn get_git_info(directory: String) -> BackendResult<Option<GitInfo>> {
     let branch_output = Command::new("git")
         .arg("branch")
         .arg("--show-current")
-        .current_dir(&path)
+        .current_dir(path)
         .output()
         .await;
 
@@ -236,13 +236,15 @@ pub async fn get_git_info(directory: String) -> BackendResult<Option<GitInfo>> {
                 .arg("symbolic-ref")
                 .arg("--short")
                 .arg("HEAD")
-                .current_dir(&path)
+                .current_dir(path)
                 .output()
                 .await;
-            
+
             if let Ok(ref_output) = symbolic_ref_output {
                 if ref_output.status.success() {
-                    String::from_utf8_lossy(&ref_output.stdout).trim().to_string()
+                    String::from_utf8_lossy(&ref_output.stdout)
+                        .trim()
+                        .to_string()
                 } else {
                     "HEAD".to_string() // Detached HEAD state
                 }
@@ -259,55 +261,54 @@ pub async fn get_git_info(directory: String) -> BackendResult<Option<GitInfo>> {
         .arg("status")
         .arg("--porcelain")
         .arg("--branch")
-        .current_dir(&path)
+        .current_dir(path)
         .output()
         .await;
 
-    let (status, is_clean, has_uncommitted_changes, has_untracked_files) = if let Ok(output) = status_output {
-        if output.status.success() {
-            let status_text = String::from_utf8_lossy(&output.stdout);
-            let lines: Vec<&str> = status_text.lines().collect();
-            
-            // Parse the status output
-            let mut branch_info = String::new();
-            let mut has_changes = false;
-            let mut has_untracked = false;
-            
-            for line in &lines {
-                if line.starts_with("##") {
-                    // Branch line - extract status indicators
-                    branch_info = line.trim_start_matches("## ").to_string();
-                } else if !line.is_empty() {
-                    // File status line
-                    if line.starts_with("??") {
-                        has_untracked = true;
-                    } else {
-                        has_changes = true;
+    let (status, is_clean, has_uncommitted_changes, has_untracked_files) =
+        if let Ok(output) = status_output {
+            if output.status.success() {
+                let status_text = String::from_utf8_lossy(&output.stdout);
+                let lines: Vec<&str> = status_text.lines().collect();
+
+                // Parse the status output
+                let mut has_changes = false;
+                let mut has_untracked = false;
+
+                for line in &lines {
+                    if line.starts_with("##") {
+                        // Branch line - we don't need to store this for now
+                    } else if !line.is_empty() {
+                        // File status line
+                        if line.starts_with("??") {
+                            has_untracked = true;
+                        } else {
+                            has_changes = true;
+                        }
                     }
                 }
-            }
-            
-            let is_clean = !has_changes && !has_untracked;
-            let status_desc = if is_clean {
-                "clean".to_string()
+
+                let is_clean = !has_changes && !has_untracked;
+                let status_desc = if is_clean {
+                    "clean".to_string()
+                } else {
+                    let mut parts = Vec::new();
+                    if has_changes {
+                        parts.push("modified files");
+                    }
+                    if has_untracked {
+                        parts.push("untracked files");
+                    }
+                    parts.join(", ")
+                };
+
+                (status_desc, is_clean, has_changes, has_untracked)
             } else {
-                let mut parts = Vec::new();
-                if has_changes {
-                    parts.push("modified files");
-                }
-                if has_untracked {
-                    parts.push("untracked files");
-                }
-                parts.join(", ")
-            };
-            
-            (status_desc, is_clean, has_changes, has_untracked)
+                ("unknown".to_string(), false, false, false)
+            }
         } else {
             ("unknown".to_string(), false, false, false)
-        }
-    } else {
-        ("unknown".to_string(), false, false, false)
-    };
+        };
 
     Ok(Some(GitInfo {
         current_directory,

@@ -1,7 +1,7 @@
 use crate::state::AppState;
 use backend::{
-    DirEntry, EnrichedProject, GeminiAuthConfig, GitInfo, ProcessStatus, ProjectsResponse, QwenConfig,
-    RecentChat, SearchFilters, SearchResult,
+    DirEntry, EnrichedProject, GeminiAuthConfig, GitInfo, ProcessStatus, ProjectsResponse,
+    QwenConfig, RecentChat, SearchFilters, SearchResult,
 };
 use serde_json::Value;
 use tauri::{AppHandle, State};
@@ -236,7 +236,10 @@ pub async fn list_volumes(state: State<'_, AppState>) -> Result<Vec<DirEntry>, S
 }
 
 #[tauri::command]
-pub async fn get_git_info(path: String, state: State<'_, AppState>) -> Result<Option<GitInfo>, String> {
+pub async fn get_git_info(
+    path: String,
+    state: State<'_, AppState>,
+) -> Result<Option<GitInfo>, String> {
     state
         .backend
         .get_git_info(path)
