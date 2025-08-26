@@ -56,7 +56,11 @@
   },
 
   "dashboard": {
-    "tagline": "您对未来的想法只需点击一下即可实现。",
+    "tagline": "{{appName}} 已带到您的桌面和浏览器。",
+    "user": "用户",
+    "generating": "生成中...",
+    "rawJsonButton": "原始 JSON",
+    "rawJsonTitle": "消息原始 JSON",
     "projectsCard": {
       "title": "项目",
       "description": "管理您的项目，查看过往讨论。"
@@ -376,7 +380,7 @@
     "mcpToolExecution": "此 MCP 服务器中包含的 {{backendName}} 可能执行的 MCP 工具。",
     "mcpToolExclusion": "此 MCP 服务器中包含的 {{backendName}} 可能不执行的 MCP 工具。优先于包含的工具。",
     "mcpCommandDescription": "{{backendName}} 执行的启动 MCP 服务器的命令。",
-    "projectsDescription": "您与 {{appName}} 的所有先前讨论，都在这里。"
+    "projectsDescription": "您与 {{appName}} 的所有先前讨论。"
   },
 
   "validation": {
@@ -492,14 +496,6 @@
     "goToParentDirectory": "转到上级目录",
     "goToHomeDirectory": "转到主目录",
     "endChat": "结束聊天"
-  },
-
-  "homeDashboard": {
-    "tagline": "您对未来的想法只需点击一下即可实现。",
-    "user": "用户",
-    "generating": "生成中...",
-    "rawJsonButton": "原始 JSON",
-    "rawJsonTitle": "消息原始 JSON"
   },
 
   "header": {

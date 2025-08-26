@@ -26,6 +26,8 @@ import {
 import { Info, UserRound, FolderKanban } from "lucide-react";
 import { ModelContextProtocol } from "../components/common/ModelContextProtocol";
 import { ToolCallConfirmationRequest } from "../utils/toolCallParser";
+import { getBackendText } from "../utils/backendText";
+import { useBackend } from "../contexts/BackendContext";
 
 export const HomeDashboard: React.FC = () => {
   const { t } = useTranslation();
@@ -36,6 +38,9 @@ export const HomeDashboard: React.FC = () => {
     handleConfirmToolCall,
     confirmationRequests,
   } = useConversation();
+
+  const { selectedBackend } = useBackend();
+  const backendText = getBackendText(selectedBackend);
 
   return (
     <>
@@ -192,9 +197,7 @@ export const HomeDashboard: React.FC = () => {
             <DesktopText size="large" />
           </div>
 
-          <p className="text-muted-foreground mb-6">
-            {t("homeDashboard.tagline")}
-          </p>
+          <p className="text-muted-foreground mb-6">{backendText.tagline}</p>
 
           {/* Dashboard tiles */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-3xl">

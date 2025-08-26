@@ -1,8 +1,8 @@
-use crate::types::BackendResult;
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
 pub trait EventEmitter: Send + Sync + Clone {
-    fn emit<S: Serialize + Clone>(&self, event: &str, payload: S) -> BackendResult<()>;
+    fn emit<S: Serialize + Clone>(&self, event: &str, payload: S) -> Result<()>;
 }
 
 #[derive(Debug, Clone)]
@@ -254,10 +254,9 @@ impl MockEventEmitter {
 
 #[cfg(test)]
 impl EventEmitter for MockEventEmitter {
-    fn emit<S: Serialize + Clone>(&self, event: &str, payload: S) -> BackendResult<()> {
+    fn emit<S: Serialize + Clone>(&self, event: &str, payload: S) -> Result<()> {
         // Serialize the payload to JSON for storage and comparison
-        let json_payload = serde_json::to_value(payload)
-            .map_err(|e| crate::types::BackendError::JsonError(e.to_string()))?;
+        let json_payload = serde_json::to_value(payload)?;
 
         // Store the event
         self.events
@@ -846,7 +845,7 @@ mod tests {
 
     #[test]
     fn test_event_emitter_trait_bounds() {
-        fn test_emitter<T: EventEmitter>(emitter: T) -> BackendResult<()> {
+        fn test_emitter<T: EventEmitter>(emitter: T) -> Result<()> {
             emitter.emit("test", "payload")
         }
 

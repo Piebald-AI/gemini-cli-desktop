@@ -83,7 +83,6 @@ export const useFileSystemNavigation = (initialPath?: string) => {
         "❌ [useFileSystemNavigation] Failed to load directory:",
         err
       );
-      console.error("❌ [useFileSystemNavigation] Error details:", err);
       setState((prev) => ({
         ...prev,
         isLoading: false,

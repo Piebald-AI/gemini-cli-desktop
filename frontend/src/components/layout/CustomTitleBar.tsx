@@ -7,7 +7,11 @@ import { QwenIcon } from "@/components/branding/QwenIcon";
 import { GeminiIcon } from "@/components/branding/GeminiIcon";
 import { useBackend } from "@/contexts/BackendContext";
 import { getBackendText } from "@/utils/backendText";
-import { createMenuHandlers, getMenuLabels } from "@/utils/menuConfig";
+import {
+  createMenuHandlers,
+  getMenuLabels,
+  menuShortcuts,
+} from "@/utils/menuConfig";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -42,6 +46,7 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
   const { t } = useTranslation();
   const [isMaximized, setIsMaximized] = useState(false);
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
 
   // Dynamic title based on backend
   const dynamicTitle = title || backendText.desktopName;
@@ -61,6 +66,36 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
       return false;
     }
   }, []);
+
+  // Keyboard shortcut handler
+  useEffect(() => {
+    if (!shouldShow) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check each shortcut
+      for (const [action, shortcut] of Object.entries(menuShortcuts)) {
+        if (!shortcut) continue; // Skip undefined shortcuts
+
+        const ctrlMatch = shortcut.ctrlKey ? e.ctrlKey : !e.ctrlKey;
+        const altMatch = shortcut.altKey ? e.altKey : !e.altKey;
+        const shiftMatch = shortcut.shiftKey ? e.shiftKey : !e.shiftKey;
+        const keyMatch = e.key.toLowerCase() === shortcut.key.toLowerCase();
+
+        if (ctrlMatch && altMatch && shiftMatch && keyMatch) {
+          e.preventDefault();
+
+          if (handlers[action as keyof typeof handlers]) {
+            // Execute the handler
+            handlers[action as keyof typeof handlers]();
+          }
+          break;
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [shouldShow, handlers, openMenu]);
 
   // Window listener setup - only runs when shouldShow is true
   useEffect(() => {
@@ -176,7 +211,11 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
         {/* Menu buttons */}
         <div className="flex items-center h-full">
           {/* File Menu */}
-          <DropdownMenu modal={false} open={undefined}>
+          <DropdownMenu
+            modal={false}
+            open={openMenu === "file"}
+            onOpenChange={(open) => setOpenMenu(open ? "file" : null)}
+          >
             <DropdownMenuTrigger asChild className="bg-transparent">
               <button
                 className="h-full px-2 text-xs hover:bg-muted/50 flex items-center gap-1 bg-transparent border-0 outline-none focus:ring-0"
@@ -195,7 +234,7 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="start"
-              className="w-44 bg-background border border-border shadow-lg"
+              className="w-52 bg-background border border-border shadow-lg"
               sideOffset={2}
               style={
                 {
@@ -208,30 +247,49 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
             >
               <DropdownMenuItem
                 onClick={handlers.goHome}
-                className="flex items-center gap-2 text-xs"
+                className="flex items-center justify-between text-xs"
               >
-                <Home size={14} />
-                {labels.home}
+                <div className="flex items-center gap-2">
+                  <Home size={14} />
+                  {labels.home}
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  {menuShortcuts.goHome?.display}
+                </span>
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={handlers.goProjects}
-                className="flex items-center gap-2 text-xs"
+                className="flex items-center justify-between text-xs"
               >
-                <FolderOpen size={14} />
-                {labels.projects}
+                <div className="flex items-center gap-2">
+                  <FolderOpen size={14} />
+                  {labels.projects}
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  {menuShortcuts.goProjects?.display}
+                </span>
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={handlers.goMcpServers}
-                className="flex items-center gap-2 text-xs"
+                className="flex items-center justify-between text-xs"
               >
-                <Server size={14} />
-                {labels.mcpServers}
+                <div className="flex items-center gap-2">
+                  <Server size={14} />
+                  {labels.mcpServers}
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  {menuShortcuts.goMcpServers?.display}
+                </span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
           {/* View Menu */}
-          <DropdownMenu modal={false} open={undefined}>
+          <DropdownMenu
+            modal={false}
+            open={openMenu === "view"}
+            onOpenChange={(open) => setOpenMenu(open ? "view" : null)}
+          >
             <DropdownMenuTrigger asChild className="bg-transparent">
               <button
                 className="h-full px-2 text-xs hover:bg-muted/50 flex items-center gap-1 bg-transparent border-0 outline-none focus:ring-0"
@@ -250,7 +308,7 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="start"
-              className="w-44 bg-background border border-border shadow-lg"
+              className="w-52 bg-background border border-border shadow-lg"
               sideOffset={2}
               style={
                 {
@@ -263,27 +321,40 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
             >
               <DropdownMenuItem
                 onClick={handlers.toggleTheme}
-                className="flex items-center gap-2 text-xs"
+                className="flex items-center justify-between text-xs"
               >
-                <Moon size={14} />
-                {labels.toggleDarkMode}
+                <div className="flex items-center gap-2">
+                  <Moon size={14} />
+                  {labels.toggleDarkMode}
+                </div>
+                {menuShortcuts.toggleTheme && (
+                  <span className="text-xs text-muted-foreground">
+                    {menuShortcuts.toggleTheme.display}
+                  </span>
+                )}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={handlers.refresh}
-                className="flex items-center gap-2 text-xs"
+                className="flex items-center justify-between text-xs"
               >
-                <RotateCcw size={14} />
-                {labels.refresh}
-                <span className="ml-auto text-xs text-muted-foreground">
-                  F5
+                <div className="flex items-center gap-2">
+                  <RotateCcw size={14} />
+                  {labels.refresh}
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  {menuShortcuts.refresh?.display}
                 </span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
           {/* Help Menu */}
-          <DropdownMenu modal={false} open={undefined}>
+          <DropdownMenu
+            modal={false}
+            open={openMenu === "help"}
+            onOpenChange={(open) => setOpenMenu(open ? "help" : null)}
+          >
             <DropdownMenuTrigger asChild className="bg-transparent">
               <button
                 className="h-full px-2 text-xs hover:bg-muted/50 flex items-center gap-1 bg-transparent border-0 outline-none focus:ring-0"
@@ -302,7 +373,7 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="start"
-              className="w-44 bg-background border border-border shadow-lg"
+              className="w-52 bg-background border border-border shadow-lg"
               sideOffset={2}
               style={
                 {
@@ -315,10 +386,17 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
             >
               <DropdownMenuItem
                 onClick={handlers.showAbout}
-                className="flex items-center gap-2 text-xs"
+                className="flex items-center justify-between text-xs"
               >
-                <Info size={14} />
-                {labels.about}
+                <div className="flex items-center gap-2">
+                  <Info size={14} />
+                  {labels.about}
+                </div>
+                {menuShortcuts.showAbout && (
+                  <span className="text-xs text-muted-foreground">
+                    {menuShortcuts.showAbout.display}
+                  </span>
+                )}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

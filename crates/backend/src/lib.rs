@@ -8,7 +8,6 @@ pub mod rpc;
 pub mod search;
 pub mod security;
 pub mod session;
-pub mod types;
 
 // Test utilities (only available in test builds)
 #[cfg(test)]
@@ -38,7 +37,7 @@ pub use events::{
     ToolCallLocation,
     ToolCallUpdate,
 };
-pub use filesystem::{DirEntry, VolumeType};
+pub use filesystem::{DirEntry, GitInfo, VolumeType};
 pub use projects::{
     EnrichedProject, ProjectListItem, ProjectMetadata, ProjectMetadataView, ProjectsResponse,
     TouchThrottle, ensure_project_metadata, list_enriched_projects, list_projects,
@@ -53,9 +52,8 @@ pub use session::{
     GeminiAuthConfig, PersistentSession, ProcessStatus, QwenConfig, SessionManager,
     initialize_session,
 };
-pub use types::{BackendError, BackendResult};
-
 // Standard library imports
+use anyhow::{Context, Result};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio::process::Command;
@@ -87,53 +85,51 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
     // =====================================
 
     /// Emit CLI I/O event
-    pub fn emit_cli_io(
-        &self,
-        session_id: &str,
-        io_type: CliIoType,
-        data: &str,
-    ) -> BackendResult<()> {
+    pub fn emit_cli_io(&self, session_id: &str, io_type: CliIoType, data: &str) -> Result<()> {
         let payload = CliIoPayload {
             io_type,
             data: data.to_string(),
         };
-        self.emitter.emit(&format!("cli-io-{session_id}"), payload)
+        self.emitter
+            .emit(&format!("cli-io-{session_id}"), payload)
+            .context("Failed to emit CLI I/O event")
     }
 
     /// Emit Gemini output event
-    pub fn emit_gemini_output(&self, session_id: &str, text: &str) -> BackendResult<()> {
+    pub fn emit_gemini_output(&self, session_id: &str, text: &str) -> Result<()> {
         let payload = GeminiOutputPayload {
             text: text.to_string(),
         };
         self.emitter
             .emit(&format!("gemini-output-{session_id}"), payload)
+            .context("Failed to emit Gemini output event")
     }
 
     /// Emit Gemini thought event
-    pub fn emit_gemini_thought(&self, session_id: &str, thought: &str) -> BackendResult<()> {
+    pub fn emit_gemini_thought(&self, session_id: &str, thought: &str) -> Result<()> {
         let payload = GeminiThoughtPayload {
             thought: thought.to_string(),
         };
         self.emitter
             .emit(&format!("gemini-thought-{session_id}"), payload)
+            .context("Failed to emit Gemini thought event")
     }
 
     /// Emit tool call event
-    pub fn emit_tool_call(&self, session_id: &str, tool_call: &ToolCallEvent) -> BackendResult<()> {
+    pub fn emit_tool_call(&self, session_id: &str, tool_call: &ToolCallEvent) -> Result<()> {
         self.emitter
             .emit(&format!("gemini-tool-call-{session_id}"), tool_call.clone())
+            .context("Failed to emit tool call event")
     }
 
     /// Emit tool call update event
-    pub fn emit_tool_call_update(
-        &self,
-        session_id: &str,
-        update: &ToolCallUpdate,
-    ) -> BackendResult<()> {
-        self.emitter.emit(
-            &format!("gemini-tool-call-update-{session_id}"),
-            update.clone(),
-        )
+    pub fn emit_tool_call_update(&self, session_id: &str, update: &ToolCallUpdate) -> Result<()> {
+        self.emitter
+            .emit(
+                &format!("gemini-tool-call-update-{session_id}"),
+                update.clone(),
+            )
+            .context("Failed to emit tool call update event")
     }
 
     /// Emit tool call confirmation event
@@ -141,29 +137,34 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
         &self,
         session_id: &str,
         confirmation: &ToolCallConfirmationRequest,
-    ) -> BackendResult<()> {
-        self.emitter.emit(
-            &format!("gemini-tool-call-confirmation-{session_id}"),
-            confirmation.clone(),
-        )
+    ) -> Result<()> {
+        self.emitter
+            .emit(
+                &format!("gemini-tool-call-confirmation-{session_id}"),
+                confirmation.clone(),
+            )
+            .context("Failed to emit tool call confirmation event")
     }
 
     /// Emit error event
-    pub fn emit_error(&self, session_id: &str, error: &str) -> BackendResult<()> {
+    pub fn emit_error(&self, session_id: &str, error: &str) -> Result<()> {
         let payload = ErrorPayload {
             error: error.to_string(),
         };
         self.emitter
             .emit(&format!("gemini-error-{session_id}"), payload)
+            .context("Failed to emit error event")
     }
 
     /// Emit command result event
-    pub fn emit_command_result(&self, result: &CommandResult) -> BackendResult<()> {
-        self.emitter.emit("command-result", result.clone())
+    pub fn emit_command_result(&self, result: &CommandResult) -> Result<()> {
+        self.emitter
+            .emit("command-result", result.clone())
+            .context("Failed to emit command result event")
     }
 
     /// Check if Gemini CLI is installed and available
-    pub async fn check_cli_installed(&self) -> BackendResult<bool> {
+    pub async fn check_cli_installed(&self) -> Result<bool> {
         let result = {
             #[cfg(windows)]
             {
@@ -196,7 +197,7 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
         model: String,
         backend_config: Option<QwenConfig>,
         gemini_auth: Option<GeminiAuthConfig>,
-    ) -> BackendResult<()> {
+    ) -> Result<()> {
         {
             let processes = self.session_manager.get_processes();
             if let Ok(guard) = processes.lock()
@@ -226,14 +227,14 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
         session_id: String,
         message: String,
         _conversation_history: String,
-    ) -> BackendResult<()> {
+    ) -> Result<()> {
         println!("📤 Sending message to session: {session_id}");
 
         let (message_sender, acp_session_id) = {
             let processes = self.session_manager.get_processes();
-            let processes = processes.lock().map_err(|_| {
-                BackendError::SessionInitFailed("Failed to lock processes".to_string())
-            })?;
+            let processes = processes
+                .lock()
+                .map_err(|_| anyhow::anyhow!("Failed to lock processes mutex"))?;
 
             if let Some(session) = processes.get(&session_id) {
                 (
@@ -241,32 +242,18 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
                     session.acp_session_id.clone(),
                 )
             } else {
-                return Err(BackendError::SessionNotFound(session_id));
+                anyhow::bail!("Session not found: {}", session_id);
             }
         };
 
-        let message_sender = if let Some(sender) = message_sender {
-            sender
-        } else {
-            return Err(BackendError::SessionInitFailed(
-                "No message sender available".to_string(),
-            ));
-        };
+        let message_sender = message_sender.context("No message sender available")?;
 
-        let acp_session_id = if let Some(acp_id) = acp_session_id {
-            acp_id
-        } else {
-            return Err(BackendError::SessionInitFailed(
-                "No ACP session ID available".to_string(),
-            ));
-        };
+        let acp_session_id = acp_session_id.context("No ACP session ID available")?;
 
         // Get working directory from session
         let working_directory = {
             let processes = self.session_manager.get_processes();
-            let processes = processes.lock().map_err(|_| {
-                BackendError::SessionInitFailed("Failed to lock processes".to_string())
-            })?;
+            let processes = processes.lock().unwrap();
 
             processes
                 .get(&session_id)
@@ -288,8 +275,8 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
             id
         };
 
-        let params_value = serde_json::to_value(prompt_params)
-            .map_err(|e| BackendError::JsonError(e.to_string()))?;
+        let params_value =
+            serde_json::to_value(prompt_params).context("Failed to serialize prompt params")?;
         let prompt_request = JsonRpcRequest {
             jsonrpc: "2.0".to_string(),
             id: request_id,
@@ -297,12 +284,12 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
             params: params_value,
         };
 
-        let request_json = serde_json::to_string(&prompt_request)
-            .map_err(|e| BackendError::JsonError(e.to_string()))?;
+        let request_json =
+            serde_json::to_string(&prompt_request).context("Failed to serialize prompt request")?;
 
         message_sender
             .send(request_json)
-            .map_err(|_| BackendError::ChannelError)?;
+            .context("Failed to send message through channel")?;
 
         println!("✅ ACP session/prompt sent to session: {session_id}");
         Ok(())
@@ -396,13 +383,13 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
         request_id: u32,
         tool_call_id: String,
         outcome: String,
-    ) -> BackendResult<()> {
+    ) -> Result<()> {
         // Find the conversation ID that corresponds to this ACP session ID
         let conversation_id = {
             let processes = self.session_manager.get_processes();
-            let processes = processes.lock().map_err(|_| {
-                BackendError::SessionInitFailed("Failed to lock processes".to_string())
-            })?;
+            let processes = processes
+                .lock()
+                .map_err(|_| anyhow::anyhow!("Failed to lock processes mutex"))?;
 
             let mut found_conversation_id = None;
             for (conv_id, session) in processes.iter() {
@@ -414,11 +401,9 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
                 }
             }
 
-            found_conversation_id.ok_or_else(|| {
-                BackendError::SessionNotFound(format!(
-                    "No conversation found for ACP session ID: {acp_session_id}"
-                ))
-            })?
+            found_conversation_id.context(format!(
+                "No conversation found for ACP session ID: {acp_session_id}"
+            ))?
         };
 
         // Convert outcome string to ACP PermissionOutcome
@@ -443,10 +428,7 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
         session::send_response_to_cli(
             &conversation_id,
             request_id,
-            Some(
-                serde_json::to_value(response_data)
-                    .map_err(|e| BackendError::JsonError(e.to_string()))?,
-            ),
+            Some(serde_json::to_value(response_data).context("Failed to serialize response data")?),
             None,
             self.session_manager.get_processes(),
         )
@@ -476,7 +458,7 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
     }
 
     /// Execute a confirmed command
-    pub async fn execute_confirmed_command(&self, command: String) -> BackendResult<String> {
+    pub async fn execute_confirmed_command(&self, command: String) -> Result<String> {
         println!("🖥️ Executing confirmed command: {command}");
 
         match execute_terminal_command(&command).await {
@@ -512,7 +494,7 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
         &self,
         message: String,
         model: Option<String>,
-    ) -> BackendResult<String> {
+    ) -> Result<String> {
         let prompt = format!(
             "Generate a short, concise title (3-6 words) for a conversation that starts with this user message: \"{}\". Only return the title, nothing else.",
             message.chars().take(200).collect::<String>()
@@ -530,7 +512,7 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
                     .stderr(std::process::Stdio::piped())
                     .creation_flags(CREATE_NO_WINDOW)
                     .spawn()
-                    .map_err(|e| BackendError::CommandExecutionFailed(e.to_string()))?
+                    .context("Failed to spawn Gemini CLI process")?
             }
             #[cfg(not(windows))]
             {
@@ -540,7 +522,7 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
                     .stdout(std::process::Stdio::piped())
                     .stderr(std::process::Stdio::piped())
                     .spawn()
-                    .map_err(|e| BackendError::CommandExecutionFailed(e.to_string()))?
+                    .context("Failed to spawn Gemini CLI process")?
             }
         };
 
@@ -550,14 +532,14 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
             stdin
                 .write_all(prompt.as_bytes())
                 .await
-                .map_err(BackendError::IoError)?;
-            stdin.shutdown().await.map_err(BackendError::IoError)?;
+                .context("Failed to write prompt to stdin")?;
+            stdin.shutdown().await.context("Failed to shutdown stdin")?;
         }
 
         let output = child
             .wait_with_output()
             .await
-            .map_err(|e| BackendError::CommandExecutionFailed(e.to_string()))?;
+            .context("Failed to wait for Gemini CLI output")?;
 
         if !output.status.success() {
             let error_msg = format!(
@@ -565,7 +547,7 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
                 output.status.code(),
                 String::from_utf8_lossy(&output.stderr)
             );
-            return Err(BackendError::CommandExecutionFailed(error_msg));
+            anyhow::bail!("{}", error_msg);
         }
 
         let raw_output = String::from_utf8_lossy(&output.stdout);
@@ -589,12 +571,12 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
     }
 
     /// Get all process statuses
-    pub fn get_process_statuses(&self) -> BackendResult<Vec<ProcessStatus>> {
+    pub fn get_process_statuses(&self) -> Result<Vec<ProcessStatus>> {
         self.session_manager.get_process_statuses()
     }
 
     /// Kill a process by conversation ID
-    pub fn kill_process(&self, conversation_id: &str) -> BackendResult<()> {
+    pub fn kill_process(&self, conversation_id: &str) -> Result<()> {
         let result = self.session_manager.kill_process(conversation_id);
 
         // Emit real-time status change after killing process
@@ -609,37 +591,46 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
     }
 
     /// Validate if a directory exists and is accessible
-    pub async fn validate_directory(&self, path: String) -> BackendResult<bool> {
+    pub async fn validate_directory(&self, path: String) -> Result<bool> {
         filesystem::validate_directory(path).await
     }
 
     /// Check if the given path is the user's home directory
-    pub async fn is_home_directory(&self, path: String) -> BackendResult<bool> {
+    pub async fn is_home_directory(&self, path: String) -> Result<bool> {
         filesystem::is_home_directory(path).await
     }
 
     /// Get the user's home directory path
-    pub async fn get_home_directory(&self) -> BackendResult<String> {
+    pub async fn get_home_directory(&self) -> Result<String> {
         filesystem::get_home_directory().await
     }
 
     /// Get the parent directory of the given path
-    pub async fn get_parent_directory(&self, path: String) -> BackendResult<Option<String>> {
+    pub async fn get_parent_directory(&self, path: String) -> Result<Option<String>> {
         filesystem::get_parent_directory(path).await
     }
 
     /// List available volumes/drives on the system
-    pub async fn list_volumes(&self) -> BackendResult<Vec<DirEntry>> {
+    pub async fn list_volumes(&self) -> Result<Vec<DirEntry>> {
         filesystem::list_volumes().await
     }
 
     /// List the contents of a directory
-    pub async fn list_directory_contents(&self, path: String) -> BackendResult<Vec<DirEntry>> {
+    pub async fn list_directory_contents(&self, path: String) -> Result<Vec<DirEntry>> {
         filesystem::list_directory_contents(path).await
     }
 
+    /// List files recursively with gitignore support
+    pub async fn list_files_recursive(
+        &self,
+        path: String,
+        max_depth: Option<usize>,
+    ) -> Result<Vec<DirEntry>> {
+        filesystem::list_files_recursive(path, max_depth).await
+    }
+
     /// Get recent chats
-    pub async fn get_recent_chats(&self) -> BackendResult<Vec<RecentChat>> {
+    pub async fn get_recent_chats(&self) -> Result<Vec<RecentChat>> {
         search::get_recent_chats().await
     }
 
@@ -648,18 +639,18 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
         &self,
         query: String,
         filters: Option<SearchFilters>,
-    ) -> BackendResult<Vec<SearchResult>> {
+    ) -> Result<Vec<SearchResult>> {
         search::search_chats(query, filters).await
     }
 
     /// List projects
-    pub async fn list_projects(&self, limit: u32, offset: u32) -> BackendResult<ProjectsResponse> {
+    pub async fn list_projects(&self, limit: u32, offset: u32) -> Result<ProjectsResponse> {
         let lim = std::cmp::min(limit.max(1), 100);
         list_projects(lim, offset)
     }
 
     /// Return enriched projects
-    pub async fn list_enriched_projects(&self) -> BackendResult<Vec<EnrichedProject>> {
+    pub async fn list_enriched_projects(&self) -> Result<Vec<EnrichedProject>> {
         list_enriched_projects()
     }
 
@@ -668,7 +659,7 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
         &self,
         sha256: String,
         external_root_path: String,
-    ) -> BackendResult<EnrichedProject> {
+    ) -> Result<EnrichedProject> {
         let external = Path::new(&external_root_path);
         ensure_project_metadata(&sha256, Some(external))?;
         let _ = maybe_touch_updated_at(&sha256, &self.touch_throttle);
@@ -676,11 +667,13 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
     }
 
     /// Get discussions for a specific project
-    pub async fn get_project_discussions(
-        &self,
-        project_id: &str,
-    ) -> BackendResult<Vec<RecentChat>> {
+    pub async fn get_project_discussions(&self, project_id: &str) -> Result<Vec<RecentChat>> {
         search::get_project_discussions(project_id).await
+    }
+
+    /// Get git repository information for a directory
+    pub async fn get_git_info(&self, directory: String) -> Result<Option<GitInfo>> {
+        filesystem::get_git_info(directory).await
     }
 }
 

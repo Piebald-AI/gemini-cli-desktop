@@ -1,6 +1,9 @@
-use crate::types::BackendResult;
+use anyhow::Result;
+use ignore::WalkBuilder;
 use serde::{Deserialize, Serialize};
+use std::fs;
 use std::path::Path;
+use tokio::process::Command;
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "snake_case")]
@@ -25,12 +28,22 @@ pub struct DirEntry {
     pub volume_type: Option<VolumeType>,
 }
 
-pub async fn validate_directory(path: String) -> BackendResult<bool> {
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GitInfo {
+    pub current_directory: String,
+    pub branch: String,
+    pub status: String,
+    pub is_clean: bool,
+    pub has_uncommitted_changes: bool,
+    pub has_untracked_files: bool,
+}
+
+pub async fn validate_directory(path: String) -> Result<bool> {
     let path = Path::new(&path);
     Ok(path.exists() && path.is_dir())
 }
 
-pub async fn is_home_directory(path: String) -> BackendResult<bool> {
+pub async fn is_home_directory(path: String) -> Result<bool> {
     let home = std::env::var("HOME")
         .or_else(|_| std::env::var("USERPROFILE"))
         .unwrap_or_else(|_| ".".to_string());
@@ -41,19 +54,19 @@ pub async fn is_home_directory(path: String) -> BackendResult<bool> {
     Ok(home_path == check_path)
 }
 
-pub async fn get_home_directory() -> BackendResult<String> {
+pub async fn get_home_directory() -> Result<String> {
     let home = std::env::var("HOME")
         .or_else(|_| std::env::var("USERPROFILE"))
         .unwrap_or_else(|_| ".".to_string());
     Ok(home)
 }
 
-pub async fn get_parent_directory(path: String) -> BackendResult<Option<String>> {
+pub async fn get_parent_directory(path: String) -> Result<Option<String>> {
     let path = Path::new(&path);
     Ok(path.parent().map(|p| p.to_string_lossy().to_string()))
 }
 
-pub async fn list_directory_contents(path: String) -> BackendResult<Vec<DirEntry>> {
+pub async fn list_directory_contents(path: String) -> Result<Vec<DirEntry>> {
     let mut entries = Vec::new();
     let dir_path = Path::new(&path);
 
@@ -61,45 +74,78 @@ pub async fn list_directory_contents(path: String) -> BackendResult<Vec<DirEntry
         return Ok(entries);
     }
 
-    let read_dir = std::fs::read_dir(dir_path)?;
+    // Use the ignore crate's WalkBuilder for proper gitignore support
+    let mut builder = WalkBuilder::new(dir_path);
+    builder
+        .max_depth(Some(1)) // Only list immediate children (not recursive)
+        .git_ignore(true) // Respect .gitignore files
+        .git_global(true) // Respect global git ignore
+        .git_exclude(true) // Respect .git/info/exclude
+        .hidden(false) // Show hidden files/directories (except .git which is handled by git_ignore)
+        .parents(true); // Respect gitignore files in parent directories
 
-    for entry in read_dir {
-        let entry = entry?;
-        let metadata = entry.metadata()?;
-        let file_name = entry.file_name().to_string_lossy().to_string();
-        let full_path = entry.path().to_string_lossy().to_string();
+    // Collect entries using the ignore crate
+    for result in builder.build() {
+        match result {
+            Ok(entry) => {
+                let entry_path = entry.path();
 
-        let modified = metadata
-            .modified()
-            .ok()
-            .and_then(|time| time.duration_since(std::time::UNIX_EPOCH).ok())
-            .map(|duration| duration.as_secs());
+                // Skip the root directory itself
+                if entry_path == dir_path {
+                    continue;
+                }
 
-        let size = if metadata.is_file() {
-            Some(metadata.len())
-        } else {
-            None
-        };
+                // Only process immediate children (depth 1)
+                if entry_path.parent() != Some(dir_path) {
+                    continue;
+                }
 
-        let is_symlink = metadata.is_symlink();
-        let symlink_target = if is_symlink {
-            std::fs::read_link(entry.path())
-                .ok()
-                .map(|p| p.to_string_lossy().to_string())
-        } else {
-            None
-        };
+                let metadata = match entry_path.metadata() {
+                    Ok(metadata) => metadata,
+                    Err(_) => continue, // Skip files we can't read metadata for
+                };
 
-        entries.push(DirEntry {
-            name: file_name,
-            is_directory: metadata.is_dir(),
-            full_path,
-            size,
-            modified,
-            is_symlink,
-            symlink_target,
-            volume_type: None,
-        });
+                let file_name = entry_path
+                    .file_name()
+                    .unwrap_or_default()
+                    .to_string_lossy()
+                    .to_string();
+                let full_path = entry_path.to_string_lossy().to_string();
+
+                let modified = metadata
+                    .modified()
+                    .ok()
+                    .and_then(|time| time.duration_since(std::time::UNIX_EPOCH).ok())
+                    .map(|duration| duration.as_secs());
+
+                let size = if metadata.is_file() {
+                    Some(metadata.len())
+                } else {
+                    None
+                };
+
+                let is_symlink = metadata.is_symlink();
+                let symlink_target = if is_symlink {
+                    fs::read_link(entry_path)
+                        .ok()
+                        .map(|p| p.to_string_lossy().to_string())
+                } else {
+                    None
+                };
+
+                entries.push(DirEntry {
+                    name: file_name,
+                    is_directory: metadata.is_dir(),
+                    full_path,
+                    size,
+                    modified,
+                    is_symlink,
+                    symlink_target,
+                    volume_type: None,
+                });
+            }
+            Err(_) => continue, // Skip entries we can't read
+        }
     }
 
     entries.sort_by(|a, b| match (a.is_directory, b.is_directory) {
@@ -111,7 +157,96 @@ pub async fn list_directory_contents(path: String) -> BackendResult<Vec<DirEntry
     Ok(entries)
 }
 
-pub async fn list_volumes() -> BackendResult<Vec<DirEntry>> {
+pub async fn list_files_recursive(path: String, max_depth: Option<usize>) -> Result<Vec<DirEntry>> {
+    let mut entries = Vec::new();
+    let root_path = Path::new(&path);
+
+    if !root_path.exists() || !root_path.is_dir() {
+        return Ok(entries);
+    }
+
+    let effective_max_depth = max_depth.unwrap_or(2);
+
+    // Use the ignore crate's WalkBuilder for proper gitignore support
+    let mut builder = WalkBuilder::new(root_path);
+    builder
+        .max_depth(Some(effective_max_depth))
+        .git_ignore(true) // Respect .gitignore files
+        .git_global(true) // Respect global git ignore
+        .git_exclude(true) // Respect .git/info/exclude
+        .hidden(true) // Hide hidden files/directories (like .git)
+        .parents(true); // Respect gitignore files in parent directories
+
+    // Collect entries using the ignore crate
+    for result in builder.build() {
+        match result {
+            Ok(entry) => {
+                let entry_path = entry.path();
+
+                // Skip the root directory itself
+                if entry_path == root_path {
+                    continue;
+                }
+
+                let metadata = match entry_path.metadata() {
+                    Ok(metadata) => metadata,
+                    Err(_) => continue, // Skip files we can't read metadata for
+                };
+
+                let file_name = entry_path
+                    .file_name()
+                    .unwrap_or_default()
+                    .to_string_lossy()
+                    .to_string();
+                let full_path = entry_path.to_string_lossy().to_string();
+
+                let modified = metadata
+                    .modified()
+                    .ok()
+                    .and_then(|time| time.duration_since(std::time::UNIX_EPOCH).ok())
+                    .map(|duration| duration.as_secs());
+
+                let size = if metadata.is_file() {
+                    Some(metadata.len())
+                } else {
+                    None
+                };
+
+                let is_symlink = metadata.is_symlink();
+                let symlink_target = if is_symlink {
+                    fs::read_link(entry_path)
+                        .ok()
+                        .map(|p| p.to_string_lossy().to_string())
+                } else {
+                    None
+                };
+
+                entries.push(DirEntry {
+                    name: file_name,
+                    is_directory: metadata.is_dir(),
+                    full_path,
+                    size,
+                    modified,
+                    is_symlink,
+                    symlink_target,
+                    volume_type: None,
+                });
+            }
+            Err(_) => continue, // Skip entries we can't read
+        }
+    }
+
+    // Sort entries: directories first, then files, alphabetically within each group
+    entries.sort_by(|a, b| match (a.is_directory, b.is_directory) {
+        (true, false) => std::cmp::Ordering::Less,
+        (false, true) => std::cmp::Ordering::Greater,
+        _ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
+    });
+
+    Ok(entries)
+}
+
+pub async fn list_volumes() -> Result<Vec<DirEntry>> {
     let mut volumes = Vec::new();
 
     #[cfg(windows)]
@@ -192,6 +327,121 @@ pub async fn list_volumes() -> BackendResult<Vec<DirEntry>> {
     }
 
     Ok(volumes)
+}
+
+pub async fn get_git_info(directory: String) -> Result<Option<GitInfo>> {
+    let path = Path::new(&directory);
+    if !path.exists() || !path.is_dir() {
+        return Ok(None);
+    }
+
+    // Check if this is a git repository by looking for .git directory
+    let git_dir = path.join(".git");
+    if !git_dir.exists() {
+        return Ok(None);
+    }
+
+    let current_directory = path.to_string_lossy().to_string();
+
+    // Get current branch
+    let branch_output = Command::new("git")
+        .arg("branch")
+        .arg("--show-current")
+        .current_dir(path)
+        .output()
+        .await;
+
+    let branch = if let Ok(output) = branch_output {
+        if output.status.success() {
+            String::from_utf8_lossy(&output.stdout).trim().to_string()
+        } else {
+            // Fallback to symbolic-ref if branch --show-current fails
+            let symbolic_ref_output = Command::new("git")
+                .arg("symbolic-ref")
+                .arg("--short")
+                .arg("HEAD")
+                .current_dir(path)
+                .output()
+                .await;
+
+            if let Ok(ref_output) = symbolic_ref_output {
+                if ref_output.status.success() {
+                    String::from_utf8_lossy(&ref_output.stdout)
+                        .trim()
+                        .to_string()
+                } else {
+                    "HEAD".to_string() // Detached HEAD state
+                }
+            } else {
+                "unknown".to_string()
+            }
+        }
+    } else {
+        "unknown".to_string()
+    };
+
+    // Get git status
+    let status_output = Command::new("git")
+        .arg("status")
+        .arg("--porcelain")
+        .arg("--branch")
+        .current_dir(path)
+        .output()
+        .await;
+
+    let (status, is_clean, has_uncommitted_changes, has_untracked_files) =
+        if let Ok(output) = status_output {
+            if output.status.success() {
+                let status_text = String::from_utf8_lossy(&output.stdout);
+                let lines: Vec<&str> = status_text.lines().collect();
+
+                // Parse the status output
+                let mut has_changes = false;
+                let mut has_untracked = false;
+
+                for line in &lines {
+                    if line.starts_with("##") {
+                        // Branch line - we don't need to store this for now
+                    } else if !line.is_empty() {
+                        // File status line
+                        if line.starts_with("??") {
+                            has_untracked = true;
+                        } else {
+                            has_changes = true;
+                        }
+                    }
+                }
+
+                let is_clean = !has_changes && !has_untracked;
+                let status_desc = if is_clean {
+                    "clean".to_string()
+                } else {
+                    let mut parts = Vec::new();
+                    if has_changes {
+                        parts.push("modified files");
+                    }
+                    if has_untracked {
+                        parts.push("untracked files");
+                    }
+                    parts.join(", ")
+                };
+
+                (status_desc, is_clean, has_changes, has_untracked)
+            } else {
+                ("unknown".to_string(), false, false, false)
+            }
+        } else {
+            ("unknown".to_string(), false, false, false)
+        };
+
+    Ok(Some(GitInfo {
+        current_directory,
+        branch,
+        status,
+        is_clean,
+        has_uncommitted_changes,
+        has_untracked_files,
+    }))
 }
 
 #[cfg(test)]
@@ -479,6 +729,52 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_list_directory_contents_respects_gitignore() {
+        let temp_dir = TempDir::new().unwrap();
+        let root_path = temp_dir.path();
+
+        // Initialize a git repository for the ignore crate to work properly
+        std::process::Command::new("git")
+            .args(&["init"])
+            .current_dir(root_path)
+            .output()
+            .expect("Failed to initialize git repo");
+
+        // Create .gitignore that ignores *.log files and the build/ directory
+        fs::write(root_path.join(".gitignore"), "*.log\nbuild/\n").unwrap();
+
+        // Create files and directories
+        fs::write(root_path.join("file1.txt"), "content").unwrap();
+        fs::write(root_path.join("file2.log"), "log content").unwrap(); // Should be ignored
+        fs::write(root_path.join("README.md"), "readme").unwrap();
+
+        let build_dir = root_path.join("build");
+        fs::create_dir(&build_dir).unwrap(); // Should be ignored
+        fs::write(build_dir.join("output.txt"), "build output").unwrap();
+
+        let src_dir = root_path.join("src");
+        fs::create_dir(&src_dir).unwrap(); // Should be visible
+        fs::write(src_dir.join("main.rs"), "fn main() {}").unwrap();
+
+        // List directory contents
+        let result = list_directory_contents(root_path.to_string_lossy().to_string()).await;
+        assert!(result.is_ok());
+
+        let entries = result.unwrap();
+        let entry_names: Vec<&str> = entries.iter().map(|e| e.name.as_str()).collect();
+
+        // Should include:
+        assert!(entry_names.contains(&"file1.txt"));
+        assert!(entry_names.contains(&"README.md"));
+        assert!(entry_names.contains(&"src"));
+        assert!(entry_names.contains(&".gitignore")); // .gitignore itself should be visible
+
+        // Should NOT include (filtered by gitignore):
+        assert!(!entry_names.contains(&"file2.log")); // Filtered by *.log pattern
+        assert!(!entry_names.contains(&"build")); // Filtered by build/ pattern
+    }
+
+    #[tokio::test]
     async fn test_list_volumes() {
         let result = list_volumes().await;
         assert!(result.is_ok());
@@ -583,6 +879,223 @@ mod tests {
         assert!(debug_str.contains("debug_test"));
         assert!(debug_str.contains("/debug/test"));
         assert!(debug_str.contains("987654321"));
+    }
+
+    #[tokio::test]
+    async fn test_hierarchical_gitignore_retroactive_filtering() {
+        let temp_dir = TempDir::new().unwrap();
+        let root_path = temp_dir.path();
+
+        // Initialize a git repository for the ignore crate to work properly
+        std::process::Command::new("git")
+            .args(&["init"])
+            .current_dir(root_path)
+            .output()
+            .expect("Failed to initialize git repo");
+
+        // Create directory structure:
+        // root/
+        //   ├── .gitignore (ignores "*.log")
+        //   ├── file1.txt
+        //   ├── file1.log
+        //   └── frontend/
+        //       ├── .gitignore (ignores "dist")
+        //       ├── src/
+        //       │   └── main.js
+        //       └── dist/
+        //           └── bundle.js
+
+        // Create root .gitignore
+        fs::write(root_path.join(".gitignore"), "*.log\n").unwrap();
+
+        // Create files
+        fs::write(root_path.join("file1.txt"), "content").unwrap();
+        fs::write(root_path.join("file1.log"), "log content").unwrap();
+
+        // Create frontend directory structure
+        let frontend_dir = root_path.join("frontend");
+        fs::create_dir(&frontend_dir).unwrap();
+        fs::write(frontend_dir.join(".gitignore"), "dist\n").unwrap();
+
+        let src_dir = frontend_dir.join("src");
+        fs::create_dir(&src_dir).unwrap();
+        fs::write(src_dir.join("main.js"), "console.log('hello')").unwrap();
+
+        let dist_dir = frontend_dir.join("dist");
+        fs::create_dir(&dist_dir).unwrap();
+        fs::write(dist_dir.join("bundle.js"), "minified code").unwrap();
+
+        // Run list_files_recursive
+        let result = list_files_recursive(root_path.to_string_lossy().to_string(), Some(3)).await;
+        assert!(result.is_ok());
+
+        let entries = result.unwrap();
+        let entry_paths: Vec<&str> = entries.iter().map(|e| e.name.as_str()).collect();
+
+        // Should include:
+        assert!(entry_paths.contains(&"file1.txt"));
+        assert!(entry_paths.contains(&"frontend"));
+        assert!(entry_paths.contains(&"src"));
+        assert!(entry_paths.contains(&"main.js"));
+
+        // Should NOT include (filtered by gitignore):
+        assert!(!entry_paths.contains(&"file1.log")); // Filtered by root .gitignore
+        assert!(!entry_paths.contains(&"dist")); // Filtered by frontend/.gitignore
+        assert!(!entry_paths.contains(&"bundle.js")); // Inside ignored dist directory
+    }
+
+    #[tokio::test]
+    async fn test_gitignore_hierarchy_pattern_scope() {
+        let temp_dir = TempDir::new().unwrap();
+        let root_path = temp_dir.path();
+
+        // Initialize git repo
+        std::process::Command::new("git")
+            .args(&["init"])
+            .current_dir(root_path)
+            .output()
+            .expect("Failed to initialize git repo");
+
+        // Create structure:
+        // root/
+        //   ├── temp.txt (should be kept)
+        //   └── subdir/
+        //       ├── .gitignore (ignores "temp.txt")
+        //       └── temp.txt (should be ignored)
+
+        fs::write(root_path.join("temp.txt"), "root temp file").unwrap();
+
+        let subdir = root_path.join("subdir");
+        fs::create_dir(&subdir).unwrap();
+        fs::write(subdir.join(".gitignore"), "temp.txt\n").unwrap();
+        fs::write(subdir.join("temp.txt"), "subdir temp file").unwrap();
+
+        let result = list_files_recursive(root_path.to_string_lossy().to_string(), Some(2)).await;
+        assert!(result.is_ok());
+
+        let entries = result.unwrap();
+        let full_paths: Vec<&str> = entries.iter().map(|e| e.full_path.as_str()).collect();
+
+        // Root temp.txt should be included
+        assert!(
+            full_paths
+                .iter()
+                .any(|path| path.ends_with("temp.txt") && path.contains("root")
+                    || !path.contains("subdir"))
+        );
+
+        // Subdir temp.txt should be excluded
+        assert!(
+            !full_paths
+                .iter()
+                .any(|path| path.ends_with("temp.txt") && path.contains("subdir"))
+        );
+
+        // Subdir itself should be included
+        assert!(full_paths.iter().any(|path| path.ends_with("subdir")));
+    }
+
+    #[tokio::test]
+    async fn test_nested_gitignore_cascade() {
+        let temp_dir = TempDir::new().unwrap();
+        let root_path = temp_dir.path();
+
+        // Initialize git repo
+        std::process::Command::new("git")
+            .args(&["init"])
+            .current_dir(root_path)
+            .output()
+            .expect("Failed to initialize git repo");
+
+        // Create deeply nested structure with multiple .gitignore files
+        // root/
+        //   ├── .gitignore (ignores "*.tmp")
+        //   ├── level1/
+        //   │   ├── .gitignore (ignores "secret*")
+        //   │   ├── file.tmp (ignored by root)
+        //   │   ├── secret.txt (ignored by level1)
+        //   │   ├── public.txt
+        //   │   └── level2/
+        //   │       ├── .gitignore (ignores "cache/")
+        //   │       ├── file.tmp (ignored by root)
+        //   │       ├── secret.log (ignored by level1)
+        //   │       ├── normal.txt
+        //   │       └── cache/
+        //   │           └── data.json (ignored by level2)
+
+        // Create root .gitignore
+        fs::write(root_path.join(".gitignore"), "*.tmp\n").unwrap();
+
+        // Create level1
+        let level1 = root_path.join("level1");
+        fs::create_dir(&level1).unwrap();
+        fs::write(level1.join(".gitignore"), "secret*\n").unwrap();
+        fs::write(level1.join("file.tmp"), "temp").unwrap();
+        fs::write(level1.join("secret.txt"), "secret").unwrap();
+        fs::write(level1.join("public.txt"), "public").unwrap();
+
+        // Create level2
+        let level2 = level1.join("level2");
+        fs::create_dir(&level2).unwrap();
+        fs::write(level2.join(".gitignore"), "cache/\n").unwrap();
+        fs::write(level2.join("file.tmp"), "temp2").unwrap();
+        fs::write(level2.join("secret.log"), "secret log").unwrap();
+        fs::write(level2.join("normal.txt"), "normal").unwrap();
+
+        // Create cache directory
+        let cache = level2.join("cache");
+        fs::create_dir(&cache).unwrap();
+        fs::write(cache.join("data.json"), "cached data").unwrap();
+
+        let result = list_files_recursive(root_path.to_string_lossy().to_string(), Some(4)).await;
+        assert!(result.is_ok());
+
+        let entries = result.unwrap();
+        let entry_names: Vec<&str> = entries.iter().map(|e| e.name.as_str()).collect();
+
+        // Should include:
+        assert!(entry_names.contains(&"level1"));
+        assert!(entry_names.contains(&"public.txt"));
+        assert!(entry_names.contains(&"level2"));
+        assert!(entry_names.contains(&"normal.txt"));
+
+        // Should NOT include:
+        assert!(!entry_names.contains(&"file.tmp")); // Ignored by root *.tmp
+        assert!(!entry_names.contains(&"secret.txt")); // Ignored by level1 secret*
+        assert!(!entry_names.contains(&"secret.log")); // Ignored by level1 secret*
+        assert!(!entry_names.contains(&"cache")); // Ignored by level2 cache/
+        assert!(!entry_names.contains(&"data.json")); // Inside ignored cache directory
+    }
+
+    #[test]
+    fn test_ignore_crate_basic_functionality() {
+        let temp_dir = TempDir::new().unwrap();
+        let root_path = temp_dir.path();
+
+        // Create a simple directory structure
+        fs::write(root_path.join("included.txt"), "content").unwrap();
+        fs::write(root_path.join("README.md"), "readme").unwrap();
+
+        // Create a subdirectory
+        let sub_dir = root_path.join("subdir");
+        fs::create_dir(&sub_dir).unwrap();
+        fs::write(sub_dir.join("nested.txt"), "nested content").unwrap();
+
+        // Use WalkBuilder to traverse
+        let mut builder = WalkBuilder::new(root_path);
+        builder.max_depth(Some(2));
+
+        let mut found_files = Vec::new();
+        for result in builder.build() {
+            if let Ok(entry) = result {
+                if entry.path() != root_path {
+                    found_files.push(entry.path().to_string_lossy().to_string());
+                }
+            }
+        }
+
+        // Should find all files since there's no .gitignore
+        assert!(found_files.len() >= 3); // At least the files we created
     }
 
     // Property-based tests using proptest

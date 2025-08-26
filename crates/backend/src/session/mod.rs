@@ -37,7 +37,7 @@ use crate::events::{
     CliIoPayload, CliIoType, EventEmitter, GeminiOutputPayload, GeminiThoughtPayload, InternalEvent,
 };
 use crate::rpc::{FileRpcLogger, JsonRpcRequest, JsonRpcResponse, NoOpRpcLogger, RpcLogger};
-use crate::types::{BackendError, BackendResult};
+use anyhow::{Context, Result};
 
 pub struct PersistentSession {
     pub conversation_id: String,
@@ -84,11 +84,11 @@ impl SessionManager {
         }
     }
 
-    pub fn get_process_statuses(&self) -> BackendResult<Vec<ProcessStatus>> {
+    pub fn get_process_statuses(&self) -> Result<Vec<ProcessStatus>> {
         let processes = self
             .processes
             .lock()
-            .map_err(|_| BackendError::SessionInitFailed("Failed to lock processes".to_string()))?;
+            .map_err(|_| anyhow::anyhow!("Failed to lock processes mutex"))?;
 
         let statuses: Vec<ProcessStatus> = processes.values().map(ProcessStatus::from).collect();
 
@@ -113,11 +113,11 @@ impl SessionManager {
         Ok(statuses)
     }
 
-    pub fn kill_process(&self, conversation_id: &str) -> BackendResult<()> {
+    pub fn kill_process(&self, conversation_id: &str) -> Result<()> {
         let mut processes = self
             .processes
             .lock()
-            .map_err(|_| BackendError::SessionInitFailed("Failed to lock processes".to_string()))?;
+            .map_err(|_| anyhow::anyhow!("Failed to lock processes mutex"))?;
 
         if let Some(session) = processes.get_mut(conversation_id) {
             if let Some(mut child) = session.child.take() {
@@ -133,11 +133,7 @@ impl SessionManager {
                             .args(["/PID", &pid.to_string(), "/F"])
                             .creation_flags(CREATE_NO_WINDOW)
                             .output()
-                            .map_err(|e| {
-                                BackendError::CommandExecutionFailed(format!(
-                                    "Failed to kill process: {e}"
-                                ))
-                            })?
+                            .context("Failed to kill process")?
                     }
                     #[cfg(not(windows))]
                     {
@@ -146,11 +142,7 @@ impl SessionManager {
                         StdCommand::new("kill")
                             .args(["-9", &pid.to_string()])
                             .output()
-                            .map_err(|e| {
-                                BackendError::CommandExecutionFailed(format!(
-                                    "Failed to kill process: {e}"
-                                ))
-                            })?
+                            .context("Failed to kill process")?
                     }
                 };
 
@@ -163,9 +155,7 @@ impl SessionManager {
                         if stderr_lower.contains("not found") {
                             // Consider the process already gone
                         } else {
-                            return Err(BackendError::CommandExecutionFailed(format!(
-                                "Failed to kill process {pid}: {stderr}"
-                            )));
+                            anyhow::bail!("Failed to kill process {pid}: {stderr}");
                         }
                     }
                     #[cfg(not(windows))]
@@ -173,9 +163,7 @@ impl SessionManager {
                         if stderr_lower.contains("no such process") {
                             // Consider the process already gone
                         } else {
-                            return Err(BackendError::CommandExecutionFailed(format!(
-                                "Failed to kill process {pid}: {stderr}"
-                            )));
+                            anyhow::bail!("Failed to kill process {pid}: {stderr}");
                         }
                     }
                 }
@@ -209,10 +197,8 @@ async fn send_jsonrpc_request<E: EventEmitter>(
     session_id: &str,
     emitter: &E,
     rpc_logger: &Arc<dyn RpcLogger>,
-) -> BackendResult<Option<JsonRpcResponse>> {
-    let request_json = serde_json::to_string(request).map_err(|e| {
-        BackendError::SessionInitFailed(format!("Failed to serialize request: {e}"))
-    })?;
+) -> Result<Option<JsonRpcResponse>> {
+    let request_json = serde_json::to_string(request).context("Failed to serialize request")?;
 
     println!("🔍 RAW INPUT TO GEMINI CLI: {request_json}");
     let _ = rpc_logger.log_rpc(&request_json);
@@ -221,15 +207,12 @@ async fn send_jsonrpc_request<E: EventEmitter>(
     stdin
         .write_all(request_json.as_bytes())
         .await
-        .map_err(|e| BackendError::SessionInitFailed(format!("Failed to write request: {e}")))?;
+        .context("Failed to write request")?;
     stdin
         .write_all(b"\n")
         .await
-        .map_err(|e| BackendError::SessionInitFailed(format!("Failed to write newline: {e}")))?;
-    stdin
-        .flush()
-        .await
-        .map_err(|e| BackendError::SessionInitFailed(format!("Failed to flush: {e}")))?;
+        .context("Failed to write newline")?;
+    stdin.flush().await.context("Failed to flush")?;
 
     let _ = emitter.emit(
         &format!("cli-io-{session_id}"),
@@ -246,7 +229,7 @@ async fn send_jsonrpc_request<E: EventEmitter>(
         select! {
             result = reader.read_line(&mut line) => {
                 if let Err(e) = result {
-                    return Err(BackendError::SessionInitFailed(e.to_string()));
+                    anyhow::bail!("Failed to read response: {e}");
                 }
             }
             _ = sleep(Duration::from_secs(5)) => {
@@ -285,12 +268,10 @@ async fn send_jsonrpc_request<E: EventEmitter>(
     println!("Out of loop");
 
     let response = serde_json::from_str::<JsonRpcResponse>(&trimmed_line)
-        .map_err(|e| BackendError::SessionInitFailed(format!("Failed to parse response: {e}")))?;
+        .context("Failed to parse response")?;
 
     if let Some(error) = &response.error {
-        return Err(BackendError::SessionInitFailed(format!(
-            "CLI Error: {error:?}"
-        )));
+        anyhow::bail!("CLI Error: {error:?}");
     }
 
     Ok(Some(response))
@@ -304,7 +285,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
     gemini_auth: Option<GeminiAuthConfig>,
     emitter: E,
     session_manager: &SessionManager,
-) -> BackendResult<(mpsc::UnboundedSender<String>, Arc<dyn RpcLogger>)> {
+) -> Result<(mpsc::UnboundedSender<String>, Arc<dyn RpcLogger>)> {
     let is_qwen = backend_config.is_some();
     let cli_name = if is_qwen { "Qwen Code" } else { "Gemini" };
     println!("🚀 [HANDSHAKE] Starting {cli_name} session initialization for: {session_id}");
@@ -425,18 +406,12 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
                 args.push("--experimental-acp");
 
                 let command_display = if yolo_flag {
-                    format!(
-                        "cmd.exe /C {} --model {model} --yolo --experimental-acp",
-                        gemini_path
-                    )
+                    format!("cmd.exe /C {gemini_path} --model {model} --yolo --experimental-acp")
                 } else {
-                    format!(
-                        "cmd.exe /C {} --model {model} --experimental-acp",
-                        gemini_path
-                    )
+                    format!("cmd.exe /C {gemini_path} --model {model} --experimental-acp")
                 };
                 println!("🔧 [HANDSHAKE] Creating Windows Gemini command: {command_display}");
-                println!("🚀 YOLO-DEBUG: Full args array: {:?}", args);
+                println!("🚀 YOLO-DEBUG: Full args array: {args:?}");
 
                 let mut c = Command::new("cmd.exe");
                 c.args(args);
@@ -455,7 +430,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
                     "🔧 [HANDSHAKE] Creating Unix Gemini command: sh -lc '{}'",
                     gemini_command
                 );
-                println!("🚀 YOLO-DEBUG: Full command string: {}", gemini_command);
+                println!("🚀 YOLO-DEBUG: Full command string: {gemini_command}");
                 let mut c = Command::new("sh");
                 c.args(["-lc", &gemini_command]);
                 c
@@ -473,7 +448,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
     }
 
     println!("🔄 [HANDSHAKE] Spawning CLI process...");
-    println!("🚀 YOLO-DEBUG: About to spawn command: {:?}", cmd);
+    println!("🚀 YOLO-DEBUG: About to spawn command: {cmd:?}");
 
     println!("🚀 YOLO-DEBUG: Testing CLI version before spawn...");
     let version_output = {
@@ -529,8 +504,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
         let paths = String::from_utf8_lossy(&output.stdout);
         let first_path = paths.lines().next().unwrap_or("unknown");
         println!(
-            "🚀 YOLO-DEBUG: First gemini executable (the one that will be used): {}",
-            first_path
+            "🚀 YOLO-DEBUG: First gemini executable (the one that will be used): {first_path}"
         );
     } else {
         println!("🚀 YOLO-DEBUG: Failed to get gemini path");
@@ -560,8 +534,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
         let has_yolo = help_text.contains("yolo") || help_text.contains("YOLO");
         let has_acp = help_text.contains("experimental-acp") || help_text.contains("acp");
         println!(
-            "🚀 YOLO-DEBUG: First gemini supports --yolo: {}, supports --experimental-acp: {}",
-            has_yolo, has_acp
+            "🚀 YOLO-DEBUG: First gemini supports --yolo: {has_yolo}, supports --experimental-acp: {has_acp}"
         );
         if !has_yolo || !has_acp {
             println!(
@@ -576,16 +549,16 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
         println!("❌ [HANDSHAKE] Failed to spawn {cmd_name} process: {e}");
         #[cfg(windows)]
         {
-            BackendError::SessionInitFailed(format!(
-                "Failed to run {cmd_name} command via cmd: {e}"
-            ))
+            anyhow::anyhow!(
+                "Session initialization failed: Failed to run {cmd_name} command via cmd: {e}"
+            )
         }
         #[cfg(not(windows))]
         {
-            BackendError::SessionInitFailed(format!(
-                "Failed to run {} command via shell: {e}",
+            anyhow::anyhow!(
+                "Session initialization failed: Failed to run {} command via shell: {e}",
                 cmd_name
-            ))
+            )
         }
     })?;
 
@@ -594,14 +567,14 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
     let pid = child.id();
     println!("🔗 [HANDSHAKE] CLI process PID: {pid:?}");
 
-    let mut stdin = child.stdin.take().ok_or_else(|| {
-        println!("❌ [HANDSHAKE] Failed to get stdin from child process");
-        BackendError::SessionInitFailed("Failed to get stdin".to_string())
-    })?;
-    let stdout = child.stdout.take().ok_or_else(|| {
-        println!("❌ [HANDSHAKE] Failed to get stdout from child process");
-        BackendError::SessionInitFailed("Failed to get stdout".to_string())
-    })?;
+    let mut stdin = child
+        .stdin
+        .take()
+        .context("Failed to get stdin from child process")?;
+    let stdout = child
+        .stdout
+        .take()
+        .context("Failed to get stdout from child process")?;
 
     let mut reader = AsyncBufReader::new(stdout);
     println!("📡 [HANDSHAKE] Set up stdin/stdout communication channels");
@@ -623,10 +596,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
         jsonrpc: "2.0".to_string(),
         id: 1,
         method: "initialize".to_string(),
-        params: serde_json::to_value(init_params).map_err(|e| {
-            println!("❌ [HANDSHAKE] Failed to serialize init params: {e}");
-            BackendError::SessionInitFailed(format!("Failed to serialize init params: {e}"))
-        })?,
+        params: serde_json::to_value(init_params).context("Failed to serialize init params")?,
     };
 
     // { "jsonrpc": "2.0", "id": 1, "method": "initialize", "params": { "protocolVersion": 1, "clientCapabilities": { "fs": { "readTextFile": true, "writeTextFile": true } } } }
@@ -638,9 +608,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
     loop {
         retries += 1;
         if retries == 5 {
-            return Err(BackendError::SessionInitFailed(
-                "Max number of retries reached".to_string(),
-            ));
+            anyhow::bail!("Max number of retries reached");
         }
         let init_response_result = send_jsonrpc_request(
             &init_request,
@@ -671,10 +639,8 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
     }
 
     let _init_result: InitializeResult =
-        serde_json::from_value(init_response.result.unwrap_or_default()).map_err(|e| {
-            println!("❌ [HANDSHAKE] Failed to parse init result: {e}");
-            BackendError::SessionInitFailed(format!("Failed to parse init result: {e}"))
-        })?;
+        serde_json::from_value(init_response.result.unwrap_or_default())
+            .context("Failed to parse init result")?;
 
     println!("✅ [HANDSHAKE] Step 1/3: Initialize completed successfully for: {session_id}");
 
@@ -690,10 +656,8 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
         jsonrpc: "2.0".to_string(),
         id: 3,
         method: "session/new".to_string(),
-        params: serde_json::to_value(session_params).map_err(|e| {
-            println!("❌ [HANDSHAKE] Failed to serialize session params: {e}");
-            BackendError::SessionInitFailed(format!("Failed to serialize session params: {e}"))
-        })?,
+        params: serde_json::to_value(session_params)
+            .context("Failed to serialize session params")?,
     };
 
     let mut session_response = send_jsonrpc_request(
@@ -707,11 +671,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
     .await;
 
     if let Err(e) = session_response {
-        let msg = if let BackendError::SessionInitFailed(ref msg) = e {
-            msg.clone()
-        } else {
-            e.to_string()
-        };
+        let msg = e.to_string();
         if msg.contains("Authentication required") {
             println!("⚠️ [HANDSHAKE] Session creation request failed - needs auth");
             // Step 3: Authenticate - choose method based on configuration
@@ -738,10 +698,8 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
                 jsonrpc: "2.0".to_string(),
                 id: 2,
                 method: "authenticate".to_string(),
-                params: serde_json::to_value(auth_params).map_err(|e| {
-                    println!("❌ [HANDSHAKE] Failed to serialize auth params: {e}");
-                    BackendError::SessionInitFailed(format!("Failed to serialize auth params: {e}"))
-                })?,
+                params: serde_json::to_value(auth_params)
+                    .context("Failed to serialize auth params")?,
             };
 
             let _auth_response = send_jsonrpc_request(
@@ -780,14 +738,10 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
     let session_response = session_response?;
 
     let session_result: SessionNewResult = if let Some(result) = session_response {
-        serde_json::from_value(result.result.unwrap_or_default()).map_err(|e| {
-            println!("❌ [HANDSHAKE] Failed to parse session result: {e}");
-            BackendError::SessionInitFailed(format!("Failed to parse session result: {e}"))
-        })?
+        serde_json::from_value(result.result.unwrap_or_default())
+            .context("Failed to parse session result")?
     } else {
-        return Err(BackendError::SessionInitFailed(
-            "Failed to initialize session".to_string(),
-        ));
+        anyhow::bail!("No JSON returned from initialize request");
     };
 
     println!(
@@ -800,7 +754,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
         let processes = session_manager.get_processes();
         let mut processes = processes.lock().map_err(|_| {
             println!("❌ [HANDSHAKE] Failed to lock processes mutex");
-            BackendError::SessionInitFailed("Failed to lock processes".to_string())
+            anyhow::anyhow!("Session initialization failed: Failed to lock processes")
         })?;
 
         let persistent_session = PersistentSession {
@@ -1196,7 +1150,7 @@ async fn handle_cli_output_line(
                                 println!(
                                     "🚀 YOLO-DEBUG: In YOLO mode, this should execute without permission requests!"
                                 );
-                                println!("🚀 YOLO-DEBUG: ToolCall kind: {:?}", kind);
+                                println!("🚀 YOLO-DEBUG: ToolCall kind: {kind:?}");
 
                                 // Emit pure ACP SessionUpdate event - no legacy conversion
                                 let emit_result = event_tx.send(InternalEvent::AcpSessionUpdate {
@@ -1274,7 +1228,7 @@ async fn handle_cli_output_line(
                             "🔔 YOLO-DEBUG: Tool call ID in request: {}",
                             params.tool_call.tool_call_id
                         );
-                        println!("🔔 YOLO-DEBUG: Request details: {:?}", params);
+                        println!("🔔 YOLO-DEBUG: Request details: {params:?}");
                         // Emit pure ACP permission request - no legacy conversion
                         let _ = event_tx.send(InternalEvent::AcpPermissionRequest {
                             session_id: session_id.to_string(),
@@ -1760,12 +1714,12 @@ mod tests {
             Err(e) => {
                 // Expected if gemini CLI is not available
                 // Verify it's the expected error type
-                match e {
-                    crate::types::BackendError::SessionInitFailed(_) => {
-                        // This is expected when CLI is not available
-                        println!("Session init failed as expected (CLI not available): {e}");
-                    }
-                    _ => panic!("Unexpected error type: {}", e),
+                let error_msg = e.to_string();
+                if error_msg.contains("Session initialization failed") {
+                    // This is expected when CLI is not available
+                    println!("Session init failed as expected (CLI not available): {e}");
+                } else {
+                    panic!("Unexpected error: {}", e);
                 }
             }
         }
