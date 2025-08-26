@@ -5,6 +5,8 @@ use std::fs;
 use std::path::Path;
 use tokio::process::Command;
 
+const CREATE_NO_WINDOW: u32 = 0x08000000;
+
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum VolumeType {
@@ -344,25 +346,29 @@ pub async fn get_git_info(directory: String) -> Result<Option<GitInfo>> {
     let current_directory = path.to_string_lossy().to_string();
 
     // Get current branch
-    let branch_output = Command::new("git")
+    let mut branch_output_cmd = Command::new("git");
+    branch_output_cmd
         .arg("branch")
         .arg("--show-current")
-        .current_dir(path)
-        .output()
-        .await;
+        .current_dir(path);
+    #[cfg(target_os = "windows")]
+    branch_output_cmd.creation_flags(CREATE_NO_WINDOW);
+    let branch_output = branch_output_cmd.output().await;
 
     let branch = if let Ok(output) = branch_output {
         if output.status.success() {
             String::from_utf8_lossy(&output.stdout).trim().to_string()
         } else {
             // Fallback to symbolic-ref if branch --show-current fails
-            let symbolic_ref_output = Command::new("git")
+            let mut symbolic_ref_cmd = Command::new("git");
+            symbolic_ref_cmd
                 .arg("symbolic-ref")
                 .arg("--short")
                 .arg("HEAD")
-                .current_dir(path)
-                .output()
-                .await;
+                .current_dir(path);
+            #[cfg(target_os = "windows")]
+            symbolic_ref_cmd.creation_flags(CREATE_NO_WINDOW);
+            let symbolic_ref_output = symbolic_ref_cmd.output().await;
 
             if let Ok(ref_output) = symbolic_ref_output {
                 if ref_output.status.success() {
@@ -381,13 +387,15 @@ pub async fn get_git_info(directory: String) -> Result<Option<GitInfo>> {
     };
 
     // Get git status
-    let status_output = Command::new("git")
+    let mut status_output_cmd = Command::new("git");
+    status_output_cmd
         .arg("status")
         .arg("--porcelain")
         .arg("--branch")
-        .current_dir(path)
-        .output()
-        .await;
+        .current_dir(path);
+    #[cfg(target_os = "windows")]
+    status_output_cmd.creation_flags(CREATE_NO_WINDOW);
+    let status_output = status_output_cmd.output().await;
 
     let (status, is_clean, has_uncommitted_changes, has_untracked_files) =
         if let Ok(output) = status_output {
@@ -450,6 +458,7 @@ mod tests {
     use std::fs;
     use std::io::Write;
     use std::time::{SystemTime, UNIX_EPOCH};
+    use std::os::windows::process::CommandExt;
     use tempfile::{NamedTempFile, TempDir};
 
     #[test]
@@ -734,10 +743,13 @@ mod tests {
         let root_path = temp_dir.path();
 
         // Initialize a git repository for the ignore crate to work properly
-        std::process::Command::new("git")
+        let mut git_command = std::process::Command::new("git");
+        git_command
             .args(&["init"])
-            .current_dir(root_path)
-            .output()
+            .current_dir(root_path);
+        #[cfg(target_os = "windows")]
+        git_command.creation_flags(CREATE_NO_WINDOW);
+        git_command.output()
             .expect("Failed to initialize git repo");
 
         // Create .gitignore that ignores *.log files and the build/ directory
@@ -887,10 +899,13 @@ mod tests {
         let root_path = temp_dir.path();
 
         // Initialize a git repository for the ignore crate to work properly
-        std::process::Command::new("git")
+        let mut git_command = std::process::Command::new("git");
+        git_command
             .args(&["init"])
-            .current_dir(root_path)
-            .output()
+            .current_dir(root_path);
+        #[cfg(target_os = "windows")]
+        git_command.creation_flags(CREATE_NO_WINDOW);
+        git_command.output()
             .expect("Failed to initialize git repo");
 
         // Create directory structure:
@@ -950,10 +965,13 @@ mod tests {
         let root_path = temp_dir.path();
 
         // Initialize git repo
-        std::process::Command::new("git")
+        let mut git_command = std::process::Command::new("git");
+        git_command
             .args(&["init"])
-            .current_dir(root_path)
-            .output()
+            .current_dir(root_path);
+        #[cfg(target_os = "windows")]
+        git_command.creation_flags(CREATE_NO_WINDOW);
+        git_command.output()
             .expect("Failed to initialize git repo");
 
         // Create structure:
@@ -1001,10 +1019,13 @@ mod tests {
         let root_path = temp_dir.path();
 
         // Initialize git repo
-        std::process::Command::new("git")
+        let mut git_command = std::process::Command::new("git");
+        git_command
             .args(&["init"])
-            .current_dir(root_path)
-            .output()
+            .current_dir(root_path);
+        #[cfg(target_os = "windows")]
+        git_command.creation_flags(CREATE_NO_WINDOW);
+        git_command.output()
             .expect("Failed to initialize git repo");
 
         // Create deeply nested structure with multiple .gitignore files
