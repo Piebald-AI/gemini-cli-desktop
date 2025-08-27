@@ -225,124 +225,135 @@ export const useConversationEvents = (
   ) => void
 ) => {
   const setupEventListenerForConversation = useCallback(
-    async (conversationId: string): Promise<void> => {
+    async (conversationId: string): Promise<() => void> => {
       // In web mode, ensure WebSocket connection is ready before registering listeners
       if (__WEB__) {
         const wsManager = getWebSocketManager();
         await wsManager.waitForConnection();
       }
 
+      const unlistenFunctions: (() => void)[] = [];
+
       try {
-        await listen<{ type: "input" | "output"; data: string }>(
-          `cli-io-${conversationId}`,
-          (event) => {
-            setCliIOLogs((prev) => [
-              ...prev,
-              {
-                timestamp: new Date(),
-                type: event.payload.type,
-                data: event.payload.data,
-                conversationId,
-              },
-            ]);
+        const unlistenCliIo = await listen<{
+          type: "input" | "output";
+          data: string;
+        }>(`cli-io-${conversationId}`, (event) => {
+          setCliIOLogs((prev) => [
+            ...prev,
+            {
+              timestamp: new Date(),
+              type: event.payload.type,
+              data: event.payload.data,
+              conversationId,
+            },
+          ]);
 
-            // Check if this is a tool call related JSON-RPC message
-            try {
-              const jsonData = JSON.parse(event.payload.data);
+          // Check if this is a tool call related JSON-RPC message
+          try {
+            const jsonData = JSON.parse(event.payload.data);
 
-              if (event.payload.type === "output") {
-                // If it's a requestToolCallConfirmation input, store it for when the tool call is created
-                if (jsonData.method === "requestToolCallConfirmation") {
-                  window.pendingToolCallInput = event.payload.data;
-                }
+            if (event.payload.type === "output") {
+              // If it's a requestToolCallConfirmation input, store it for when the tool call is created
+              if (jsonData.method === "requestToolCallConfirmation") {
+                window.pendingToolCallInput = event.payload.data;
+              }
 
-                // If it's an updateToolCall input, store it for updating the tool call
-                if (jsonData.method === "updateToolCall") {
-                  updateConversation(conversationId, (conv) => {
-                    for (const msg of conv.messages) {
-                      for (const msgPart of msg.parts) {
-                        if (
-                          msgPart.type === "toolCall" &&
-                          msgPart.toolCall.id === jsonData.params!.toolCallId
-                        ) {
-                          msgPart.toolCall.outputJsonRpc = event.payload.data;
-                        }
+              // If it's an updateToolCall input, store it for updating the tool call
+              if (jsonData.method === "updateToolCall") {
+                updateConversation(conversationId, (conv) => {
+                  for (const msg of conv.messages) {
+                    for (const msgPart of msg.parts) {
+                      if (
+                        msgPart.type === "toolCall" &&
+                        msgPart.toolCall.id === jsonData.params!.toolCallId
+                      ) {
+                        msgPart.toolCall.outputJsonRpc = event.payload.data;
                       }
                     }
-                  });
-                }
+                  }
+                });
               }
-            } catch {
-              // Not JSON, ignore
             }
+          } catch {
+            // Not JSON, ignore
           }
-        );
+        });
+        unlistenFunctions.push(unlistenCliIo);
 
         // Listen for streaming text chunks.
-        await listen<string>(`ai-output-${conversationId}`, (event) => {
-          updateConversation(conversationId, (conv, lastMsg) => {
-            conv.isStreaming = true;
-            if (lastMsg.sender === "assistant") {
-              // There's an existing AI message.
-              const lastPart = lastMsg.parts[lastMsg.parts.length - 1];
-              if (lastPart?.type === "text") {
-                lastPart.text += event.payload;
-              } else {
-                // Create a new text part.
-                lastMsg.parts.push({
-                  type: "text",
-                  text: event.payload,
-                });
-              }
-            } else {
-              conv.messages.push({
-                id: Date.now().toString(),
-                sender: "assistant",
-                timestamp: new Date(),
-                parts: [
-                  {
+        const unlistenAiOutput = await listen<string>(
+          `ai-output-${conversationId}`,
+          (event) => {
+            updateConversation(conversationId, (conv, lastMsg) => {
+              conv.isStreaming = true;
+              if (lastMsg.sender === "assistant") {
+                // There's an existing AI message.
+                const lastPart = lastMsg.parts[lastMsg.parts.length - 1];
+                if (lastPart?.type === "text") {
+                  lastPart.text += event.payload;
+                } else {
+                  // Create a new text part.
+                  lastMsg.parts.push({
                     type: "text",
                     text: event.payload,
-                  },
-                ],
-              });
-            }
-          });
-        });
-
-        // Listen for thinking chunks.
-        await listen<string>(`ai-thought-${conversationId}`, (event) => {
-          updateConversation(conversationId, (conv, lastMsg) => {
-            conv.isStreaming = true;
-            if (lastMsg.sender === "assistant") {
-              const lastPart = lastMsg.parts[lastMsg.parts.length - 1];
-              if (lastPart?.type === "thinking") {
-                lastPart.thinking += event.payload;
+                  });
+                }
               } else {
-                // Create a new text part.
-                lastMsg.parts.push({
-                  type: "thinking",
-                  thinking: event.payload,
+                conv.messages.push({
+                  id: Date.now().toString(),
+                  sender: "assistant",
+                  timestamp: new Date(),
+                  parts: [
+                    {
+                      type: "text",
+                      text: event.payload,
+                    },
+                  ],
                 });
               }
-            } else {
-              conv.messages.push({
-                id: Date.now().toString(),
-                sender: "assistant",
-                timestamp: new Date(),
-                parts: [
-                  {
+            });
+          }
+        );
+        unlistenFunctions.push(unlistenAiOutput);
+
+        // Listen for thinking chunks.
+        const unlistenAiThought = await listen<string>(
+          `ai-thought-${conversationId}`,
+          (event) => {
+            updateConversation(conversationId, (conv, lastMsg) => {
+              conv.isStreaming = true;
+              if (lastMsg.sender === "assistant") {
+                const lastPart = lastMsg.parts[lastMsg.parts.length - 1];
+                if (lastPart?.type === "thinking") {
+                  lastPart.thinking += event.payload;
+                } else {
+                  // Create a new text part.
+                  lastMsg.parts.push({
                     type: "thinking",
                     thinking: event.payload,
-                  },
-                ],
-              });
-            }
-          });
-        });
+                  });
+                }
+              } else {
+                conv.messages.push({
+                  id: Date.now().toString(),
+                  sender: "assistant",
+                  timestamp: new Date(),
+                  parts: [
+                    {
+                      type: "thinking",
+                      thinking: event.payload,
+                    },
+                  ],
+                });
+              }
+            });
+          }
+        );
+        unlistenFunctions.push(unlistenAiThought);
 
         // Listen for pure ACP session updates (replaces ai-tool-call and ai-tool-call-update)
-        await listen<EventPayload>(
+        const unlistenAcpSessionUpdate = await listen<EventPayload>(
           `acp-session-update-${conversationId}`,
           ({ payload: update }: { payload: EventPayload }) => {
             if (!isSessionUpdateEvent(update)) {
@@ -498,29 +509,34 @@ export const useConversationEvents = (
             }
           }
         );
+        unlistenFunctions.push(unlistenAcpSessionUpdate);
 
         // Note: Tool call updates are now handled by the ACP session update listener above
 
         // Also listen for errors
-        await listen<string>(`ai-error-${conversationId}`, (event) => {
-          updateConversation(conversationId, (conv) => {
-            conv.isStreaming = false;
-            conv.messages.push({
-              id: Date.now().toString(),
-              parts: [
-                {
-                  type: "text",
-                  text: `❌ **Error**: ${event.payload}`,
-                },
-              ],
-              sender: "assistant",
-              timestamp: new Date(),
+        const unlistenAiError = await listen<string>(
+          `ai-error-${conversationId}`,
+          (event) => {
+            updateConversation(conversationId, (conv) => {
+              conv.isStreaming = false;
+              conv.messages.push({
+                id: Date.now().toString(),
+                parts: [
+                  {
+                    type: "text",
+                    text: `❌ **Error**: ${event.payload}`,
+                  },
+                ],
+                sender: "assistant",
+                timestamp: new Date(),
+              });
             });
-          });
-        });
+          }
+        );
+        unlistenFunctions.push(unlistenAiError);
 
         // Listen for pure ACP permission requests (replaces ai-tool-call-confirmation)
-        await listen<EventPayload>(
+        const unlistenAcpPermissionRequest = await listen<EventPayload>(
           `acp-permission-request-${conversationId}`,
           (event) => {
             if (!isPermissionRequestEvent(event.payload)) {
@@ -615,7 +631,7 @@ export const useConversationEvents = (
               // If tool call doesn't exist, create one with the confirmation request
               if (!toolCallExists) {
                 console.log(
-                  "🔧 [EDIT-DEBUG] Creating new tool call for permission request:",
+                  `🔧 [EDIT-DEBUG] Creating new tool call for permission request:`,
                   toolCallId
                 );
                 const toolName = getToolNameFromKind(
@@ -667,7 +683,7 @@ export const useConversationEvents = (
                     toolCall: newToolCall,
                   });
                   console.log(
-                    "🔧 [EDIT-DEBUG] Added tool call to existing assistant message"
+                    `🔧 [EDIT-DEBUG] Added tool call to existing assistant message`
                   );
                 } else {
                   conv.messages.push({
@@ -682,12 +698,12 @@ export const useConversationEvents = (
                     ],
                   });
                   console.log(
-                    "🔧 [EDIT-DEBUG] Created new assistant message with tool call"
+                    `🔧 [EDIT-DEBUG] Created new assistant message with tool call`
                   );
                 }
               } else {
                 console.log(
-                  "🔧 [EDIT-DEBUG] Tool call exists, updating with confirmation request"
+                  `🔧 [EDIT-DEBUG] Tool call exists, updating with confirmation request`
                 );
                 // Tool call exists, update it with the confirmation request
                 for (const msg of conv.messages) {
@@ -699,7 +715,7 @@ export const useConversationEvents = (
                       msgPart.toolCall.confirmationRequest =
                         confirmationRequest;
                       console.log(
-                        "🔍 [PERMISSION-STATUS] Setting tool call status from permission request:",
+                        `🔍 [PERMISSION-STATUS] Setting tool call status from permission request:`,
                         {
                           toolCallId: msgPart.toolCall.id,
                           oldStatus: msgPart.toolCall.status,
@@ -711,7 +727,7 @@ export const useConversationEvents = (
                         request.toolCall.status
                       );
                       console.log(
-                        "🔧 [EDIT-DEBUG] Updated existing tool call with confirmation request"
+                        `🔧 [EDIT-DEBUG] Updated existing tool call with confirmation request`
                       );
                       break;
                     }
@@ -755,24 +771,29 @@ export const useConversationEvents = (
               const newMap = new Map(prev);
               newMap.set(toolCallId, legacyConfirmationRequest);
               console.log(
-                "✅ Stored confirmation request in Map for toolCallId:",
+                `✅ Stored confirmation request in Map for toolCallId:`,
                 toolCallId
               );
               console.log(
-                "✅ Total confirmation requests in Map:",
+                `✅ Total confirmation requests in Map:`,
                 newMap.size
               );
               return newMap;
             });
           }
         );
+        unlistenFunctions.push(unlistenAcpPermissionRequest);
 
         // Listen for turn finished events to stop streaming indicator
-        await listen<boolean>(`ai-turn-finished-${conversationId}`, () => {
-          updateConversation(conversationId, (conv) => {
-            conv.isStreaming = false;
-          });
-        });
+        const unlistenAiTurnFinished = await listen<boolean>(
+          `ai-turn-finished-${conversationId}`,
+          () => {
+            updateConversation(conversationId, (conv) => {
+              conv.isStreaming = false;
+            });
+          }
+        );
+        unlistenFunctions.push(unlistenAiTurnFinished);
 
         // Add a small delay to ensure listeners are fully active
         await new Promise((resolve) => setTimeout(resolve, 100));
@@ -784,6 +805,13 @@ export const useConversationEvents = (
           error
         );
       }
+
+      return () => {
+        console.log(
+          `🧹 Cleaning up event listeners for conversation: ${conversationId}`
+        );
+        unlistenFunctions.forEach((unlisten) => unlisten());
+      };
     },
     [setCliIOLogs, setConfirmationRequests, updateConversation]
   );

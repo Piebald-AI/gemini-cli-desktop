@@ -50,6 +50,7 @@ function RootLayoutContent() {
     Map<string, string>
   >(new Map());
   const messageInputBarRef = useRef<MessageInputBarRef>(null);
+  const listenerCleanups = useRef(new Map<string, () => void>());
 
   // Get the current working directory (default fallback)
   useEffect(() => {
@@ -147,13 +148,33 @@ function RootLayoutContent() {
     }
   }, [activeConversation, sessionWorkingDirectories]);
 
-  const handleConversationSelect = useCallback(
-    (conversationId: string) => {
-      setActiveConversation(conversationId);
-      setupEventListenerForConversation(conversationId);
-    },
-    [setActiveConversation, setupEventListenerForConversation]
-  );
+  useEffect(() => {
+    const setup = async () => {
+      const activeConversations = new Set(conversations.map((c) => c.id));
+      // Cleanup listeners for deleted conversations
+      for (const id of listenerCleanups.current.keys()) {
+        if (!activeConversations.has(id)) {
+          const cleanup = listenerCleanups.current.get(id);
+          if (cleanup) {
+            cleanup();
+          }
+          listenerCleanups.current.delete(id);
+        }
+      }
+
+      // Add listeners for new conversations
+      for (const conversation of conversations) {
+        if (!listenerCleanups.current.has(conversation.id)) {
+          const cleanup = await setupEventListenerForConversation(
+            conversation.id
+          );
+          listenerCleanups.current.set(conversation.id, cleanup);
+        }
+      }
+    };
+
+    setup();
+  }, [conversations, setupEventListenerForConversation]);
 
   const handleModelChange = useCallback((model: string) => {
     setSelectedModel(model);
@@ -224,7 +245,6 @@ function RootLayoutContent() {
         });
       }
 
-      await setupEventListenerForConversation(convId);
       return convId;
     },
     [
@@ -234,7 +254,6 @@ function RootLayoutContent() {
       backendState.configs.gemini,
       createNewConversation,
       setActiveConversation,
-      setupEventListenerForConversation,
       setSessionWorkingDirectories,
     ]
   );
@@ -264,7 +283,7 @@ function RootLayoutContent() {
       conversations={conversations}
       activeConversation={activeConversation}
       processStatuses={processStatuses}
-      onConversationSelect={handleConversationSelect}
+      onConversationSelect={setActiveConversation}
       onKillProcess={handleKillProcess}
       onModelChange={handleModelChange}
       open={sidebarOpen}

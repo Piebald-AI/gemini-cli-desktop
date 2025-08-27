@@ -19,7 +19,9 @@ interface UseMessageHandlerProps {
     isStreaming: boolean
   ) => Conversation;
   setActiveConversation: (id: string) => void;
-  setupEventListenerForConversation: (conversationId: string) => Promise<void>;
+  setupEventListenerForConversation: (
+    conversationId: string
+  ) => Promise<() => void>;
   fetchProcessStatuses: () => Promise<void>;
 }
 
