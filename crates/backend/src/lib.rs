@@ -189,7 +189,7 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
         }
     }
 
-    /// Initialize a new Gemini CLI session
+    /// Initialize a new CLI session (Gemini or Qwen)
     pub async fn initialize_session(
         &self,
         session_id: String,
@@ -198,13 +198,39 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
         backend_config: Option<QwenConfig>,
         gemini_auth: Option<GeminiAuthConfig>,
     ) -> Result<()> {
+        let requested_backend = if backend_config.is_some() {
+            "qwen"
+        } else {
+            "gemini"
+        };
+
         {
             let processes = self.session_manager.get_processes();
             if let Ok(guard) = processes.lock()
                 && let Some(existing) = guard.get(&session_id)
                 && existing.is_alive
             {
-                return Ok(());
+                // Check if the existing session is using the same backend type
+                if existing.backend_type == requested_backend {
+                    println!(
+                        "🔄 [SESSION-CHECK] Existing {} session found for {}, reusing",
+                        requested_backend, session_id
+                    );
+                    return Ok(());
+                } else {
+                    // Different backend requested - kill the existing session first
+                    println!(
+                        "🔄 [SESSION-CHECK] Backend switch detected: {} -> {} for session {}",
+                        existing.backend_type, requested_backend, session_id
+                    );
+                    println!(
+                        "🔄 [SESSION-CHECK] Killing existing {} session before starting {}",
+                        existing.backend_type, requested_backend
+                    );
+                    // Drop the guard before calling kill_process to avoid deadlock
+                    drop(guard);
+                    self.session_manager.kill_process(&session_id)?;
+                }
             }
         }
 
