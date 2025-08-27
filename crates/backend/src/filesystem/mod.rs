@@ -160,7 +160,7 @@ pub async fn list_directory_contents(path: String) -> Result<Vec<DirEntry>> {
     Ok(entries)
 }
 
-pub async fn list_files_recursive(path: String, max_depth: Option<usize>) -> Result<Vec<DirEntry>> {
+pub async fn list_files_recursive(path: String) -> Result<Vec<DirEntry>> {
     let mut entries = Vec::new();
     let root_path = Path::new(&path);
 
@@ -168,12 +168,13 @@ pub async fn list_files_recursive(path: String, max_depth: Option<usize>) -> Res
         return Ok(entries);
     }
 
-    let effective_max_depth = max_depth.unwrap_or(2);
+    // Limit the total number of directories to 200
+    let mut directory_count = 0;
+    const MAX_DIRECTORIES: usize = 200;
 
     // Use the ignore crate's WalkBuilder for proper gitignore support
     let mut builder = WalkBuilder::new(root_path);
     builder
-        .max_depth(Some(effective_max_depth))
         .git_ignore(true) // Respect .gitignore files
         .git_global(true) // Respect global git ignore
         .git_exclude(true) // Respect .git/info/exclude
@@ -195,6 +196,16 @@ pub async fn list_files_recursive(path: String, max_depth: Option<usize>) -> Res
                     Ok(metadata) => metadata,
                     Err(_) => continue, // Skip files we can't read metadata for
                 };
+
+                // Check if this is a directory and increment counter if so
+                let is_directory = metadata.is_dir();
+                if is_directory {
+                    directory_count += 1;
+                    // Stop processing if we've reached our directory limit
+                    if directory_count > MAX_DIRECTORIES {
+                        break;
+                    }
+                }
 
                 let file_name = entry_path
                     .file_name()
@@ -226,7 +237,7 @@ pub async fn list_files_recursive(path: String, max_depth: Option<usize>) -> Res
 
                 entries.push(DirEntry {
                     name: file_name,
-                    is_directory: metadata.is_dir(),
+                    is_directory,
                     full_path,
                     size,
                     modified,
@@ -936,7 +947,7 @@ mod tests {
         fs::write(dist_dir.join("bundle.js"), "minified code").unwrap();
 
         // Run list_files_recursive
-        let result = list_files_recursive(root_path.to_string_lossy().to_string(), Some(3)).await;
+        let result = list_files_recursive(root_path.to_string_lossy().to_string()).await;
         assert!(result.is_ok());
 
         let entries = result.unwrap();
@@ -980,7 +991,7 @@ mod tests {
         fs::write(subdir.join(".gitignore"), "temp.txt\n").unwrap();
         fs::write(subdir.join("temp.txt"), "subdir temp file").unwrap();
 
-        let result = list_files_recursive(root_path.to_string_lossy().to_string(), Some(2)).await;
+        let result = list_files_recursive(root_path.to_string_lossy().to_string()).await;
         assert!(result.is_ok());
 
         let entries = result.unwrap();
@@ -1057,7 +1068,7 @@ mod tests {
         fs::create_dir(&cache).unwrap();
         fs::write(cache.join("data.json"), "cached data").unwrap();
 
-        let result = list_files_recursive(root_path.to_string_lossy().to_string(), Some(4)).await;
+        let result = list_files_recursive(root_path.to_string_lossy().to_string()).await;
         assert!(result.is_ok());
 
         let entries = result.unwrap();
@@ -1106,6 +1117,36 @@ mod tests {
 
         // Should find all files since there's no .gitignore
         assert!(found_files.len() >= 3); // At least the files we created
+    }
+
+    #[tokio::test]
+    async fn test_list_files_recursive_directory_limit() {
+        let temp_dir = TempDir::new().unwrap();
+        let root_path = temp_dir.path();
+
+        // Create a directory structure with more than 200 directories
+        for i in 0..250 {
+            let dir_path = root_path.join(format!("dir_{:03}", i));
+            fs::create_dir(&dir_path).unwrap();
+
+            // Add a file in each directory
+            fs::write(dir_path.join("file.txt"), format!("content {}", i)).unwrap();
+        }
+
+        // Run list_files_recursive
+        let result = list_files_recursive(root_path.to_string_lossy().to_string()).await;
+        assert!(result.is_ok());
+
+        let entries = result.unwrap();
+
+        // Count directories in the result
+        let directory_count = entries.iter().filter(|e| e.is_directory).count();
+
+        // Should have at most 200 directories (our limit)
+        assert!(directory_count <= 200);
+
+        // Should have more than 0 entries (we created 250 directories + 250 files)
+        assert!(!entries.is_empty());
     }
 
     // Property-based tests using proptest

@@ -280,7 +280,6 @@ struct ListDirectoryRequest {
 #[serde(rename_all = "camelCase")]
 struct ListFilesRecursiveRequest {
     path: String,
-    max_depth: Option<usize>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -658,7 +657,7 @@ async fn list_files_recursive(
 ) -> Json<Vec<DirEntry>> {
     let backend = state.backend.lock().await;
     let contents = backend
-        .list_files_recursive(request.path.clone(), request.max_depth)
+        .list_files_recursive(request.path.clone())
         .await
         .unwrap();
     Json(contents)
