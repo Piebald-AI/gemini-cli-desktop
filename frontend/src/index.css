@@ -11,6 +11,21 @@ html {
   overflow: hidden;
 }
 
+/* Style diff viewer code fold rows */
+tr[class*="code-fold"] {
+  @apply transition-colors duration-200;
+}
+
+tr[class*="code-fold"]:hover {
+  @apply bg-muted/30;
+}
+
+/* Remove underline from diff viewer code fold anchors */
+tr[class*="code-fold"] a,
+.code-fold a {
+  text-decoration: none !important;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
