@@ -8,7 +8,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "../ui/dialog";
-import { X } from "lucide-react";
+import { X, Clock } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { Conversation, ProcessStatus } from "../../types";
 
@@ -167,14 +167,14 @@ export function ProcessCard({
     return (
       <div
         key={conversation.id}
-        className={`cursor-pointer transition-all hover:shadow-md ${
+        className={`cursor-pointer transition-all hover:shadow-md rounded-lg border border-gray-200 dark:border-gray-700 ${
           isSelected
             ? "ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-900/20"
             : "hover:bg-gray-100 dark:hover:bg-gray-700"
         }`}
         onClick={() => onConversationSelect(conversation.id)}
       >
-        <div className="p-3 pb-2 py-0">
+        <div className="p-4">
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
               <h3 className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate wrap-normal">
@@ -182,16 +182,18 @@ export function ProcessCard({
                   ? conversation.title.slice(0, 35) + "..."
                   : conversation.title}
               </h3>
-              <div className="flex items-center gap-2 mt-1 justify-between">
+              <div className="flex items-center gap-2 mt-2 justify-between">
                 <div className="flex items-center gap-1">
                   {isActive ? (
-                    <div className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs px-2 py-0.5 rounded">
-                      <div className="w-2 h-2 bg-green-500 rounded-full mr-1 inline-block" />
-                      {processStatus?.pid
-                        ? t("conversations.pidLabel", {
-                            pid: processStatus.pid,
-                          })
-                        : t("conversations.active")}
+                    <div className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs px-2 py-1 rounded-md flex items-center gap-1">
+                      <div className="w-2 h-2 bg-green-500 rounded-full" />
+                      <span>
+                        {processStatus?.pid
+                          ? t("conversations.pidLabel", {
+                              pid: processStatus.pid,
+                            })
+                          : t("conversations.active")}
+                      </span>
                       {isActive && (
                         <Dialog
                           open={
@@ -205,7 +207,7 @@ export function ProcessCard({
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-4 w-4 p-0 ml-2 text-red-500 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-950/70"
+                              className="h-5 w-5 p-0 ml-1 text-red-500 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-950/70 rounded-sm"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setSelectedConversationForEnd({
@@ -215,7 +217,7 @@ export function ProcessCard({
                               }}
                               title={t("conversations.endChat")}
                             >
-                              <X className="h-4 w-4" />
+                              <X className="h-3 w-3" />
                             </Button>
                           </DialogTrigger>
                           <DialogContent>
@@ -253,14 +255,14 @@ export function ProcessCard({
                       )}
                     </div>
                   ) : (
-                    <div className="bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 text-xs px-2 py-0.5 rounded">
-                      <div className="w-2 h-2 bg-gray-400 rounded-full mr-1 inline-block" />
-                      {t("conversations.inactive")}
+                    <div className="bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 text-xs px-2 py-1 rounded-md flex items-center gap-1">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full" />
+                      <span>{t("conversations.inactive")}</span>
                     </div>
                   )}
                 </div>
                 <div className="flex items-center gap-2 mt-1">
-                  <div className="h-3 w-3 text-gray-400">🕐</div>
+                  <Clock className="h-3 w-3 text-gray-400" />
                   <span className="text-xs text-gray-500 dark:text-gray-400">
                     {formatLastUpdated(conversation.lastUpdated)}
                   </span>
@@ -270,7 +272,7 @@ export function ProcessCard({
           </div>
         </div>
 
-        <div className="p-3 pb-0">
+        <div className="px-4 pb-4">
           <div className="flex items-center justify-between">
             <div className="flex-1">
               <p className="text-xs text-gray-500 dark:text-gray-400">
