@@ -26,48 +26,48 @@ const highlighterPromise = createHighlighter({
 
 // Language detection utility
 export const getLanguageFromFileName = (fileName?: string): string => {
-  if (!fileName) return 'text';
-  
-  const extension = fileName.split('.').pop()?.toLowerCase();
-  if (!extension) return 'text';
-  
+  if (!fileName) return "text";
+
+  const extension = fileName.split(".").pop()?.toLowerCase();
+  if (!extension) return "text";
+
   const languageMap: Record<string, string> = {
-    'js': 'javascript',
-    'jsx': 'jsx', 
-    'ts': 'typescript',
-    'tsx': 'tsx',
-    'py': 'python',
-    'rb': 'ruby',
-    'go': 'go',
-    'rs': 'rust',
-    'java': 'java',
-    'c': 'c',
-    'cpp': 'cpp',
-    'h': 'c',
-    'hpp': 'cpp',
-    'cs': 'csharp',
-    'php': 'php',
-    'html': 'html',
-    'css': 'css',
-    'scss': 'scss',
-    'less': 'less',
-    'json': 'json',
-    'xml': 'xml',
-    'yaml': 'yaml',
-    'yml': 'yaml',
-    'md': 'markdown',
-    'sh': 'bash',
-    'bash': 'bash',
-    'zsh': 'bash',
-    'fish': 'bash',
-    'sql': 'sql',
-    'dockerfile': 'dockerfile',
-    'toml': 'toml',
-    'ini': 'ini',
-    'conf': 'ini'
+    js: "javascript",
+    jsx: "jsx",
+    ts: "typescript",
+    tsx: "tsx",
+    py: "python",
+    rb: "ruby",
+    go: "go",
+    rs: "rust",
+    java: "java",
+    c: "c",
+    cpp: "cpp",
+    h: "c",
+    hpp: "cpp",
+    cs: "csharp",
+    php: "php",
+    html: "html",
+    css: "css",
+    scss: "scss",
+    less: "less",
+    json: "json",
+    xml: "xml",
+    yaml: "yaml",
+    yml: "yaml",
+    md: "markdown",
+    sh: "bash",
+    bash: "bash",
+    zsh: "bash",
+    fish: "bash",
+    sql: "sql",
+    dockerfile: "dockerfile",
+    toml: "toml",
+    ini: "ini",
+    conf: "ini",
   };
-  
-  return languageMap[extension] || 'text';
+
+  return languageMap[extension] || "text";
 };
 
 // Map language through LANGUAGE_MAPPINGS
@@ -82,16 +82,16 @@ const mapLanguage = (language: string): string => {
 const createFallbackContent = (code: string): React.ReactElement => {
   const lines = code.split("\n");
   return React.createElement(
-    'pre',
-    { style: { margin: 0, padding: 0, backgroundColor: 'transparent' } },
-    lines.map((line, idx) => 
-      React.createElement('div', { key: idx, className: 'line' }, line)
+    "pre",
+    { style: { margin: 0, padding: 0, backgroundColor: "transparent" } },
+    lines.map((line, idx) =>
+      React.createElement("div", { key: idx, className: "line" }, line)
     )
   );
 };
 
 export interface HighlightOptions {
-  theme?: 'light' | 'dark';
+  theme?: "light" | "dark";
   removeBackground?: boolean;
 }
 
@@ -109,31 +109,33 @@ export const highlightCode = async (
   language: string,
   options: HighlightOptions = {}
 ): Promise<HighlightResult> => {
-  const { theme = 'light', removeBackground = false } = options;
+  const { theme = "light", removeBackground = false } = options;
   const mappedLanguage = mapLanguage(language);
-  
+
   // Create cache key
   const lightTheme = "github-light";
   const darkTheme = "github-dark";
-  const currentTheme = theme === 'dark' ? darkTheme : lightTheme;
+  const currentTheme = theme === "dark" ? darkTheme : lightTheme;
   const cacheKey = `${code}-${language}-${mappedLanguage}-${currentTheme}-${removeBackground}`;
-  
+
   // Check cache first
   const cached = highlightCache.get(cacheKey);
   if (cached) {
     return cached;
   }
-  
+
   try {
     // Wait for highlighter to be ready
     const highlighter = await highlighterPromise;
-    
+
     // Clear conflicting cache entries to prevent bloat
     const conflictingKeys = Array.from(highlightCache.keys()).filter(
-      (key) => key.startsWith(`${code}-${language}-${mappedLanguage}-`) && key !== cacheKey
+      (key) =>
+        key.startsWith(`${code}-${language}-${mappedLanguage}-`) &&
+        key !== cacheKey
     );
     conflictingKeys.forEach((key) => highlightCache.delete(key));
-    
+
     // Load language if not already loaded
     if (
       mappedLanguage !== "text" &&
@@ -145,15 +147,15 @@ export const highlightCode = async (
         // Ignore errors - Shiki will use 'text' language for non-existent languages
       }
     }
-    
+
     // Check if the language is valid before attempting to highlight
     const validLanguage =
       mappedLanguage in bundledLanguages
         ? (mappedLanguage as BundledLanguage)
         : ("text" as BundledLanguage);
-    
+
     let capturedPreStyle = "";
-    
+
     // Generate HAST (HTML AST) from code
     const hast = highlighter.codeToHast(code, {
       lang: validLanguage,
@@ -166,54 +168,62 @@ export const highlightCode = async (
               if (removeBackground) {
                 // Remove background-color from pre element as well
                 const style = node.properties.style as string;
-                const cleanStyle = style.replace(/background-color:[^;]+;?/g, '').replace(/background:[^;]+;?/g, '');
+                const cleanStyle = style
+                  .replace(/background-color:[^;]+;?/g, "")
+                  .replace(/background:[^;]+;?/g, "");
                 node.properties.style = cleanStyle;
               }
             }
           },
-          ...(removeBackground ? [{
-            span: (node: { properties?: { style?: string } }) => {
-              if (node.properties?.style) {
-                const style = node.properties.style as string;
-                // Remove background-color and background but keep other styles like color
-                const cleanStyle = style.replace(/background-color:[^;]+;?/g, '').replace(/background:[^;]+;?/g, '');
-                node.properties.style = cleanStyle;
-              }
-            }
-          }] : [])
+          ...(removeBackground
+            ? [
+                {
+                  span: (node: { properties?: { style?: string } }) => {
+                    if (node.properties?.style) {
+                      const style = node.properties.style as string;
+                      // Remove background-color and background but keep other styles like color
+                      const cleanStyle = style
+                        .replace(/background-color:[^;]+;?/g, "")
+                        .replace(/background:[^;]+;?/g, "");
+                      node.properties.style = cleanStyle;
+                    }
+                  },
+                },
+              ]
+            : []),
         },
       ],
     });
-    
+
     // Convert HAST to React element
     const highlighted = toJsxRuntime(hast, {
       Fragment,
       jsx,
       jsxs,
     }) as React.ReactElement;
-    
+
     const result: HighlightResult = {
       content: highlighted,
       preStyle: capturedPreStyle,
     };
-    
+
     // Cache the result
     highlightCache.set(cacheKey, result);
-    
+
     return result;
   } catch (error) {
     console.warn(
       `Failed to highlight code with language "${mappedLanguage}":`,
       error
     );
-    
+
     // Use fallback content on error
     const fallback = createFallbackContent(code);
     const result: HighlightResult = {
       content: fallback,
       preStyle: "",
     };
-    
+
     highlightCache.set(cacheKey, result);
     return result;
   }
@@ -228,21 +238,21 @@ export const getHighlightedContentSync = (
   language: string,
   options: HighlightOptions = {}
 ): HighlightResult => {
-  const { theme = 'light', removeBackground = false } = options;
+  const { theme = "light", removeBackground = false } = options;
   const mappedLanguage = mapLanguage(language);
-  
+
   // Create cache key (same logic as async version)
   const lightTheme = "github-light";
-  const darkTheme = "github-dark"; 
-  const currentTheme = theme === 'dark' ? darkTheme : lightTheme;
+  const darkTheme = "github-dark";
+  const currentTheme = theme === "dark" ? darkTheme : lightTheme;
   const cacheKey = `${code}-${language}-${mappedLanguage}-${currentTheme}-${removeBackground}`;
-  
+
   // Check cache
   const cached = highlightCache.get(cacheKey);
   if (cached) {
     return cached;
   }
-  
+
   // Return fallback if not cached
   return {
     content: createFallbackContent(code),
