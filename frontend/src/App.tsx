@@ -165,7 +165,9 @@ function RootLayoutContent() {
       // Add listeners for new conversations
       for (const conversation of conversations) {
         if (!listenerCleanups.current.has(conversation.id)) {
-          const cleanup = await setupEventListenerForConversation(conversation.id);
+          const cleanup = await setupEventListenerForConversation(
+            conversation.id
+          );
           listenerCleanups.current.set(conversation.id, cleanup);
         }
       }
