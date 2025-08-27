@@ -1161,6 +1161,8 @@ async fn handle_cli_output_line(
                                 content,
                                 locations,
                                 kind,
+                                server_name,
+                                tool_name,
                             } => {
                                 println!(
                                     "🚀 YOLO-DEBUG: Backend received ToolCall from CLI: tool_call_id={tool_call_id}, status={status:?}, title={title}"
@@ -1180,6 +1182,8 @@ async fn handle_cli_output_line(
                                         content: content.clone(),
                                         locations: locations.clone(),
                                         kind: kind.clone(),
+                                        server_name: server_name.clone(),
+                                        tool_name: tool_name.clone(),
                                     },
                                 });
 
@@ -1197,6 +1201,8 @@ async fn handle_cli_output_line(
                                 tool_call_id,
                                 status,
                                 content,
+                                server_name,
+                                tool_name,
                             } => {
                                 println!(
                                     "🔧 [EDIT-DEBUG] Backend received ToolCallUpdate from CLI: tool_call_id={tool_call_id}, status={status:?}"
@@ -1213,6 +1219,8 @@ async fn handle_cli_output_line(
                                         tool_call_id: tool_call_id.clone(),
                                         status: status.clone(),
                                         content: content.clone(),
+                                        server_name: server_name.clone(),
+                                        tool_name: tool_name.clone(),
                                     },
                                 });
                                 println!(

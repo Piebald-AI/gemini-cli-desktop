@@ -10,6 +10,10 @@ export function DefaultRenderer({ toolCall }: DefaultRendererProps) {
   const { t } = useTranslation();
   const result = toolCall.result;
 
+  // Extract MCP server and tool names if available
+  const mcpServerName = toolCall.parameters?.serverName as string | undefined;
+  const mcpToolName = toolCall.parameters?.toolName as string | undefined;
+
   // Handle different result types
   const renderResult = () => {
     if (typeof result === "string") {
@@ -89,10 +93,17 @@ export function DefaultRenderer({ toolCall }: DefaultRendererProps) {
 
   return (
     <div className="space-y-4">
-      {/* Generic completion status card for unknown tools */}
+      {/* Generic completion status card - shows MCP tool names when available */}
       <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-md px-4 py-3">
         <div className="font-medium text-sm text-black dark:text-white mb-1 font-mono">
-          {formatToolName(toolCall.name)}
+          {mcpToolName
+            ? formatToolName(mcpToolName)
+            : formatToolName(toolCall.name)}
+          {mcpServerName && (
+            <span className="text-xs text-muted-foreground ml-2">
+              ({mcpServerName} MCP Server)
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-300">
           <Check className="size-3" />
@@ -108,7 +119,7 @@ export function DefaultRenderer({ toolCall }: DefaultRendererProps) {
           <div className="text-sm">
             <span className="font-medium">Tool Result</span>
             <span className="text-muted-foreground ml-2">
-              ({toolCall.name})
+              ({mcpToolName || toolCall.name})
             </span>
           </div>
         </div>

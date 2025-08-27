@@ -134,6 +134,10 @@ pub enum SessionUpdate {
         content: Vec<ToolCallContentItem>,
         locations: Vec<Location>,
         kind: ToolCallKind,
+        #[serde(rename = "serverName", skip_serializing_if = "Option::is_none")]
+        server_name: Option<String>,
+        #[serde(rename = "toolName", skip_serializing_if = "Option::is_none")]
+        tool_name: Option<String>,
     },
     #[serde(rename = "tool_call_update")]
     ToolCallUpdate {
@@ -141,7 +145,29 @@ pub enum SessionUpdate {
         tool_call_id: String,
         status: ToolCallStatus,
         content: Vec<ToolCallContentItem>,
+        #[serde(rename = "serverName", skip_serializing_if = "Option::is_none")]
+        server_name: Option<String>,
+        #[serde(rename = "toolName", skip_serializing_if = "Option::is_none")]
+        tool_name: Option<String>,
     },
+}
+
+impl SessionUpdate {
+    pub fn get_server_name(&self) -> &Option<String> {
+        match self {
+            SessionUpdate::ToolCall { server_name, .. } => server_name,
+            SessionUpdate::ToolCallUpdate { server_name, .. } => server_name,
+            _ => &None,
+        }
+    }
+
+    pub fn get_tool_name(&self) -> &Option<String> {
+        match self {
+            SessionUpdate::ToolCall { tool_name, .. } => tool_name,
+            SessionUpdate::ToolCallUpdate { tool_name, .. } => tool_name,
+            _ => &None,
+        }
+    }
 }
 
 /// Tool call status
@@ -229,6 +255,10 @@ pub struct PermissionToolCall {
     pub content: Vec<ToolCallContentItem>,
     pub locations: Vec<Location>,
     pub kind: ToolCallKind,
+    #[serde(rename = "serverName", skip_serializing_if = "Option::is_none")]
+    pub server_name: Option<String>,
+    #[serde(rename = "toolName", skip_serializing_if = "Option::is_none")]
+    pub tool_name: Option<String>,
 }
 
 /// Permission response result
@@ -351,6 +381,8 @@ mod tests {
                 column: None,
             }],
             kind: ToolCallKind::Read,
+            server_name: None,
+            tool_name: None,
         };
 
         let serialized = serde_json::to_value(&update).unwrap();
@@ -425,8 +457,8 @@ mod tests {
         let serialized = serde_json::to_value(&content_item).unwrap();
         assert_eq!(serialized["type"], "diff");
         assert_eq!(serialized["path"], "src/main.rs");
-        assert_eq!(serialized["old_text"], "old code");
-        assert_eq!(serialized["new_text"], "new code");
+        assert_eq!(serialized["oldText"], "old code");
+        assert_eq!(serialized["newText"], "new code");
     }
 
     #[test]
@@ -483,6 +515,8 @@ mod tests {
                     column: Some(5),
                 }],
                 kind: ToolCallKind::Edit,
+                server_name: None,
+                tool_name: None,
             },
         };
 
@@ -566,7 +600,7 @@ mod tests {
         assert_eq!(init_serialized["protocolVersion"], 1);
         assert_eq!(
             init_serialized["clientCapabilities"]["fs"]["readTextFile"],
-            true
+            false
         );
 
         // 2. Authenticate
@@ -601,5 +635,54 @@ mod tests {
         let prompt_serialized = serde_json::to_value(&prompt_params).unwrap();
         assert_eq!(prompt_serialized["sessionId"], "session-123");
         assert_eq!(prompt_serialized["prompt"][0]["text"], "Test prompt");
+    }
+
+    #[test]
+    fn test_mcp_tool_call_serialization() {
+        let update = SessionUpdate::ToolCall {
+            tool_call_id: "resolve-library-id-1756264655284".to_string(),
+            status: ToolCallStatus::Completed,
+            title: "Context7 - resolve-library-id".to_string(),
+            content: vec![ToolCallContentItem::Content {
+                content: ContentBlock::Text {
+                    text: "Available Libraries (top matches):".to_string(),
+                },
+            }],
+            locations: vec![],
+            kind: ToolCallKind::Search,
+            server_name: Some("Context7".to_string()),
+            tool_name: Some("resolve-library-id".to_string()),
+        };
+
+        let serialized = serde_json::to_value(&update).unwrap();
+        assert_eq!(serialized["sessionUpdate"], "tool_call");
+        assert_eq!(serialized["toolCallId"], "resolve-library-id-1756264655284");
+        assert_eq!(serialized["status"], "completed");
+        assert_eq!(serialized["kind"], "search");
+        assert_eq!(serialized["serverName"], "Context7");
+        assert_eq!(serialized["toolName"], "resolve-library-id");
+        assert_eq!(serialized["title"], "Context7 - resolve-library-id");
+    }
+
+    #[test]
+    fn test_mcp_tool_call_update_serialization() {
+        let update = SessionUpdate::ToolCallUpdate {
+            tool_call_id: "resolve-library-id-1756264655284".to_string(),
+            status: ToolCallStatus::Completed,
+            content: vec![ToolCallContentItem::Content {
+                content: ContentBlock::Text {
+                    text: "Search results for libraries".to_string(),
+                },
+            }],
+            server_name: Some("Context7".to_string()),
+            tool_name: Some("resolve-library-id".to_string()),
+        };
+
+        let serialized = serde_json::to_value(&update).unwrap();
+        assert_eq!(serialized["sessionUpdate"], "tool_call_update");
+        assert_eq!(serialized["toolCallId"], "resolve-library-id-1756264655284");
+        assert_eq!(serialized["status"], "completed");
+        assert_eq!(serialized["serverName"], "Context7");
+        assert_eq!(serialized["toolName"], "resolve-library-id");
     }
 }

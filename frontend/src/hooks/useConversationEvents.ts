@@ -62,6 +62,8 @@ interface SessionUpdateEventPayload {
   content?: AcpContent[] | string;
   chunk?: string;
   thought?: string;
+  serverName?: string;
+  toolName?: string;
 }
 
 interface PermissionRequestEventPayload {
@@ -178,13 +180,7 @@ function mapAcpStatus(acpStatus: string | undefined): ToolCall["status"] {
 }
 
 function convertAcpContentToLegacy(acpContent: AcpContent[]): LegacyResult {
-  console.log(
-    "🔧 [EDIT-DEBUG] convertAcpContentToLegacy called with:",
-    acpContent
-  );
-
   if (!acpContent || acpContent.length === 0) {
-    console.log("🔧 [EDIT-DEBUG] No content provided, returning default");
     return {
       type: "generic" as const,
       oldText: undefined,
@@ -194,7 +190,6 @@ function convertAcpContentToLegacy(acpContent: AcpContent[]): LegacyResult {
   }
 
   const contentItem = acpContent[0];
-  console.log("🔧 [EDIT-DEBUG] Processing content item:", contentItem);
   if (contentItem.type === "content" && contentItem.content.type === "text") {
     return {
       type: "generic" as const,
@@ -209,11 +204,8 @@ function convertAcpContentToLegacy(acpContent: AcpContent[]): LegacyResult {
       oldText: contentItem.oldText || contentItem.old_text,
       newText: contentItem.newText || contentItem.new_text,
     };
-    console.log("🔧 [EDIT-DEBUG] Converted diff content:", result);
     return result;
   }
-
-  console.log("🔧 [EDIT-DEBUG] Unknown content type, returning default");
   return {
     type: "generic" as const,
     oldText: undefined,
@@ -234,10 +226,6 @@ export const useConversationEvents = (
 ) => {
   const setupEventListenerForConversation = useCallback(
     async (conversationId: string): Promise<void> => {
-      console.log(
-        `🎯 Setting up event listeners for conversation: ${conversationId}`
-      );
-
       // In web mode, ensure WebSocket connection is ready before registering listeners
       if (__WEB__) {
         const wsManager = getWebSocketManager();
@@ -354,16 +342,9 @@ export const useConversationEvents = (
         });
 
         // Listen for pure ACP session updates (replaces ai-tool-call and ai-tool-call-update)
-        console.log(
-          `🔧 [EDIT-DEBUG] Registering acp-session-update listener for: ${conversationId}`
-        );
         await listen<EventPayload>(
           `acp-session-update-${conversationId}`,
           ({ payload: update }: { payload: EventPayload }) => {
-            console.log(
-              `🔧 [EDIT-DEBUG] Received acp-session-update event:`,
-              update
-            );
             if (!isSessionUpdateEvent(update)) {
               console.warn(
                 "Received non-session-update event on session-update channel"
@@ -371,10 +352,6 @@ export const useConversationEvents = (
               return;
             }
             if (update.sessionUpdate === "tool_call") {
-              console.log(
-                `🔧 [EDIT-DEBUG] Processing tool_call event for:`,
-                update.toolCallId
-              );
               // Handle tool call start
               updateConversation(conversationId, (conv, lastMsg) => {
                 // Convert ACP ToolCallKind to tool name
@@ -388,7 +365,11 @@ export const useConversationEvents = (
                 const newToolCall: ToolCall = {
                   id: update.toolCallId || "",
                   name: toolName,
-                  parameters: { locations: update.locations },
+                  parameters: {
+                    locations: update.locations,
+                    serverName: update.serverName,
+                    toolName: update.toolName,
+                  },
                   status: mapAcpStatus(update.status),
                   label: update.title,
                 };
@@ -425,6 +406,27 @@ export const useConversationEvents = (
                         msgPart.type === "toolCall" &&
                         msgPart.toolCall.id === update.toolCallId
                       ) {
+                        // Update parameters with server and tool names if available
+                        // IMPORTANT: Preserve existing values if update doesn't include them
+                        const existingServerName =
+                          msgPart.toolCall.parameters?.serverName;
+                        const existingToolName =
+                          msgPart.toolCall.parameters?.toolName;
+
+                        if (
+                          update.serverName ||
+                          update.toolName ||
+                          existingServerName ||
+                          existingToolName
+                        ) {
+                          msgPart.toolCall.parameters = {
+                            ...msgPart.toolCall.parameters,
+                            // Use update values if provided, otherwise preserve existing values
+                            serverName: update.serverName || existingServerName,
+                            toolName: update.toolName || existingToolName,
+                          };
+                        }
+
                         // Preserve confirmation request data when updating status
                         const preservedConfirmationRequest =
                           msgPart.toolCall.confirmationRequest;
@@ -456,10 +458,6 @@ export const useConversationEvents = (
                             const legacyResult = convertAcpContentToLegacy(
                               update.content
                             );
-                            console.log(
-                              "🔧 [EDIT-DEBUG] Converted ACP content:",
-                              legacyResult
-                            );
 
                             // Convert LegacyResult to ToolCallResult format
                             if (legacyResult.type === "diff") {
@@ -469,22 +467,12 @@ export const useConversationEvents = (
                                 new_string: legacyResult.newText,
                                 success: true,
                               };
-                              console.log(
-                                "🔧 [EDIT-DEBUG] Updated tool call with diff result for:",
-                                legacyResult.path
-                              );
                             } else if (legacyResult.type === "generic") {
                               msgPart.toolCall.result =
                                 legacyResult.newText || "";
-                              console.log(
-                                "🔧 [EDIT-DEBUG] Updated tool call with generic text result"
-                              );
                             }
                           } else if (typeof update.content === "string") {
                             msgPart.toolCall.result = update.content;
-                            console.log(
-                              "🔧 [EDIT-DEBUG] Updated tool call with string result"
-                            );
                           }
                         }
 
@@ -532,18 +520,9 @@ export const useConversationEvents = (
         });
 
         // Listen for pure ACP permission requests (replaces ai-tool-call-confirmation)
-        console.log(
-          `✅ Registering listener for: acp-permission-request-${conversationId}`
-        );
         await listen<EventPayload>(
           `acp-permission-request-${conversationId}`,
           (event) => {
-            console.log(
-              "🔍 DEBUG: Received acp-permission-request event:",
-              event
-            );
-            console.log("🔍 DEBUG: Event payload:", event.payload);
-
             if (!isPermissionRequestEvent(event.payload)) {
               console.warn(
                 "Received non-permission-request event on permission-request channel"
@@ -551,20 +530,8 @@ export const useConversationEvents = (
               return;
             }
 
-            console.log("🔍 DEBUG: Request object:", event.payload.request);
-            console.log(
-              "🔍 DEBUG: ToolCall object:",
-              event.payload.request?.toolCall
-            );
-
             const { request_id, request } = event.payload;
             const toolCallId = request.toolCall.toolCallId;
-            console.log(
-              "🎯 Processing permission request for toolCallId:",
-              toolCallId
-            );
-            console.log("🎯 Tool call status:", request.toolCall.status);
-            console.log("🎯 Tool call kind:", request.toolCall.kind);
 
             // CREATE A TOOL CALL IF NONE EXISTS
             updateConversation(conversationId, (conv, lastMsg) => {
@@ -585,11 +552,6 @@ export const useConversationEvents = (
                   }
                 }
               }
-
-              console.log("🔧 [EDIT-DEBUG] Tool call exists check:", {
-                toolCallId,
-                toolCallExists,
-              });
 
               // Create the confirmation request object
               const confirmationRequest: ToolCallConfirmationRequest = {
@@ -663,22 +625,41 @@ export const useConversationEvents = (
                   toolCallId
                 );
 
+                // Extract server and tool names from the title/label
+                let serverName: string | undefined;
+                let actualToolName: string | undefined;
+                const title =
+                  request.toolCall.title ||
+                  request.toolCall.name ||
+                  "Unknown Tool";
+
+                // Try to parse from title format: "tool-name (ServerName MCP Server)"
+                const serverMatch = title.match(/\((.+?) MCP Server\)$/);
+                if (serverMatch) {
+                  serverName = serverMatch[1];
+                  const nameMatch = title.match(/^(.+?)\s*\(/);
+                  if (nameMatch) {
+                    actualToolName = nameMatch[1].trim();
+                  }
+                }
+
+                // If no tool name extracted from title, use the ID without timestamp
+                if (!actualToolName) {
+                  actualToolName = toolCallId.replace(/-\d+$/, "");
+                }
+
                 const newToolCall: ToolCall = {
                   id: toolCallId,
                   name: toolName,
-                  parameters: { locations: request.toolCall.locations || [] },
+                  parameters: {
+                    locations: request.toolCall.locations || [],
+                    serverName: serverName,
+                    toolName: actualToolName,
+                  },
                   status: mapAcpStatus(request.toolCall.status),
-                  label:
-                    request.toolCall.title ||
-                    request.toolCall.name ||
-                    "Unknown Tool",
+                  label: title,
                   confirmationRequest: confirmationRequest, // Attach immediately
                 };
-
-                console.log(
-                  "🔧 [EDIT-DEBUG] Created tool call object:",
-                  newToolCall
-                );
 
                 if (lastMsg.sender === "assistant") {
                   lastMsg.parts.push({
@@ -792,10 +773,6 @@ export const useConversationEvents = (
             conv.isStreaming = false;
           });
         });
-
-        console.log(
-          `✅✅✅ ALL event listeners successfully registered for conversation: ${conversationId}`
-        );
 
         // Add a small delay to ensure listeners are fully active
         await new Promise((resolve) => setTimeout(resolve, 100));

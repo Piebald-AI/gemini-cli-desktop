@@ -5,9 +5,11 @@ import type {
   ToolCall,
   ToolCallConfirmationRequest,
 } from "../../utils/toolCallParser";
+import type { McpPermissionRequest } from "../../types";
 import { ToolResultRenderer } from "./ToolResultRenderer";
 import { ToolInputParser } from "../../utils/toolInputParser";
 import { useTranslation } from "react-i18next";
+import { McpPermissionCompact } from "../mcp/McpPermissionCompact";
 
 interface ToolCallDisplayProps {
   toolCall: ToolCall;
@@ -15,6 +17,7 @@ interface ToolCallDisplayProps {
   hasConfirmationRequest?: boolean;
   confirmationRequest?: ToolCallConfirmationRequest | undefined;
   confirmationRequests?: Map<string, ToolCallConfirmationRequest>;
+  mcpPermissionRequest?: McpPermissionRequest;
 }
 
 function ToolCallDisplayComponent({
@@ -23,6 +26,7 @@ function ToolCallDisplayComponent({
   hasConfirmationRequest,
   confirmationRequest,
   confirmationRequests,
+  mcpPermissionRequest,
 }: ToolCallDisplayProps) {
   const { t } = useTranslation();
   // Try to get confirmation request from the Map as a fallback
@@ -273,84 +277,175 @@ function ToolCallDisplayComponent({
     return loadingState.icon;
   };
 
+  // Helper function to detect MCP tool calls
+  const isMcpToolCall = (): boolean => {
+    // Check if we have an explicit MCP permission request
+    if (mcpPermissionRequest) {
+      return true;
+    }
+
+    // Check if the title contains "MCP Server" pattern
+    if (actualConfirmationRequest?.label?.includes("MCP Server")) {
+      return true;
+    }
+
+    return false;
+  };
+
+  // Convert legacy confirmation request to MCP permission request format
+  const getMcpPermissionRequest = (
+    toolCall: ToolCall
+  ): McpPermissionRequest | null => {
+    if (mcpPermissionRequest) {
+      return mcpPermissionRequest;
+    }
+
+    if (!isMcpToolCall()) {
+      return null;
+    }
+
+    const confirmReq = actualConfirmationRequest;
+
+    // Use serverName and toolName if available from tool call
+    let toolName = (toolCall.parameters?.toolName as string) || "Unknown Tool";
+    let serverName =
+      (toolCall.parameters?.serverName as string) || "MCP Server";
+
+    // Fallback to parsing from label if not provided
+    if (
+      !toolCall.parameters?.serverName &&
+      !toolCall.parameters?.toolName &&
+      confirmReq?.label
+    ) {
+      const serverMatch = confirmReq.label.match(/\((.+?) MCP Server\)$/);
+      const nameMatch = confirmReq.label.match(/^([^(]+)/);
+      if (serverMatch) {
+        serverName = serverMatch[1];
+      }
+      if (nameMatch) {
+        toolName = nameMatch[1].trim();
+      }
+    }
+
+    const title = confirmReq?.label || `${toolName} (${serverName} MCP Server)`;
+
+    // Create MCP permission request
+    return {
+      sessionId: confirmReq?.sessionId || "",
+      options: confirmReq?.options || [
+        { optionId: "proceed_once", name: "Allow", kind: "allow_once" },
+        { optionId: "cancel", name: "Reject", kind: "reject_once" },
+      ],
+      toolCall: {
+        toolCallId: toolCall.id,
+        status: toolCall.status || "pending",
+        title: title,
+        content: [],
+        locations: confirmReq?.locations || [],
+        kind: "other",
+        serverName: serverName !== "MCP Server" ? serverName : undefined,
+        toolName: toolName !== "Unknown Tool" ? toolName : undefined,
+      },
+    };
+  };
+
   return (
     <div className="my-4 w-full">
       {/* Pending State */}
       {enhancedToolCall.status === "pending" && (
         <>
+          {/* MCP Tool Call Permission Compact */}
+          {(() => {
+            const mcpRequest = getMcpPermissionRequest(enhancedToolCall);
+            if (mcpRequest && hasConfirmationRequest && onConfirm) {
+              return (
+                <McpPermissionCompact
+                  request={mcpRequest}
+                  onPermissionResponse={(optionId) =>
+                    onConfirm(enhancedToolCall.id, optionId)
+                  }
+                />
+              );
+            }
+            return null;
+          })()}
+
           {/* For edit tools, show the specialized edit renderer */}
-          {enhancedToolCall.name.toLowerCase().includes("edit") ||
-          enhancedToolCall.name === "replace" ||
-          enhancedToolCall.name === "write_file" ||
-          enhancedToolCall.confirmationRequest?.confirmation?.type ===
-            "edit" ? (
-            <ToolResultRenderer
-              toolCall={enhancedToolCall}
-              onConfirm={onConfirm}
-              hasConfirmationRequest={hasConfirmationRequest}
-            />
-          ) : enhancedToolCall.name === "web_fetch" ? (
-            // Compact WebFetch pending state (like grep/glob style)
-            <div className="mt-4">
-              <div className="flex items-center gap-2 text-sm px-2 py-1 hover:bg-muted/50 rounded-lg transition-colors">
-                <Loader2 className="animate-spin h-4 w-4 text-blue-500" />
-                <span>
-                  {t("toolCalls.fetching")}{" "}
-                  <span className="text-muted-foreground">
-                    {(() => {
-                      const webFetchInfo =
-                        getWebFetchPendingInfo(enhancedToolCall);
-                      return webFetchInfo?.count === 1
-                        ? webFetchInfo.url
-                        : t("toolCalls.fetchingUrls", {
-                            count: webFetchInfo?.count || 1,
-                          });
-                    })()}
+          {!isMcpToolCall() &&
+            /* For edit tools, show the specialized edit renderer */
+            (enhancedToolCall.name.toLowerCase().includes("edit") ||
+            enhancedToolCall.name === "replace" ||
+            enhancedToolCall.name === "write_file" ||
+            enhancedToolCall.confirmationRequest?.confirmation?.type ===
+              "edit" ? (
+              <ToolResultRenderer
+                toolCall={enhancedToolCall}
+                onConfirm={onConfirm}
+                hasConfirmationRequest={hasConfirmationRequest}
+              />
+            ) : enhancedToolCall.name === "web_fetch" ? (
+              // Compact WebFetch pending state (like grep/glob style)
+              <div className="mt-4">
+                <div className="flex items-center gap-2 text-sm px-2 py-1 hover:bg-muted/50 rounded-lg transition-colors">
+                  <Loader2 className="animate-spin h-4 w-4 text-blue-500" />
+                  <span>
+                    {t("toolCalls.fetching")}{" "}
+                    <span className="text-muted-foreground">
+                      {(() => {
+                        const webFetchInfo =
+                          getWebFetchPendingInfo(enhancedToolCall);
+                        return webFetchInfo?.count === 1
+                          ? webFetchInfo.url
+                          : t("toolCalls.fetchingUrls", {
+                              count: webFetchInfo?.count || 1,
+                            });
+                      })()}
+                    </span>
                   </span>
-                </span>
 
-                {/* Compact approval buttons */}
-                {hasConfirmationRequest && onConfirm && (
-                  <div className="ml-auto flex items-center gap-1">
-                    {enhancedToolCall.confirmationRequest?.options &&
-                    enhancedToolCall.confirmationRequest.options.length > 0 ? (
-                      // Use ACP permission options if available - group allow vs reject
-                      (() => {
-                        const allowOptions =
-                          enhancedToolCall.confirmationRequest.options.filter(
-                            (opt) => opt.kind.includes("allow")
-                          );
-                        const rejectOptions =
-                          enhancedToolCall.confirmationRequest.options.filter(
-                            (opt) => opt.kind.includes("reject")
-                          );
+                  {/* Compact approval buttons */}
+                  {hasConfirmationRequest && onConfirm && (
+                    <div className="ml-auto flex items-center gap-1">
+                      {enhancedToolCall.confirmationRequest?.options &&
+                      enhancedToolCall.confirmationRequest.options.length >
+                        0 ? (
+                        // Use ACP permission options if available - group allow vs reject
+                        (() => {
+                          const allowOptions =
+                            enhancedToolCall.confirmationRequest.options.filter(
+                              (opt) => opt.kind.includes("allow")
+                            );
+                          const rejectOptions =
+                            enhancedToolCall.confirmationRequest.options.filter(
+                              (opt) => opt.kind.includes("reject")
+                            );
 
-                        return (
-                          <>
-                            {/* Always Allow button (blue) if available */}
-                            {allowOptions
-                              .filter((opt) => opt.kind.includes("always"))
-                              .map((option) => (
-                                <Button
-                                  key={option.optionId}
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-6 w-6 p-0 text-blue-500 dark:text-blue-400 hover:bg-blue-500 hover:bg-opacity-20 border border-blue-500 dark:border-blue-400"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onConfirm(
-                                      enhancedToolCall.id,
-                                      option.optionId
-                                    );
-                                  }}
-                                  title={option.name}
-                                >
-                                  <Check className="h-3 w-3" />
-                                </Button>
-                              ))}
+                          return (
+                            <>
+                              {/* Always Allow button (blue) if available */}
+                              {allowOptions
+                                .filter((opt) => opt.kind.includes("always"))
+                                .map((option) => (
+                                  <Button
+                                    key={option.optionId}
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 w-6 p-0 text-blue-500 dark:text-blue-400 hover:bg-blue-500 hover:bg-opacity-20 border border-blue-500 dark:border-blue-400"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onConfirm(
+                                        enhancedToolCall.id,
+                                        option.optionId
+                                      );
+                                    }}
+                                    title={option.name}
+                                  >
+                                    <Check className="h-3 w-3" />
+                                  </Button>
+                                ))}
 
-                            {/* Allow Once button (green) */}
-                            {/* {allowOptions.filter(opt => !opt.kind.includes('always')).map(option => (
+                              {/* Allow Once button (green) */}
+                              {/* {allowOptions.filter(opt => !opt.kind.includes('always')).map(option => (
                               <Button
                                 key={option.optionId}
                                 size="sm"
@@ -366,122 +461,122 @@ function ToolCallDisplayComponent({
                               </Button>
                             ))} */}
 
-                            {/* Reject button (red) */}
-                            {rejectOptions.slice(0, 1).map((option) => (
-                              <Button
-                                key={option.optionId}
-                                size="sm"
-                                variant="ghost"
-                                className="h-6 w-6 p-0 text-red-500 dark:text-red-400 hover:bg-red-500 hover:bg-opacity-20 border border-red-500 dark:border-red-400"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onConfirm(
-                                    enhancedToolCall.id,
-                                    option.optionId
-                                  );
-                                }}
-                                title={option.name}
-                              >
-                                <X className="h-3 w-3" />
-                              </Button>
-                            ))}
-                          </>
-                        );
-                      })()
-                    ) : (
-                      // Fallback to default buttons
-                      <>
-                        <Button
-                          size="sm"
-                          variant="default"
-                          className="h-6 w-6 bg-green-600 hover:bg-green-600 text-white"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onConfirm(enhancedToolCall.id, "proceed_once");
-                          }}
-                          title={t("toolCalls.allow")}
-                        >
-                          <Check className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          className="h-6 w-6"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onConfirm(enhancedToolCall.id, "cancel");
-                          }}
-                          title={t("toolCalls.reject")}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </>
-                    )}
+                              {/* Reject button (red) */}
+                              {rejectOptions.slice(0, 1).map((option) => (
+                                <Button
+                                  key={option.optionId}
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-6 w-6 p-0 text-red-500 dark:text-red-400 hover:bg-red-500 hover:bg-opacity-20 border border-red-500 dark:border-red-400"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onConfirm(
+                                      enhancedToolCall.id,
+                                      option.optionId
+                                    );
+                                  }}
+                                  title={option.name}
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              ))}
+                            </>
+                          );
+                        })()
+                      ) : (
+                        // Fallback to default buttons
+                        <>
+                          <Button
+                            size="sm"
+                            variant="default"
+                            className="h-6 w-6 bg-green-600 hover:bg-green-600 text-white"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onConfirm(enhancedToolCall.id, "proceed_once");
+                            }}
+                            title={t("toolCalls.allow")}
+                          >
+                            <Check className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="h-6 w-6"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onConfirm(enhancedToolCall.id, "cancel");
+                            }}
+                            title={t("toolCalls.reject")}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              // Default pending state for other tools
+              <div className="bg-muted/50 border border-border rounded-lg p-4">
+                <div className="mb-3">
+                  <span className="font-medium text-base text-black dark:text-white font-mono">
+                    {formatToolName(enhancedToolCall.name)}
+                  </span>
+                  <span className="text-sm text-muted-foreground ml-2">
+                    {t("toolCalls.pendingApproval")}
+                  </span>
+                </div>
+
+                {/* Approval Buttons - Show when there's a confirmation request */}
+                {hasConfirmationRequest && onConfirm && (
+                  <div className="flex items-center gap-2 mt-3">
+                    <span className="text-sm text-foreground">
+                      {t("toolCalls.approve")}
+                    </span>
+                    <Button
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 text-xs"
+                      onClick={() =>
+                        onConfirm(enhancedToolCall.id, "proceed_once")
+                      }
+                    >
+                      <Check className="h-3 w-3 mr-1" />
+                      {t("common.yes")}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="px-3 py-1 text-xs"
+                      onClick={() => onConfirm(enhancedToolCall.id, "cancel")}
+                    >
+                      <X className="h-3 w-3 mr-1" />
+                      {t("common.no")}
+                    </Button>
+                  </div>
+                )}
+
+                {/* Show waiting indicator only when no confirmation request */}
+                {!hasConfirmationRequest && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mt-3">
+                    <span className="animate-pulse">●</span>
+                    {t("toolCalls.waitingForApproval")}
+                  </div>
+                )}
+
+                {/* Input JSON-RPC */}
+                {enhancedToolCall.inputJsonRpc && (
+                  <div className="mt-4">
+                    <div className="text-xs font-semibold text-muted-foreground mb-2">
+                      {t("toolCalls.input")}
+                    </div>
+                    <pre className="bg-muted p-3 rounded text-xs overflow-x-auto border">
+                      <code>{enhancedToolCall.inputJsonRpc}</code>
+                    </pre>
                   </div>
                 )}
               </div>
-            </div>
-          ) : (
-            // Default pending state for other tools
-            <div className="bg-muted/50 border border-border rounded-lg p-4">
-              <div className="mb-3">
-                <span className="font-medium text-base text-black dark:text-white font-mono">
-                  {formatToolName(enhancedToolCall.name)}
-                </span>
-                <span className="text-sm text-muted-foreground ml-2">
-                  {t("toolCalls.pendingApproval")}
-                </span>
-              </div>
-
-              {/* Approval Buttons - Show when there's a confirmation request */}
-              {hasConfirmationRequest && onConfirm && (
-                <div className="flex items-center gap-2 mt-3">
-                  <span className="text-sm text-foreground">
-                    {t("toolCalls.approve")}
-                  </span>
-                  <Button
-                    size="sm"
-                    className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 text-xs"
-                    onClick={() =>
-                      onConfirm(enhancedToolCall.id, "proceed_once")
-                    }
-                  >
-                    <Check className="h-3 w-3 mr-1" />
-                    {t("common.yes")}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    className="px-3 py-1 text-xs"
-                    onClick={() => onConfirm(enhancedToolCall.id, "cancel")}
-                  >
-                    <X className="h-3 w-3 mr-1" />
-                    {t("common.no")}
-                  </Button>
-                </div>
-              )}
-
-              {/* Show waiting indicator only when no confirmation request */}
-              {!hasConfirmationRequest && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mt-3">
-                  <span className="animate-pulse">●</span>
-                  {t("toolCalls.waitingForApproval")}
-                </div>
-              )}
-
-              {/* Input JSON-RPC */}
-              {enhancedToolCall.inputJsonRpc && (
-                <div className="mt-4">
-                  <div className="text-xs font-semibold text-muted-foreground mb-2">
-                    {t("toolCalls.input")}
-                  </div>
-                  <pre className="bg-muted p-3 rounded text-xs overflow-x-auto border">
-                    <code>{enhancedToolCall.inputJsonRpc}</code>
-                  </pre>
-                </div>
-              )}
-            </div>
-          )}
+            ))}
         </>
       )}
 
