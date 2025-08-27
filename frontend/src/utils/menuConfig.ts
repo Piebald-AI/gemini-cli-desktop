@@ -40,22 +40,25 @@ export const getMenuShortcuts = (): Record<
 > => {
   const isMac = getIsMac();
   const modifierKey = isMac ? "metaKey" : "ctrlKey";
-  const displayModifier = isMac ? "⌘" : "Ctrl";
+
+  // Note: The space after the Command key icon is _not_ a normal space; it's
+  // a "THIN SPACE" (U+2009).
+  const displayModifier = isMac ? "⌘ " : "Ctrl+";
 
   return {
-    goHome: { key: "h", [modifierKey]: true, display: `${displayModifier}+H` },
+    goHome: { key: "h", [modifierKey]: true, display: `${displayModifier}H` },
     goProjects: {
       key: "p",
       [modifierKey]: true,
-      display: `${displayModifier}+P`,
+      display: `${displayModifier}P`,
     },
     goMcpServers: {
       key: "m",
       [modifierKey]: true,
-      display: `${displayModifier}+M`,
+      display: `${displayModifier}M`,
     },
     toggleTheme: undefined, // No accelerator in Linux menu
-    refresh: { key: "r", [modifierKey]: true, display: `${displayModifier}+R` },
+    refresh: { key: "r", [modifierKey]: true, display: `${displayModifier}R` },
     showAbout: undefined, // No accelerator in Linux menu
     quit: undefined, // No accelerator in Linux menu for Exit
   };
