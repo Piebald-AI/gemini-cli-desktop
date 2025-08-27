@@ -76,9 +76,35 @@ export interface ToolCallUpdateEvent {
   toolCallId: string | number;
   status: string;
   content?: ToolCallResult;
+  serverName?: string;
+  toolName?: string;
 }
 
 export type ErrorContent = ToolCallResult | string | null | undefined;
+
+// MCP Permission Types
+export interface McpPermissionOption {
+  optionId: string;
+  name: string;
+  kind: "allow_always" | "allow_once" | "reject_once" | "reject_always";
+}
+
+export interface McpToolCallInfo {
+  toolCallId: string;
+  status: string;
+  title: string;
+  content: unknown[];
+  locations: Location[];
+  kind: string;
+  serverName?: string;
+  toolName?: string;
+}
+
+export interface McpPermissionRequest {
+  sessionId: string;
+  options: McpPermissionOption[];
+  toolCall: McpToolCallInfo;
+}
 
 // Re-export MCP types
 export * from "./mcp";

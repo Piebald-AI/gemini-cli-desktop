@@ -472,6 +472,8 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
             tool_call_id: tool_call_id.clone(),
             status: ToolCallStatus::Completed,
             content: content_items,
+            server_name: None,
+            tool_name: None,
         };
 
         // Emit ACP session update event - use the conversation_id (frontend conversation ID), not ACP session ID
