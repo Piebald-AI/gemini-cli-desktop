@@ -97,14 +97,7 @@ export const HomeDashboard: React.FC = () => {
                       ) : msgPart.type === "text" ? (
                         /* Message Content */
                         <div className="text-sm text-gray-900 dark:text-gray-100 mb-2">
-                          <MessageContent
-                            content={msgPart.text}
-                            sender={message.sender}
-                            isStreaming={
-                              currentConversation?.isStreaming &&
-                              index === currentConversation.messages.length - 1
-                            }
-                          />
+                          <MessageContent content={msgPart.text} />
                         </div>
                       ) : msgPart.type === "toolCall" ? (
                         <>
