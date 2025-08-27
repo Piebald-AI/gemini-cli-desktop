@@ -12,7 +12,7 @@ export interface ConversationContextType {
   messagesContainerRef: React.RefObject<HTMLDivElement | null>;
   cliIOLogs: CliIO[];
   handleInputChange: (
-    _event: React.ChangeEvent<HTMLInputElement> | null,
+    _event: React.ChangeEvent<HTMLTextAreaElement> | null,
     newValue: string,
     _newPlainTextValue: string,
     _mentions: unknown[]
