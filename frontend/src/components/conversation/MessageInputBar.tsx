@@ -31,6 +31,7 @@ interface MessageInputBarProps {
 
 export interface MessageInputBarRef {
   insertMention: (mention: string) => void;
+  closeDropdown: () => void;
 }
 
 export const MessageInputBar = forwardRef<
@@ -58,18 +59,13 @@ export const MessageInputBar = forwardRef<
       ref,
       () => ({
         insertMention: (mention: string) => {
-          console.log("📝 [MessageInputBar] Received insertMention:", mention);
-          console.log(
-            "📝 [MessageInputBar] mentionInputRef.current:",
-            !!mentionInputRef.current
-          );
           if (mentionInputRef.current) {
-            console.log(
-              "📝 [MessageInputBar] Calling insertMention on MentionInput"
-            );
             mentionInputRef.current.insertMention(mention);
-          } else {
-            console.log("📝 [MessageInputBar] MentionInput ref is null!");
+          }
+        },
+        closeDropdown: () => {
+          if (mentionInputRef.current) {
+            mentionInputRef.current.closeDropdown();
           }
         },
       }),

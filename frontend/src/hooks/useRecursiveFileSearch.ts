@@ -10,7 +10,7 @@ export interface RecursiveFileSearchState {
 }
 
 export interface RecursiveFileSearchActions {
-  loadFiles: (path: string, maxDepth?: number) => Promise<void>;
+  loadFiles: (path: string) => Promise<void>;
   searchFiles: (query: string) => DirEntry[];
   reset: () => void;
 }
@@ -42,13 +42,8 @@ export const useRecursiveFileSearch = (initialPath?: string) => {
   }, []);
 
   const loadFiles = useCallback(
-    async (path: string, maxDepth: number = 1) => {
-      console.log(
-        "🔍 [HOOK] loadFiles called with path:",
-        path,
-        "maxDepth:",
-        maxDepth
-      );
+    async (path: string) => {
+      console.log("🔍 [HOOK] loadFiles called with path:", path);
       console.log("🔍 [HOOK] Current state before loading:", {
         rootPath: state.rootPath,
         allFiles: state.allFiles.length,
@@ -63,7 +58,6 @@ export const useRecursiveFileSearch = (initialPath?: string) => {
         console.log("📡 [HOOK] About to call api.list_files_recursive");
         const files = await api.list_files_recursive({
           path,
-          max_depth: maxDepth,
         });
         console.log("📡 [HOOK] API call completed successfully");
         console.log("📡 [HOOK] Received files:", files?.length || 0, "entries");

@@ -106,10 +106,7 @@ export const webApi: API = {
     return response.data;
   },
 
-  async list_files_recursive(params: {
-    path: string;
-    max_depth?: number;
-  }): Promise<DirEntry[]> {
+  async list_files_recursive(params: { path: string }): Promise<DirEntry[]> {
     const response = await apiClient.post<DirEntry[]>(
       "/list-files-recursive",
       params

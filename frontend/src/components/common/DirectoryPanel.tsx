@@ -76,22 +76,11 @@ export function DirectoryPanel({
   // Handle file click to insert mention
   const handleFileClick = useCallback(
     (node: TreeNode) => {
-      console.log(
-        "📁 [DirectoryPanel] File clicked:",
-        node.name,
-        "onMentionInsert:",
-        !!onMentionInsert
-      );
       if (!onMentionInsert) {
-        console.log("📁 [DirectoryPanel] No onMentionInsert callback provided");
         return;
       }
 
       const relativePath = getRelativePath(node.full_path);
-      console.log(
-        "📁 [DirectoryPanel] Inserting mention:",
-        `@${relativePath} `
-      );
       onMentionInsert(`@${relativePath} `);
     },
     [onMentionInsert, getRelativePath]
@@ -100,23 +89,12 @@ export function DirectoryPanel({
   // Handle folder plus button click to insert mention
   const handleFolderPlusClick = useCallback(
     (node: TreeNode, event: React.MouseEvent) => {
-      console.log(
-        "📁 [DirectoryPanel] Plus button clicked for folder:",
-        node.name
-      );
       event.stopPropagation(); // Prevent folder expansion
       if (!onMentionInsert) {
-        console.log(
-          "📁 [DirectoryPanel] No onMentionInsert callback for plus button"
-        );
         return;
       }
 
       const relativePath = getRelativePath(node.full_path);
-      console.log(
-        "📁 [DirectoryPanel] Inserting folder mention:",
-        `@${relativePath}/ `
-      );
       onMentionInsert(`@${relativePath}/ `);
     },
     [onMentionInsert, getRelativePath]

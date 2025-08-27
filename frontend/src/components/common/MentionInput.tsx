@@ -33,6 +33,7 @@ interface MentionInputProps {
 
 export interface MentionInputRef {
   insertMention: (mentionText: string) => void;
+  closeDropdown: () => void;
 }
 
 export const MentionInput = forwardRef<MentionInputRef, MentionInputProps>(
@@ -236,30 +237,17 @@ export const MentionInput = forwardRef<MentionInputRef, MentionInputProps>(
     // Programmatically insert a mention (for external components like DirectoryPanel)
     const insertMention = useCallback(
       (mentionText: string) => {
-        console.log(
-          "💬 [MentionInput] insertMention called with:",
-          mentionText
-        );
-        console.log("💬 [MentionInput] Current value:", value);
-        console.log("💬 [MentionInput] inputRef.current:", !!inputRef.current);
-
         const cursorPosition = inputRef.current?.selectionStart || value.length;
         const beforeCursor = value.substring(0, cursorPosition);
         const afterCursor = value.substring(cursorPosition);
 
-        console.log("💬 [MentionInput] Cursor position:", cursorPosition);
-        console.log("💬 [MentionInput] Before cursor:", beforeCursor);
-        console.log("💬 [MentionInput] After cursor:", afterCursor);
-
         // Insert the mention at the cursor position
         const newValue = `${beforeCursor}${mentionText}${afterCursor}`;
-        console.log("💬 [MentionInput] New value:", newValue);
 
         // Extract mentions from the new value
         const mentions = extractMentionsFromValue(newValue);
         setExtractedMentions(mentions);
 
-        console.log("💬 [MentionInput] Calling onChange with new value");
         onChange(null, newValue, newValue, mentions);
 
         // Focus back to input and position cursor after the inserted text
@@ -271,24 +259,39 @@ export const MentionInput = forwardRef<MentionInputRef, MentionInputProps>(
               newCursorPosition,
               newCursorPosition
             );
-            console.log(
-              "💬 [MentionInput] Set cursor to position:",
-              newCursorPosition
-            );
           }
         }, 0);
       },
       [value, onChange]
     );
 
+    // Programmatically close the dropdown
+    const closeDropdown = useCallback(() => {
+      setShowFilePicker(false);
+      setAtPosition(null);
+      setSearchFilter("");
+    }, []);
+
     // Expose the insertMention method via ref
     useImperativeHandle(
       ref,
       () => ({
         insertMention,
+        closeDropdown,
       }),
-      [insertMention]
+      [insertMention, closeDropdown]
     );
+
+    // Handle blur event to close the dropdown when input loses focus
+    const handleBlur = useCallback(() => {
+      // Use a small delay to allow for clicks on dropdown items
+      // Without this, clicking on dropdown items won't work because the dropdown closes immediately
+      setTimeout(() => {
+        setShowFilePicker(false);
+        setAtPosition(null);
+        setSearchFilter("");
+      }, 150);
+    }, []);
 
     return (
       <div className={cn("relative", className)}>
@@ -302,6 +305,7 @@ export const MentionInput = forwardRef<MentionInputRef, MentionInputProps>(
             error={searchState.error}
             onItemClick={handleItemClick}
             searchFilter={searchFilter}
+            workingDirectory={workingDirectory}
           />
         )}
 
@@ -311,6 +315,7 @@ export const MentionInput = forwardRef<MentionInputRef, MentionInputProps>(
           value={value}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
+          onBlur={handleBlur}
           placeholder={placeholder}
           disabled={disabled}
         />

@@ -17,6 +17,7 @@ interface RecursiveFilePickerDropdownProps {
   onItemClick: (entry: DirEntry) => void;
   searchFilter: string;
   onValueChange?: (value: string) => void;
+  workingDirectory?: string;
 }
 
 export const RecursiveFilePickerDropdown = forwardRef<
@@ -32,6 +33,7 @@ export const RecursiveFilePickerDropdown = forwardRef<
       onItemClick,
       searchFilter,
       onValueChange,
+      workingDirectory,
     },
     ref
   ) => {
@@ -50,17 +52,6 @@ export const RecursiveFilePickerDropdown = forwardRef<
         }
       }
     }, []);
-
-    console.log(
-      "🎪 [DROPDOWN] RecursiveFilePickerDropdown rendered with props:",
-      {
-        entriesCount: entries.length,
-        selectedIndex,
-        isLoading,
-        error,
-        searchFilter,
-      }
-    );
 
     const getRelativePath = (fullPath: string, rootPath?: string) => {
       if (!rootPath) return fullPath;
@@ -88,12 +79,6 @@ export const RecursiveFilePickerDropdown = forwardRef<
     const selectedValue = entries[selectedIndex]
       ? getEntryValue(entries[selectedIndex], selectedIndex)
       : "";
-
-    console.log(
-      "🎪 [DROPDOWN] Rendering MAIN list with",
-      entries.length,
-      "entries"
-    );
 
     return (
       <div
@@ -132,8 +117,24 @@ export const RecursiveFilePickerDropdown = forwardRef<
             {!isLoading && !error && entries.length > 0 && (
               <CommandGroup>
                 {entries.map((entry, index) => {
-                  const relativePath = getRelativePath(entry.full_path);
+                  const relativePath = getRelativePath(
+                    entry.full_path,
+                    workingDirectory
+                  );
                   const entryValue = getEntryValue(entry, index);
+
+                  // Get the path without the file/directory name for display
+                  let pathWithoutName = "";
+                  if (relativePath !== entry.name) {
+                    // Remove the file/directory name from the end of the path
+                    const lastSlashIndex = relativePath.lastIndexOf("/");
+                    if (lastSlashIndex !== -1) {
+                      pathWithoutName = relativePath.substring(
+                        0,
+                        lastSlashIndex
+                      );
+                    }
+                  }
 
                   return (
                     <CommandItem
@@ -152,9 +153,9 @@ export const RecursiveFilePickerDropdown = forwardRef<
                           {entry.name}
                           {entry.is_directory ? "/" : ""}
                         </div>
-                        {relativePath !== entry.name && (
+                        {pathWithoutName && (
                           <div className="truncate text-xs text-muted-foreground">
-                            {relativePath}
+                            {pathWithoutName}
                           </div>
                         )}
                       </div>

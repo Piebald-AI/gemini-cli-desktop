@@ -252,16 +252,10 @@ function RootLayoutContent() {
 
   // Handle mention insertion from DirectoryPanel
   const handleMentionInsert = useCallback((mention: string) => {
-    console.log("📁 [App] Received mention insertion request:", mention);
-    console.log(
-      "📁 [App] messageInputBarRef.current:",
-      !!messageInputBarRef.current
-    );
     if (messageInputBarRef.current) {
-      console.log("📁 [App] Calling insertMention on MessageInputBar");
       messageInputBarRef.current.insertMention(mention);
-    } else {
-      console.log("📁 [App] MessageInputBar ref is null!");
+      // Close the dropdown after inserting the mention
+      messageInputBarRef.current.closeDropdown();
     }
   }, []);
 

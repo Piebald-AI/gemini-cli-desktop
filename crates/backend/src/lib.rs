@@ -213,8 +213,7 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
                 // Check if the existing session is using the same backend type
                 if existing.backend_type == requested_backend {
                     println!(
-                        "🔄 [SESSION-CHECK] Existing {} session found for {}, reusing",
-                        requested_backend, session_id
+                        "🔄 [SESSION-CHECK] Existing {requested_backend} session found for {session_id}, reusing"
                     );
                     return Ok(());
                 } else {
@@ -647,12 +646,8 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
     }
 
     /// List files recursively with gitignore support
-    pub async fn list_files_recursive(
-        &self,
-        path: String,
-        max_depth: Option<usize>,
-    ) -> Result<Vec<DirEntry>> {
-        filesystem::list_files_recursive(path, max_depth).await
+    pub async fn list_files_recursive(&self, path: String) -> Result<Vec<DirEntry>> {
+        filesystem::list_files_recursive(path).await
     }
 
     /// Get recent chats
