@@ -5,7 +5,7 @@ import React, {
   forwardRef,
   useImperativeHandle,
 } from "react";
-import { Input } from "../ui/input";
+import { Textarea } from "../ui/textarea";
 import { cn } from "@/lib/utils";
 import { useRecursiveFileSearch } from "@/hooks/useRecursiveFileSearch";
 import { RecursiveFilePickerDropdown } from "./RecursiveFilePickerDropdown";
@@ -19,7 +19,7 @@ interface Mention {
 interface MentionInputProps {
   value: string;
   onChange: (
-    event: React.ChangeEvent<HTMLInputElement> | null,
+    event: React.ChangeEvent<HTMLTextAreaElement> | null,
     newValue: string,
     newPlainTextValue: string,
     mentions: Mention[]
@@ -53,7 +53,7 @@ export const MentionInput = forwardRef<MentionInputRef, MentionInputProps>(
     const [atPosition, setAtPosition] = useState<number | null>(null);
     const [extractedMentions, setExtractedMentions] = useState<Mention[]>([]);
     const [searchFilter, setSearchFilter] = useState<string>("");
-    const inputRef = useRef<HTMLInputElement>(null);
+    const inputRef = useRef<HTMLTextAreaElement>(null);
     const commandRef = useRef<HTMLDivElement>(null);
 
     // Initialize recursive file search with working directory
@@ -92,7 +92,7 @@ export const MentionInput = forwardRef<MentionInputRef, MentionInputProps>(
       return results;
     }, [searchActions, searchFilter]);
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       const newValue = e.target.value;
       const cursorPosition = e.target.selectionStart || 0;
 
@@ -223,6 +223,15 @@ export const MentionInput = forwardRef<MentionInputRef, MentionInputProps>(
         }
       }
 
+      // Allow Shift+Enter to create newlines, but Enter should still submit when not in file picker mode
+      if (e.key === "Enter" && !e.shiftKey && !showFilePicker) {
+        e.preventDefault();
+        // We'll let the parent component handle the submit via onKeyDown
+        onKeyDown?.(e);
+        return;
+      }
+
+      // For all other keys, call the parent onKeyDown handler
       onKeyDown?.(e);
     };
 
@@ -309,8 +318,8 @@ export const MentionInput = forwardRef<MentionInputRef, MentionInputProps>(
           />
         )}
 
-        {/* Input component */}
-        <Input
+        {/* Textarea component */}
+        <Textarea
           ref={inputRef}
           value={value}
           onChange={handleInputChange}
@@ -318,6 +327,7 @@ export const MentionInput = forwardRef<MentionInputRef, MentionInputProps>(
           onBlur={handleBlur}
           placeholder={placeholder}
           disabled={disabled}
+          className="min-h-9 max-h-[15rem] resize-none field-sizing-content"
         />
       </div>
     );

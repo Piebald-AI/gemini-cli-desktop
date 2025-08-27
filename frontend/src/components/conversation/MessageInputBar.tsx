@@ -20,7 +20,7 @@ interface MessageInputBarProps {
   isCliInstalled: boolean | null;
   cliIOLogs: CliIO[];
   handleInputChange: (
-    _event: React.ChangeEvent<HTMLInputElement> | null,
+    _event: React.ChangeEvent<HTMLTextAreaElement> | null,
     newValue: string,
     _newPlainTextValue: string,
     _mentions: unknown[]
@@ -95,7 +95,7 @@ export const MessageInputBar = forwardRef<
                     : t("messageInput.placeholder")
                 }
                 disabled={isCliInstalled === false}
-                className="h-9 w-full"
+                className="w-full"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();

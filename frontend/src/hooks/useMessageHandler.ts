@@ -39,7 +39,7 @@ export const useMessageHandler = ({
 
   const handleInputChange = useCallback(
     (
-      _event: React.ChangeEvent<HTMLInputElement> | null,
+      _event: React.ChangeEvent<HTMLTextAreaElement> | null,
       newValue: string,
       _newPlainTextValue: string,
       _mentions: unknown[]
