@@ -10,7 +10,7 @@ import { getBackendText } from "@/utils/backendText";
 import {
   createMenuHandlers,
   getMenuLabels,
-  menuShortcuts,
+  getMenuShortcuts,
 } from "@/utils/menuConfig";
 import { cn } from "@/lib/utils";
 import {
@@ -54,11 +54,12 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
   // Use shared menu handlers
   const handlers = createMenuHandlers(navigate, setIsAboutDialogOpen);
   const labels = getMenuLabels(t, selectedBackend);
+  const menuShortcuts = getMenuShortcuts();
 
-  // Determine if we should show the title bar
+  // Determine if we should show the title bar (Windows and Web only)
   const shouldShow = React.useMemo(() => {
     if (__WEB__) {
-      return false;
+      return true; // Show in web mode
     }
     try {
       return platform() === "windows";
@@ -77,11 +78,12 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
         if (!shortcut) continue; // Skip undefined shortcuts
 
         const ctrlMatch = shortcut.ctrlKey ? e.ctrlKey : !e.ctrlKey;
+        const metaMatch = shortcut.metaKey ? e.metaKey : !e.metaKey;
         const altMatch = shortcut.altKey ? e.altKey : !e.altKey;
         const shiftMatch = shortcut.shiftKey ? e.shiftKey : !e.shiftKey;
         const keyMatch = e.key.toLowerCase() === shortcut.key.toLowerCase();
 
-        if (ctrlMatch && altMatch && shiftMatch && keyMatch) {
+        if (ctrlMatch && metaMatch && altMatch && shiftMatch && keyMatch) {
           e.preventDefault();
 
           if (handlers[action as keyof typeof handlers]) {
@@ -95,11 +97,11 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [shouldShow, handlers, openMenu]);
+  }, [shouldShow, handlers, openMenu, menuShortcuts]);
 
-  // Window listener setup - only runs when shouldShow is true
+  // Window listener setup - only runs when shouldShow is true and not web
   useEffect(() => {
-    if (!shouldShow) return;
+    if (!shouldShow || __WEB__) return;
 
     let unlisten: (() => void) | undefined;
 
@@ -166,6 +168,7 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
   };
 
   const handleDragStart = async () => {
+    if (__WEB__) return; // Disable dragging in web mode
     try {
       const appWindow = getCurrentWindow();
       await appWindow.startDragging();
@@ -193,7 +196,7 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
       <div className="flex items-center h-full">
         <div
           className="flex items-center gap-1.5 px-3"
-          data-tauri-drag-region
+          {...(!__WEB__ && { "data-tauri-drag-region": true })}
           onMouseDown={handleDragStart}
         >
           <div className="w-4 h-4 flex items-center justify-center">
@@ -406,37 +409,39 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
       {/* Spacer for dragging */}
       <div
         className="flex-1 h-full"
-        data-tauri-drag-region
+        {...(!__WEB__ && { "data-tauri-drag-region": true })}
         onMouseDown={handleDragStart}
       ></div>
 
-      {/* Right section with window controls - exact Segoe Fluent Icons implementation */}
-      <div className="flex items-center h-full">
-        <button
-          className="transition text-[10px] w-[46px] h-full hover:bg-muted active:bg-muted/80 font-['Segoe_Fluent_Icons',_'Segoe_MDL2_Assets']"
-          tabIndex={-1}
-          onClick={handleMinimize}
-          onMouseDown={(e) => e.stopPropagation()}
-        >
-          &#xE921;
-        </button>
-        <button
-          className="transition text-[10px] w-[46px] h-full hover:bg-muted active:bg-muted/80 font-['Segoe_Fluent_Icons',_'Segoe_MDL2_Assets']"
-          tabIndex={-1}
-          onClick={handleMaximize}
-          onMouseDown={(e) => e.stopPropagation()}
-        >
-          {isMaximized ? "\uE923" : "\uE922"}
-        </button>
-        <button
-          className="transition text-[10px] w-[46px] h-full hover:bg-[#C42B1C] hover:text-white active:bg-[rgba(196,_43,_28,_0.9)] active:text-[rgba(255,_255,_255,_0.7)] font-['Segoe_Fluent_Icons',_'Segoe_MDL2_Assets']"
-          tabIndex={-1}
-          onClick={handleClose}
-          onMouseDown={(e) => e.stopPropagation()}
-        >
-          &#xE8BB;
-        </button>
-      </div>
+      {/* Right section with window controls - only show in desktop mode */}
+      {!__WEB__ && (
+        <div className="flex items-center h-full">
+          <button
+            className="transition text-[10px] w-[46px] h-full hover:bg-muted active:bg-muted/80 font-['Segoe_Fluent_Icons',_'Segoe_MDL2_Assets']"
+            tabIndex={-1}
+            onClick={handleMinimize}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            &#xE921;
+          </button>
+          <button
+            className="transition text-[10px] w-[46px] h-full hover:bg-muted active:bg-muted/80 font-['Segoe_Fluent_Icons',_'Segoe_MDL2_Assets']"
+            tabIndex={-1}
+            onClick={handleMaximize}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            {isMaximized ? "\uE923" : "\uE922"}
+          </button>
+          <button
+            className="transition text-[10px] w-[46px] h-full hover:bg-[#C42B1C] hover:text-white active:bg-[rgba(196,_43,_28,_0.9)] active:text-[rgba(255,_255,_255,_0.7)] font-['Segoe_Fluent_Icons',_'Segoe_MDL2_Assets']"
+            tabIndex={-1}
+            onClick={handleClose}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            &#xE8BB;
+          </button>
+        </div>
+      )}
 
       {/* About Dialog */}
       <AboutDialog

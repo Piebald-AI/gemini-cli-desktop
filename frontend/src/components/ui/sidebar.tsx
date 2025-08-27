@@ -269,8 +269,8 @@ function Sidebar({
       <div
         data-slot="sidebar-container"
         className={cn(
-          "fixed z-10 hidden w-(--sidebar-width) md:flex",
-          __WEB__ || platform() !== "windows" ? "top-0 h-full" : "top-8 h-full",
+          "fixed z-10 hidden w-(--sidebar-width) md:flex h-full",
+          __WEB__ || platform() === "windows" ? "top-8" : "top-0",
           !isResizing &&
             "transition-[left,right,width] duration-200 ease-linear",
           side === "left"
@@ -361,7 +361,7 @@ function SidebarInset({ className, ...props }: React.ComponentProps<"main">) {
       className={cn(
         "bg-background relative flex w-full flex-1 flex-col overflow-hidden",
         "md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow-sm md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-2",
-        !__WEB__ && platform() === "windows" && "pt-8",
+        (__WEB__ || platform() === "windows") && "pt-8",
         className
       )}
       {...props}

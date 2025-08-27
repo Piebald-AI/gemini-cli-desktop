@@ -16,19 +16,52 @@ export interface MenuHandler {
 export interface MenuShortcut {
   key: string;
   ctrlKey?: boolean;
+  metaKey?: boolean;
   altKey?: boolean;
   shiftKey?: boolean;
   display: string;
 }
 
-export const menuShortcuts: Record<string, MenuShortcut | undefined> = {
-  goHome: { key: "h", ctrlKey: true, display: "Ctrl+H" },
-  goProjects: { key: "p", ctrlKey: true, display: "Ctrl+P" },
-  goMcpServers: { key: "m", ctrlKey: true, display: "Ctrl+M" },
-  toggleTheme: undefined, // No accelerator in Linux menu
-  refresh: { key: "r", ctrlKey: true, display: "Ctrl+R" },
-  showAbout: undefined, // No accelerator in Linux menu
-  quit: undefined, // No accelerator in Linux menu for Exit
+const getIsMac = (): boolean => {
+  if (__WEB__) {
+    // Note: Though `navigator.platform` is marked as deprecated, MDN specifically highlights
+    // it as still being the best way to detect which keyboard shortcuts to use.
+    return (
+      navigator.platform.toLowerCase().includes("mac") ||
+      navigator.platform.toLowerCase().includes("iphone")
+    );
+  }
+  return false;
+};
+
+export const getMenuShortcuts = (): Record<
+  string,
+  MenuShortcut | undefined
+> => {
+  const isMac = getIsMac();
+  const modifierKey = isMac ? "metaKey" : "ctrlKey";
+
+  // Note: The space after the Command key icon is _not_ a normal space; it's
+  // a "THIN SPACE" (U+2009).
+  const displayModifier = isMac ? "⌘ " : "Ctrl+";
+
+  return {
+    goHome: { key: "h", [modifierKey]: true, display: `${displayModifier}H` },
+    goProjects: {
+      key: "p",
+      [modifierKey]: true,
+      display: `${displayModifier}P`,
+    },
+    goMcpServers: {
+      key: "m",
+      [modifierKey]: true,
+      display: `${displayModifier}M`,
+    },
+    toggleTheme: undefined, // No accelerator in Linux menu
+    refresh: { key: "r", [modifierKey]: true, display: `${displayModifier}R` },
+    showAbout: undefined, // No accelerator in Linux menu
+    quit: undefined, // No accelerator in Linux menu for Exit
+  };
 };
 
 export const createMenuHandlers = (
