@@ -763,7 +763,11 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
             anyhow::anyhow!("Session initialization failed: Failed to lock processes")
         })?;
 
-        let backend_type = if backend_config.is_some() { "qwen" } else { "gemini" };
+        let backend_type = if backend_config.is_some() {
+            "qwen"
+        } else {
+            "gemini"
+        };
         let persistent_session = PersistentSession {
             conversation_id: session_id.clone(),
             acp_session_id: Some(session_result.session_id.clone()),
@@ -782,10 +786,16 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
         };
 
         processes.insert(session_id.clone(), persistent_session);
-        println!("💾 [HANDSHAKE] {} session stored successfully - marking as ALIVE", backend_type.to_uppercase());
+        println!(
+            "💾 [HANDSHAKE] {} session stored successfully - marking as ALIVE",
+            backend_type.to_uppercase()
+        );
         println!(
             "💾 [HANDSHAKE] Session details: conversation_id={}, backend={}, acp_session_id={}, pid={:?}, is_alive=true",
-            session_id, backend_type.to_uppercase(), session_result.session_id, pid
+            session_id,
+            backend_type.to_uppercase(),
+            session_result.session_id,
+            pid
         );
     }
 
