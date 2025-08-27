@@ -9,12 +9,7 @@ import React, {
 } from "react";
 import { Fragment, jsx, jsxs } from "react/jsx-runtime";
 import { toJsxRuntime } from "hast-util-to-jsx-runtime";
-import {
-  type BundledLanguage,
-  bundledLanguages,
-  bundledThemes,
-  createHighlighter,
-} from "shiki/bundle/full";
+import { type BundledLanguage, createHighlighter } from "shiki/bundle/full";
 import { Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -29,7 +24,8 @@ const LANGUAGE_MAPPINGS: Record<string, string> = {
   "c++": "cpp",
 };
 
-// Remove debounce hook - not needed with proper caching
+// Default themes to use when no custom theme is available
+const DEFAULT_THEMES = ["github-dark", "github-light"];
 
 // Utility function to convert CSS string to React style object
 const cssStringToObject = (cssString: string): React.CSSProperties => {
@@ -83,9 +79,9 @@ const highlightCache = new Map<
   { content: React.ReactElement; preStyle: string }
 >();
 
-// Create highlighter instance - initialize as promise
+// Create highlighter instance with default themes
 const highlighterPromise = createHighlighter({
-  themes: Object.keys(bundledThemes),
+  themes: DEFAULT_THEMES,
   langs: [], // Start with no languages - load on demand
 });
 
@@ -93,6 +89,7 @@ const CodeBlock = React.memo(
   ({ code, language }: { code: string; language: string }) => {
     const { resolvedTheme } = useTheme();
     const [mounted, setMounted] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
       setMounted(true);
@@ -101,21 +98,18 @@ const CodeBlock = React.memo(
     // Default themes based on current theme
     const lightTheme = "github-light";
     const darkTheme = "github-dark";
+    const currentTheme = resolvedTheme === "dark" ? darkTheme : lightTheme;
 
     // Memoize the mapping to prevent unnecessary effect triggers
     const mappedLanguage = useMemo(() => {
-      if (!language || language.trim() === "") {
-        return "text"; // Default to plain text for empty languages
-      }
-      return language in LANGUAGE_MAPPINGS
-        ? LANGUAGE_MAPPINGS[language]
-        : language;
+      if (!language?.trim()) return "text";
+      return LANGUAGE_MAPPINGS[language] || language;
     }, [language]);
 
-    // Create cache key based on actual code (like original)
+    // Create cache key based on actual code
     const cacheKey = useMemo(() => {
-      return `${code}-${language}-${mappedLanguage}-${lightTheme}-${darkTheme}-${resolvedTheme}`;
-    }, [code, language, mappedLanguage, lightTheme, darkTheme, resolvedTheme]);
+      return `${code}-${language}-${mappedLanguage}-${currentTheme}`;
+    }, [code, language, mappedLanguage, currentTheme]);
 
     // Create fallback content (plain code) - memoized to prevent unnecessary re-creation
     const createFallback = useCallback(() => {
@@ -137,31 +131,21 @@ const CodeBlock = React.memo(
     const [preStyle, setPreStyle] = useState<string>("");
 
     useEffect(() => {
-      // Check if we have cached content for this specific key
-      const cached = highlightCache.get(cacheKey);
+      let cancelled = false;
 
-      // If we have cached content, use it immediately
-      if (cached) {
-        setHighlightedContent(cached.content);
-        setPreStyle(cached.preStyle);
-        return;
-      }
+      async function highlight() {
+        // Check if we have cached content for this specific key
+        const cached = highlightCache.get(cacheKey);
+        if (cached) {
+          setHighlightedContent(cached.content);
+          setPreStyle(cached.preStyle);
+          setIsLoading(false);
+          return;
+        }
 
-      // If we don't have cached content, we need to highlight
-      let isMounted = true;
-
-      const highlightCode = async () => {
         try {
           // Wait for highlighter to be ready
           const highlighter = await highlighterPromise;
-
-          // Clear conflicting cache entries to prevent bloat
-          const conflictingKeys = Array.from(highlightCache.keys()).filter(
-            (key) =>
-              key.startsWith(`${code}-${language}-${mappedLanguage}-`) &&
-              key !== cacheKey
-          );
-          conflictingKeys.forEach((key) => highlightCache.delete(key));
 
           // Load language if not already loaded
           if (
@@ -171,27 +155,16 @@ const CodeBlock = React.memo(
             try {
               await highlighter.loadLanguage(mappedLanguage as BundledLanguage);
             } catch {
-              // Ignore errors - Shiki will just not highlight (i.e. use the `text` language) for non-existent
-              // languages.
+              // Ignore errors - Shiki will just not highlight for non-existent languages
             }
 
-            if (!isMounted) return;
+            if (cancelled) return;
           }
-
-          // Check if the language is valid before attempting to highlight
-          const validLanguage =
-            mappedLanguage in bundledLanguages
-              ? (mappedLanguage as BundledLanguage)
-              : ("text" as BundledLanguage);
 
           let capturedPreStyle = "";
 
-          const currentTheme =
-            resolvedTheme === "dark" ? darkTheme : lightTheme;
-
-          // Use actual code for highlighting (like original)
           const hast = highlighter.codeToHast(code, {
-            lang: validLanguage,
+            lang: mappedLanguage,
             theme: currentTheme,
             transformers: [
               {
@@ -204,9 +177,8 @@ const CodeBlock = React.memo(
             ],
           });
 
-          if (!isMounted) return;
+          if (cancelled) return;
 
-          // Create React element from highlighted hast
           const highlighted = toJsxRuntime(hast, {
             Fragment,
             jsx,
@@ -219,10 +191,13 @@ const CodeBlock = React.memo(
             preStyle: capturedPreStyle,
           });
 
-          setHighlightedContent(highlighted);
-          setPreStyle(capturedPreStyle);
+          if (!cancelled) {
+            setHighlightedContent(highlighted);
+            setPreStyle(capturedPreStyle);
+            setIsLoading(false);
+          }
         } catch (error) {
-          if (!isMounted) return;
+          if (cancelled) return;
 
           console.warn(
             `Failed to highlight code with language "${mappedLanguage}":`,
@@ -238,24 +213,16 @@ const CodeBlock = React.memo(
 
           setHighlightedContent(fallback);
           setPreStyle("");
+          setIsLoading(false);
         }
-      };
+      }
 
-      highlightCode();
+      highlight();
 
       return () => {
-        isMounted = false;
+        cancelled = true;
       };
-    }, [
-      cacheKey,
-      mappedLanguage,
-      createFallback,
-      lightTheme,
-      darkTheme,
-      resolvedTheme,
-      code,
-      language,
-    ]);
+    }, [cacheKey, mappedLanguage, createFallback, currentTheme, code]);
 
     // Memoize the style object to prevent unnecessary re-renders
     const memoizedStyle = useMemo(
@@ -263,12 +230,14 @@ const CodeBlock = React.memo(
       [preStyle]
     );
 
-    // Show fallback while highlighting is in progress (like original)
-    const contentToRender = highlightedContent || createFallback();
-
     if (!mounted) {
       return null;
     }
+
+    // Show fallback content while loading, or highlighted content when ready
+    const contentToRender = isLoading
+      ? createFallback()
+      : highlightedContent || createFallback();
 
     // Always render the container to prevent layout shift
     return (

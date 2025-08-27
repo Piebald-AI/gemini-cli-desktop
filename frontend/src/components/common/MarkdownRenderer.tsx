@@ -41,13 +41,7 @@ async function handleLinkClick(href: string, event: React.MouseEvent) {
   }
 }
 
-export function MarkdownRenderer({
-  children,
-  isStreaming = false,
-}: {
-  children: string;
-  isStreaming?: boolean;
-}) {
+export function MarkdownRenderer({ children }: { children: string }) {
   return (
     <div className="prose prose-neutral prose-sm max-w-none dark:prose-invert text-sm break-words overflow-wrap-anywhere">
       <ReactMarkdown
@@ -65,32 +59,6 @@ export function MarkdownRenderer({
             if (isCodeBlock) {
               // Extract language from className, defaulting to empty string for code blocks without language
               const language = className?.replace("language-", "") || "";
-
-              // During streaming, show simple text version for performance
-              if (isStreaming) {
-                return (
-                  <div className="shiki font-mono overflow-hidden max-h-96 border border-current/10 rounded-md text-sm my-4 leading-normal max-w-full min-w-0 overflow-x-auto">
-                    <div className="overflow-auto max-h-96 p-4 whitespace-pre-wrap">
-                      <div className="flex items-start">
-                        <div className="text-black/40 dark:text-white/40 text-xs font-mono mr-4 select-none">
-                          {language && (
-                            <div className="mb-2 text-xs opacity-60">
-                              {language}
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          {content.trim()}
-                          <span className="inline-block w-2 h-4 bg-blue-500 animate-pulse ml-1">
-                            |
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              }
-
               return <CodeBlock code={content.trim()} language={language} />;
             } else {
               // Render as inline code
