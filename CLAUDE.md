@@ -85,6 +85,7 @@ The project is organized as a Rust workspace with three main crates:
 - **Tauri commands** for system integration
 - **Event emission** to frontend via Tauri's event system
 - **Cross-platform capabilities** with minimal permissions
+- **Menu system** (`menu.rs`) - Native application menus with i18n support
 - **Binary target**: `gemini-desktop`
 
 ### Frontend Architecture
@@ -103,39 +104,47 @@ The project is organized as a Rust workspace with three main crates:
 - **`common/`** - Reusable UI components
   - `ToolCallDisplay.tsx` - Tool execution visualization
   - `MarkdownRenderer.tsx` - Rich text rendering with syntax highlighting
-  - `DiffViewer.tsx` - Code difference visualization with word-level diffing
+  - `DiffViewer.tsx` - Code difference visualization with word-level diffing (recently rewritten for better performance)
   - `SearchInput.tsx` - Advanced search interface
   - `DirectorySelectionDialog.tsx` - File system navigation
+  - `DirectoryPanel.tsx` - Directory tree visualization
+  - `FilePickerDropdown.tsx` - File selection dropdown component
+  - `RecursiveFilePickerDropdown.tsx` - Recursive file browser with depth limits
   - `AboutDialog.tsx` - Application information and version details
   - `CliWarnings.tsx` - CLI installation status and warnings
-  - `CodeBlock.tsx` - Syntax-highlighted code display
-  - `MentionInput.tsx` - @-mention support for user input
+  - `CodeBlock.tsx` - Syntax-highlighted code display with improved streaming performance
+  - `MentionInput.tsx` - @-mention support for user input with directory limit improvements
   - `ModelContextProtocol.tsx` - MCP server integration components
   - `SearchResults.tsx` - Search result display and filtering
   - `ToolCallsList.tsx` - Tool execution history
   - `ToolResultRenderer.tsx` - Tool output formatting
   - `UserAvatar.tsx` - User profile display
+  - `GitInfo.tsx` - Git repository status display
   - `LanguageSwitcher.tsx` - Language selection interface with flag icons
   - `I18nExample.tsx` - Translation demonstration component
 - **`conversation/`** - Chat interface components
   - `ConversationList.tsx` - Message history and pagination
-  - `MessageInputBar.tsx` - Text input with mention support
+  - `MessageInputBar.tsx` - Text input with mention support and Shift+Enter support
   - `MessageActions.tsx` - Message-level actions (copy, retry, etc.)
   - `MessageContent.tsx` - Message body rendering
   - `MessageHeader.tsx` - Message metadata display
   - `ThinkingBlock.tsx` - AI reasoning visualization
   - `RecentChats.tsx` - Session history sidebar
+  - `NewChatPlaceholder.tsx` - Empty state for new conversations
+  - `ProcessCard.tsx` - Active process status display
 - **`layout/`** - Application structure
   - `AppHeader.tsx` - Top navigation bar
   - `AppSidebar.tsx` - Navigation and project selection with resizable functionality
-  - `CustomTitleBar.tsx` - Native window controls for desktop
+  - `CustomTitleBar.tsx` - Native window controls for desktop (now also enabled for web without controls)
   - `PageLayout.tsx` - Responsive layout management
-- **`mcp/`** - Model Context Protocol components
+- **`mcp/`** - Model Context Protocol components (with full MCP server call support)
   - `AddMcpServerDialog.tsx` - Server configuration dialog
   - `DynamicList.tsx` - Dynamic list management
   - `McpServerCard.tsx` - Server status display
   - `McpServerSettings.tsx` - Server configuration interface
   - `PasteJsonDialog.tsx` - JSON configuration import
+  - `McpPermissionDialog.tsx` - Permission request handling
+  - `McpPermissionCompact.tsx` - Compact permission display
 - **`renderers/`** - Tool-specific result renderers
   - `CommandRenderer.tsx` - Terminal output formatting
   - `DefaultRenderer.tsx` - Fallback renderer
@@ -155,6 +164,7 @@ The project is organized as a Rust workspace with three main crates:
   - Accessible components with proper ARIA support
   - Dark/light mode toggle support
   - Enhanced sidebar component with resize handle and drag-to-resize functionality
+  - Additional components: `command.tsx`, `sonner.tsx` (toast notifications), `collapsible.tsx`
 
 #### API Layer
 - **`api.ts`** - Unified API abstraction layer
@@ -530,7 +540,11 @@ export interface API {
   get_home_directory(): Promise<string>;
   get_parent_directory(params: { path: string }): Promise<string | null>;
   list_directory_contents(params: { path: string }): Promise<DirEntry[]>;
+  list_files_recursive(params: { path: string }): Promise<DirEntry[]>;
   list_volumes(): Promise<DirEntry[]>;
+  
+  // Git operations
+  get_git_info(params: { path: string }): Promise<GitInfo | null>;
 
   // Utilities
   generate_conversation_title(params: TitleParams): Promise<string>;
@@ -809,6 +823,13 @@ gemini-desktop/
 - **Enhanced JSON Parsing**: Session management now includes robust handling of non-JSON CLI output lines, improving reliability when reading from Gemini CLI
 - **React 19 Upgrade**: Frontend upgraded to React 19.1 with improved type safety and performance
 - **Adaptive Process Polling**: Enhanced process manager with intelligent polling intervals
+- **MCP Server Support**: Full Model Context Protocol server call support with permission handling
+- **@-Mention Improvements**: Enhanced file mentioning with directory limit of 200 files instead of depth limit
+- **Diff Viewer Rewrite**: Complete rewrite for better performance with large diffs
+- **Code Block Streaming**: Improved performance for code blocks during streaming
+- **Custom Titlebar in Web**: Extended custom titlebar support to web version (without window controls)
+- **Shift+Enter Support**: Added support for multiline input in message field
+- **Session Management Fix**: Prevented dual CLI execution when switching backends
 
 ### Contributing Guidelines
 
@@ -906,6 +927,7 @@ gemini-desktop/
 │       │   ├── event_emitter.rs
 │       │   ├── lib.rs
 │       │   ├── main.rs
+│       │   ├── menu.rs
 │       │   └── state.rs
 │       └── tauri.conf.json
 ├── frontend/
