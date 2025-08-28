@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { DirEntry } from "@/lib/webApi";
 import { api } from "@/lib/api";
 
@@ -22,6 +22,7 @@ export const useRecursiveFileSearch = (initialPath?: string) => {
     isLoading: false,
     error: null,
   });
+  const hasLoadedRef = useRef(false);
 
   // Helper function to get relative path
   const getRelativePath = useCallback((fullPath: string, rootPath: string) => {
@@ -41,62 +42,56 @@ export const useRecursiveFileSearch = (initialPath?: string) => {
     return fullPath;
   }, []);
 
-  const loadFiles = useCallback(
-    async (path: string) => {
-      console.log("🔍 [HOOK] loadFiles called with path:", path);
-      console.log("🔍 [HOOK] Current state before loading:", {
-        rootPath: state.rootPath,
-        allFiles: state.allFiles.length,
-        isLoading: state.isLoading,
-        error: state.error,
+  const loadFiles = useCallback(async (path: string) => {
+    console.log("🔍 [HOOK] loadFiles called with path:", path);
+
+    // Mark as loaded when called programmatically
+    hasLoadedRef.current = true;
+
+    setState((prev) => ({ ...prev, isLoading: true, error: null }));
+    console.log("🔍 [HOOK] Set loading state to true");
+
+    try {
+      console.log("📡 [HOOK] About to call api.list_files_recursive");
+      const files = await api.list_files_recursive({
+        path,
       });
-
-      setState((prev) => ({ ...prev, isLoading: true, error: null }));
-      console.log("🔍 [HOOK] Set loading state to true");
-
-      try {
-        console.log("📡 [HOOK] About to call api.list_files_recursive");
-        const files = await api.list_files_recursive({
-          path,
-        });
-        console.log("📡 [HOOK] API call completed successfully");
-        console.log("📡 [HOOK] Received files:", files?.length || 0, "entries");
-        if (files && files.length > 0) {
-          console.log(
-            "📡 [HOOK] First 3 files:",
-            files
-              .slice(0, 3)
-              .map((f) => `${f.name} (${f.is_directory ? "dir" : "file"})`)
-          );
-        }
-
-        setState((prev) => ({
-          ...prev,
-          rootPath: path,
-          allFiles: files || [],
-          isLoading: false,
-          error: null,
-        }));
-
+      console.log("📡 [HOOK] API call completed successfully");
+      console.log("📡 [HOOK] Received files:", files?.length || 0, "entries");
+      if (files && files.length > 0) {
         console.log(
-          "✅ [HOOK] State updated successfully. New file count:",
-          files?.length || 0
+          "📡 [HOOK] First 3 files:",
+          files
+            .slice(0, 3)
+            .map((f) => `${f.name} (${f.is_directory ? "dir" : "file"})`)
         );
-      } catch (err) {
-        console.error("❌ [HOOK] API call failed with error:", err);
-        console.error("❌ [HOOK] Error details:", {
-          message: err instanceof Error ? err.message : String(err),
-          stack: err instanceof Error ? err.stack : undefined,
-        });
-        setState((prev) => ({
-          ...prev,
-          isLoading: false,
-          error: err instanceof Error ? err.message : "Failed to load files",
-        }));
       }
-    },
-    [state.allFiles.length, state.error, state.isLoading, state.rootPath]
-  );
+
+      setState((prev) => ({
+        ...prev,
+        rootPath: path,
+        allFiles: files || [],
+        isLoading: false,
+        error: null,
+      }));
+
+      console.log(
+        "✅ [HOOK] State updated successfully. New file count:",
+        files?.length || 0
+      );
+    } catch (err) {
+      console.error("❌ [HOOK] API call failed with error:", err);
+      console.error("❌ [HOOK] Error details:", {
+        message: err instanceof Error ? err.message : String(err),
+        stack: err instanceof Error ? err.stack : undefined,
+      });
+      setState((prev) => ({
+        ...prev,
+        isLoading: false,
+        error: err instanceof Error ? err.message : "Failed to load files",
+      }));
+    }
+  }, []);
 
   const searchFiles = useCallback(
     (query: string): DirEntry[] => {
@@ -222,6 +217,7 @@ export const useRecursiveFileSearch = (initialPath?: string) => {
   );
 
   const reset = useCallback(() => {
+    hasLoadedRef.current = false;
     setState({
       rootPath: initialPath || ".",
       allFiles: [],
@@ -230,17 +226,20 @@ export const useRecursiveFileSearch = (initialPath?: string) => {
     });
   }, [initialPath]);
 
-  // Load initial files immediately on mount
+  // Load initial files only once on mount
   useEffect(() => {
     console.log(
       "🔄 [useRecursiveFileSearch] useEffect triggered - initialPath:",
-      initialPath
+      initialPath,
+      "hasLoaded:",
+      hasLoadedRef.current
     );
-    if (initialPath) {
+    if (initialPath && !hasLoadedRef.current) {
       console.log(
-        "🔄 [useRecursiveFileSearch] Force loading files immediately:",
+        "🔄 [useRecursiveFileSearch] Loading files for the first time:",
         initialPath
       );
+      hasLoadedRef.current = true;
       loadFiles(initialPath);
     }
   }, [initialPath, loadFiles]);
