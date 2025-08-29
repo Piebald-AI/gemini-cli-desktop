@@ -478,9 +478,9 @@ pub async fn get_git_info(directory: String) -> Result<Option<GitInfo>> {
 
 pub async fn read_file_content(path: String) -> Result<FileContent> {
     use std::io::Read;
-    
+
     let file_path = Path::new(&path);
-    
+
     if !file_path.exists() {
         return Ok(FileContent {
             path: path.clone(),
@@ -493,7 +493,7 @@ pub async fn read_file_content(path: String) -> Result<FileContent> {
             error: Some("File does not exist".to_string()),
         });
     }
-    
+
     if file_path.is_dir() {
         return Ok(FileContent {
             path: path.clone(),
@@ -506,7 +506,7 @@ pub async fn read_file_content(path: String) -> Result<FileContent> {
             error: Some("Path is a directory, not a file".to_string()),
         });
     }
-    
+
     let metadata = match file_path.metadata() {
         Ok(metadata) => metadata,
         Err(e) => {
@@ -522,14 +522,14 @@ pub async fn read_file_content(path: String) -> Result<FileContent> {
             });
         }
     };
-    
+
     let size = metadata.len();
     let modified = metadata
         .modified()
         .ok()
         .and_then(|time| time.duration_since(std::time::UNIX_EPOCH).ok())
         .map(|duration| duration.as_secs());
-    
+
     // Limit file size to 10MB for safety
     const MAX_FILE_SIZE: u64 = 10 * 1024 * 1024;
     if size > MAX_FILE_SIZE {
@@ -541,10 +541,13 @@ pub async fn read_file_content(path: String) -> Result<FileContent> {
             encoding: "unknown".to_string(),
             is_text: false,
             is_binary: true,
-            error: Some(format!("File too large ({} bytes). Maximum size is {} bytes", size, MAX_FILE_SIZE)),
+            error: Some(format!(
+                "File too large ({} bytes). Maximum size is {} bytes",
+                size, MAX_FILE_SIZE
+            )),
         });
     }
-    
+
     // Read file content
     let mut file = match std::fs::File::open(file_path) {
         Ok(file) => file,
@@ -561,7 +564,7 @@ pub async fn read_file_content(path: String) -> Result<FileContent> {
             });
         }
     };
-    
+
     let mut buffer = Vec::new();
     if let Err(e) = file.read_to_end(&mut buffer) {
         return Ok(FileContent {
@@ -575,11 +578,11 @@ pub async fn read_file_content(path: String) -> Result<FileContent> {
             error: Some(format!("Cannot read file content: {}", e)),
         });
     }
-    
+
     // Check if content is valid UTF-8
     let is_text = std::str::from_utf8(&buffer).is_ok();
     let is_binary = !is_text;
-    
+
     let (content, encoding) = if is_text {
         // We already know it's valid UTF-8, so this should succeed
         match String::from_utf8(buffer) {
@@ -587,14 +590,17 @@ pub async fn read_file_content(path: String) -> Result<FileContent> {
             Err(utf8_error) => {
                 // If for some reason it still fails, use the original bytes from the error
                 let original_bytes = utf8_error.into_bytes();
-                (Some(String::from_utf8_lossy(&original_bytes).into_owned()), "UTF-8 (with replacements)".to_string())
+                (
+                    Some(String::from_utf8_lossy(&original_bytes).into_owned()),
+                    "UTF-8 (with replacements)".to_string(),
+                )
             }
         }
     } else {
         // For binary files, don't include content
         (None, "binary".to_string())
     };
-    
+
     Ok(FileContent {
         path: path.clone(),
         content,

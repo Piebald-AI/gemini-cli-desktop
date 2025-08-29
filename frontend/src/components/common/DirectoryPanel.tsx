@@ -310,7 +310,11 @@ export function DirectoryPanel({
             {/* Name */}
             <span
               className="text-foreground flex-1 whitespace-nowrap"
-              title={node.is_directory ? node.name : `${node.name} (Ctrl+Click to view content)`}
+              title={
+                node.is_directory
+                  ? node.name
+                  : `${node.name} (Ctrl+Click to view content)`
+              }
             >
               {node.name}
             </span>
@@ -330,7 +334,7 @@ export function DirectoryPanel({
                   <Eye className="h-3 w-3" />
                 </button>
               )}
-              
+
               {/* Plus button for folders on hover */}
               {node.is_directory && onMentionInsert && (
                 <button

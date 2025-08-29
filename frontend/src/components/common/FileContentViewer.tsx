@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
-import { FileText, Copy, X, Download, Eye, EyeOff } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
-import { Button } from '../ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
-import { Badge } from '../ui/badge';
-import { Skeleton } from '../ui/skeleton';
-import { api } from '../../lib/api';
-import { CodeMirrorViewer } from './CodeMirrorViewer';
+import { useState, useEffect } from "react";
+import { FileText, Copy, X, Download, Eye, EyeOff } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { Button } from "../ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
+import { Badge } from "../ui/badge";
+import { Skeleton } from "../ui/skeleton";
+import { api } from "../../lib/api";
+import { CodeMirrorViewer } from "./CodeMirrorViewer";
 
 interface FileContentViewerProps {
   filePath: string | null;
@@ -24,7 +24,10 @@ interface FileContent {
   error: string | null;
 }
 
-export function FileContentViewer({ filePath, onClose }: FileContentViewerProps) {
+export function FileContentViewer({
+  filePath,
+  onClose,
+}: FileContentViewerProps) {
   const { t } = useTranslation();
   const [fileContent, setFileContent] = useState<FileContent | null>(null);
   const [loading, setLoading] = useState(false);
@@ -44,16 +47,18 @@ export function FileContentViewer({ filePath, onClose }: FileContentViewerProps)
     const loadFileContent = async () => {
       setLoading(true);
       setError(null);
-      
+
       try {
         const content = await api.read_file_content({ path: filePath });
         setFileContent(content);
-        
+
         if (content.error) {
           setError(content.error);
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load file content');
+        setError(
+          err instanceof Error ? err.message : "Failed to load file content"
+        );
       } finally {
         setLoading(false);
       }
@@ -70,18 +75,18 @@ export function FileContentViewer({ filePath, onClose }: FileContentViewerProps)
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error('Failed to copy content:', err);
+      console.error("Failed to copy content:", err);
     }
   };
 
   const handleDownload = () => {
     if (!fileContent?.content || !filePath) return;
 
-    const blob = new Blob([fileContent.content], { type: 'text/plain' });
+    const blob = new Blob([fileContent.content], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = filePath.split('/').pop() || 'file.txt';
+    a.download = filePath.split("/").pop() || "file.txt";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -89,8 +94,8 @@ export function FileContentViewer({ filePath, onClose }: FileContentViewerProps)
   };
 
   const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 B';
-    const units = ['B', 'KB', 'MB', 'GB'];
+    if (bytes === 0) return "0 B";
+    const units = ["B", "KB", "MB", "GB"];
     let size = bytes;
     let unitIndex = 0;
 
@@ -103,40 +108,40 @@ export function FileContentViewer({ filePath, onClose }: FileContentViewerProps)
   };
 
   const formatModifiedTime = (timestamp?: number): string => {
-    if (!timestamp) return 'Unknown';
+    if (!timestamp) return "Unknown";
     return new Date(timestamp * 1000).toLocaleString();
   };
 
   const getFileExtension = (path: string): string => {
-    return path.split('.').pop()?.toLowerCase() || '';
+    return path.split(".").pop()?.toLowerCase() || "";
   };
 
   const getLanguageFromExtension = (path: string): string => {
     const ext = getFileExtension(path);
     const languageMap: Record<string, string> = {
-      js: 'javascript',
-      ts: 'typescript',
-      jsx: 'javascript',
-      tsx: 'typescript',
-      py: 'python',
-      rs: 'rust',
-      go: 'go',
-      java: 'java',
-      c: 'c',
-      cpp: 'cpp',
-      css: 'css',
-      html: 'html',
-      json: 'json',
-      xml: 'xml',
-      yaml: 'yaml',
-      yml: 'yaml',
-      md: 'markdown',
-      sh: 'bash',
-      sql: 'sql',
-      php: 'php',
-      rb: 'ruby',
+      js: "javascript",
+      ts: "typescript",
+      jsx: "javascript",
+      tsx: "typescript",
+      py: "python",
+      rs: "rust",
+      go: "go",
+      java: "java",
+      c: "c",
+      cpp: "cpp",
+      css: "css",
+      html: "html",
+      json: "json",
+      xml: "xml",
+      yaml: "yaml",
+      yml: "yaml",
+      md: "markdown",
+      sh: "bash",
+      sql: "sql",
+      php: "php",
+      rb: "ruby",
     };
-    return languageMap[ext] || 'text';
+    return languageMap[ext] || "text";
   };
 
   if (!isOpen) return null;
@@ -187,9 +192,14 @@ export function FileContentViewer({ filePath, onClose }: FileContentViewerProps)
                   </Badge>
                   <span>{fileContent.encoding}</span>
                   {fileContent.modified && (
-                    <span>Modified {formatModifiedTime(fileContent.modified)}</span>
+                    <span>
+                      Modified {formatModifiedTime(fileContent.modified)}
+                    </span>
                   )}
-                  <Badge variant={fileContent.is_text ? "default" : "secondary"} className="text-xs px-1.5 py-0.5">
+                  <Badge
+                    variant={fileContent.is_text ? "default" : "secondary"}
+                    className="text-xs px-1.5 py-0.5"
+                  >
                     {fileContent.is_text ? "Text" : "Binary"}
                   </Badge>
                 </div>
@@ -203,8 +213,12 @@ export function FileContentViewer({ filePath, onClose }: FileContentViewerProps)
                         onClick={() => setShowRawContent(!showRawContent)}
                         className="text-xs h-6 px-2"
                       >
-                        {showRawContent ? <EyeOff className="h-3 w-3 mr-1" /> : <Eye className="h-3 w-3 mr-1" />}
-                        {showRawContent ? 'Formatted' : 'Raw'}
+                        {showRawContent ? (
+                          <EyeOff className="h-3 w-3 mr-1" />
+                        ) : (
+                          <Eye className="h-3 w-3 mr-1" />
+                        )}
+                        {showRawContent ? "Formatted" : "Raw"}
                       </Button>
                       <Button
                         variant="ghost"
@@ -213,7 +227,7 @@ export function FileContentViewer({ filePath, onClose }: FileContentViewerProps)
                         className="text-xs h-6 px-2"
                       >
                         <Copy className="h-3 w-3 mr-1" />
-                        {copied ? t('common.copied') : t('common.copy')}
+                        {copied ? t("common.copied") : t("common.copy")}
                       </Button>
                       <Button
                         variant="ghost"
@@ -234,8 +248,12 @@ export function FileContentViewer({ filePath, onClose }: FileContentViewerProps)
                 {fileContent.is_binary ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>This is a binary file and cannot be displayed as text.</p>
-                    <p className="text-sm mt-2">Size: {formatFileSize(fileContent.size)}</p>
+                    <p>
+                      This is a binary file and cannot be displayed as text.
+                    </p>
+                    <p className="text-sm mt-2">
+                      Size: {formatFileSize(fileContent.size)}
+                    </p>
                   </div>
                 ) : fileContent.content ? (
                   <div className="h-full overflow-auto">
@@ -250,7 +268,9 @@ export function FileContentViewer({ filePath, onClose }: FileContentViewerProps)
                         <div className="max-h-full overflow-auto rounded border">
                           <CodeMirrorViewer
                             code={fileContent.content}
-                            language={getLanguageFromExtension(fileContent.path)}
+                            language={getLanguageFromExtension(
+                              fileContent.path
+                            )}
                             readOnly={true}
                           />
                         </div>

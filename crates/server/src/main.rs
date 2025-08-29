@@ -20,8 +20,8 @@ use tokio::sync::{Mutex, mpsc as tokio_mpsc};
 
 // Import backend functionality
 use backend::{
-    DirEntry, EnrichedProject, EventEmitter, FileContent, GeminiBackend, GitInfo, ProcessStatus, RecentChat,
-    SearchFilters, SearchResult,
+    DirEntry, EnrichedProject, EventEmitter, FileContent, GeminiBackend, GitInfo, ProcessStatus,
+    RecentChat, SearchFilters, SearchResult,
 };
 
 static FRONTEND_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/../../frontend/dist");

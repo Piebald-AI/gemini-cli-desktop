@@ -1,16 +1,16 @@
-import { useMemo, useEffect, useState } from 'react';
-import CodeMirror from '@uiw/react-codemirror';
-import { javascript } from '@codemirror/lang-javascript';
-import { python } from '@codemirror/lang-python';
-import { css } from '@codemirror/lang-css';
-import { html } from '@codemirror/lang-html';
-import { json } from '@codemirror/lang-json';
-import { markdown } from '@codemirror/lang-markdown';
-import { xml } from '@codemirror/lang-xml';
-import { languages } from '@codemirror/language-data';
-import { Extension } from '@codemirror/state';
-import { useTheme } from 'next-themes';
-import * as themes from '@uiw/codemirror-themes-all';
+import { useMemo, useEffect, useState } from "react";
+import CodeMirror from "@uiw/react-codemirror";
+import { javascript } from "@codemirror/lang-javascript";
+import { python } from "@codemirror/lang-python";
+import { css } from "@codemirror/lang-css";
+import { html } from "@codemirror/lang-html";
+import { json } from "@codemirror/lang-json";
+import { markdown } from "@codemirror/lang-markdown";
+import { xml } from "@codemirror/lang-xml";
+import { languages } from "@codemirror/language-data";
+import { Extension } from "@codemirror/state";
+import { useTheme } from "next-themes";
+import * as themes from "@uiw/codemirror-themes-all";
 
 interface CodeMirrorViewerProps {
   code: string;
@@ -21,38 +21,42 @@ interface CodeMirrorViewerProps {
 // Language extension mapping
 const getLanguageExtension = (language: string): Extension[] => {
   const lang = language.toLowerCase();
-  
+
   switch (lang) {
-    case 'javascript':
-    case 'js':
-    case 'jsx':
+    case "javascript":
+    case "js":
+    case "jsx":
       return [javascript({ jsx: true })];
-    case 'typescript':
-    case 'ts':
-    case 'tsx':
+    case "typescript":
+    case "ts":
+    case "tsx":
       return [javascript({ jsx: true, typescript: true })];
-    case 'python':
-    case 'py':
+    case "python":
+    case "py":
       return [python()];
-    case 'css':
+    case "css":
       return [css()];
-    case 'html':
-    case 'htm':
+    case "html":
+    case "htm":
       return [html()];
-    case 'json':
+    case "json":
       return [json()];
-    case 'markdown':
-    case 'md':
+    case "markdown":
+    case "md":
       return [markdown({ codeLanguages: languages })];
-    case 'xml':
-    case 'svg':
+    case "xml":
+    case "svg":
       return [xml()];
     default:
       return [];
   }
 };
 
-export function CodeMirrorViewer({ code, language, readOnly = true }: CodeMirrorViewerProps) {
+export function CodeMirrorViewer({
+  code,
+  language,
+  readOnly = true,
+}: CodeMirrorViewerProps) {
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -63,14 +67,14 @@ export function CodeMirrorViewer({ code, language, readOnly = true }: CodeMirror
   // Get the appropriate theme
   const theme = useMemo(() => {
     if (!mounted) return undefined;
-    
-    const isDark = resolvedTheme === 'dark';
-    
+
+    const isDark = resolvedTheme === "dark";
+
     if (isDark) {
       // Use a suitable dark theme
       return themes.githubDark || themes.dracula;
     } else {
-      // Use a suitable light theme  
+      // Use a suitable light theme
       return themes.githubLight || themes.basicLight;
     }
   }, [resolvedTheme, mounted]);
@@ -84,9 +88,7 @@ export function CodeMirrorViewer({ code, language, readOnly = true }: CodeMirror
   if (!mounted) {
     return (
       <div className="w-full p-4">
-        <pre className="text-sm font-mono whitespace-pre-wrap">
-          {code}
-        </pre>
+        <pre className="text-sm font-mono whitespace-pre-wrap">{code}</pre>
       </div>
     );
   }
@@ -111,8 +113,9 @@ export function CodeMirrorViewer({ code, language, readOnly = true }: CodeMirror
           searchKeymap: false,
         }}
         style={{
-          fontSize: '14px',
-          fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Menlo, "Liberation Mono", "Consolas", monospace',
+          fontSize: "14px",
+          fontFamily:
+            'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Menlo, "Liberation Mono", "Consolas", monospace',
         }}
       />
     </div>

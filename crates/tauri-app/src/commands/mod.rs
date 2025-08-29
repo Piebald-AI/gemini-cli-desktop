@@ -1,7 +1,7 @@
 use crate::state::AppState;
 use backend::{
-    DirEntry, EnrichedProject, FileContent, GeminiAuthConfig, GitInfo, ProcessStatus, ProjectsResponse,
-    QwenConfig, RecentChat, SearchFilters, SearchResult,
+    DirEntry, EnrichedProject, FileContent, GeminiAuthConfig, GitInfo, ProcessStatus,
+    ProjectsResponse, QwenConfig, RecentChat, SearchFilters, SearchResult,
 };
 use serde_json::Value;
 use tauri::{AppHandle, State};
