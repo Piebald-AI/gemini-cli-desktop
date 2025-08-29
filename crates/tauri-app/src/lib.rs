@@ -80,6 +80,7 @@ pub fn run() {
             commands::get_settings_file_path,
             commands::read_settings_file,
             commands::write_settings_file,
+            commands::read_file_content,
             menu::init_menu,
             menu::update_menu_labels
         ]);

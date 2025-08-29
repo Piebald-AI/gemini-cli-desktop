@@ -97,6 +97,16 @@ export interface API {
     has_uncommitted_changes: boolean;
     has_untracked_files: boolean;
   } | null>;
+  read_file_content(params: { path: string }): Promise<{
+    path: string;
+    content: string | null;
+    size: number;
+    modified: number | null;
+    encoding: string;
+    is_text: boolean;
+    is_binary: boolean;
+    error: string | null;
+  }>;
 }
 
 export type APICommand = keyof API;

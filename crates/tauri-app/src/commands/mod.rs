@@ -1,7 +1,7 @@
 use crate::state::AppState;
 use backend::{
-    DirEntry, EnrichedProject, GeminiAuthConfig, GitInfo, ProcessStatus, ProjectsResponse,
-    QwenConfig, RecentChat, SearchFilters, SearchResult,
+    DirEntry, EnrichedProject, FileContent, GeminiAuthConfig, GitInfo, ProcessStatus,
+    ProjectsResponse, QwenConfig, RecentChat, SearchFilters, SearchResult,
 };
 use serde_json::Value;
 use tauri::{AppHandle, State};
@@ -490,4 +490,16 @@ pub async fn write_settings_file(
         .map_err(|e| format!("Failed to write settings file: {e}"))?;
 
     Ok(())
+}
+
+#[tauri::command]
+pub async fn read_file_content(
+    path: String,
+    state: State<'_, AppState>,
+) -> Result<FileContent, String> {
+    state
+        .backend
+        .read_file_content(path)
+        .await
+        .map_err(|e| format!("{e:#}"))
 }

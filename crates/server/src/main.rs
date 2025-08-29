@@ -20,8 +20,8 @@ use tokio::sync::{Mutex, mpsc as tokio_mpsc};
 
 // Import backend functionality
 use backend::{
-    DirEntry, EnrichedProject, EventEmitter, GeminiBackend, GitInfo, ProcessStatus, RecentChat,
-    SearchFilters, SearchResult,
+    DirEntry, EnrichedProject, EventEmitter, FileContent, GeminiBackend, GitInfo, ProcessStatus,
+    RecentChat, SearchFilters, SearchResult,
 };
 
 static FRONTEND_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/../../frontend/dist");
@@ -291,6 +291,12 @@ struct GetParentDirectoryRequest {
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct GetGitInfoRequest {
+    path: String,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ReadFileContentRequest {
     path: String,
 }
 
@@ -686,6 +692,20 @@ async fn get_git_info(
     }
 }
 
+#[post("/read-file-content", data = "<request>")]
+async fn read_file_content(
+    request: Json<ReadFileContentRequest>,
+    state: &State<AppState>,
+) -> AppResult<Json<FileContent>> {
+    let backend = state.backend.lock().await;
+    Ok(Json(
+        backend
+            .read_file_content(request.path.clone())
+            .await
+            .context("Failed to read file content")?,
+    ))
+}
+
 // =====================================
 // WebSocket Route Handler
 // =====================================
@@ -779,6 +799,7 @@ fn rocket() -> _ {
             list_enriched_projects,
             get_enriched_project_http,
             get_project_discussions,
+            read_file_content,
         ],
     )
 }
