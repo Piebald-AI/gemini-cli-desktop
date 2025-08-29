@@ -546,7 +546,7 @@ pub async fn read_file_content(path: String) -> Result<FileContent> {
     }
     
     // Read file content
-    let mut file = match std::fs::File::open(&file_path) {
+    let mut file = match std::fs::File::open(file_path) {
         Ok(file) => file,
         Err(e) => {
             return Ok(FileContent {
