@@ -383,10 +383,10 @@ function ToolCallDisplayComponent({
                 onConfirm={onConfirm}
                 hasConfirmationRequest={hasConfirmationRequest}
               />
-            ) : (enhancedToolCall.confirmationRequest?.confirmation?.type ===
-              "command" || 
+            ) : enhancedToolCall.confirmationRequest?.confirmation?.type ===
+                "command" ||
               enhancedToolCall.name === "run_shell_command" ||
-              enhancedToolCall.name === "execute_command") ? (
+              enhancedToolCall.name === "execute_command" ? (
               // Command-specific confirmation UI
               <div className="mt-4">
                 <div className="flex items-center gap-2 text-sm px-2 py-1 hover:bg-muted/50 rounded-lg transition-colors">
@@ -394,7 +394,8 @@ function ToolCallDisplayComponent({
                   <span>
                     {t("toolCalls.pendingApproval")}{" "}
                     <span className="text-muted-foreground font-mono">
-                      {enhancedToolCall.label?.match(/^(\S+)/)?.[1] || "command"}
+                      {enhancedToolCall.label?.match(/^(\S+)/)?.[1] ||
+                        "command"}
                     </span>
                   </span>
 

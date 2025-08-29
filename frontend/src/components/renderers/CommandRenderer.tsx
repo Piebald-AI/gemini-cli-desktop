@@ -26,42 +26,11 @@ export function CommandRenderer({ toolCall }: CommandRendererProps) {
   const isStringResult = typeof toolCall.result === "string";
   const result: CommandResult = isStringResult
     ? { output: toolCall.result as string }
-    : ((toolCall.result as CommandResult) || {});
+    : (toolCall.result as CommandResult) || {};
 
   // Parse a compact, human-readable description
   const parsedInput = ToolInputParser.parseToolInput(toolCall);
 
-  // Extract command from input (for details section)
-  const getCommand = (): string => {
-    // First check if ToolInputParser has already extracted the command
-    if (parsedInput.allParams.command) {
-      return parsedInput.allParams.command;
-    }
-    
-    try {
-      if (toolCall.inputJsonRpc) {
-        const input = JSON.parse(toolCall.inputJsonRpc);
-        // First try to get from params.command/cmd
-        if (input.params?.command || input.params?.cmd) {
-          return input.params.command || input.params.cmd;
-        }
-        // For session/request_permission messages, extract from toolCall.title
-        if (input.method === "session/request_permission" && input.params?.toolCall?.title) {
-          const title = input.params.toolCall.title;
-          // Extract command from title like "dir (List files and directories in the current directory.)"
-          const commandMatch = title.match(/^(\S+)/);
-          if (commandMatch) {
-            return commandMatch[1];
-          }
-        }
-      }
-    } catch {
-      // Ignore parse errors
-    }
-    return result.command || "unknown command";
-  };
-
-  const command = getCommand();
   const exitCode = result.exit_code ?? 0;
   const isSuccess = exitCode === 0;
 
@@ -69,21 +38,6 @@ export function CommandRenderer({ toolCall }: CommandRendererProps) {
   const stdout = result.stdout || result.output || "";
   const stderr = result.stderr || result.error || "";
   const hasOutput = !!(stdout || stderr);
-
-  // Compact summary line (used in expanded details header)
-  const getSummary = (): string => {
-    if (!isSuccess) {
-      const err = stderr || result.message || "Command failed";
-      const first = err.split(/\r?\n/)[0];
-      return first.length > 120 ? first.slice(0, 117) + "..." : first;
-    }
-    if (stdout) {
-      const first = stdout.split(/\r?\n/)[0] || "Command completed";
-      return first.length > 120 ? first.slice(0, 117) + "..." : first;
-    }
-    if (result.message) return result.message;
-    return t("toolCalls.completed");
-  };
 
   // Status color for icon
   const iconColor =
@@ -107,7 +61,9 @@ export function CommandRenderer({ toolCall }: CommandRendererProps) {
           parsedInput.formattedDescription.parts.map((part, index) => (
             <span
               key={index}
-              className={part.isHighlighted ? "text-muted-foreground font-mono" : ""}
+              className={
+                part.isHighlighted ? "text-muted-foreground font-mono" : ""
+              }
             >
               {part.text}
             </span>
@@ -146,7 +102,9 @@ export function CommandRenderer({ toolCall }: CommandRendererProps) {
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4 text-amber-500" />
-                <div className="text-sm font-medium text-foreground">Stderr</div>
+                <div className="text-sm font-medium text-foreground">
+                  Stderr
+                </div>
               </div>
               <pre className="bg-red-50 dark:bg-red-950/20 p-3 rounded-md text-sm overflow-x-auto border border-red-200 dark:border-red-800">
                 <code className="text-red-800 dark:text-red-200">{stderr}</code>
