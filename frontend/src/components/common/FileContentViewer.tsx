@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Badge } from '../ui/badge';
 import { Skeleton } from '../ui/skeleton';
 import { api } from '../../lib/api';
-import CodeBlock from './CodeBlock';
+import { CodeMirrorViewer } from './CodeMirrorViewer';
 
 interface FileContentViewerProps {
   filePath: string | null;
@@ -248,9 +248,10 @@ export function FileContentViewer({ filePath, onClose }: FileContentViewerProps)
                     ) : (
                       <div className="h-full overflow-auto p-4">
                         <div className="max-h-full overflow-auto rounded border">
-                          <CodeBlock
+                          <CodeMirrorViewer
                             code={fileContent.content}
                             language={getLanguageFromExtension(fileContent.path)}
+                            readOnly={true}
                           />
                         </div>
                       </div>
