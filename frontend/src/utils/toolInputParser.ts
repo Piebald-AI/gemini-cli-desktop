@@ -65,6 +65,20 @@ export class ToolInputParser {
       if (toolCall.inputJsonRpc) {
         const input = JSON.parse(toolCall.inputJsonRpc);
         allParams = input.params || {};
+
+        // For session/request_permission messages, extract command from toolCall.title
+        if (
+          input.method === "session/request_permission" &&
+          input.params?.toolCall?.title &&
+          input.params.toolCall.kind === "execute"
+        ) {
+          const title = input.params.toolCall.title;
+          // Extract command from title like "dir (List files and directories in the current directory.)"
+          const commandMatch = title.match(/^(\S+)/);
+          if (commandMatch) {
+            allParams.command = commandMatch[1];
+          }
+        }
       }
     } catch {
       // Fallback to toolCall.parameters
@@ -219,13 +233,34 @@ export class ToolInputParser {
 
       case "run_shell_command":
       case "execute_command": {
-        const command = params.command || params.cmd || "unknown command";
+        let command = params.command || params.cmd;
+
+        // If no command found and we have a label, try to extract from it
+        if (!command && label) {
+          // Extract command from label like "dir (List files and directories in the current directory.)"
+          const commandMatch = label.match(/^(\S+)/);
+          if (commandMatch) {
+            command = commandMatch[1];
+          }
+        }
+
+        command = command || "unknown command";
+
         // Truncate long commands
         const shortCommand =
           typeof command === "string" && command.length > 50
             ? command.substring(0, 50) + "..."
             : command;
-        return `Executing: ${shortCommand}`;
+
+        return {
+          description: `Executing ${shortCommand}`,
+          formattedDescription: {
+            parts: [
+              { text: "Executing ", isHighlighted: false },
+              { text: shortCommand, isHighlighted: true },
+            ],
+          },
+        };
       }
 
       case "delete_file":
