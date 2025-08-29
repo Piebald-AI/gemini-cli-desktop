@@ -8,10 +8,12 @@ import {
   AlertCircle,
   RefreshCw,
   Plus,
+  Eye,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { ScrollArea, ScrollBar } from "../ui/scroll-area";
 import { api } from "../../lib/api";
+import { FileContentViewer } from "./FileContentViewer";
 
 interface DirEntry {
   name: string;
@@ -47,6 +49,7 @@ export function DirectoryPanel({
   const [rootNode, setRootNode] = useState<TreeNode | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [viewingFile, setViewingFile] = useState<string | null>(null);
 
   // Calculate relative path from working directory
   const getRelativePath = useCallback(
@@ -73,9 +76,18 @@ export function DirectoryPanel({
     [workingDirectory]
   );
 
-  // Handle file click to insert mention
+  // Handle file click to insert mention or view content
   const handleFileClick = useCallback(
-    (node: TreeNode) => {
+    (node: TreeNode, event: React.MouseEvent) => {
+      if (node.is_directory) return;
+
+      // If Ctrl/Cmd is held, view file content
+      if (event.ctrlKey || event.metaKey) {
+        setViewingFile(node.full_path);
+        return;
+      }
+
+      // Otherwise, insert mention if callback is available
       if (!onMentionInsert) {
         return;
       }
@@ -264,12 +276,12 @@ export function DirectoryPanel({
             style={{
               paddingLeft: `${depth * 24}px`,
             }}
-            onClick={() => {
+            onClick={(event) => {
               if (node.is_directory) {
                 toggleDirectory(node, []);
                 onDirectoryChange?.(node.full_path);
               } else {
-                handleFileClick(node);
+                handleFileClick(node, event);
               }
             }}
           >
@@ -298,21 +310,38 @@ export function DirectoryPanel({
             {/* Name */}
             <span
               className="text-foreground flex-1 whitespace-nowrap"
-              title={node.name}
+              title={node.is_directory ? node.name : `${node.name} (Ctrl+Click to view content)`}
             >
               {node.name}
             </span>
 
-            {/* Plus button for folders on hover */}
-            {node.is_directory && onMentionInsert && (
-              <button
-                onClick={(e) => handleFolderPlusClick(node, e)}
-                className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground"
-                title="Add folder mention"
-              >
-                <Plus className="h-3 w-3" />
-              </button>
-            )}
+            {/* Action buttons */}
+            <div className="ml-auto flex items-center gap-1">
+              {/* Eye icon for files on hover */}
+              {!node.is_directory && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setViewingFile(node.full_path);
+                  }}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground"
+                  title="View file content"
+                >
+                  <Eye className="h-3 w-3" />
+                </button>
+              )}
+              
+              {/* Plus button for folders on hover */}
+              {node.is_directory && onMentionInsert && (
+                <button
+                  onClick={(e) => handleFolderPlusClick(node, e)}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground"
+                  title="Add folder mention"
+                >
+                  <Plus className="h-3 w-3" />
+                </button>
+              )}
+            </div>
 
             {/* Symlink indicator */}
             {node.is_symlink && (
@@ -387,6 +416,11 @@ export function DirectoryPanel({
         <ScrollBar orientation="horizontal" />
         <ScrollBar orientation="vertical" />
       </ScrollArea>
+
+      <FileContentViewer
+        filePath={viewingFile}
+        onClose={() => setViewingFile(null)}
+      />
     </div>
   );
 }

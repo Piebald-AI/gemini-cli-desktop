@@ -33,6 +33,7 @@ import { DirEntry } from "../../lib/webApi";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { api } from "@/lib/api";
+import { FileContentViewer } from "./FileContentViewer";
 
 interface DirectorySelectionDialogProps {
   open: boolean;
@@ -53,6 +54,7 @@ export function DirectorySelectionDialog({
   const [filter, setFilter] = useState<string>("");
   const [editingPath, setEditingPath] = useState(false);
   const [pathInput, setPathInput] = useState<string>("");
+  const [viewingFile, setViewingFile] = useState<string | null>(null);
 
   // Initialize with home directory when dialog opens
   useEffect(() => {
@@ -145,6 +147,14 @@ export function DirectorySelectionDialog({
     await loadDirectoryContents(entry.full_path);
   };
 
+  const handleFileClick = (entry: DirEntry) => {
+    if (entry.is_directory) {
+      navigateToDirectory(entry);
+    } else {
+      setViewingFile(entry.full_path);
+    }
+  };
+
   const handlePathEdit = () => {
     setEditingPath(true);
     // If we're in volume view (currentDirectory is empty), start with empty string for typing
@@ -223,6 +233,7 @@ export function DirectorySelectionDialog({
     setFilter("");
     setEditingPath(false);
     setPathInput("");
+    setViewingFile(null);
   };
 
   return (
@@ -340,16 +351,8 @@ export function DirectorySelectionDialog({
                         filteredContents.map((entry) => (
                           <TableRow
                             key={entry.full_path}
-                            className={
-                              entry.is_directory
-                                ? "cursor-pointer"
-                                : "cursor-default"
-                            }
-                            onClick={() =>
-                              entry.is_directory &&
-                              !loading &&
-                              navigateToDirectory(entry)
-                            }
+                            className="cursor-pointer hover:bg-muted/50"
+                            onClick={() => !loading && handleFileClick(entry)}
                           >
                             <TableCell className="p-1.5 pl-3">
                               {currentDirectory === "" ? (
@@ -410,6 +413,11 @@ export function DirectorySelectionDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      <FileContentViewer
+        filePath={viewingFile}
+        onClose={() => setViewingFile(null)}
+      />
     </Dialog>
   );
 }

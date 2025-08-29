@@ -175,6 +175,11 @@ export const webApi: API = {
     });
     return response.data;
   },
+
+  async read_file_content(params) {
+    const response = await apiClient.post("/read-file-content", params);
+    return response.data;
+  },
 };
 
 export interface RecentChat {

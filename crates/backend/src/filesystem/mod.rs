@@ -41,6 +41,18 @@ pub struct GitInfo {
     pub has_untracked_files: bool,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct FileContent {
+    pub path: String,
+    pub content: Option<String>,
+    pub size: u64,
+    pub modified: Option<u64>,
+    pub encoding: String,
+    pub is_text: bool,
+    pub is_binary: bool,
+    pub error: Option<String>,
+}
+
 pub async fn validate_directory(path: String) -> Result<bool> {
     let path = Path::new(&path);
     Ok(path.exists() && path.is_dir())
@@ -462,6 +474,137 @@ pub async fn get_git_info(directory: String) -> Result<Option<GitInfo>> {
         has_uncommitted_changes,
         has_untracked_files,
     }))
+}
+
+pub async fn read_file_content(path: String) -> Result<FileContent> {
+    use std::io::Read;
+    
+    let file_path = Path::new(&path);
+    
+    if !file_path.exists() {
+        return Ok(FileContent {
+            path: path.clone(),
+            content: None,
+            size: 0,
+            modified: None,
+            encoding: "unknown".to_string(),
+            is_text: false,
+            is_binary: false,
+            error: Some("File does not exist".to_string()),
+        });
+    }
+    
+    if file_path.is_dir() {
+        return Ok(FileContent {
+            path: path.clone(),
+            content: None,
+            size: 0,
+            modified: None,
+            encoding: "unknown".to_string(),
+            is_text: false,
+            is_binary: false,
+            error: Some("Path is a directory, not a file".to_string()),
+        });
+    }
+    
+    let metadata = match file_path.metadata() {
+        Ok(metadata) => metadata,
+        Err(e) => {
+            return Ok(FileContent {
+                path: path.clone(),
+                content: None,
+                size: 0,
+                modified: None,
+                encoding: "unknown".to_string(),
+                is_text: false,
+                is_binary: false,
+                error: Some(format!("Cannot read file metadata: {}", e)),
+            });
+        }
+    };
+    
+    let size = metadata.len();
+    let modified = metadata
+        .modified()
+        .ok()
+        .and_then(|time| time.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|duration| duration.as_secs());
+    
+    // Limit file size to 10MB for safety
+    const MAX_FILE_SIZE: u64 = 10 * 1024 * 1024;
+    if size > MAX_FILE_SIZE {
+        return Ok(FileContent {
+            path: path.clone(),
+            content: None,
+            size,
+            modified,
+            encoding: "unknown".to_string(),
+            is_text: false,
+            is_binary: true,
+            error: Some(format!("File too large ({} bytes). Maximum size is {} bytes", size, MAX_FILE_SIZE)),
+        });
+    }
+    
+    // Read file content
+    let mut file = match std::fs::File::open(&file_path) {
+        Ok(file) => file,
+        Err(e) => {
+            return Ok(FileContent {
+                path: path.clone(),
+                content: None,
+                size,
+                modified,
+                encoding: "unknown".to_string(),
+                is_text: false,
+                is_binary: false,
+                error: Some(format!("Cannot open file: {}", e)),
+            });
+        }
+    };
+    
+    let mut buffer = Vec::new();
+    if let Err(e) = file.read_to_end(&mut buffer) {
+        return Ok(FileContent {
+            path: path.clone(),
+            content: None,
+            size,
+            modified,
+            encoding: "unknown".to_string(),
+            is_text: false,
+            is_binary: false,
+            error: Some(format!("Cannot read file content: {}", e)),
+        });
+    }
+    
+    // Check if content is valid UTF-8
+    let is_text = std::str::from_utf8(&buffer).is_ok();
+    let is_binary = !is_text;
+    
+    let (content, encoding) = if is_text {
+        // We already know it's valid UTF-8, so this should succeed
+        match String::from_utf8(buffer) {
+            Ok(text) => (Some(text), "UTF-8".to_string()),
+            Err(utf8_error) => {
+                // If for some reason it still fails, use the original bytes from the error
+                let original_bytes = utf8_error.into_bytes();
+                (Some(String::from_utf8_lossy(&original_bytes).into_owned()), "UTF-8 (with replacements)".to_string())
+            }
+        }
+    } else {
+        // For binary files, don't include content
+        (None, "binary".to_string())
+    };
+    
+    Ok(FileContent {
+        path: path.clone(),
+        content,
+        size,
+        modified,
+        encoding,
+        is_text,
+        is_binary,
+        error: None,
+    })
 }
 
 #[cfg(test)]
