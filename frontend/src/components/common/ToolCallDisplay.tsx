@@ -1,5 +1,5 @@
 import React from "react";
-import { Check, X, Loader2 } from "lucide-react";
+import { Check, X, Loader2, Terminal } from "lucide-react";
 import { Button } from "../ui/button";
 import type {
   ToolCall,
@@ -383,6 +383,117 @@ function ToolCallDisplayComponent({
                 onConfirm={onConfirm}
                 hasConfirmationRequest={hasConfirmationRequest}
               />
+            ) : (enhancedToolCall.confirmationRequest?.confirmation?.type ===
+              "command" || 
+              enhancedToolCall.name === "run_shell_command" ||
+              enhancedToolCall.name === "execute_command") ? (
+              // Command-specific confirmation UI
+              <div className="mt-4">
+                <div className="flex items-center gap-2 text-sm px-2 py-1 hover:bg-muted/50 rounded-lg transition-colors">
+                  <Terminal className="h-4 w-4 text-amber-500" />
+                  <span>
+                    {t("toolCalls.pendingApproval")}{" "}
+                    <span className="text-muted-foreground font-mono">
+                      {enhancedToolCall.label?.match(/^(\S+)/)?.[1] || "command"}
+                    </span>
+                  </span>
+
+                  {/* Compact approval buttons */}
+                  {hasConfirmationRequest && onConfirm && (
+                    <div className="ml-auto flex items-center gap-1">
+                      {enhancedToolCall.confirmationRequest?.options &&
+                      enhancedToolCall.confirmationRequest.options.length >
+                        0 ? (
+                        // Use ACP permission options if available
+                        (() => {
+                          const allowOptions =
+                            enhancedToolCall.confirmationRequest.options.filter(
+                              (opt) => opt.kind.includes("allow")
+                            );
+                          const rejectOptions =
+                            enhancedToolCall.confirmationRequest.options.filter(
+                              (opt) => opt.kind.includes("reject")
+                            );
+
+                          return (
+                            <>
+                              {/* Always Allow button (blue) if available */}
+                              {allowOptions
+                                .filter((opt) => opt.kind.includes("always"))
+                                .map((option) => (
+                                  <Button
+                                    key={option.optionId}
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 w-6 p-0 text-blue-500 dark:text-blue-400 hover:bg-blue-500 hover:bg-opacity-20 border border-blue-500 dark:border-blue-400"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onConfirm(
+                                        enhancedToolCall.id,
+                                        option.optionId
+                                      );
+                                    }}
+                                    title={option.name}
+                                  >
+                                    <Check className="h-3 w-3" />
+                                  </Button>
+                                ))}
+
+                              {/* Reject button (red) */}
+                              {rejectOptions.slice(0, 1).map((option) => (
+                                <Button
+                                  key={option.optionId}
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-6 w-6 p-0 text-red-500 dark:text-red-400 hover:bg-red-500 hover:bg-opacity-20 border border-red-500 dark:border-red-400"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onConfirm(
+                                      enhancedToolCall.id,
+                                      option.optionId
+                                    );
+                                  }}
+                                  title={option.name}
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              ))}
+                            </>
+                          );
+                        })()
+                      ) : (
+                        // Fallback to default buttons
+                        <>
+                          <Button
+                            size="sm"
+                            variant="default"
+                            className="h-6 w-6 bg-green-600 hover:bg-green-600 text-white"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onConfirm(enhancedToolCall.id, "proceed_once");
+                            }}
+                            title={t("toolCalls.allow")}
+                          >
+                            <Check className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="h-6 w-6"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onConfirm(enhancedToolCall.id, "cancel");
+                            }}
+                            title={t("toolCalls.reject")}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
             ) : enhancedToolCall.name === "web_fetch" ? (
               // Compact WebFetch pending state (like grep/glob style)
               <div className="mt-4">

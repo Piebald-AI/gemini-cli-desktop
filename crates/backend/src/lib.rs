@@ -459,28 +459,10 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
         )
         .await;
 
-        // Create content items for the completed tool call
-        let content_items = vec![ToolCallContentItem::Content {
-            content: ContentBlock::Text {
-                text: "Tool call completed after user confirmation".to_string(),
-            },
-        }];
-
-        // Create ACP SessionUpdate instead of legacy ToolCallUpdate
-        let session_update = SessionUpdate::ToolCallUpdate {
-            tool_call_id: tool_call_id.clone(),
-            status: ToolCallStatus::Completed,
-            content: content_items,
-            server_name: None,
-            tool_name: None,
-        };
-
-        // Emit ACP session update event - use the conversation_id (frontend conversation ID), not ACP session ID
-        let emit_result = self.emitter.emit(
-            &format!("acp-session-update-{conversation_id}"),
-            session_update,
-        );
-        emit_result?;
+        // Do NOT mark the tool call as completed here.
+        // The CLI will emit subsequent session/update events with accurate status transitions.
+        // Returning Ok(()) ensures the frontend remains in "running" until a real "completed" arrives.
+        let _ = &tool_call_id; // keep parameter used for future extensions
         Ok(())
     }
 
