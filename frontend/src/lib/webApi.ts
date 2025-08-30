@@ -182,7 +182,10 @@ export const webApi: API = {
   },
 
   async read_file_content_with_options(params) {
-    const response = await apiClient.post("/read-file-content-with-options", params);
+    const response = await apiClient.post(
+      "/read-file-content-with-options",
+      params
+    );
     return response.data;
   },
 

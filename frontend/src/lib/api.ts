@@ -107,7 +107,10 @@ export interface API {
     is_binary: boolean;
     error: string | null;
   }>;
-  read_file_content_with_options(params: { path: string; forceText: boolean }): Promise<{
+  read_file_content_with_options(params: {
+    path: string;
+    forceText: boolean;
+  }): Promise<{
     path: string;
     content: string | null;
     size: number;

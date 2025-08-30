@@ -53,9 +53,9 @@ export function FileContentViewer({
       setError(null);
 
       try {
-        const content = await api.read_file_content_with_options({ 
+        const content = await api.read_file_content_with_options({
           path: filePath,
-          forceText: forceViewAsText
+          forceText: forceViewAsText,
         });
         setFileContent(content);
         setEditedContent(content.content || "");
@@ -77,7 +77,10 @@ export function FileContentViewer({
   }, [filePath, forceViewAsText]);
 
   const handleEdit = () => {
-    if ((fileContent?.is_text || (fileContent?.is_binary && forceViewAsText)) && fileContent.content !== null) {
+    if (
+      (fileContent?.is_text || (fileContent?.is_binary && forceViewAsText)) &&
+      fileContent.content !== null
+    ) {
       setIsEditing(true);
       setEditedContent(fileContent.content);
     }
@@ -248,10 +251,20 @@ export function FileContentViewer({
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <span>{fileContent.encoding}</span>
                   <Badge
-                    variant={fileContent.is_binary && forceViewAsText ? "destructive" : fileContent.is_text ? "default" : "secondary"}
+                    variant={
+                      fileContent.is_binary && forceViewAsText
+                        ? "destructive"
+                        : fileContent.is_text
+                          ? "default"
+                          : "secondary"
+                    }
                     className="text-xs px-1.5 py-0.5"
                   >
-                    {fileContent.is_binary && forceViewAsText ? "Binary (forced as text)" : fileContent.is_text ? "Text" : "Binary"}
+                    {fileContent.is_binary && forceViewAsText
+                      ? "Binary (forced as text)"
+                      : fileContent.is_text
+                        ? "Text"
+                        : "Binary"}
                   </Badge>
                   {fileContent.is_binary && forceViewAsText && (
                     <Button
@@ -266,64 +279,66 @@ export function FileContentViewer({
                 </div>
 
                 <div className="flex items-center gap-1">
-                  {(fileContent.is_text || (fileContent.is_binary && forceViewAsText)) && fileContent.content !== null && (
-                    <>
-                      {!isEditing ? (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={handleEdit}
-                            className="text-xs h-7 px-2"
-                          >
-                            <Edit className="h-3.5 w-3.5 mr-1" />
-                            Edit
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={handleCopy}
-                            className="text-xs h-7 px-2"
-                          >
-                            <Copy className="h-3.5 w-3.5 mr-1" />
-                            {copied ? t("common.copied") : t("common.copy")}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={handleDownload}
-                            className="text-xs h-7 px-2"
-                          >
-                            <Download className="h-3.5 w-3.5 mr-1" />
-                            Download
-                          </Button>
-                        </>
-                      ) : (
-                        <>
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={handleSave}
-                            disabled={saving}
-                            className="text-xs h-7 px-2"
-                          >
-                            <Save className="h-3.5 w-3.5 mr-1" />
-                            {saving ? "Saving..." : "Save"}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={handleCancel}
-                            disabled={saving}
-                            className="text-xs h-7 px-2"
-                          >
-                            <X className="h-3.5 w-3.5 mr-1" />
-                            Cancel
-                          </Button>
-                        </>
-                      )}
-                    </>
-                  )}
+                  {(fileContent.is_text ||
+                    (fileContent.is_binary && forceViewAsText)) &&
+                    fileContent.content !== null && (
+                      <>
+                        {!isEditing ? (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={handleEdit}
+                              className="text-xs h-7 px-2"
+                            >
+                              <Edit className="h-3.5 w-3.5 mr-1" />
+                              Edit
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={handleCopy}
+                              className="text-xs h-7 px-2"
+                            >
+                              <Copy className="h-3.5 w-3.5 mr-1" />
+                              {copied ? t("common.copied") : t("common.copy")}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={handleDownload}
+                              className="text-xs h-7 px-2"
+                            >
+                              <Download className="h-3.5 w-3.5 mr-1" />
+                              Download
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={handleSave}
+                              disabled={saving}
+                              className="text-xs h-7 px-2"
+                            >
+                              <Save className="h-3.5 w-3.5 mr-1" />
+                              {saving ? "Saving..." : "Save"}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={handleCancel}
+                              disabled={saving}
+                              className="text-xs h-7 px-2"
+                            >
+                              <X className="h-3.5 w-3.5 mr-1" />
+                              Cancel
+                            </Button>
+                          </>
+                        )}
+                      </>
+                    )}
                 </div>
               </div>
 

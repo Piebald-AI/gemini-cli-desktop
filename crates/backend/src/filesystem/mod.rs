@@ -636,7 +636,7 @@ pub async fn read_file_content_with_options(path: String, force_text: bool) -> R
     // Check if content is valid UTF-8
     let is_valid_utf8 = std::str::from_utf8(&buffer).is_ok();
     let is_binary = !is_valid_utf8;
-    
+
     // If force_text is true, always try to show content even for binary files
     let show_as_text = is_valid_utf8 || force_text;
 
