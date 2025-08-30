@@ -685,6 +685,11 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
     pub async fn read_file_content(&self, path: String) -> Result<FileContent> {
         filesystem::read_file_content(path).await
     }
+
+    /// Write file content with safety checks
+    pub async fn write_file_content(&self, path: String, content: String) -> Result<FileContent> {
+        filesystem::write_file_content(path, content).await
+    }
 }
 
 #[cfg(test)]

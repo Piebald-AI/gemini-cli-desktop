@@ -476,6 +476,60 @@ pub async fn get_git_info(directory: String) -> Result<Option<GitInfo>> {
     }))
 }
 
+pub async fn write_file_content(path: String, content: String) -> Result<FileContent> {
+    use std::io::Write;
+
+    let file_path = Path::new(&path);
+
+    // Ensure the parent directory exists
+    if let Some(parent) = file_path.parent()
+        && !parent.exists()
+    {
+        return Ok(FileContent {
+            path: path.clone(),
+            content: None,
+            size: 0,
+            modified: None,
+            encoding: "unknown".to_string(),
+            is_text: false,
+            is_binary: false,
+            error: Some("Parent directory does not exist".to_string()),
+        });
+    }
+
+    // Write the content to the file
+    match std::fs::File::create(file_path) {
+        Ok(mut file) => {
+            match file.write_all(content.as_bytes()) {
+                Ok(_) => {
+                    // Return the updated file info
+                    read_file_content(path).await
+                }
+                Err(e) => Ok(FileContent {
+                    path: path.clone(),
+                    content: None,
+                    size: 0,
+                    modified: None,
+                    encoding: "unknown".to_string(),
+                    is_text: false,
+                    is_binary: false,
+                    error: Some(format!("Failed to write file: {}", e)),
+                }),
+            }
+        }
+        Err(e) => Ok(FileContent {
+            path: path.clone(),
+            content: None,
+            size: 0,
+            modified: None,
+            encoding: "unknown".to_string(),
+            is_text: false,
+            is_binary: false,
+            error: Some(format!("Failed to create file: {}", e)),
+        }),
+    }
+}
+
 pub async fn read_file_content(path: String) -> Result<FileContent> {
     use std::io::Read;
 

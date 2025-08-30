@@ -16,6 +16,7 @@ interface CodeMirrorViewerProps {
   code: string;
   language: string;
   readOnly?: boolean;
+  onChange?: (value: string) => void;
 }
 
 // Language extension mapping
@@ -56,6 +57,7 @@ export function CodeMirrorViewer({
   code,
   language,
   readOnly = true,
+  onChange,
 }: CodeMirrorViewerProps) {
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -100,6 +102,7 @@ export function CodeMirrorViewer({
         theme={theme}
         extensions={extensions}
         readOnly={readOnly}
+        onChange={onChange}
         basicSetup={{
           lineNumbers: true,
           foldGutter: true,
