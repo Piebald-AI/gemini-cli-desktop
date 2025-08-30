@@ -530,7 +530,7 @@ pub async fn write_file_content(path: String, content: String) -> Result<FileCon
     }
 }
 
-pub async fn read_file_content(path: String) -> Result<FileContent> {
+pub async fn read_file_content_with_options(path: String, force_text: bool) -> Result<FileContent> {
     use std::io::Read;
 
     let file_path = Path::new(&path);
@@ -634,24 +634,35 @@ pub async fn read_file_content(path: String) -> Result<FileContent> {
     }
 
     // Check if content is valid UTF-8
-    let is_text = std::str::from_utf8(&buffer).is_ok();
-    let is_binary = !is_text;
+    let is_valid_utf8 = std::str::from_utf8(&buffer).is_ok();
+    let is_binary = !is_valid_utf8;
+    
+    // If force_text is true, always try to show content even for binary files
+    let show_as_text = is_valid_utf8 || force_text;
 
-    let (content, encoding) = if is_text {
-        // We already know it's valid UTF-8, so this should succeed
-        match String::from_utf8(buffer) {
-            Ok(text) => (Some(text), "UTF-8".to_string()),
-            Err(utf8_error) => {
-                // If for some reason it still fails, use the original bytes from the error
-                let original_bytes = utf8_error.into_bytes();
-                (
-                    Some(String::from_utf8_lossy(&original_bytes).into_owned()),
-                    "UTF-8 (with replacements)".to_string(),
-                )
+    let (content, encoding) = if show_as_text {
+        if is_valid_utf8 {
+            // We already know it's valid UTF-8, so this should succeed
+            match String::from_utf8(buffer) {
+                Ok(text) => (Some(text), "UTF-8".to_string()),
+                Err(utf8_error) => {
+                    // If for some reason it still fails, use the original bytes from the error
+                    let original_bytes = utf8_error.into_bytes();
+                    (
+                        Some(String::from_utf8_lossy(&original_bytes).into_owned()),
+                        "UTF-8 (with replacements)".to_string(),
+                    )
+                }
             }
+        } else {
+            // Binary file shown as text (forced)
+            (
+                Some(String::from_utf8_lossy(&buffer).into_owned()),
+                "binary (forced as text)".to_string(),
+            )
         }
     } else {
-        // For binary files, don't include content
+        // For binary files, don't include content when not forced
         (None, "binary".to_string())
     };
 
@@ -661,10 +672,14 @@ pub async fn read_file_content(path: String) -> Result<FileContent> {
         size,
         modified,
         encoding,
-        is_text,
+        is_text: show_as_text,
         is_binary,
         error: None,
     })
+}
+
+pub async fn read_file_content(path: String) -> Result<FileContent> {
+    read_file_content_with_options(path, false).await
 }
 
 #[cfg(test)]

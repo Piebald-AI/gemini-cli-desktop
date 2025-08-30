@@ -302,6 +302,13 @@ struct ReadFileContentRequest {
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+struct ReadFileContentWithOptionsRequest {
+    path: String,
+    force_text: bool,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct WriteFileContentRequest {
     path: String,
     content: String,
@@ -713,6 +720,20 @@ async fn read_file_content(
     ))
 }
 
+#[post("/read-file-content-with-options", data = "<request>")]
+async fn read_file_content_with_options(
+    request: Json<ReadFileContentWithOptionsRequest>,
+    state: &State<AppState>,
+) -> AppResult<Json<FileContent>> {
+    let backend = state.backend.lock().await;
+    Ok(Json(
+        backend
+            .read_file_content_with_options(request.path.clone(), request.force_text)
+            .await
+            .context("Failed to read file content with options")?,
+    ))
+}
+
 #[post("/write-file-content", data = "<request>")]
 async fn write_file_content(
     request: Json<WriteFileContentRequest>,
@@ -821,6 +842,7 @@ fn rocket() -> _ {
             get_enriched_project_http,
             get_project_discussions,
             read_file_content,
+            read_file_content_with_options,
             write_file_content,
         ],
     )
