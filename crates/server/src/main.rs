@@ -300,6 +300,13 @@ struct ReadFileContentRequest {
     path: String,
 }
 
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct WriteFileContentRequest {
+    path: String,
+    content: String,
+}
+
 #[derive(Debug)]
 pub struct AnyhowResponder(pub AnyhowError);
 
@@ -706,6 +713,20 @@ async fn read_file_content(
     ))
 }
 
+#[post("/write-file-content", data = "<request>")]
+async fn write_file_content(
+    request: Json<WriteFileContentRequest>,
+    state: &State<AppState>,
+) -> AppResult<Json<FileContent>> {
+    let backend = state.backend.lock().await;
+    Ok(Json(
+        backend
+            .write_file_content(request.path.clone(), request.content.clone())
+            .await
+            .context("Failed to write file content")?,
+    ))
+}
+
 // =====================================
 // WebSocket Route Handler
 // =====================================
@@ -800,6 +821,7 @@ fn rocket() -> _ {
             get_enriched_project_http,
             get_project_discussions,
             read_file_content,
+            write_file_content,
         ],
     )
 }

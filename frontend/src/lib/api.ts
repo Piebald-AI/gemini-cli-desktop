@@ -107,6 +107,16 @@ export interface API {
     is_binary: boolean;
     error: string | null;
   }>;
+  write_file_content(params: { path: string; content: string }): Promise<{
+    path: string;
+    content: string | null;
+    size: number;
+    modified: number | null;
+    encoding: string;
+    is_text: boolean;
+    is_binary: boolean;
+    error: string | null;
+  }>;
 }
 
 export type APICommand = keyof API;

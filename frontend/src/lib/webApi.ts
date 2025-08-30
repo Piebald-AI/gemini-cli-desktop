@@ -180,6 +180,11 @@ export const webApi: API = {
     const response = await apiClient.post("/read-file-content", params);
     return response.data;
   },
+
+  async write_file_content(params) {
+    const response = await apiClient.post("/write-file-content", params);
+    return response.data;
+  },
 };
 
 export interface RecentChat {

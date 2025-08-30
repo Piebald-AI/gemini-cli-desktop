@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FileText, Copy, Download } from "lucide-react";
+import { FileText, Copy, Download, Edit, Save, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
@@ -33,6 +33,9 @@ export function FileContentViewer({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedContent, setEditedContent] = useState<string>("");
+  const [saving, setSaving] = useState(false);
 
   const isOpen = filePath !== null;
 
@@ -50,6 +53,8 @@ export function FileContentViewer({
       try {
         const content = await api.read_file_content({ path: filePath });
         setFileContent(content);
+        setEditedContent(content.content || "");
+        setIsEditing(false);
 
         if (content.error) {
           setError(content.error);
@@ -65,6 +70,50 @@ export function FileContentViewer({
 
     loadFileContent();
   }, [filePath]);
+
+  const handleEdit = () => {
+    if (fileContent?.is_text && fileContent.content !== null) {
+      setIsEditing(true);
+      setEditedContent(fileContent.content);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!filePath) return;
+
+    setSaving(true);
+    setError(null);
+
+    try {
+      const result = await api.write_file_content({
+        path: filePath,
+        content: editedContent,
+      });
+
+      if (result.error) {
+        setError(result.error);
+      } else {
+        setFileContent(result);
+        setIsEditing(false);
+        // Show success toast
+        const toast = document.createElement("div");
+        toast.className =
+          "fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded-md shadow-lg z-50";
+        toast.textContent = "File saved successfully!";
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 2000);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save file");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    setEditedContent(fileContent?.content || "");
+  };
 
   const handleCopy = async () => {
     if (!fileContent?.content) return;
@@ -202,26 +251,62 @@ export function FileContentViewer({
                 </div>
 
                 <div className="flex items-center gap-1">
-                  {fileContent.is_text && fileContent.content && (
+                  {fileContent.is_text && fileContent.content !== null && (
                     <>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleCopy}
-                        className="text-xs h-7 px-2"
-                      >
-                        <Copy className="h-3.5 w-3.5 mr-1" />
-                        {copied ? t("common.copied") : t("common.copy")}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleDownload}
-                        className="text-xs h-7 px-2"
-                      >
-                        <Download className="h-3.5 w-3.5 mr-1" />
-                        Download
-                      </Button>
+                      {!isEditing ? (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleEdit}
+                            className="text-xs h-7 px-2"
+                          >
+                            <Edit className="h-3.5 w-3.5 mr-1" />
+                            Edit
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleCopy}
+                            className="text-xs h-7 px-2"
+                          >
+                            <Copy className="h-3.5 w-3.5 mr-1" />
+                            {copied ? t("common.copied") : t("common.copy")}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleDownload}
+                            className="text-xs h-7 px-2"
+                          >
+                            <Download className="h-3.5 w-3.5 mr-1" />
+                            Download
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={handleSave}
+                            disabled={saving}
+                            className="text-xs h-7 px-2"
+                          >
+                            <Save className="h-3.5 w-3.5 mr-1" />
+                            {saving ? "Saving..." : "Save"}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleCancel}
+                            disabled={saving}
+                            className="text-xs h-7 px-2"
+                          >
+                            <X className="h-3.5 w-3.5 mr-1" />
+                            Cancel
+                          </Button>
+                        </>
+                      )}
                     </>
                   )}
                 </div>
@@ -239,12 +324,13 @@ export function FileContentViewer({
                       Size: {formatFileSize(fileContent.size)}
                     </p>
                   </div>
-                ) : fileContent.content ? (
+                ) : fileContent.content !== null ? (
                   <div className="h-full overflow-auto">
                     <CodeMirrorViewer
-                      code={fileContent.content}
+                      code={isEditing ? editedContent : fileContent.content}
                       language={getLanguageFromExtension(fileContent.path)}
-                      readOnly={true}
+                      readOnly={!isEditing}
+                      onChange={isEditing ? setEditedContent : undefined}
                     />
                   </div>
                 ) : (

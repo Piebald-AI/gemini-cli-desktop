@@ -81,6 +81,7 @@ pub fn run() {
             commands::read_settings_file,
             commands::write_settings_file,
             commands::read_file_content,
+            commands::write_file_content,
             menu::init_menu,
             menu::update_menu_labels
         ]);

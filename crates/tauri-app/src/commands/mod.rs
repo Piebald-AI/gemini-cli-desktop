@@ -503,3 +503,16 @@ pub async fn read_file_content(
         .await
         .map_err(|e| format!("{e:#}"))
 }
+
+#[tauri::command]
+pub async fn write_file_content(
+    path: String,
+    content: String,
+    state: State<'_, AppState>,
+) -> Result<FileContent, String> {
+    state
+        .backend
+        .write_file_content(path, content)
+        .await
+        .map_err(|e| format!("{e:#}"))
+}
