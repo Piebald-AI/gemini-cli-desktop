@@ -243,9 +243,7 @@ export function FileContentViewer({
                   <div className="h-full overflow-auto">
                     <CodeMirrorViewer
                       code={fileContent.content}
-                      language={getLanguageFromExtension(
-                        fileContent.path
-                      )}
+                      language={getLanguageFromExtension(fileContent.path)}
                       readOnly={true}
                     />
                   </div>
