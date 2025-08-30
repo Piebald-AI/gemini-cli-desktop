@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FileText, Copy, X, Download, Eye, EyeOff } from "lucide-react";
+import { FileText, Copy, Download } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
@@ -33,7 +33,6 @@ export function FileContentViewer({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [showRawContent, setShowRawContent] = useState(false);
 
   const isOpen = filePath !== null;
 
@@ -150,19 +149,25 @@ export function FileContentViewer({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col">
         <DialogHeader className="flex-shrink-0">
-          <DialogTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-blue-500" />
-              <span className="font-mono text-sm">{filePath}</span>
+          <DialogTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5 text-blue-500 flex-shrink-0" />
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <span className="font-mono text-sm truncate" title={filePath}>
+                {filePath}
+              </span>
+              {fileContent && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground flex-shrink-0">
+                  <Badge variant="secondary" className="text-xs px-1.5 py-0">
+                    {formatFileSize(fileContent.size)}
+                  </Badge>
+                  {fileContent.modified && (
+                    <span className="hidden sm:inline">
+                      {formatModifiedTime(fileContent.modified)}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onClose}
-              className="h-6 w-6 p-0"
-            >
-              <X className="h-4 w-4" />
-            </Button>
           </DialogTitle>
         </DialogHeader>
 
@@ -184,18 +189,10 @@ export function FileContentViewer({
             </div>
           ) : fileContent ? (
             <>
-              {/* File metadata */}
-              <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/50">
+              {/* File actions bar */}
+              <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/50 rounded-md mx-2 mb-2">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
-                    {formatFileSize(fileContent.size)}
-                  </Badge>
                   <span>{fileContent.encoding}</span>
-                  {fileContent.modified && (
-                    <span>
-                      Modified {formatModifiedTime(fileContent.modified)}
-                    </span>
-                  )}
                   <Badge
                     variant={fileContent.is_text ? "default" : "secondary"}
                     className="text-xs px-1.5 py-0.5"
@@ -210,32 +207,19 @@ export function FileContentViewer({
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setShowRawContent(!showRawContent)}
-                        className="text-xs h-6 px-2"
-                      >
-                        {showRawContent ? (
-                          <EyeOff className="h-3 w-3 mr-1" />
-                        ) : (
-                          <Eye className="h-3 w-3 mr-1" />
-                        )}
-                        {showRawContent ? "Formatted" : "Raw"}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
                         onClick={handleCopy}
-                        className="text-xs h-6 px-2"
+                        className="text-xs h-7 px-2"
                       >
-                        <Copy className="h-3 w-3 mr-1" />
+                        <Copy className="h-3.5 w-3.5 mr-1" />
                         {copied ? t("common.copied") : t("common.copy")}
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={handleDownload}
-                        className="text-xs h-6 px-2"
+                        className="text-xs h-7 px-2"
                       >
-                        <Download className="h-3 w-3 mr-1" />
+                        <Download className="h-3.5 w-3.5 mr-1" />
                         Download
                       </Button>
                     </>
@@ -257,25 +241,13 @@ export function FileContentViewer({
                   </div>
                 ) : fileContent.content ? (
                   <div className="h-full overflow-auto">
-                    {showRawContent ? (
-                      <div className="p-4">
-                        <pre className="text-sm whitespace-pre-wrap break-words">
-                          {fileContent.content}
-                        </pre>
-                      </div>
-                    ) : (
-                      <div className="h-full overflow-auto p-4">
-                        <div className="max-h-full overflow-auto rounded border">
-                          <CodeMirrorViewer
-                            code={fileContent.content}
-                            language={getLanguageFromExtension(
-                              fileContent.path
-                            )}
-                            readOnly={true}
-                          />
-                        </div>
-                      </div>
-                    )}
+                    <CodeMirrorViewer
+                      code={fileContent.content}
+                      language={getLanguageFromExtension(
+                        fileContent.path
+                      )}
+                      readOnly={true}
+                    />
                   </div>
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">
