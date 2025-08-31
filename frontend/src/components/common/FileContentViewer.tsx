@@ -36,6 +36,7 @@ export function FileContentViewer({
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState<string>("");
   const [saving, setSaving] = useState(false);
+  const [forceViewAsText, setForceViewAsText] = useState(false);
 
   const isOpen = filePath !== null;
 
@@ -43,6 +44,7 @@ export function FileContentViewer({
     if (!filePath) {
       setFileContent(null);
       setError(null);
+      setForceViewAsText(false);
       return;
     }
 
@@ -51,7 +53,10 @@ export function FileContentViewer({
       setError(null);
 
       try {
-        const content = await api.read_file_content({ path: filePath });
+        const content = await api.read_file_content_with_options({
+          path: filePath,
+          forceText: forceViewAsText,
+        });
         setFileContent(content);
         setEditedContent(content.content || "");
         setIsEditing(false);
@@ -69,10 +74,13 @@ export function FileContentViewer({
     };
 
     loadFileContent();
-  }, [filePath]);
+  }, [filePath, forceViewAsText]);
 
   const handleEdit = () => {
-    if (fileContent?.is_text && fileContent.content !== null) {
+    if (
+      (fileContent?.is_text || (fileContent?.is_binary && forceViewAsText)) &&
+      fileContent.content !== null
+    ) {
       setIsEditing(true);
       setEditedContent(fileContent.content);
     }
@@ -243,86 +251,115 @@ export function FileContentViewer({
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <span>{fileContent.encoding}</span>
                   <Badge
-                    variant={fileContent.is_text ? "default" : "secondary"}
+                    variant={
+                      fileContent.is_binary && forceViewAsText
+                        ? "destructive"
+                        : fileContent.is_text
+                          ? "default"
+                          : "secondary"
+                    }
                     className="text-xs px-1.5 py-0.5"
                   >
-                    {fileContent.is_text ? "Text" : "Binary"}
+                    {fileContent.is_binary && forceViewAsText
+                      ? "Binary (forced as text)"
+                      : fileContent.is_text
+                        ? "Text"
+                        : "Binary"}
                   </Badge>
+                  {fileContent.is_binary && forceViewAsText && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setForceViewAsText(false)}
+                      className="text-xs h-6 px-2 text-muted-foreground hover:text-foreground"
+                    >
+                      Back to binary view
+                    </Button>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-1">
-                  {fileContent.is_text && fileContent.content !== null && (
-                    <>
-                      {!isEditing ? (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={handleEdit}
-                            className="text-xs h-7 px-2"
-                          >
-                            <Edit className="h-3.5 w-3.5 mr-1" />
-                            Edit
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={handleCopy}
-                            className="text-xs h-7 px-2"
-                          >
-                            <Copy className="h-3.5 w-3.5 mr-1" />
-                            {copied ? t("common.copied") : t("common.copy")}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={handleDownload}
-                            className="text-xs h-7 px-2"
-                          >
-                            <Download className="h-3.5 w-3.5 mr-1" />
-                            Download
-                          </Button>
-                        </>
-                      ) : (
-                        <>
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={handleSave}
-                            disabled={saving}
-                            className="text-xs h-7 px-2"
-                          >
-                            <Save className="h-3.5 w-3.5 mr-1" />
-                            {saving ? "Saving..." : "Save"}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={handleCancel}
-                            disabled={saving}
-                            className="text-xs h-7 px-2"
-                          >
-                            <X className="h-3.5 w-3.5 mr-1" />
-                            Cancel
-                          </Button>
-                        </>
-                      )}
-                    </>
-                  )}
+                  {(fileContent.is_text ||
+                    (fileContent.is_binary && forceViewAsText)) &&
+                    fileContent.content !== null && (
+                      <>
+                        {!isEditing ? (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={handleEdit}
+                              className="text-xs h-7 px-2"
+                            >
+                              <Edit className="h-3.5 w-3.5 mr-1" />
+                              Edit
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={handleCopy}
+                              className="text-xs h-7 px-2"
+                            >
+                              <Copy className="h-3.5 w-3.5 mr-1" />
+                              {copied ? t("common.copied") : t("common.copy")}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={handleDownload}
+                              className="text-xs h-7 px-2"
+                            >
+                              <Download className="h-3.5 w-3.5 mr-1" />
+                              Download
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={handleSave}
+                              disabled={saving}
+                              className="text-xs h-7 px-2"
+                            >
+                              <Save className="h-3.5 w-3.5 mr-1" />
+                              {saving ? "Saving..." : "Save"}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={handleCancel}
+                              disabled={saving}
+                              className="text-xs h-7 px-2"
+                            >
+                              <X className="h-3.5 w-3.5 mr-1" />
+                              Cancel
+                            </Button>
+                          </>
+                        )}
+                      </>
+                    )}
                 </div>
               </div>
 
               {/* File content */}
               <div className="flex-1 overflow-hidden">
-                {fileContent.is_binary ? (
+                {fileContent.is_binary && !forceViewAsText ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
                     <p>
                       This is a binary file and cannot be displayed as text.
                     </p>
-                    <p className="text-sm mt-2">
+                    <p className="text-sm mt-2 mb-4">
                       Size: {formatFileSize(fileContent.size)}
                     </p>
+                    <Button
+                      variant="outline"
+                      onClick={() => setForceViewAsText(true)}
+                      className="text-sm"
+                    >
+                      View anyway
+                    </Button>
                   </div>
                 ) : fileContent.content !== null ? (
                   <div className="h-full overflow-auto">

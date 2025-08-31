@@ -505,6 +505,19 @@ pub async fn read_file_content(
 }
 
 #[tauri::command]
+pub async fn read_file_content_with_options(
+    path: String,
+    force_text: bool,
+    state: State<'_, AppState>,
+) -> Result<FileContent, String> {
+    state
+        .backend
+        .read_file_content_with_options(path, force_text)
+        .await
+        .map_err(|e| format!("{e:#}"))
+}
+
+#[tauri::command]
 pub async fn write_file_content(
     path: String,
     content: String,
