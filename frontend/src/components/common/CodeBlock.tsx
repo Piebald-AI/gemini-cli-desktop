@@ -5,6 +5,8 @@ import React, {
   useState,
   useMemo,
   useCallback,
+  useRef,
+  useLayoutEffect,
   type JSX,
 } from "react";
 import { Fragment, jsx, jsxs } from "react/jsx-runtime";
@@ -230,6 +232,79 @@ const CodeBlock = React.memo(
       [preStyle]
     );
 
+    // Preserve scroll position of the code block while content streams in.
+    // Without this, each highlightedContent update may reset the scroll to top,
+    // preventing the user from scrolling down during generation.
+    const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+    const scrollStateRef = useRef<{
+      top: number;
+      height: number;
+      atBottom: boolean;
+    }>({
+      top: 0,
+      height: 0,
+      atBottom: true,
+    });
+
+    const isAtBottom = (el: HTMLElement) =>
+      el.scrollHeight - (el.scrollTop + el.clientHeight) < 4;
+
+    const handleScroll = () => {
+      const el = scrollContainerRef.current;
+      if (!el) return;
+      scrollStateRef.current = {
+        top: el.scrollTop,
+        height: el.scrollHeight,
+        atBottom: isAtBottom(el),
+      };
+    };
+
+    // Initialize scroll snapshot on mount
+    useEffect(() => {
+      const el = scrollContainerRef.current;
+      if (!el) return;
+      scrollStateRef.current = {
+        top: el.scrollTop,
+        height: el.scrollHeight,
+        atBottom: isAtBottom(el),
+      };
+    }, []);
+
+    // After content updates, restore the user's scroll position.
+    // - If user was at bottom, keep them pinned to bottom.
+    // - Otherwise, preserve their previous scrollTop (and account for height deltas).
+    useLayoutEffect(() => {
+      const el = scrollContainerRef.current;
+      if (!el) return;
+
+      const prev = scrollStateRef.current;
+      const prevHeight = prev.height;
+      const newHeight = el.scrollHeight;
+
+      if (prev.atBottom) {
+        // Stick to bottom while streaming
+        el.scrollTop = el.scrollHeight;
+      } else {
+        // Preserve user's view; if content grew, adjust to keep the same content in view
+        const delta = newHeight - prevHeight;
+        const targetTop = Math.max(
+          0,
+          Math.min(
+            prev.top + (delta > 0 ? delta : 0),
+            el.scrollHeight - el.clientHeight
+          )
+        );
+        el.scrollTop = targetTop;
+      }
+
+      // Update snapshot post-adjustment
+      scrollStateRef.current = {
+        top: el.scrollTop,
+        height: el.scrollHeight,
+        atBottom: isAtBottom(el),
+      };
+    }, [code, highlightedContent, isLoading]);
+
     if (!mounted) {
       return null;
     }
@@ -253,7 +328,11 @@ const CodeBlock = React.memo(
             )}
             style={memoizedStyle}
           >
-            <div className="overflow-auto max-h-96 p-2 [&_pre]:focus-visible:outline-none [&_pre]:whitespace-pre [&_pre]:leading-normal">
+            <div
+              ref={scrollContainerRef}
+              onScroll={handleScroll}
+              className="overflow-auto max-h-96 p-2 [&_pre]:focus-visible:outline-none [&_pre]:whitespace-pre [&_pre]:leading-normal"
+            >
               {contentToRender}
             </div>
           </div>
