@@ -33,7 +33,7 @@ import { useToolCallConfirmation } from "./hooks/useToolCallConfirmation";
 import { useConversationEvents } from "./hooks/useConversationEvents";
 import { useCliInstallation } from "./hooks/useCliInstallation";
 import { useTauriMenu } from "./hooks/useTauriMenu";
-import { CliIO } from "./types";
+import { CliIO, Conversation, Message } from "./types";
 import "./index.css";
 import { platform } from "@tauri-apps/plugin-os";
 import { AboutDialog } from "./components/common/AboutDialog";
@@ -46,9 +46,7 @@ function RootLayoutContent() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [directoryPanelOpen, setDirectoryPanelOpen] = useState(false);
   const [workingDirectory, setWorkingDirectory] = useState<string>(".");
-  const [sessionWorkingDirectories, setSessionWorkingDirectories] = useState<
-    Map<string, string>
-  >(new Map());
+  const [isContinuingConversation, setIsContinuingConversation] = useState(false);
   const messageInputBarRef = useRef<MessageInputBarRef>(null);
   const listenerCleanups = useRef(new Map<string, () => void>());
 
@@ -92,14 +90,33 @@ function RootLayoutContent() {
   const {
     conversations,
     activeConversation,
-    currentConversation,
     setActiveConversation,
     updateConversation,
     createNewConversation,
+    loadConversationFromHistory,
+    removeConversation,
   } = useConversationManager();
 
   const { processStatuses, fetchProcessStatuses, handleKillProcess } =
     useProcessManager();
+
+  const conversationsWithStatus = useMemo(() => {
+    return conversations.map((conv) => {
+      const processStatus = processStatuses.find(
+        (status) =>
+          status.conversation_id === conv.id ||
+          status.conversation_id === conv.metadata?.timestamp
+      );
+      return {
+        ...conv,
+        isActive: processStatus?.is_alive ?? false,
+      };
+    });
+  }, [conversations, processStatuses]);
+
+  const currentConversationWithStatus = useMemo(() => {
+    return conversationsWithStatus.find((c) => c.id === activeConversation);
+  }, [conversationsWithStatus, activeConversation]);
 
   const {
     confirmationRequests,
@@ -118,7 +135,7 @@ function RootLayoutContent() {
 
   const { input, handleInputChange, handleSendMessage } = useMessageHandler({
     activeConversation,
-    conversations,
+    conversations: conversationsWithStatus,
     selectedModel,
     isCliInstalled,
     updateConversation,
@@ -130,27 +147,14 @@ function RootLayoutContent() {
 
   // Update working directory when active conversation changes
   useEffect(() => {
-    if (activeConversation) {
-      const sessionWd = sessionWorkingDirectories.get(activeConversation);
-      if (sessionWd) {
-        console.log(
-          "🏠 [App] Using session working directory for",
-          activeConversation,
-          ":",
-          sessionWd
-        );
-        setWorkingDirectory(sessionWd);
-      } else {
-        console.log(
-          "🏠 [App] No session working directory found, using default"
-        );
-      }
+    if (currentConversationWithStatus?.workingDirectory) {
+      setWorkingDirectory(currentConversationWithStatus.workingDirectory);
     }
-  }, [activeConversation, sessionWorkingDirectories]);
+  }, [currentConversationWithStatus]);
 
   useEffect(() => {
     const setup = async () => {
-      const activeConversations = new Set(conversations.map((c) => c.id));
+      const activeConversations = new Set(conversationsWithStatus.map((c) => c.id));
       // Cleanup listeners for deleted conversations
       for (const id of listenerCleanups.current.keys()) {
         if (!activeConversations.has(id)) {
@@ -163,7 +167,7 @@ function RootLayoutContent() {
       }
 
       // Add listeners for new conversations
-      for (const conversation of conversations) {
+      for (const conversation of conversationsWithStatus) {
         if (!listenerCleanups.current.has(conversation.id)) {
           const cleanup = await setupEventListenerForConversation(
             conversation.id
@@ -181,23 +185,14 @@ function RootLayoutContent() {
   }, []);
 
   const startNewConversation = useCallback(
-    async (title: string, workingDirectory?: string): Promise<string> => {
+    async (
+      title: string,
+      workingDirectory?: string,
+      initialMessages: Message[] = []
+    ): Promise<string> => {
       const convId = Date.now().toString();
-      createNewConversation(convId, title, [], false);
+      createNewConversation(convId, title, initialMessages, false, workingDirectory);
       setActiveConversation(convId);
-
-      // Store working directory for this session
-      if (workingDirectory) {
-        console.log(
-          "🏠 [App] Storing working directory for session",
-          convId,
-          ":",
-          workingDirectory
-        );
-        setSessionWorkingDirectories(
-          (prev) => new Map(prev.set(convId, workingDirectory))
-        );
-      }
 
       if (workingDirectory) {
         console.log("Debug - apiConfig:", apiConfig);
@@ -254,7 +249,6 @@ function RootLayoutContent() {
       backendState.configs.gemini,
       createNewConversation,
       setActiveConversation,
-      setSessionWorkingDirectories,
     ]
   );
 
@@ -269,6 +263,24 @@ function RootLayoutContent() {
     }
   }, [activeConversation, directoryPanelOpen]);
 
+  const handleContinueConversation = useCallback(async (conversationToContinue: Conversation) => {
+    if (!conversationToContinue || isContinuingConversation) return;
+
+    setIsContinuingConversation(true);
+    try {
+      const newTitle = `(Continued) ${conversationToContinue.title}`;
+      
+      await startNewConversation(
+        newTitle, 
+        conversationToContinue.workingDirectory, 
+        conversationToContinue.messages
+      );
+    } finally {
+      setIsContinuingConversation(false);
+    }
+
+}, [startNewConversation, isContinuingConversation]);
+
   // Handle mention insertion from DirectoryPanel
   const handleMentionInsert = useCallback((mention: string) => {
     if (messageInputBarRef.current) {
@@ -280,11 +292,12 @@ function RootLayoutContent() {
 
   return (
     <AppSidebar
-      conversations={conversations}
+      conversations={conversationsWithStatus}
       activeConversation={activeConversation}
       processStatuses={processStatuses}
       onConversationSelect={setActiveConversation}
       onKillProcess={handleKillProcess}
+      onRemoveConversation={removeConversation}
       onModelChange={handleModelChange}
       open={sidebarOpen}
       onOpenChange={setSidebarOpen}
@@ -294,6 +307,7 @@ function RootLayoutContent() {
           onDirectoryPanelToggle={toggleDirectoryPanel}
           isDirectoryPanelOpen={directoryPanelOpen}
           hasActiveConversation={!!activeConversation}
+          onReturnToDashboard={() => setActiveConversation(null)}
         />
 
         <div className="flex-1 flex bg-background min-h-0 h-full">
@@ -307,9 +321,9 @@ function RootLayoutContent() {
             <ConversationContext.Provider
               value={useMemo(
                 () => ({
-                  conversations,
+                  conversations: conversationsWithStatus,
                   activeConversation,
-                  currentConversation,
+                  currentConversation: currentConversationWithStatus,
                   input,
                   isCliInstalled,
                   messagesContainerRef,
@@ -318,13 +332,15 @@ function RootLayoutContent() {
                   handleSendMessage,
                   selectedModel,
                   startNewConversation,
+                  loadConversationFromHistory,
+                  removeConversation,
                   handleConfirmToolCall,
                   confirmationRequests,
                 }),
                 [
-                  conversations,
+                  conversationsWithStatus,
                   activeConversation,
-                  currentConversation,
+                  currentConversationWithStatus,
                   input,
                   isCliInstalled,
                   messagesContainerRef,
@@ -333,6 +349,8 @@ function RootLayoutContent() {
                   handleSendMessage,
                   selectedModel,
                   startNewConversation,
+                  loadConversationFromHistory,
+                  removeConversation,
                   handleConfirmToolCall,
                   confirmationRequests,
                 ]
@@ -341,12 +359,7 @@ function RootLayoutContent() {
               <Outlet />
             </ConversationContext.Provider>
 
-            {activeConversation &&
-              processStatuses.find(
-                (status) =>
-                  status.conversation_id === activeConversation &&
-                  status.is_alive
-              ) && (
+            {currentConversationWithStatus && (
                 <>
                   {console.log(
                     "📝 [App] Rendering MessageInputBar with workingDirectory:",
@@ -360,6 +373,10 @@ function RootLayoutContent() {
                     handleInputChange={handleInputChange}
                     handleSendMessage={handleSendMessage}
                     workingDirectory={workingDirectory}
+                    isConversationActive={currentConversationWithStatus.isActive}
+                    onContinueConversation={() => handleContinueConversation(currentConversationWithStatus)}
+                    isContinuingConversation={isContinuingConversation}
+                    isNew={currentConversationWithStatus.isNew}
                   />
                 </>
               )}

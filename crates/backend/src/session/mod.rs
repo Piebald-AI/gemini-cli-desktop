@@ -11,6 +11,9 @@ use tokio::time::{Duration, sleep};
 #[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x08000000;
 
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct QwenConfig {
     pub api_key: String,
@@ -236,8 +239,9 @@ async fn send_jsonrpc_request<E: EventEmitter>(
                     anyhow::bail!("Failed to read response: {e}");
                 }
             }
-            _ = sleep(Duration::from_secs(10)) => {
-                return Ok(None);
+            _ = sleep(Duration::from_secs(30)) => {
+                println!("⏰ [TIMEOUT] No response from Gemini CLI after 30 seconds");
+                anyhow::bail!("Timeout waiting for Gemini CLI response. Please check:\n1. Gemini CLI is installed and in PATH\n2. Network connectivity\n3. Authentication configuration");
             }
         }
 
@@ -448,6 +452,40 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
         cmd.current_dir(&working_directory);
     }
 
+    // Pre-flight check: Test if CLI is available
+    println!("🔍 [PRECHECK] Testing CLI availability...");
+    if !is_qwen {
+        // Test Gemini CLI availability
+        let test_result = if cfg!(windows) {
+            std::process::Command::new("cmd.exe")
+                .args(["/C", "gemini", "--version"])
+                .creation_flags(CREATE_NO_WINDOW)
+                .output()
+        } else {
+            std::process::Command::new("gemini")
+                .arg("--version")
+                .output()
+        };
+        
+        match test_result {
+            Ok(output) => {
+                if output.status.success() {
+                    println!("✅ [PRECHECK] Gemini CLI is available and responding");
+                } else {
+                    let stderr = String::from_utf8_lossy(&output.stderr);
+                    println!("❌ [PRECHECK] Gemini CLI returned error: {stderr}");
+                    anyhow::bail!("Gemini CLI test failed. Please ensure:\n1. Gemini CLI is properly installed\n2. You have an active internet connection\n3. Authentication is configured correctly\n\nError: {stderr}")
+                }
+            }
+            Err(e) => {
+                println!("❌ [PRECHECK] Cannot execute Gemini CLI: {e}");
+                anyhow::bail!("Gemini CLI not found or not executable. Please ensure:\n1. Gemini CLI is installed (run: pip install google-generativeai)\n2. 'gemini' command is in your PATH\n3. You have proper permissions to execute it\n\nError: {e}")
+            }
+        }
+    } else {
+        println!("🔍 [PRECHECK] Skipping CLI check for Qwen (uses API directly)");
+    }
+
     println!("🔄 [HANDSHAKE] Spawning CLI process...");
     let mut child = cmd.spawn().map_err(|e| {
         let cmd_name = if is_qwen { "qwen" } else { "gemini" };
@@ -648,7 +686,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
         serde_json::from_value(result.result.unwrap_or_default())
             .context("Failed to parse session result")?
     } else {
-        anyhow::bail!("No JSON returned from initialize request");
+        anyhow::bail!("No valid JSON response received from Gemini CLI initialize request. This usually indicates:\n1. Gemini CLI is not properly installed or not in PATH\n2. Authentication failed (check API keys or OAuth setup)\n3. Network connectivity issues\n4. CLI process crashed or failed to start\n\nPlease check the console output above for more details.");
     };
 
     println!(

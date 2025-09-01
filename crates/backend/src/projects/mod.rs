@@ -452,6 +452,21 @@ pub async fn get_enriched_project(
     Ok(make_enriched_project(&sha256, Some(external_root), true))
 }
 
+pub async fn delete_project(project_id: &str) -> Result<()> {
+    let Some(root) = home_projects_root() else {
+        anyhow::bail!("Projects root directory not found");
+    };
+    let project_path = root.join(project_id);
+
+    if !project_path.exists() {
+        // If the project doesn't exist, we can consider the operation successful.
+        return Ok(());
+    }
+
+    std::fs::remove_dir_all(&project_path)
+        .with_context(|| format!("Failed to delete project directory: {:?}", project_path))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

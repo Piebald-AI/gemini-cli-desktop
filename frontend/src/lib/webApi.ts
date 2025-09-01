@@ -176,8 +176,28 @@ export const webApi: API = {
     return response.data;
   },
 
+  async delete_project(params) {
+    await apiClient.post("/delete-project", params);
+  },
+
   async read_file_content(params) {
     const response = await apiClient.post("/read-file-content", params);
+    return response.data;
+  },
+
+  async get_detailed_conversation(params: { chatId: string }) {
+    const encodedChatId = encodeURIComponent(params.chatId);
+    const response = await apiClient.get<DetailedConversation>(`/conversations/${encodedChatId}`);
+    return response.data;
+  },
+
+  async delete_conversation(params: { chatId: string }) {
+    const encodedChatId = encodeURIComponent(params.chatId);
+    await apiClient.delete(`/conversations/${encodedChatId}`);
+  },
+
+  async get_canonical_path(params: { path: string }): Promise<string> {
+    const response = await apiClient.post<string>("/get-canonical-path", params);
     return response.data;
   },
 
@@ -200,6 +220,23 @@ export interface RecentChat {
   title: string;
   started_at_iso: string;
   message_count: number;
+}
+
+export interface ConversationHistoryEntry {
+  id: string;
+  role: string; // "user" or "assistant"
+  content: string;
+  timestamp_iso: string;
+  message_type: string; // "text", "tool_call", "tool_result", etc.
+  metadata?: Record<string, unknown>;
+}
+
+export interface DetailedConversation {
+  chat: RecentChat;
+  messages: ConversationHistoryEntry[];
+  context_summary?: string;
+  file_references: string[];
+  tool_calls_count: number;
 }
 
 export interface SearchResult {

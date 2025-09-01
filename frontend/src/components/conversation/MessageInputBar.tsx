@@ -9,7 +9,7 @@ import {
   DialogTrigger,
 } from "../ui/dialog";
 import { MentionInput, MentionInputRef } from "../common/MentionInput";
-import { Send, Info, ImagePlus } from "lucide-react";
+import { Send, Info, ImagePlus, Play, Loader2 } from "lucide-react";
 import { useBackend } from "../../contexts/BackendContext";
 import { getBackendText } from "../../utils/backendText";
 import { CliIO } from "../../types";
@@ -27,6 +27,10 @@ interface MessageInputBarProps {
   ) => void;
   handleSendMessage: (e: React.FormEvent) => Promise<void>;
   workingDirectory?: string;
+  isConversationActive: boolean;
+  onContinueConversation: () => void;
+  isContinuingConversation: boolean;
+  isNew?: boolean;
 }
 
 export interface MessageInputBarRef {
@@ -46,6 +50,10 @@ export const MessageInputBar = forwardRef<
       handleInputChange,
       handleSendMessage,
       workingDirectory = ".",
+      isConversationActive,
+      onContinueConversation,
+      isContinuingConversation,
+      isNew,
     },
     ref
   ) => {
@@ -71,6 +79,33 @@ export const MessageInputBar = forwardRef<
       }),
       []
     );
+
+    if (!isConversationActive) {
+      if (isNew) {
+        return null;
+      }
+      return (
+        <div className="sticky bottom-0 bg-white dark:bg-neutral-900 flex items-center p-6">
+          <Button
+            className="w-full"
+            onClick={onContinueConversation}
+            disabled={isContinuingConversation}
+          >
+            {isContinuingConversation ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                {t("messageInput.startingConversation")}
+              </>
+            ) : (
+              <>
+                <Play className="h-4 w-4 mr-2" />
+                {t("messageInput.continueConversation")}
+              </>
+            )}
+          </Button>
+        </div>
+      );
+    }
 
     return (
       <div className="sticky bottom-0 bg-white dark:bg-neutral-900 flex items-center">

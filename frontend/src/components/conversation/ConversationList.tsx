@@ -32,6 +32,7 @@ interface ConversationListProps {
   onConversationSelect: (conversationId: string) => void;
   onKillProcess: (conversationId: string) => void;
   onModelChange?: (model: string) => void;
+  onRemoveConversation: (id: string) => void;
 }
 
 export function ConversationList({
@@ -41,6 +42,7 @@ export function ConversationList({
   onConversationSelect,
   onKillProcess,
   onModelChange,
+  onRemoveConversation,
 }: ConversationListProps) {
   const { t, i18n } = useTranslation();
   // Use backend context instead of props
@@ -63,10 +65,21 @@ export function ConversationList({
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
-  const getProcessStatus = (conversationId: string) => {
-    return processStatuses.find(
-      (status) => status.conversation_id === conversationId
+  const getProcessStatus = (conversation: Conversation) => {
+    // First try direct ID match
+    let status = processStatuses.find(
+      (status) => status.conversation_id === conversation.id
     );
+    
+    // If no direct match and conversation has metadata with timestamp,
+    // try matching by timestamp (for historical conversations with active processes)
+    if (!status && conversation.metadata?.timestamp) {
+      status = processStatuses.find(
+        (status) => status.conversation_id === conversation.metadata!.timestamp
+      );
+    }
+    
+    return status;
   };
 
   const formatLastUpdated = (date: Date) => {
@@ -501,7 +514,7 @@ export function ConversationList({
           conversations
             .sort((a, b) => b.lastUpdated.getTime() - a.lastUpdated.getTime())
             .map((conversation) => {
-              const processStatus = getProcessStatus(conversation.id);
+              const processStatus = getProcessStatus(conversation);
               const isActive = processStatus?.is_alive ?? false;
               const isSelected = activeConversation === conversation.id;
 
@@ -517,6 +530,7 @@ export function ConversationList({
                   selectedConversationForEnd={selectedConversationForEnd}
                   setSelectedConversationForEnd={setSelectedConversationForEnd}
                   formatLastUpdated={formatLastUpdated}
+                  onRemoveConversation={onRemoveConversation}
                 />
               );
             })

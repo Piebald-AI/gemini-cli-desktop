@@ -68,6 +68,9 @@
     "mcpCard": {
       "title": "MCP Servers",
       "description": "Manage MCP configuration and settings."
+    },
+    "recentChats": {
+      "title": "Recent Conversations"
     }
   },
 
@@ -113,7 +116,13 @@
     "sha256Label": "SHA256:",
     "nameLabel": "Name:",
     "firstUsedLabel": "First used:",
-    "lastUpdatedLabel": "Last updated:"
+    "lastUpdatedLabel": "Last updated:",
+    "discussionDeleted": "Discussion deleted successfully.",
+    "failedToDeleteDiscussion": "Failed to delete discussion.",
+    "deleteDiscussionConfirm": "Are you sure you want to delete the discussion \"{{name}}\"? This action cannot be undone.",
+    "deleteProjectConfirm": "Are you sure you want to delete the project \"{{name}}\"? This action cannot be undone.",
+    "failedToDelete": "Failed to delete project.",
+    "chatSessionLoadedSuccessfully": "Chat session loaded successfully."
   },
 
   "conversations": {
@@ -129,6 +138,7 @@
     "endChat": "End Chat",
     "endChatConfirmation": "Are you sure you want to end the chat \"{{title}}\"? This will terminate the active session.",
     "endChatConfirm": "Are you sure you want to end the chat \"{{title}}\"? This will terminate the active session.",
+    "deleteConversationConfirm": "Are you sure you want to delete the conversation \"{{title}}\"? This action cannot be undone.",
     "endChatButton": "End Chat",
     "generating": "Generating...",
     "justNow": "Just now",
@@ -180,7 +190,9 @@
     "cliLogsTitle": "CLI Input/Output Logs",
     "logTypeIn": "IN",
     "logTypeOut": "OUT",
-    "noLogsMessage": "No CLI I/O logs available yet. Start a conversation to see the raw communication."
+    "noLogsMessage": "No CLI logs for this session yet.",
+    "continueConversation": "Continue this conversation",
+    "startingConversation": "Starting conversation..."
   },
 
   "toolCalls": {
@@ -427,7 +439,8 @@
     "fromCreatorsOf": "From the creators of",
     "languageSwitcher": "Change language",
     "currentLanguage": "Current language: {{language}}",
-    "directoryPanel": "Directory"
+    "directoryPanel": "Directory",
+    "returnToDashboard": "Return to dashboard"
   },
 
   "about": {
@@ -456,6 +469,7 @@
     "failedToAddProject": "Failed to add project. Please try again.",
     "failedToCreateDiscussion": "Failed to create new discussion:",
     "failedToLoadChats": "Failed to load recent chats",
+    "failedToLoadConversation": "Failed to load conversation",
     "noChatsFound": "No previous chats found.",
     "searchFailed": "Search failed:",
     "failedToOpenDialog": "Failed to open file dialog. Please try again.",
@@ -465,6 +479,7 @@
     "permissionDenied": "Permission denied",
     "fileNotFound": "File not found",
     "directoryNotFound": "Directory not found",
+    "failedToDelete": "Failed to delete project.",
     "failedToGetSettingsPath": "Failed to get settings file path:",
     "failedToLoadSettings": "Failed to load MCP servers from settings file:",
     "failedToSaveSettings": "Failed to save MCP servers to settings file:",

@@ -259,6 +259,10 @@ pub mod builders {
                 title: self.title,
                 started_at_iso: self.started_at_iso,
                 message_count: self.message_count,
+                summary: None,
+                last_activity_iso: None,
+                total_tokens: None,
+                tags: vec![],
             }
         }
     }

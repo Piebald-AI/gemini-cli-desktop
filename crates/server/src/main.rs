@@ -20,8 +20,8 @@ use tokio::sync::{Mutex, mpsc as tokio_mpsc};
 
 // Import backend functionality
 use backend::{
-    DirEntry, EnrichedProject, EventEmitter, FileContent, GeminiBackend, GitInfo, ProcessStatus,
-    RecentChat, SearchFilters, SearchResult,
+    DetailedConversation, DirEntry, EnrichedProject, EventEmitter, 
+    FileContent, GeminiBackend, GitInfo, ProcessStatus, RecentChat, SearchFilters, SearchResult,
 };
 
 static FRONTEND_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/../../frontend/dist");
@@ -302,6 +302,12 @@ struct ReadFileContentRequest {
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+struct CanonicalPathRequest {
+    path: String,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct ReadFileContentWithOptionsRequest {
     path: String,
     force_text: bool,
@@ -456,6 +462,42 @@ async fn search_chats(
             .await
             .context("Failed to search chats")?,
     ))
+}
+
+#[get("/conversations/<chat_id>")]
+async fn get_detailed_conversation(
+    chat_id: String,
+    state: &State<AppState>,
+) -> AppResult<Json<DetailedConversation>> {
+    let decoded_chat_id = urlencoding::decode(&chat_id)
+        .map_err(|e| AnyhowError::msg(format!("Failed to decode chat ID: {}", e)))?;
+    
+    let backend = state.backend.lock().await;
+    Ok(Json(
+        backend
+            .get_detailed_conversation(&decoded_chat_id)
+            .await
+            .context("Failed to get detailed conversation")?,
+    ))
+}
+
+#[derive(Deserialize)]
+struct ExportConversationRequest {
+    format: String,
+}
+
+#[post("/conversations/<chat_id>/export", data = "<request>")]
+async fn export_conversation_history(
+    chat_id: String,
+    request: Json<ExportConversationRequest>,
+    state: &State<AppState>,
+) -> AppResult<String> {
+    let backend = state.backend.lock().await;
+    backend
+        .export_conversation_history(&chat_id, &request.format)
+        .await
+        .context("Failed to export conversation history")
+        .map_err(AnyhowResponder)
 }
 
 #[get("/check-cli-installed")]
@@ -720,6 +762,20 @@ async fn read_file_content(
     ))
 }
 
+#[post("/get-canonical-path", data = "<request>")]
+async fn get_canonical_path(
+    request: Json<CanonicalPathRequest>,
+    state: &State<AppState>,
+) -> AppResult<Json<String>> {
+    let backend = state.backend.lock().await;
+    Ok(Json(
+        backend
+            .get_canonical_path(request.path.clone())
+            .await
+            .context("Failed to get canonical path")?,
+    ))
+}
+
 #[post("/read-file-content-with-options", data = "<request>")]
 async fn read_file_content_with_options(
     request: Json<ReadFileContentWithOptionsRequest>,
@@ -841,7 +897,10 @@ fn rocket() -> _ {
             list_enriched_projects,
             get_enriched_project_http,
             get_project_discussions,
+            get_detailed_conversation,
+            export_conversation_history,
             read_file_content,
+            get_canonical_path,
             read_file_content_with_options,
             write_file_content,
         ],

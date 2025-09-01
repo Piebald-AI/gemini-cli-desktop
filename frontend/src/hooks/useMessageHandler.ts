@@ -116,7 +116,9 @@ export const useMessageHandler = ({
         }
       } else {
         // Create a new conversation with this message.
-        convId = Date.now().toString();
+        // Use timestamp that matches backend log file naming convention
+        const timestamp = Date.now();
+        convId = timestamp.toString();
         createNewConversation(convId, input.slice(0, 50), [newMessage], true);
         setActiveConversation(convId);
         // IMPORTANT: Wait for event listeners to be fully set up before proceeding

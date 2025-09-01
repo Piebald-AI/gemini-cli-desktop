@@ -39,6 +39,9 @@ export const HomeDashboard: React.FC = () => {
     confirmationRequests,
   } = useConversation();
 
+  // Debug logging for currentConversation
+  console.log("🏠 HomeDashboard - currentConversation:", currentConversation);
+
   const { selectedBackend } = useBackend();
   const backendText = getBackendText(selectedBackend);
 
@@ -232,6 +235,7 @@ export const HomeDashboard: React.FC = () => {
               </CardHeader>
             </Card>
           </div>
+
         </div>
       )}
     </>

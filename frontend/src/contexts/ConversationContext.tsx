@@ -1,6 +1,7 @@
 import React, { createContext, useContext } from "react";
 import { Conversation, CliIO } from "../types";
 import { ToolCallConfirmationRequest } from "../utils/toolCallParser";
+import { ConversationHistoryEntry } from "../lib/webApi";
 
 // Context for sharing conversation state with child routes
 export interface ConversationContextType {
@@ -23,8 +24,15 @@ export interface ConversationContextType {
     title: string,
     workingDirectory?: string
   ) => Promise<string>;
+  loadConversationFromHistory: (
+    chatId: string, 
+    title?: string, 
+    historyEntries?: ConversationHistoryEntry[], 
+    workingDirectory?: string
+  ) => Promise<Conversation>;
   handleConfirmToolCall: (toolCallId: string, outcome: string) => Promise<void>;
   confirmationRequests: Map<string, ToolCallConfirmationRequest>;
+  removeConversation: (conversationId: string) => void;
 }
 
 export const ConversationContext = createContext<

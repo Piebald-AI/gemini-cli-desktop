@@ -113,7 +113,12 @@
     "sha256Label": "SHA256：",
     "nameLabel": "名稱：",
     "firstUsedLabel": "首次使用：",
-    "lastUpdatedLabel": "最近更新："
+    "lastUpdatedLabel": "最近更新：",
+    "discussionDeleted": "討論已成功刪除。",
+    "failedToDeleteDiscussion": "刪除討論失敗。",
+    "deleteDiscussionConfirm": "您確定要刪除討論「{{name}}」嗎？此操作無法復原。",
+    "deleteProjectConfirm": "您確定要刪除專案「{{name}}」嗎？此操作無法復原。",
+    "failedToDelete": "刪除專案失敗。"
   },
 
   "conversations": {
@@ -140,6 +145,7 @@
     "count": "{{count}} 個對話",
     "count_other": "{{count}} 個對話",
     "endChatConfirm": "您確定要結束聊天「{{title}}」嗎？這將終止作用中的會話。",
+    "deleteConversationConfirm": "您確定要刪除對話「{{title}}」嗎？此動作無法復原。",
     "backend": "後端",
     "selectBackend": "選擇後端",
     "language": "語言",
@@ -180,7 +186,9 @@
     "cliLogsTitle": "CLI 輸入/輸出記錄",
     "logTypeIn": "輸入",
     "logTypeOut": "輸出",
-    "noLogsMessage": "尚無 CLI I/O 記錄。開始對話以查看原始通訊。"
+    "noLogsMessage": "尚無 CLI I/O 記錄。開始對話以查看原始通訊。",
+    "continueConversation": "繼續對話",
+    "startingConversation": "對話啟動中..."
   },
 
   "toolCalls": {
@@ -461,7 +469,8 @@
     "invalidInput": "提供了無效輸入",
     "permissionDenied": "權限被拒絕",
     "fileNotFound": "找不到檔案",
-    "directoryNotFound": "找不到資料夾"
+    "directoryNotFound": "找不到資料夾",
+    "failedToDelete": "刪除專案失敗。"
   },
 
   "time": {
@@ -502,7 +511,8 @@
     "fromCreatorsOf": "來自創作者",
     "languageSwitcher": "切換語言",
     "currentLanguage": "目前語言：{{language}}",
-    "directoryPanel": "目錄"
+    "directoryPanel": "目錄",
+    "returnToDashboard": "返回儀表板"
   },
 
   "directoryPanel": {

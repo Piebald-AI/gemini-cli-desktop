@@ -11,14 +11,22 @@ interface AppHeaderProps {
   onDirectoryPanelToggle?: () => void;
   isDirectoryPanelOpen?: boolean;
   hasActiveConversation?: boolean;
+  onReturnToDashboard?: () => void;
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
   onDirectoryPanelToggle,
   isDirectoryPanelOpen = false,
   hasActiveConversation = false,
+  onReturnToDashboard,
 }) => {
   const { t } = useTranslation();
+
+  const handleLogoClick = () => {
+    if (hasActiveConversation && onReturnToDashboard) {
+      onReturnToDashboard();
+    }
+  };
 
   return (
     <div className="border-b border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 flex-shrink-0">
@@ -27,7 +35,15 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           {/* Left section - Sidebar trigger + Desktop Logo */}
           <div className="flex flex-1 items-center gap-3">
             <SidebarTrigger />
-            <div className="flex items-center gap-1">
+            <div 
+              className={`flex items-center gap-1 ${
+                hasActiveConversation 
+                  ? "cursor-pointer hover:opacity-80 transition-opacity" 
+                  : ""
+              }`}
+              onClick={handleLogoClick}
+              title={hasActiveConversation ? t("header.returnToDashboard") : undefined}
+            >
               <SmartLogo />
               <DesktopText size="small" />
             </div>
