@@ -457,10 +457,19 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
     if !is_qwen {
         // Test Gemini CLI availability
         let test_result = if cfg!(windows) {
-            std::process::Command::new("cmd.exe")
-                .args(["/C", "gemini", "--version"])
-                .creation_flags(CREATE_NO_WINDOW)
-                .output()
+            #[cfg(windows)]
+            {
+                std::process::Command::new("cmd.exe")
+                    .args(["/C", "gemini", "--version"])
+                    .creation_flags(CREATE_NO_WINDOW)
+                    .output()
+            }
+            #[cfg(not(windows))]
+            {
+                std::process::Command::new("gemini")
+                    .arg("--version")
+                    .output()
+            }
         } else {
             std::process::Command::new("gemini")
                 .arg("--version")
