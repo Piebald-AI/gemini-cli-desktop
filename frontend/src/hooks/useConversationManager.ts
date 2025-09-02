@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Conversation, Message } from "../types";
+import { Conversation, Message, GeminiMessagePart } from "../types";
 import { api } from "../lib/api";
 import { ConversationHistoryEntry } from "../lib/webApi";
 
@@ -68,11 +68,26 @@ export const useConversationManager = () => {
       historyEntries?: ConversationHistoryEntry[],
       workingDirectory?: string
     ) => {
+      const parseMessageContent = (
+        content: string
+      ): GeminiMessagePart[] => {
+        const thinkingPrefix = "*Thinking:";
+        if (content.trim().startsWith(thinkingPrefix)) {
+          const thinkingContent = content
+            .trim()
+            .substring(thinkingPrefix.length)
+            .trim();
+          return [{ type: "thinking" as const, thinking: thinkingContent }];
+        }
+
+        return [{ type: "text" as const, text: content }];
+      };
+
       try {
         console.log("🔄 Loading conversation from history:", chatId);
 
         // Extract timestamp from historical chat ID (format: project_hash/rpc-log-timestamp.log)
-        const timestampMatch = chatId.match(/rpc-log-(\d+)\.log$/);
+        const timestampMatch = chatId.match(/rpc-log-(\\d+)\\.log$/);
         const timestamp = timestampMatch ? timestampMatch[1] : null;
 
         // Check if there's already an active conversation with this timestamp or chatId
@@ -103,20 +118,33 @@ export const useConversationManager = () => {
         let messages: Message[];
         let conversationTitle: string;
 
+        const mapHistoryToMessages = (
+          entries: ConversationHistoryEntry[]
+        ): Message[] => {
+          return entries.map((entry): Message => {
+            const sender = entry.role as "user" | "assistant";
+            if (sender === "user") {
+              return {
+                id: entry.id,
+                timestamp: new Date(entry.timestamp_iso),
+                sender: "user",
+                parts: [{ type: "text", text: entry.content }],
+              };
+            } else {
+              return {
+                id: entry.id,
+                timestamp: new Date(entry.timestamp_iso),
+                sender: "assistant",
+                parts: parseMessageContent(entry.content),
+              };
+            }
+          });
+        };
+
         if (historyEntries && title) {
           // Use provided data (from project detail page)
           console.log("📥 Using provided conversation data");
-          messages = historyEntries.map((entry: ConversationHistoryEntry) => ({
-            id: entry.id,
-            timestamp: new Date(entry.timestamp_iso),
-            sender: entry.role as "user" | "assistant",
-            parts: [
-              {
-                type: "text" as const,
-                text: entry.content,
-              },
-            ],
-          }));
+          messages = mapHistoryToMessages(historyEntries);
           conversationTitle = title;
         } else {
           // Fetch from API (original behavior)
@@ -146,22 +174,7 @@ export const useConversationManager = () => {
             console.warn("⚠️  API returned no messages for chatId:", chatId);
           }
 
-          messages = (detailedConversation.messages || []).map(
-            (entry: ConversationHistoryEntry) => {
-              console.log("🔄 Converting message entry:", entry);
-              return {
-                id: entry.id,
-                timestamp: new Date(entry.timestamp_iso),
-                sender: entry.role as "user" | "assistant",
-                parts: [
-                  {
-                    type: "text" as const,
-                    text: entry.content,
-                  },
-                ],
-              };
-            }
-          );
+          messages = mapHistoryToMessages(detailedConversation.messages || []);
           conversationTitle = detailedConversation.chat.title;
         }
 
@@ -274,6 +287,7 @@ export const useConversationManager = () => {
     },
     [conversations]
   );
+
 
   const removeConversation = useCallback(
     (conversationId: string) => {
