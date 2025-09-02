@@ -84,9 +84,8 @@ fn generate_title_from_messages(log_path: &Path) -> String {
 
         if !first_user_message.is_empty() {
             let mut title = first_user_message;
-            if title.len() > 50 {
-                title.truncate(50);
-                title.push_str("...");
+            if title.chars().count() > 50 {
+                title = title.chars().take(50).collect::<String>() + "...";
             }
             title
         } else {
@@ -128,8 +127,8 @@ fn generate_enhanced_chat_info(
                 {
                     for content_block in prompt {
                         if let Some(text) = content_block.get("text").and_then(|t| t.as_str()) {
-                            title = if text.len() > 50 {
-                                format!("{}...", &text[..50])
+                            title = if text.chars().count() > 50 {
+                                format!("{}...", text.chars().take(50).collect::<String>())
                             } else {
                                 text.to_string()
                             };
@@ -174,8 +173,8 @@ fn generate_enhanced_chat_info(
                                     if let Some(text) =
                                         content_block.get("text").and_then(|t| t.as_str())
                                     {
-                                        if text.len() > 20 {
-                                            summary_parts.push(format!("User: {}...", &text[..20]));
+                                        if text.chars().count() > 20 {
+                                            summary_parts.push(format!("User: {}...", text.chars().take(20).collect::<String>()));
                                         } else {
                                             summary_parts.push(format!("User: {}", text));
                                         }
@@ -186,10 +185,10 @@ fn generate_enhanced_chat_info(
                         "agent_message_chunk" => {
                             if let Some(params) = json.get("params")
                                 && let Some(text) = params.get("chunk").and_then(|c| c.as_str())
-                                && text.len() > 20
+                                && text.chars().count() > 20
                                 && !summary_parts.is_empty()
                             {
-                                summary_parts.push(format!("AI: {}...", &text[..20]));
+                                summary_parts.push(format!("AI: {}...", text.chars().take(20).collect::<String>()));
                             }
                         }
                         _ => {}
