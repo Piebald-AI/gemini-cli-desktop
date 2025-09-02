@@ -174,7 +174,10 @@ fn generate_enhanced_chat_info(
                                         content_block.get("text").and_then(|t| t.as_str())
                                     {
                                         if text.chars().count() > 20 {
-                                            summary_parts.push(format!("User: {}...", text.chars().take(20).collect::<String>()));
+                                            summary_parts.push(format!(
+                                                "User: {}...",
+                                                text.chars().take(20).collect::<String>()
+                                            ));
                                         } else {
                                             summary_parts.push(format!("User: {}", text));
                                         }
@@ -188,7 +191,10 @@ fn generate_enhanced_chat_info(
                                 && text.chars().count() > 20
                                 && !summary_parts.is_empty()
                             {
-                                summary_parts.push(format!("AI: {}...", text.chars().take(20).collect::<String>()));
+                                summary_parts.push(format!(
+                                    "AI: {}...",
+                                    text.chars().take(20).collect::<String>()
+                                ));
                             }
                         }
                         _ => {}

@@ -68,9 +68,7 @@ export const useConversationManager = () => {
       historyEntries?: ConversationHistoryEntry[],
       workingDirectory?: string
     ) => {
-      const parseMessageContent = (
-        content: string
-      ): GeminiMessagePart[] => {
+      const parseMessageContent = (content: string): GeminiMessagePart[] => {
         const thinkingPrefix = "*Thinking:";
         if (content.trim().startsWith(thinkingPrefix)) {
           const thinkingContent = content
@@ -287,7 +285,6 @@ export const useConversationManager = () => {
     },
     [conversations]
   );
-
 
   const removeConversation = useCallback(
     (conversationId: string) => {
