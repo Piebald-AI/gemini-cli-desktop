@@ -133,11 +133,11 @@ impl SessionManager {
                         use std::os::windows::process::CommandExt;
                         use std::process::Command as StdCommand;
 
-                        StdCommand::new("taskkill")
-                            .args(["/PID", &pid.to_string(), "/F"])
-                            .creation_flags(CREATE_NO_WINDOW)
-                            .output()
-                            .context("Failed to kill process")?
+                        let mut cmd = StdCommand::new("taskkill");
+                        cmd.args(["/PID", &pid.to_string(), "/F"]);
+                        #[cfg(windows)]
+                        cmd.creation_flags(CREATE_NO_WINDOW);
+                        cmd.output().context("Failed to kill process")?
                     }
                     #[cfg(not(windows))]
                     {
@@ -342,6 +342,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
                 );
                 let mut c = Command::new("cmd.exe");
                 c.args(["/C", "qwen", "--experimental-acp"]);
+                #[cfg(windows)]
                 c.creation_flags(CREATE_NO_WINDOW);
                 c
             }
@@ -417,6 +418,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
 
                 let mut c = Command::new("cmd.exe");
                 c.args(args);
+                #[cfg(windows)]
                 c.creation_flags(CREATE_NO_WINDOW);
                 c
             }
