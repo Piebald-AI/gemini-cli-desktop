@@ -6,10 +6,21 @@ import { api } from "../lib/api";
 import { useConversation } from "../contexts/ConversationContext";
 import { useBackend } from "../contexts/BackendContext";
 import { getBackendText } from "../utils/backendText";
-import { ArrowLeft, Plus, Loader2 } from "lucide-react";
+import { ArrowLeft, Plus, Loader2, Trash2 } from "lucide-react";
 import { EnrichedProject } from "../lib/webApi";
 import { useTranslation } from "react-i18next";
 import { GitInfo } from "../components/common/GitInfo";
+import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from "../components/ui/dialog";
 
 type Discussion = {
   id: string;
@@ -26,7 +37,8 @@ export default function ProjectDetailPage() {
   const { t } = useTranslation();
   const { id: projectId } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { startNewConversation } = useConversation();
+  const { startNewConversation, loadConversationFromHistory } =
+    useConversation();
   const { selectedBackend } = useBackend();
   const backendText = getBackendText(selectedBackend);
   const [discussions, setDiscussions] = React.useState<Discussion[] | null>(
@@ -37,6 +49,20 @@ export default function ProjectDetailPage() {
   );
   const [error, setError] = React.useState<string | null>(null);
   const [isCreatingDiscussion, setIsCreatingDiscussion] = React.useState(false);
+  const [loadingDiscussionId, setLoadingDiscussionId] = React.useState<
+    string | null
+  >(null);
+
+  const fetchDiscussions = React.useCallback(async () => {
+    if (!projectId) return;
+    try {
+      const data = await api.get_project_discussions({ projectId });
+      setDiscussions(data);
+    } catch (e) {
+      setError(t("errors.failedToLoadProjectData"));
+      console.error(e);
+    }
+  }, [projectId, t]);
 
   React.useEffect(() => {
     if (!projectId) return;
@@ -54,8 +80,7 @@ export default function ProjectDetailPage() {
         }
 
         // Then get discussions
-        const data = await api.get_project_discussions({ projectId });
-        if (!cancelled) setDiscussions(data);
+        fetchDiscussions();
       } catch (e) {
         if (!cancelled) setError(t("errors.failedToLoadProjectData"));
         console.error(e);
@@ -64,7 +89,7 @@ export default function ProjectDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, [projectId, t]);
+  }, [projectId, t, fetchDiscussions]);
 
   if (!projectId) {
     return <div>{t("projects.invalidProjectId")}</div>;
@@ -89,6 +114,80 @@ export default function ProjectDetailPage() {
       setError(errorMessage);
     } finally {
       setIsCreatingDiscussion(false);
+    }
+  };
+
+  const handleDiscussionClick = async (discussion: Discussion) => {
+    if (!projectData) return;
+
+    setLoadingDiscussionId(discussion.id);
+    try {
+      console.log("📖 [ProjectDetail] Loading discussion:", discussion.id);
+      const detailedConversation = await api.get_detailed_conversation({
+        chatId: discussion.id,
+      });
+
+      console.log(
+        "📖 [ProjectDetail] Loaded conversation:",
+        detailedConversation
+      );
+      console.log("📖 [ProjectDetail] Chat info:", detailedConversation.chat);
+      console.log(
+        "📖 [ProjectDetail] Messages:",
+        detailedConversation.messages
+      );
+      console.log(
+        "📖 [ProjectDetail] Messages type:",
+        typeof detailedConversation.messages
+      );
+      console.log(
+        "📖 [ProjectDetail] Messages length:",
+        detailedConversation.messages?.length
+      );
+
+      if (
+        !detailedConversation.messages ||
+        detailedConversation.messages.length === 0
+      ) {
+        console.warn(
+          "⚠️  [ProjectDetail] API returned no messages for discussion:",
+          discussion.id
+        );
+        console.warn(
+          "⚠️  [ProjectDetail] This might be a backend issue or empty conversation"
+        );
+      }
+
+      // Load conversation into context and navigate to chat view
+      await loadConversationFromHistory(
+        discussion.id,
+        discussion.title,
+        detailedConversation.messages,
+        projectData.metadata.path
+      );
+
+      navigate("/");
+      toast.success("Chat session loaded successfully");
+    } catch (error) {
+      console.error("Failed to load discussion:", error);
+      const errorMessage =
+        typeof error === "string"
+          ? error
+          : (error as Error)?.message || "Failed to load chat session";
+      toast.error(errorMessage);
+    } finally {
+      setLoadingDiscussionId(null);
+    }
+  };
+
+  const handleDeleteDiscussion = async (discussionId: string) => {
+    try {
+      await api.delete_conversation({ chatId: discussionId });
+      fetchDiscussions(); // Refetch discussions after deletion
+      toast.success(t("projects.discussionDeleted"));
+    } catch (error) {
+      console.error("Failed to delete discussion:", error);
+      toast.error(t("projects.failedToDeleteDiscussion"));
     }
   };
 
@@ -167,33 +266,84 @@ export default function ProjectDetailPage() {
             ) : (
               <div className="grid grid-cols-1 gap-3">
                 {discussions.map((d) => (
-                  <Card key={d.id} className="p-4">
-                    <div className="flex flex-col">
-                      <div className="font-medium">{d.title}</div>
-                      <div className="mt-1 text-xs text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
-                        {d.started_at_iso ? (
-                          <span>
-                            {t("projects.started")}{" "}
-                            {new Date(d.started_at_iso).toLocaleString()}
-                          </span>
-                        ) : (
-                          <span className="opacity-70">
-                            {t("projects.startTimeUnavailable")}
-                          </span>
-                        )}
-                        {typeof d.message_count === "number" ? (
-                          <span>
-                            {d.message_count}{" "}
-                            {d.message_count === 1
-                              ? t("projects.message")
-                              : t("projects.messages")}
-                          </span>
-                        ) : (
-                          <span className="opacity-70">
-                            {t("projects.messagesUnavailable")}
-                          </span>
-                        )}
+                  <Card
+                    key={d.id}
+                    className="p-4 transition-colors hover:bg-accent relative group"
+                  >
+                    <div
+                      className="cursor-pointer"
+                      onClick={() => handleDiscussionClick(d)}
+                    >
+                      <div className="flex flex-col">
+                        <div className="flex items-center justify-between">
+                          <div className="font-medium">{d.title}</div>
+                          {loadingDiscussionId === d.id && (
+                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                          )}
+                        </div>
+                        <div className="mt-1 text-xs text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
+                          {d.started_at_iso ? (
+                            <span>
+                              {t("projects.started")}{" "}
+                              {new Date(d.started_at_iso).toLocaleString()}
+                            </span>
+                          ) : (
+                            <span className="opacity-70">
+                              {t("projects.startTimeUnavailable")}
+                            </span>
+                          )}
+                          {typeof d.message_count === "number" ? (
+                            <span>
+                              {d.message_count}{" "}
+                              {d.message_count === 1
+                                ? t("projects.message")
+                                : t("projects.messages")}
+                            </span>
+                          ) : (
+                            <span className="opacity-70">
+                              {t("projects.messagesUnavailable")}
+                            </span>
+                          )}
+                        </div>
                       </div>
+                    </div>
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 text-gray-400 hover:bg-gray-200 hover:text-red-500"
+                            onClick={(e) => e.stopPropagation()}
+                            title={t("common.delete")}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>{t("common.delete")}</DialogTitle>
+                            <DialogDescription>
+                              {t("projects.deleteDiscussionConfirm", {
+                                name: d.title,
+                              })}
+                            </DialogDescription>
+                          </DialogHeader>
+                          <DialogFooter>
+                            <DialogClose asChild>
+                              <Button variant="outline">
+                                {t("common.cancel")}
+                              </Button>
+                            </DialogClose>
+                            <Button
+                              variant="destructive"
+                              onClick={() => handleDeleteDiscussion(d.id)}
+                            >
+                              {t("common.delete")}
+                            </Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
                     </div>
                   </Card>
                 ))}

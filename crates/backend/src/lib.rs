@@ -44,7 +44,10 @@ pub use projects::{
     make_enriched_project, maybe_touch_updated_at,
 };
 pub use rpc::{JsonRpcError, JsonRpcRequest, JsonRpcResponse, RpcLogger};
-pub use search::{MessageMatch, RecentChat, SearchFilters, SearchResult};
+pub use search::{
+    ConversationHistoryEntry, DetailedConversation, MessageMatch, RecentChat, SearchFilters,
+    SearchResult,
+};
 pub use security::{execute_terminal_command, is_command_safe};
 use std::path::Path;
 
@@ -676,14 +679,40 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
         search::get_project_discussions(project_id).await
     }
 
-    /// Get git repository information for a directory
-    pub async fn get_git_info(&self, directory: String) -> Result<Option<GitInfo>> {
-        filesystem::get_git_info(directory).await
+    /// Get detailed conversation history with all messages
+    pub async fn get_detailed_conversation(&self, chat_id: &str) -> Result<DetailedConversation> {
+        search::get_detailed_conversation(chat_id).await
     }
 
-    /// Read file content with safety checks
+    /// Export conversation history in various formats
+    pub async fn export_conversation_history(&self, chat_id: &str, format: &str) -> Result<String> {
+        search::export_conversation_history(chat_id, format).await
+    }
+
+    pub async fn delete_conversation(&self, chat_id: &str) -> Result<()> {
+        search::delete_conversation(chat_id).await
+    }
+
+    pub async fn delete_project(&self, project_id: &str) -> Result<()> {
+        projects::delete_project(project_id).await
+    }
+
+    /// Get git repository information for a directory
+    pub async fn get_git_info(&self, path: String) -> Result<Option<GitInfo>> {
+        filesystem::get_git_info(path).await
+    }
+
+    /// Read file content
     pub async fn read_file_content(&self, path: String) -> Result<FileContent> {
         filesystem::read_file_content(path).await
+    }
+
+    /// Get the canonical path for a given path
+    pub async fn get_canonical_path(&self, path: String) -> Result<String> {
+        let canonical_path = std::path::Path::new(&path)
+            .canonicalize()
+            .context("Failed to canonicalize path")?;
+        Ok(canonical_path.to_string_lossy().to_string())
     }
 
     /// Read file content with options to force display as text

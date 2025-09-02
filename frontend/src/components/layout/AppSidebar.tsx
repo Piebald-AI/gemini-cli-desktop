@@ -15,6 +15,7 @@ interface AppSidebarProps {
   onConversationSelect: (conversationId: string) => void;
   onKillProcess: (conversationId: string) => void;
   onModelChange?: (model: string) => void;
+  onRemoveConversation: (id: string) => void;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   children: React.ReactNode;
@@ -27,6 +28,7 @@ export function AppSidebar({
   onConversationSelect,
   onKillProcess,
   onModelChange,
+  onRemoveConversation,
   open,
   onOpenChange,
   children,
@@ -47,6 +49,7 @@ export function AppSidebar({
             onConversationSelect={onConversationSelect}
             onKillProcess={onKillProcess}
             onModelChange={onModelChange}
+            onRemoveConversation={onRemoveConversation}
           />
         </SidebarContent>
       </Sidebar>

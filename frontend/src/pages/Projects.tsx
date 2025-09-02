@@ -4,7 +4,17 @@ import { useTranslation } from "react-i18next";
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { api } from "../lib/api";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "../components/ui/dialog";
 import { EnrichedProject } from "../lib/webApi";
 import { useBackend } from "../contexts/BackendContext";
 import { getBackendText } from "../utils/backendText";
@@ -38,6 +48,19 @@ export default function ProjectsPage() {
     }
   }, [t]);
 
+  const handleDeleteProject = React.useCallback(
+    async (projectId: string) => {
+      try {
+        await api.delete_project({ projectId });
+        refreshProjects();
+      } catch (e) {
+        console.error("Failed to delete project:", e);
+        setError(t("projects.failedToDelete"));
+      }
+    },
+    [refreshProjects, t]
+  );
+
   React.useEffect(() => {
     refreshProjects();
   }, [refreshProjects]);
@@ -47,13 +70,18 @@ export default function ProjectsPage() {
       setIsAddingProject(true);
       setError(null);
 
-      // Generate SHA256 hash of the selected directory path
-      const sha256 = await generateSHA256(selectedPath);
+      // Get canonical path from backend
+      const canonicalPath = await api.get_canonical_path({
+        path: selectedPath,
+      });
+
+      // Generate SHA256 hash of the canonical directory path
+      const sha256 = await generateSHA256(canonicalPath);
 
       // Create or get the project (this will create metadata if it doesn't exist)
       const project = await api.get_project({
         sha256,
-        externalRootPath: selectedPath,
+        externalRootPath: selectedPath, // Send original path here
       });
 
       // Refresh the projects list to include the new project
@@ -147,10 +175,12 @@ export default function ProjectsPage() {
               {projects.map((p) => (
                 <Card
                   key={p.sha256}
-                  className="cursor-pointer transition hover:shadow"
-                  onClick={() => navigate(`/projects/${p.sha256}`)}
+                  className="cursor-pointer transition hover:shadow relative"
                 >
-                  <div className="pl-4">
+                  <div
+                    className="p-4"
+                    onClick={() => navigate(`/projects/${p.sha256}`)}
+                  >
                     <div
                       className="font-medium text-sm"
                       title={p.metadata.path}
@@ -177,6 +207,44 @@ export default function ProjectsPage() {
                         </span>
                       )}
                     </div>
+                  </div>
+                  <div className="absolute top-2 right-2">
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 text-gray-400 hover:bg-gray-200 hover:text-red-500"
+                          onClick={(e) => e.stopPropagation()}
+                          title={t("common.delete")}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>{t("common.delete")}</DialogTitle>
+                          <DialogDescription>
+                            {t("projects.deleteProjectConfirm", {
+                              name: p.metadata.friendly_name,
+                            })}
+                          </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter>
+                          <DialogClose asChild>
+                            <Button variant="outline">
+                              {t("common.cancel")}
+                            </Button>
+                          </DialogClose>
+                          <Button
+                            variant="destructive"
+                            onClick={() => handleDeleteProject(p.sha256)}
+                          >
+                            {t("common.delete")}
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 </Card>
               ))}

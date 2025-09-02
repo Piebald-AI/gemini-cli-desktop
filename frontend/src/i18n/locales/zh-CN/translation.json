@@ -113,7 +113,12 @@
     "sha256Label": "SHA256：",
     "nameLabel": "名称：",
     "firstUsedLabel": "首次使用：",
-    "lastUpdatedLabel": "最后更新："
+    "lastUpdatedLabel": "最后更新：",
+    "discussionDeleted": "讨论已成功删除。",
+    "failedToDeleteDiscussion": "删除讨论失败。",
+    "deleteDiscussionConfirm": "您确定要删除讨论“{{name}}”吗？此操作无法撤销。",
+    "deleteProjectConfirm": "您确定要删除项目“{{name}}”吗？此操作无法撤销。",
+    "failedToDelete": "删除项目失败。"
   },
 
   "conversations": {
@@ -140,6 +145,7 @@
     "count": "{{count}} 个对话",
     "count_other": "{{count}} 个对话",
     "endChatConfirm": "您确定要结束聊天\"{{title}}\"吗？这将终止活跃会话。",
+    "deleteConversationConfirm": "您确定要删除对话\"{{title}}\"吗？此操作无法撤销。",
     "backend": "后端",
     "selectBackend": "选择后端",
     "language": "语言",
@@ -180,7 +186,9 @@
     "cliLogsTitle": "CLI 输入/输出日志",
     "logTypeIn": "输入",
     "logTypeOut": "输出",
-    "noLogsMessage": "尚无 CLI I/O 日志。开始对话以查看原始通信。"
+    "noLogsMessage": "尚无 CLI I/O 日志。开始对话以查看原始通信。",
+    "continueConversation": "继续对话",
+    "startingConversation": "对话启动中..."
   },
 
   "toolCalls": {
@@ -461,7 +469,8 @@
     "invalidInput": "提供的输入无效",
     "permissionDenied": "权限被拒绝",
     "fileNotFound": "文件未找到",
-    "directoryNotFound": "目录未找到"
+    "directoryNotFound": "目录未找到",
+    "failedToDelete": "删除项目失败。"
   },
 
   "time": {
@@ -502,7 +511,8 @@
     "fromCreatorsOf": "来自创建者",
     "languageSwitcher": "切换语言",
     "currentLanguage": "当前语言：{{language}}",
-    "directoryPanel": "目录"
+    "directoryPanel": "目录",
+    "returnToDashboard": "返回仪表板"
   },
 
   "directoryPanel": {

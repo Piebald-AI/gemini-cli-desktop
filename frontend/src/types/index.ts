@@ -42,6 +42,13 @@ export interface Conversation {
   messages: Message[];
   lastUpdated: Date;
   isStreaming: boolean;
+  isActive: boolean;
+  isNew?: boolean;
+  workingDirectory?: string;
+  metadata?: {
+    timestamp?: string;
+    chatId?: string;
+  };
 }
 
 export interface CliIO {

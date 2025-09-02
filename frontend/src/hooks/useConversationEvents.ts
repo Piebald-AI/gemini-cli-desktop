@@ -5,6 +5,12 @@ import { Conversation, Message, CliIO } from "../types";
 import { ToolCallConfirmationRequest } from "../utils/toolCallParser";
 import { type ToolCall } from "../utils/toolCallParser";
 
+// Sanitize conversation ID for use in Tauri event names
+// Tauri event names must include only alphanumeric characters, `-`, `/`, `:` and `_`
+function sanitizeEventName(conversationId: string): string {
+  return conversationId.replace(/[^a-zA-Z0-9\-/:_]/g, "_");
+}
+
 interface ToolLocation {
   file?: string;
   directory?: string;
@@ -233,12 +239,13 @@ export const useConversationEvents = (
       }
 
       const unlistenFunctions: (() => void)[] = [];
+      const sanitizedId = sanitizeEventName(conversationId);
 
       try {
         const unlistenCliIo = await listen<{
           type: "input" | "output";
           data: string;
-        }>(`cli-io-${conversationId}`, (event) => {
+        }>(`cli-io-${sanitizedId}`, (event) => {
           setCliIOLogs((prev) => [
             ...prev,
             {
@@ -283,7 +290,7 @@ export const useConversationEvents = (
 
         // Listen for streaming text chunks.
         const unlistenAiOutput = await listen<string>(
-          `ai-output-${conversationId}`,
+          `ai-output-${sanitizedId}`,
           (event) => {
             updateConversation(conversationId, (conv, lastMsg) => {
               conv.isStreaming = true;
@@ -319,7 +326,7 @@ export const useConversationEvents = (
 
         // Listen for thinking chunks.
         const unlistenAiThought = await listen<string>(
-          `ai-thought-${conversationId}`,
+          `ai-thought-${sanitizedId}`,
           (event) => {
             updateConversation(conversationId, (conv, lastMsg) => {
               conv.isStreaming = true;
@@ -354,7 +361,7 @@ export const useConversationEvents = (
 
         // Listen for pure ACP session updates (replaces ai-tool-call and ai-tool-call-update)
         const unlistenAcpSessionUpdate = await listen<EventPayload>(
-          `acp-session-update-${conversationId}`,
+          `acp-session-update-${sanitizedId}`,
           ({ payload: update }: { payload: EventPayload }) => {
             if (!isSessionUpdateEvent(update)) {
               console.warn(
@@ -515,7 +522,7 @@ export const useConversationEvents = (
 
         // Also listen for errors
         const unlistenAiError = await listen<string>(
-          `ai-error-${conversationId}`,
+          `ai-error-${sanitizedId}`,
           (event) => {
             updateConversation(conversationId, (conv) => {
               conv.isStreaming = false;
@@ -537,7 +544,7 @@ export const useConversationEvents = (
 
         // Listen for pure ACP permission requests (replaces ai-tool-call-confirmation)
         const unlistenAcpPermissionRequest = await listen<EventPayload>(
-          `acp-permission-request-${conversationId}`,
+          `acp-permission-request-${sanitizedId}`,
           (event) => {
             if (!isPermissionRequestEvent(event.payload)) {
               console.warn(
@@ -786,7 +793,7 @@ export const useConversationEvents = (
 
         // Listen for turn finished events to stop streaming indicator
         const unlistenAiTurnFinished = await listen<boolean>(
-          `ai-turn-finished-${conversationId}`,
+          `ai-turn-finished-${sanitizedId}`,
           () => {
             updateConversation(conversationId, (conv) => {
               conv.isStreaming = false;

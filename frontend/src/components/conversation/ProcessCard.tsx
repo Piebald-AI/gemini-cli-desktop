@@ -8,7 +8,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "../ui/dialog";
-import { X, Clock } from "lucide-react";
+import { X, Clock, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { Conversation, ProcessStatus } from "../../types";
 
@@ -24,6 +24,7 @@ interface ProcessCardProps {
     value: { id: string; title: string } | null
   ) => void;
   formatLastUpdated: (date: Date) => string;
+  onRemoveConversation: (id: string) => void;
 }
 
 export function ProcessCard({
@@ -36,6 +37,7 @@ export function ProcessCard({
   selectedConversationForEnd,
   setSelectedConversationForEnd,
   formatLastUpdated,
+  onRemoveConversation,
 }: ProcessCardProps) {
   const { t } = useTranslation();
 
@@ -118,6 +120,50 @@ export function ProcessCard({
     </Dialog>
   );
 
+  const renderDeleteButton = () => (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-4 w-4 p-0 text-gray-400 hover:bg-gray-200 hover:text-red-500"
+          onClick={(e) => e.stopPropagation()} // Prevent selecting conversation
+          title={t("common.delete")}
+        >
+          <Trash2 className="h-3 w-3" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t("common.delete")}</DialogTitle>
+          <DialogDescription>
+            {t("conversations.deleteConversationConfirm", {
+              title: conversation.title,
+            })}
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => {
+              /* Close dialog */
+            }}
+          >
+            {t("common.cancel")}
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={() => {
+              onRemoveConversation(conversation.id);
+            }}
+          >
+            {t("common.delete")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+
   if (ENABLE_NEW_PANEL_DESIGN) {
     // New Panel Design with gradients
     return (
@@ -146,7 +192,10 @@ export function ProcessCard({
         >
           <div className="flex justify-between items-center">
             <span>Session {conversation.id.slice(-6).toUpperCase()}</span>
-            {isActive && renderKillButton()}
+            <div className="flex items-center gap-1">
+              {isActive && renderKillButton()}
+              {!isActive && renderDeleteButton()}
+            </div>
           </div>
         </div>
         <div className="p-3">
@@ -258,6 +307,7 @@ export function ProcessCard({
                     <div className="bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 text-xs px-2 py-1 rounded-md flex items-center gap-1">
                       <div className="w-2 h-2 bg-gray-400 rounded-full" />
                       <span>{t("conversations.inactive")}</span>
+                      {!isActive && renderDeleteButton()}
                     </div>
                   )}
                 </div>

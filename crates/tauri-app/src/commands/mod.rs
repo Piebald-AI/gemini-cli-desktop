@@ -1,7 +1,7 @@
 use crate::state::AppState;
 use backend::{
-    DirEntry, EnrichedProject, FileContent, GeminiAuthConfig, GitInfo, ProcessStatus,
-    ProjectsResponse, QwenConfig, RecentChat, SearchFilters, SearchResult,
+    DetailedConversation, DirEntry, EnrichedProject, FileContent, GeminiAuthConfig, GitInfo,
+    ProcessStatus, ProjectsResponse, QwenConfig, RecentChat, SearchFilters, SearchResult,
 };
 use serde_json::Value;
 use tauri::{AppHandle, State};
@@ -325,6 +325,31 @@ pub async fn get_project_discussions(
 }
 
 #[tauri::command]
+pub async fn get_detailed_conversation(
+    chat_id: String,
+    state: State<'_, AppState>,
+) -> Result<DetailedConversation, String> {
+    state
+        .backend
+        .get_detailed_conversation(&chat_id)
+        .await
+        .map_err(|e| format!("{e:#}"))
+}
+
+#[tauri::command]
+pub async fn export_conversation_history(
+    chat_id: String,
+    format: String,
+    state: State<'_, AppState>,
+) -> Result<String, String> {
+    state
+        .backend
+        .export_conversation_history(&chat_id, &format)
+        .await
+        .map_err(|e| format!("{e:#}"))
+}
+
+#[tauri::command]
 pub async fn debug_environment() -> Result<String, String> {
     async fn test_cli_version(cli_name: &str) -> String {
         {
@@ -500,6 +525,42 @@ pub async fn read_file_content(
     state
         .backend
         .read_file_content(path)
+        .await
+        .map_err(|e| format!("{e:#}"))
+}
+
+#[tauri::command]
+pub async fn delete_conversation(
+    chat_id: String,
+    state: tauri::State<'_, AppState>,
+) -> Result<(), String> {
+    state
+        .backend
+        .delete_conversation(&chat_id)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn delete_project(
+    project_id: String,
+    state: tauri::State<'_, AppState>,
+) -> Result<(), String> {
+    state
+        .backend
+        .delete_project(&project_id)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_canonical_path(
+    path: String,
+    state: State<'_, AppState>,
+) -> Result<String, String> {
+    state
+        .backend
+        .get_canonical_path(path)
         .await
         .map_err(|e| format!("{e:#}"))
 }
