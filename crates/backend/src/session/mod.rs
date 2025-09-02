@@ -230,15 +230,8 @@ async fn send_jsonrpc_request<E: EventEmitter>(
     let mut line = String::new();
     let trimmed_line = loop {
         line.clear();
-        select! {
-            result = reader.read_line(&mut line) => {
-                if let Err(e) = result {
-                    anyhow::bail!("Failed to read response: {e}");
-                }
-            }
-            _ = sleep(Duration::from_secs(10)) => {
-                return Ok(None);
-            }
+        if let Err(e) = reader.read_line(&mut line).await {
+            anyhow::bail!("Failed to read response: {e}");
         }
 
         let trimmed = line.trim();
