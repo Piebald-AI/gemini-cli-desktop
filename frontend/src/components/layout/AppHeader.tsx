@@ -35,14 +35,18 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           {/* Left section - Sidebar trigger + Desktop Logo */}
           <div className="flex flex-1 items-center gap-3">
             <SidebarTrigger />
-            <div 
+            <div
               className={`flex items-center gap-1 ${
-                hasActiveConversation 
-                  ? "cursor-pointer hover:opacity-80 transition-opacity" 
+                hasActiveConversation
+                  ? "cursor-pointer hover:opacity-80 transition-opacity"
                   : ""
               }`}
               onClick={handleLogoClick}
-              title={hasActiveConversation ? t("header.returnToDashboard") : undefined}
+              title={
+                hasActiveConversation
+                  ? t("header.returnToDashboard")
+                  : undefined
+              }
             >
               <SmartLogo />
               <DesktopText size="small" />

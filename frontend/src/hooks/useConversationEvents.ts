@@ -8,7 +8,7 @@ import { type ToolCall } from "../utils/toolCallParser";
 // Sanitize conversation ID for use in Tauri event names
 // Tauri event names must include only alphanumeric characters, `-`, `/`, `:` and `_`
 function sanitizeEventName(conversationId: string): string {
-  return conversationId.replace(/[^a-zA-Z0-9\-/:_]/g, '_');
+  return conversationId.replace(/[^a-zA-Z0-9\-/:_]/g, "_");
 }
 
 interface ToolLocation {

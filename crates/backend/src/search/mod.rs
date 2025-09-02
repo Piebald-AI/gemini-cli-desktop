@@ -97,7 +97,9 @@ fn generate_title_from_messages(log_path: &Path) -> String {
     }
 }
 
-fn generate_enhanced_chat_info(log_path: &Path) -> (String, Option<String>, Vec<String>, u32, Option<String>) {
+fn generate_enhanced_chat_info(
+    log_path: &Path,
+) -> (String, Option<String>, Vec<String>, u32, Option<String>) {
     let mut title = "Chat Session".to_string();
     let mut summary_parts = Vec::new();
     let mut tags = Vec::new();
@@ -119,20 +121,20 @@ fn generate_enhanced_chat_info(log_path: &Path) -> (String, Option<String>, Vec<
                 }
 
                 // Extract first user message for title
-                if is_first_user_msg && line.contains(r#""method":"session/prompt""#) {
-                    if let Some(params) = json.get("params") {
-                        if let Some(prompt) = params.get("prompt").and_then(|p| p.as_array()) {
-                            for content_block in prompt {
-                                if let Some(text) = content_block.get("text").and_then(|t| t.as_str()) {
-                                    title = if text.len() > 50 {
-                                        format!("{}...", &text[..50])
-                                    } else {
-                                        text.to_string()
-                                    };
-                                    is_first_user_msg = false;
-                                    break;
-                                }
-                            }
+                if is_first_user_msg
+                    && line.contains(r#""method":"session/prompt""#)
+                    && let Some(params) = json.get("params")
+                    && let Some(prompt) = params.get("prompt").and_then(|p| p.as_array())
+                {
+                    for content_block in prompt {
+                        if let Some(text) = content_block.get("text").and_then(|t| t.as_str()) {
+                            title = if text.len() > 50 {
+                                format!("{}...", &text[..50])
+                            } else {
+                                text.to_string()
+                            };
+                            is_first_user_msg = false;
+                            break;
                         }
                     }
                 }
@@ -140,12 +142,12 @@ fn generate_enhanced_chat_info(log_path: &Path) -> (String, Option<String>, Vec<
                 // Count tool calls
                 if line.contains(r#""method":"tool_call""#) {
                     tool_calls_count += 1;
-                    
+
                     // Extract tool names for tags
-                    if let Some(params) = json.get("params") {
-                        if let Some(tool_name) = params.get("name").and_then(|n| n.as_str()) {
-                            tags.push(format!("tool:{}", tool_name));
-                        }
+                    if let Some(params) = json.get("params")
+                        && let Some(tool_name) = params.get("name").and_then(|n| n.as_str())
+                    {
+                        tags.push(format!("tool:{}", tool_name));
                     }
                 }
 
@@ -164,27 +166,30 @@ fn generate_enhanced_chat_info(log_path: &Path) -> (String, Option<String>, Vec<
                     match method {
                         "session/prompt" => {
                             _message_count += 1;
-                            if let Some(params) = json.get("params") {
-                                if let Some(prompt) = params.get("prompt").and_then(|p| p.as_array()) {
-                                    for content_block in prompt {
-                                        if let Some(text) = content_block.get("text").and_then(|t| t.as_str()) {
-                                            if text.len() > 20 {
-                                                summary_parts.push(format!("User: {}...", &text[..20]));
-                                            } else {
-                                                summary_parts.push(format!("User: {}", text));
-                                            }
+                            if let Some(params) = json.get("params")
+                                && let Some(prompt) =
+                                    params.get("prompt").and_then(|p| p.as_array())
+                            {
+                                for content_block in prompt {
+                                    if let Some(text) =
+                                        content_block.get("text").and_then(|t| t.as_str())
+                                    {
+                                        if text.len() > 20 {
+                                            summary_parts.push(format!("User: {}...", &text[..20]));
+                                        } else {
+                                            summary_parts.push(format!("User: {}", text));
                                         }
                                     }
                                 }
                             }
                         }
                         "agent_message_chunk" => {
-                            if let Some(params) = json.get("params") {
-                                if let Some(text) = params.get("chunk").and_then(|c| c.as_str()) {
-                                    if text.len() > 20 && !summary_parts.is_empty() {
-                                        summary_parts.push(format!("AI: {}...", &text[..20]));
-                                    }
-                                }
+                            if let Some(params) = json.get("params")
+                                && let Some(text) = params.get("chunk").and_then(|c| c.as_str())
+                                && text.len() > 20
+                                && !summary_parts.is_empty()
+                            {
+                                summary_parts.push(format!("AI: {}...", &text[..20]));
                             }
                         }
                         _ => {}
@@ -196,10 +201,10 @@ fn generate_enhanced_chat_info(log_path: &Path) -> (String, Option<String>, Vec<
 
     // Add file extension tags
     for file_ref in &file_refs {
-        if let Some(ext) = std::path::Path::new(file_ref).extension() {
-            if let Some(ext_str) = ext.to_str() {
-                tags.push(format!("file:{}", ext_str));
-            }
+        if let Some(ext) = std::path::Path::new(file_ref).extension()
+            && let Some(ext_str) = ext.to_str()
+        {
+            tags.push(format!("file:{}", ext_str));
         }
     }
 
@@ -277,9 +282,9 @@ pub async fn get_recent_chats() -> Result<Vec<RecentChat>> {
                                     + std::time::Duration::from_millis(timestamp_ms),
                             );
 
-                            let (enhanced_title, summary, tags, _tool_calls_count, last_activity) = 
+                            let (enhanced_title, summary, tags, _tool_calls_count, last_activity) =
                                 generate_enhanced_chat_info(&log_path);
-                            
+
                             all_chats.push(RecentChat {
                                 id: format!("{project_hash}/{filename}"),
                                 title: enhanced_title,
@@ -453,9 +458,9 @@ pub async fn get_project_discussions(project_id: &str) -> Result<Vec<RecentChat>
                     std::time::UNIX_EPOCH + std::time::Duration::from_millis(timestamp_ms),
                 );
 
-                let (enhanced_title, summary, tags, _tool_calls_count, last_activity) = 
+                let (enhanced_title, summary, tags, _tool_calls_count, last_activity) =
                     generate_enhanced_chat_info(&log_path);
-                
+
                 chats.push(RecentChat {
                     id: format!("{project_id}/{filename}"),
                     title: enhanced_title,
@@ -479,10 +484,10 @@ pub async fn get_detailed_conversation(chat_id: &str) -> Result<DetailedConversa
     if parts.len() != 2 {
         anyhow::bail!("Invalid chat ID format");
     }
-    
+
     let project_hash = parts[0];
     let filename = parts[1];
-    
+
     let home = std::env::var("HOME")
         .unwrap_or_else(|_| std::env::var("USERPROFILE").unwrap_or_else(|_| ".".to_string()));
 
@@ -499,12 +504,12 @@ pub async fn get_detailed_conversation(chat_id: &str) -> Result<DetailedConversa
     // Parse timestamp from filename
     let timestamp_ms = parse_timestamp_from_filename(filename)
         .ok_or_else(|| anyhow::anyhow!("Invalid filename format"))?;
-    
+
     let datetime = DateTime::<Local>::from(
         std::time::UNIX_EPOCH + std::time::Duration::from_millis(timestamp_ms),
     );
 
-    let (title, summary, tags, tool_calls_count, last_activity) = 
+    let (title, summary, tags, tool_calls_count, last_activity) =
         generate_enhanced_chat_info(&log_path);
     let message_count = count_messages_in_log(&log_path);
 
@@ -538,154 +543,173 @@ pub async fn get_detailed_conversation(chat_id: &str) -> Result<DetailedConversa
             } else {
                 &datetime.to_rfc3339()
             };
-            
+
             // Find the JSON part of the line (after the timestamp and [Gemini] parts)
             let json_start = if let Some(pos) = line.find('{') {
                 pos
             } else {
                 continue; // Skip lines without JSON
             };
-            
+
             if let Ok(json) = serde_json::from_str::<serde_json::Value>(&line[json_start..]) {
                 let timestamp = line_timestamp;
 
                 if let Some(method) = json.get("method").and_then(|m| m.as_str()) {
                     match method {
                         "session/prompt" => {
-                            if let Some(params) = json.get("params") {
-                                if let Some(prompt) = params.get("prompt").and_then(|p| p.as_array()) {
-                                    for content_block in prompt {
-                                        if let Some(text) = content_block.get("text").and_then(|t| t.as_str()) {
+                            if let Some(params) = json.get("params")
+                                && let Some(prompt) =
+                                    params.get("prompt").and_then(|p| p.as_array())
+                            {
+                                for content_block in prompt {
+                                    if let Some(text) =
+                                        content_block.get("text").and_then(|t| t.as_str())
+                                    {
+                                        messages.push(ConversationHistoryEntry {
+                                            id: format!("msg_{}", message_id_counter),
+                                            role: "user".to_string(),
+                                            content: text.to_string(),
+                                            timestamp_iso: timestamp.to_string(),
+                                            message_type: "text".to_string(),
+                                            metadata: Some(json.clone()),
+                                        });
+                                        message_id_counter += 1;
+                                        context_parts.push(format!("User: {}", text));
+                                    }
+                                }
+                            }
+                        }
+                        "session/update" => {
+                            if let Some(params) = json.get("params")
+                                && let Some(update) = params.get("update")
+                                && let Some(session_update) =
+                                    update.get("sessionUpdate").and_then(|s| s.as_str())
+                            {
+                                match session_update {
+                                    "agent_message_chunk" => {
+                                        if let Some(content) = update.get("content")
+                                            && let Some(text) =
+                                                content.get("text").and_then(|t| t.as_str())
+                                        {
+                                            // Aggregate chunks into complete messages
+                                            if let Some(last_msg) = messages.last_mut()
+                                                && last_msg.role == "assistant"
+                                                && last_msg.message_type == "text"
+                                            {
+                                                last_msg.content.push_str(text);
+                                                continue;
+                                            }
+
                                             messages.push(ConversationHistoryEntry {
                                                 id: format!("msg_{}", message_id_counter),
-                                                role: "user".to_string(),
+                                                role: "assistant".to_string(),
                                                 content: text.to_string(),
                                                 timestamp_iso: timestamp.to_string(),
                                                 message_type: "text".to_string(),
                                                 metadata: Some(json.clone()),
                                             });
                                             message_id_counter += 1;
-                                            context_parts.push(format!("User: {}", text));
+                                            context_parts.push(format!("AI: {}", text));
                                         }
                                     }
-                                }
-                            }
-                        }
-                        "session/update" => {
-                            if let Some(params) = json.get("params") {
-                                if let Some(update) = params.get("update") {
-                                    if let Some(session_update) = update.get("sessionUpdate").and_then(|s| s.as_str()) {
-                                        match session_update {
-                                            "agent_message_chunk" => {
-                                                if let Some(content) = update.get("content") {
-                                                    if let Some(text) = content.get("text").and_then(|t| t.as_str()) {
-                                                        // Aggregate chunks into complete messages
-                                                        if let Some(last_msg) = messages.last_mut() {
-                                                            if last_msg.role == "assistant" && last_msg.message_type == "text" {
-                                                                last_msg.content.push_str(text);
-                                                                continue;
-                                                            }
-                                                        }
-                                                        
-                                                        messages.push(ConversationHistoryEntry {
-                                                            id: format!("msg_{}", message_id_counter),
-                                                            role: "assistant".to_string(),
-                                                            content: text.to_string(),
-                                                            timestamp_iso: timestamp.to_string(),
-                                                            message_type: "text".to_string(),
-                                                            metadata: Some(json.clone()),
-                                                        });
-                                                        message_id_counter += 1;
-                                                        context_parts.push(format!("AI: {}", text));
+                                    "agent_thought_chunk" => {
+                                        if let Some(content) = update.get("content")
+                                            && let Some(text) =
+                                                content.get("text").and_then(|t| t.as_str())
+                                        {
+                                            // Add thinking content to messages for history
+                                            messages.push(ConversationHistoryEntry {
+                                                id: format!("msg_{}", message_id_counter),
+                                                role: "assistant".to_string(),
+                                                content: format!("*Thinking: {}*", text),
+                                                timestamp_iso: timestamp.to_string(),
+                                                message_type: "thinking".to_string(),
+                                                metadata: Some(json.clone()),
+                                            });
+                                            message_id_counter += 1;
+                                        }
+                                    }
+                                    "tool_call" => {
+                                        if let Some(_tool_call_id) =
+                                            update.get("toolCallId").and_then(|id| id.as_str())
+                                            && let Some(title) =
+                                                update.get("title").and_then(|t| t.as_str())
+                                        {
+                                            messages.push(ConversationHistoryEntry {
+                                                id: format!("msg_{}", message_id_counter),
+                                                role: "assistant".to_string(),
+                                                content: format!("Called tool: {}", title),
+                                                timestamp_iso: timestamp.to_string(),
+                                                message_type: "tool_call".to_string(),
+                                                metadata: Some(json.clone()),
+                                            });
+                                            message_id_counter += 1;
+
+                                            // Extract file references from locations
+                                            if let Some(locations) =
+                                                update.get("locations").and_then(|l| l.as_array())
+                                            {
+                                                for location in locations {
+                                                    if let Some(path) = location
+                                                        .get("path")
+                                                        .and_then(|p| p.as_str())
+                                                    {
+                                                        file_references.insert(path.to_string());
                                                     }
                                                 }
-                                            }
-                                            "agent_thought_chunk" => {
-                                                if let Some(content) = update.get("content") {
-                                                    if let Some(text) = content.get("text").and_then(|t| t.as_str()) {
-                                                        // Add thinking content to messages for history
-                                                        messages.push(ConversationHistoryEntry {
-                                                            id: format!("msg_{}", message_id_counter),
-                                                            role: "assistant".to_string(),
-                                                            content: format!("*Thinking: {}*", text),
-                                                            timestamp_iso: timestamp.to_string(),
-                                                            message_type: "thinking".to_string(),
-                                                            metadata: Some(json.clone()),
-                                                        });
-                                                        message_id_counter += 1;
-                                                    }
-                                                }
-                                            }
-                                            "tool_call" => {
-                                                if let Some(_tool_call_id) = update.get("toolCallId").and_then(|id| id.as_str()) {
-                                                    if let Some(title) = update.get("title").and_then(|t| t.as_str()) {
-                                                        messages.push(ConversationHistoryEntry {
-                                                            id: format!("msg_{}", message_id_counter),
-                                                            role: "assistant".to_string(),
-                                                            content: format!("Called tool: {}", title),
-                                                            timestamp_iso: timestamp.to_string(),
-                                                            message_type: "tool_call".to_string(),
-                                                            metadata: Some(json.clone()),
-                                                        });
-                                                        message_id_counter += 1;
-                                                        
-                                                        // Extract file references from locations
-                                                        if let Some(locations) = update.get("locations").and_then(|l| l.as_array()) {
-                                                            for location in locations {
-                                                                if let Some(path) = location.get("path").and_then(|p| p.as_str()) {
-                                                                    file_references.insert(path.to_string());
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                            _ => {
-                                                // Handle other session update types if needed
                                             }
                                         }
+                                    }
+                                    _ => {
+                                        // Handle other session update types if needed
                                     }
                                 }
                             }
                         }
                         "agent_message_chunk" => {
-                            if let Some(params) = json.get("params") {
-                                if let Some(chunk) = params.get("chunk").and_then(|c| c.as_str()) {
-                                    // Aggregate chunks into complete messages
-                                    if let Some(last_msg) = messages.last_mut() {
-                                        if last_msg.role == "assistant" && last_msg.message_type == "text" {
-                                            last_msg.content.push_str(chunk);
-                                            continue;
-                                        }
-                                    }
-                                    
-                                    messages.push(ConversationHistoryEntry {
-                                        id: format!("msg_{}", message_id_counter),
-                                        role: "assistant".to_string(),
-                                        content: chunk.to_string(),
-                                        timestamp_iso: timestamp.to_string(),
-                                        message_type: "text".to_string(),
-                                        metadata: Some(json.clone()),
-                                    });
-                                    message_id_counter += 1;
-                                    context_parts.push(format!("AI: {}", chunk));
+                            if let Some(params) = json.get("params")
+                                && let Some(chunk) = params.get("chunk").and_then(|c| c.as_str())
+                            {
+                                // Aggregate chunks into complete messages
+                                if let Some(last_msg) = messages.last_mut()
+                                    && last_msg.role == "assistant"
+                                    && last_msg.message_type == "text"
+                                {
+                                    last_msg.content.push_str(chunk);
+                                    continue;
                                 }
+
+                                messages.push(ConversationHistoryEntry {
+                                    id: format!("msg_{}", message_id_counter),
+                                    role: "assistant".to_string(),
+                                    content: chunk.to_string(),
+                                    timestamp_iso: timestamp.to_string(),
+                                    message_type: "text".to_string(),
+                                    metadata: Some(json.clone()),
+                                });
+                                message_id_counter += 1;
+                                context_parts.push(format!("AI: {}", chunk));
                             }
                         }
                         "tool_call" => {
                             if let Some(params) = json.get("params") {
-                                let tool_name = params.get("name")
+                                let tool_name = params
+                                    .get("name")
                                     .and_then(|n| n.as_str())
                                     .unwrap_or("unknown");
-                                
-                                let tool_args = params.get("arguments")
+
+                                let tool_args = params
+                                    .get("arguments")
                                     .map(|a| a.to_string())
                                     .unwrap_or_default();
 
                                 messages.push(ConversationHistoryEntry {
                                     id: format!("msg_{}", message_id_counter),
                                     role: "assistant".to_string(),
-                                    content: format!("Called tool: {} with args: {}", tool_name, tool_args),
+                                    content: format!(
+                                        "Called tool: {} with args: {}",
+                                        tool_name, tool_args
+                                    ),
                                     timestamp_iso: timestamp.to_string(),
                                     message_type: "tool_call".to_string(),
                                     metadata: Some(json.clone()),
@@ -693,7 +717,9 @@ pub async fn get_detailed_conversation(chat_id: &str) -> Result<DetailedConversa
                                 message_id_counter += 1;
 
                                 // Extract file references
-                                if let Some(file_path) = params.get("file_path").and_then(|p| p.as_str()) {
+                                if let Some(file_path) =
+                                    params.get("file_path").and_then(|p| p.as_str())
+                                {
                                     file_references.insert(file_path.to_string());
                                 }
                                 if let Some(path) = params.get("path").and_then(|p| p.as_str()) {
@@ -703,7 +729,8 @@ pub async fn get_detailed_conversation(chat_id: &str) -> Result<DetailedConversa
                         }
                         "tool_call_result" => {
                             if let Some(params) = json.get("params") {
-                                let result_content = params.get("result")
+                                let result_content = params
+                                    .get("result")
                                     .map(|r| r.to_string())
                                     .unwrap_or_default();
 
@@ -726,8 +753,15 @@ pub async fn get_detailed_conversation(chat_id: &str) -> Result<DetailedConversa
     }
 
     let context_summary = if context_parts.len() > 2 {
-        Some(format!("Conversation summary: {}...", 
-            context_parts.iter().take(3).cloned().collect::<Vec<_>>().join(" ▸ ")))
+        Some(format!(
+            "Conversation summary: {}...",
+            context_parts
+                .iter()
+                .take(3)
+                .cloned()
+                .collect::<Vec<_>>()
+                .join(" ▸ ")
+        ))
     } else {
         None
     };
@@ -743,28 +777,26 @@ pub async fn get_detailed_conversation(chat_id: &str) -> Result<DetailedConversa
 
 pub async fn export_conversation_history(chat_id: &str, format: &str) -> Result<String> {
     let detailed = get_detailed_conversation(chat_id).await?;
-    
+
     match format.to_lowercase().as_str() {
-        "json" => {
-            serde_json::to_string_pretty(&detailed)
-                .context("Failed to serialize conversation to JSON")
-        }
+        "json" => serde_json::to_string_pretty(&detailed)
+            .context("Failed to serialize conversation to JSON"),
         "markdown" => {
             let mut md = String::new();
             md.push_str(&format!("# {}\n\n", detailed.chat.title));
             md.push_str(&format!("**Started:** {}\n", detailed.chat.started_at_iso));
             md.push_str(&format!("**Messages:** {}\n", detailed.chat.message_count));
-            
+
             if let Some(summary) = &detailed.chat.summary {
                 md.push_str(&format!("**Summary:** {}\n", summary));
             }
-            
+
             if !detailed.chat.tags.is_empty() {
                 md.push_str(&format!("**Tags:** {}\n", detailed.chat.tags.join(", ")));
             }
-            
+
             md.push_str("\n## Conversation\n\n");
-            
+
             for msg in &detailed.messages {
                 match msg.role.as_str() {
                     "user" => md.push_str(&format!("**User:** {}\n\n", msg.content)),
@@ -773,17 +805,17 @@ pub async fn export_conversation_history(chat_id: &str, format: &str) -> Result<
                     _ => md.push_str(&format!("**{}:** {}\n\n", msg.role, msg.content)),
                 }
             }
-            
+
             if !detailed.file_references.is_empty() {
                 md.push_str("\n## File References\n\n");
                 for file_ref in &detailed.file_references {
                     md.push_str(&format!("- `{}`\n", file_ref));
                 }
             }
-            
+
             Ok(md)
         }
-        _ => anyhow::bail!("Unsupported export format: {}", format)
+        _ => anyhow::bail!("Unsupported export format: {}", format),
     }
 }
 
@@ -792,7 +824,7 @@ pub async fn delete_conversation(chat_id: &str) -> Result<()> {
     if parts.len() != 2 {
         anyhow::bail!("Invalid chat ID format");
     }
-    
+
     let project_hash = parts[0];
     let filename = parts[1];
 

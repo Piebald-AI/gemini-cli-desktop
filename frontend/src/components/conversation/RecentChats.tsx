@@ -33,15 +33,17 @@ function RecentChats() {
         if (!active) return;
         console.log("📋 Loaded recent chats:", items);
         console.log("📊 Total chats found:", items.length);
-        
+
         // Filter out chats with no messages
-        const filteredItems = items.filter(chat => chat.message_count > 0);
+        const filteredItems = items.filter((chat) => chat.message_count > 0);
         console.log("📊 Chats with messages:", filteredItems.length);
-        
+
         filteredItems.forEach((chat, index) => {
-          console.log(`💬 Chat ${index + 1}: ${chat.title} (${chat.message_count} messages)`);
+          console.log(
+            `💬 Chat ${index + 1}: ${chat.title} (${chat.message_count} messages)`
+          );
         });
-        
+
         setChats(filteredItems);
         setState("loaded");
       } catch (e: unknown) {
@@ -72,13 +74,18 @@ function RecentChats() {
       console.log("🔄 Starting to load conversation...");
       const loadedConversation = await loadConversationFromHistory(chat.id);
       console.log("✅ Conversation loaded:", loadedConversation);
-      console.log("📊 Loaded conversation messages count:", loadedConversation.messages.length);
+      console.log(
+        "📊 Loaded conversation messages count:",
+        loadedConversation.messages.length
+      );
       console.log("🔄 Navigating to home...");
       // The conversation should be automatically set as active after loading
       navigate("/"); // Navigate to home page where conversation will be displayed
     } catch (error) {
       console.error("❌ Failed to load conversation:", error);
-      toast.error(t("errors.failedToLoadConversation") || "Failed to load conversation");
+      toast.error(
+        t("errors.failedToLoadConversation") || "Failed to load conversation"
+      );
     } finally {
       setLoadingChatId(null);
     }

@@ -69,7 +69,9 @@ export interface API {
   list_files_recursive(params: { path: string }): Promise<DirEntry[]>;
   list_volumes(): Promise<DirEntry[]>;
   get_recent_chats(): Promise<RecentChat[]>;
-  get_detailed_conversation(params: { chatId: string }): Promise<DetailedConversation>;
+  get_detailed_conversation(params: {
+    chatId: string;
+  }): Promise<DetailedConversation>;
   delete_conversation(params: { chatId: string }): Promise<void>;
   get_canonical_path(params: { path: string }): Promise<string>;
   search_chats(params: {

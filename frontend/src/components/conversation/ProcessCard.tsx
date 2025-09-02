@@ -137,11 +137,18 @@ export function ProcessCard({
         <DialogHeader>
           <DialogTitle>{t("common.delete")}</DialogTitle>
           <DialogDescription>
-            {t("conversations.deleteConversationConfirm", { title: conversation.title })}
+            {t("conversations.deleteConversationConfirm", {
+              title: conversation.title,
+            })}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button variant="outline" onClick={() => { /* Close dialog */ }}>
+          <Button
+            variant="outline"
+            onClick={() => {
+              /* Close dialog */
+            }}
+          >
             {t("common.cancel")}
           </Button>
           <Button

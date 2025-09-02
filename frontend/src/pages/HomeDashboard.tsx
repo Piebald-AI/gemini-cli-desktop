@@ -235,7 +235,6 @@ export const HomeDashboard: React.FC = () => {
               </CardHeader>
             </Card>
           </div>
-
         </div>
       )}
     </>

@@ -37,7 +37,8 @@ export default function ProjectDetailPage() {
   const { t } = useTranslation();
   const { id: projectId } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { startNewConversation, loadConversationFromHistory } = useConversation();
+  const { startNewConversation, loadConversationFromHistory } =
+    useConversation();
   const { selectedBackend } = useBackend();
   const backendText = getBackendText(selectedBackend);
   const [discussions, setDiscussions] = React.useState<Discussion[] | null>(
@@ -48,7 +49,9 @@ export default function ProjectDetailPage() {
   );
   const [error, setError] = React.useState<string | null>(null);
   const [isCreatingDiscussion, setIsCreatingDiscussion] = React.useState(false);
-  const [loadingDiscussionId, setLoadingDiscussionId] = React.useState<string | null>(null);
+  const [loadingDiscussionId, setLoadingDiscussionId] = React.useState<
+    string | null
+  >(null);
 
   const fetchDiscussions = React.useCallback(async () => {
     if (!projectId) return;
@@ -116,25 +119,45 @@ export default function ProjectDetailPage() {
 
   const handleDiscussionClick = async (discussion: Discussion) => {
     if (!projectData) return;
-    
+
     setLoadingDiscussionId(discussion.id);
     try {
       console.log("📖 [ProjectDetail] Loading discussion:", discussion.id);
-      const detailedConversation = await api.get_detailed_conversation({ 
-        chatId: discussion.id 
+      const detailedConversation = await api.get_detailed_conversation({
+        chatId: discussion.id,
       });
-      
-      console.log("📖 [ProjectDetail] Loaded conversation:", detailedConversation);
+
+      console.log(
+        "📖 [ProjectDetail] Loaded conversation:",
+        detailedConversation
+      );
       console.log("📖 [ProjectDetail] Chat info:", detailedConversation.chat);
-      console.log("📖 [ProjectDetail] Messages:", detailedConversation.messages);
-      console.log("📖 [ProjectDetail] Messages type:", typeof detailedConversation.messages);
-      console.log("📖 [ProjectDetail] Messages length:", detailedConversation.messages?.length);
-      
-      if (!detailedConversation.messages || detailedConversation.messages.length === 0) {
-        console.warn("⚠️  [ProjectDetail] API returned no messages for discussion:", discussion.id);
-        console.warn("⚠️  [ProjectDetail] This might be a backend issue or empty conversation");
+      console.log(
+        "📖 [ProjectDetail] Messages:",
+        detailedConversation.messages
+      );
+      console.log(
+        "📖 [ProjectDetail] Messages type:",
+        typeof detailedConversation.messages
+      );
+      console.log(
+        "📖 [ProjectDetail] Messages length:",
+        detailedConversation.messages?.length
+      );
+
+      if (
+        !detailedConversation.messages ||
+        detailedConversation.messages.length === 0
+      ) {
+        console.warn(
+          "⚠️  [ProjectDetail] API returned no messages for discussion:",
+          discussion.id
+        );
+        console.warn(
+          "⚠️  [ProjectDetail] This might be a backend issue or empty conversation"
+        );
       }
-      
+
       // Load conversation into context and navigate to chat view
       await loadConversationFromHistory(
         discussion.id,
@@ -142,7 +165,7 @@ export default function ProjectDetailPage() {
         detailedConversation.messages,
         projectData.metadata.path
       );
-      
+
       navigate("/");
       toast.success("Chat session loaded successfully");
     } catch (error) {
@@ -243,11 +266,14 @@ export default function ProjectDetailPage() {
             ) : (
               <div className="grid grid-cols-1 gap-3">
                 {discussions.map((d) => (
-                  <Card 
-                    key={d.id} 
+                  <Card
+                    key={d.id}
                     className="p-4 transition-colors hover:bg-accent relative group"
                   >
-                    <div className="cursor-pointer" onClick={() => handleDiscussionClick(d)}>
+                    <div
+                      className="cursor-pointer"
+                      onClick={() => handleDiscussionClick(d)}
+                    >
                       <div className="flex flex-col">
                         <div className="flex items-center justify-between">
                           <div className="font-medium">{d.title}</div>

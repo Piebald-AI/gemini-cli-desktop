@@ -46,7 +46,8 @@ function RootLayoutContent() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [directoryPanelOpen, setDirectoryPanelOpen] = useState(false);
   const [workingDirectory, setWorkingDirectory] = useState<string>(".");
-  const [isContinuingConversation, setIsContinuingConversation] = useState(false);
+  const [isContinuingConversation, setIsContinuingConversation] =
+    useState(false);
   const messageInputBarRef = useRef<MessageInputBarRef>(null);
   const listenerCleanups = useRef(new Map<string, () => void>());
 
@@ -154,7 +155,9 @@ function RootLayoutContent() {
 
   useEffect(() => {
     const setup = async () => {
-      const activeConversations = new Set(conversationsWithStatus.map((c) => c.id));
+      const activeConversations = new Set(
+        conversationsWithStatus.map((c) => c.id)
+      );
       // Cleanup listeners for deleted conversations
       for (const id of listenerCleanups.current.keys()) {
         if (!activeConversations.has(id)) {
@@ -191,7 +194,13 @@ function RootLayoutContent() {
       initialMessages: Message[] = []
     ): Promise<string> => {
       const convId = Date.now().toString();
-      createNewConversation(convId, title, initialMessages, false, workingDirectory);
+      createNewConversation(
+        convId,
+        title,
+        initialMessages,
+        false,
+        workingDirectory
+      );
       setActiveConversation(convId);
 
       if (workingDirectory) {
@@ -263,23 +272,25 @@ function RootLayoutContent() {
     }
   }, [activeConversation, directoryPanelOpen]);
 
-  const handleContinueConversation = useCallback(async (conversationToContinue: Conversation) => {
-    if (!conversationToContinue || isContinuingConversation) return;
+  const handleContinueConversation = useCallback(
+    async (conversationToContinue: Conversation) => {
+      if (!conversationToContinue || isContinuingConversation) return;
 
-    setIsContinuingConversation(true);
-    try {
-      const newTitle = `(Continued) ${conversationToContinue.title}`;
-      
-      await startNewConversation(
-        newTitle, 
-        conversationToContinue.workingDirectory, 
-        conversationToContinue.messages
-      );
-    } finally {
-      setIsContinuingConversation(false);
-    }
+      setIsContinuingConversation(true);
+      try {
+        const newTitle = `(Continued) ${conversationToContinue.title}`;
 
-}, [startNewConversation, isContinuingConversation]);
+        await startNewConversation(
+          newTitle,
+          conversationToContinue.workingDirectory,
+          conversationToContinue.messages
+        );
+      } finally {
+        setIsContinuingConversation(false);
+      }
+    },
+    [startNewConversation, isContinuingConversation]
+  );
 
   // Handle mention insertion from DirectoryPanel
   const handleMentionInsert = useCallback((mention: string) => {
@@ -360,26 +371,28 @@ function RootLayoutContent() {
             </ConversationContext.Provider>
 
             {currentConversationWithStatus && (
-                <>
-                  {console.log(
-                    "📝 [App] Rendering MessageInputBar with workingDirectory:",
-                    workingDirectory
-                  )}
-                  <MessageInputBar
-                    ref={messageInputBarRef}
-                    input={input}
-                    isCliInstalled={isCliInstalled}
-                    cliIOLogs={cliIOLogs}
-                    handleInputChange={handleInputChange}
-                    handleSendMessage={handleSendMessage}
-                    workingDirectory={workingDirectory}
-                    isConversationActive={currentConversationWithStatus.isActive}
-                    onContinueConversation={() => handleContinueConversation(currentConversationWithStatus)}
-                    isContinuingConversation={isContinuingConversation}
-                    isNew={currentConversationWithStatus.isNew}
-                  />
-                </>
-              )}
+              <>
+                {console.log(
+                  "📝 [App] Rendering MessageInputBar with workingDirectory:",
+                  workingDirectory
+                )}
+                <MessageInputBar
+                  ref={messageInputBarRef}
+                  input={input}
+                  isCliInstalled={isCliInstalled}
+                  cliIOLogs={cliIOLogs}
+                  handleInputChange={handleInputChange}
+                  handleSendMessage={handleSendMessage}
+                  workingDirectory={workingDirectory}
+                  isConversationActive={currentConversationWithStatus.isActive}
+                  onContinueConversation={() =>
+                    handleContinueConversation(currentConversationWithStatus)
+                  }
+                  isContinuingConversation={isContinuingConversation}
+                  isNew={currentConversationWithStatus.isNew}
+                />
+              </>
+            )}
           </div>
 
           {/* Directory Panel */}

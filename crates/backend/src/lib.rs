@@ -45,7 +45,8 @@ pub use projects::{
 };
 pub use rpc::{JsonRpcError, JsonRpcRequest, JsonRpcResponse, RpcLogger};
 pub use search::{
-    ConversationHistoryEntry, DetailedConversation, MessageMatch, RecentChat, SearchFilters, SearchResult,
+    ConversationHistoryEntry, DetailedConversation, MessageMatch, RecentChat, SearchFilters,
+    SearchResult,
 };
 pub use security::{execute_terminal_command, is_command_safe};
 use std::path::Path;

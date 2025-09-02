@@ -187,7 +187,9 @@ export const webApi: API = {
 
   async get_detailed_conversation(params: { chatId: string }) {
     const encodedChatId = encodeURIComponent(params.chatId);
-    const response = await apiClient.get<DetailedConversation>(`/conversations/${encodedChatId}`);
+    const response = await apiClient.get<DetailedConversation>(
+      `/conversations/${encodedChatId}`
+    );
     return response.data;
   },
 
@@ -197,7 +199,10 @@ export const webApi: API = {
   },
 
   async get_canonical_path(params: { path: string }): Promise<string> {
-    const response = await apiClient.post<string>("/get-canonical-path", params);
+    const response = await apiClient.post<string>(
+      "/get-canonical-path",
+      params
+    );
     return response.data;
   },
 

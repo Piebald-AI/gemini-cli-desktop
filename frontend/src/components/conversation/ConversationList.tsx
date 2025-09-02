@@ -70,7 +70,7 @@ export function ConversationList({
     let status = processStatuses.find(
       (status) => status.conversation_id === conversation.id
     );
-    
+
     // If no direct match and conversation has metadata with timestamp,
     // try matching by timestamp (for historical conversations with active processes)
     if (!status && conversation.metadata?.timestamp) {
@@ -78,7 +78,7 @@ export function ConversationList({
         (status) => status.conversation_id === conversation.metadata!.timestamp
       );
     }
-    
+
     return status;
   };
 

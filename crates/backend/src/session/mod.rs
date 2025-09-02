@@ -468,7 +468,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
                 .arg("--version")
                 .output()
         };
-        
+
         match test_result {
             Ok(output) => {
                 if output.status.success() {
@@ -476,12 +476,16 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
                 } else {
                     let stderr = String::from_utf8_lossy(&output.stderr);
                     println!("❌ [PRECHECK] Gemini CLI returned error: {stderr}");
-                    anyhow::bail!("Gemini CLI test failed. Please ensure:\n1. Gemini CLI is properly installed\n2. You have an active internet connection\n3. Authentication is configured correctly\n\nError: {stderr}")
+                    anyhow::bail!(
+                        "Gemini CLI test failed. Please ensure:\n1. Gemini CLI is properly installed\n2. You have an active internet connection\n3. Authentication is configured correctly\n\nError: {stderr}"
+                    )
                 }
             }
             Err(e) => {
                 println!("❌ [PRECHECK] Cannot execute Gemini CLI: {e}");
-                anyhow::bail!("Gemini CLI not found or not executable. Please ensure:\n1. Gemini CLI is installed (run: pip install google-generativeai)\n2. 'gemini' command is in your PATH\n3. You have proper permissions to execute it\n\nError: {e}")
+                anyhow::bail!(
+                    "Gemini CLI not found or not executable. Please ensure:\n1. Gemini CLI is installed (run: pip install google-generativeai)\n2. 'gemini' command is in your PATH\n3. You have proper permissions to execute it\n\nError: {e}"
+                )
             }
         }
     } else {
@@ -688,7 +692,9 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
         serde_json::from_value(result.result.unwrap_or_default())
             .context("Failed to parse session result")?
     } else {
-        anyhow::bail!("No valid JSON response received from Gemini CLI initialize request. This usually indicates:\n1. Gemini CLI is not properly installed or not in PATH\n2. Authentication failed (check API keys or OAuth setup)\n3. Network connectivity issues\n4. CLI process crashed or failed to start\n\nPlease check the console output above for more details.");
+        anyhow::bail!(
+            "No valid JSON response received from Gemini CLI initialize request. This usually indicates:\n1. Gemini CLI is not properly installed or not in PATH\n2. Authentication failed (check API keys or OAuth setup)\n3. Network connectivity issues\n4. CLI process crashed or failed to start\n\nPlease check the console output above for more details."
+        );
     };
 
     println!(

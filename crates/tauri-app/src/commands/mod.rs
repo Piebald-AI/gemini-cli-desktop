@@ -1,8 +1,7 @@
 use crate::state::AppState;
 use backend::{
-    DetailedConversation, DirEntry, EnrichedProject, FileContent, 
-    GeminiAuthConfig, GitInfo, ProcessStatus, ProjectsResponse, QwenConfig, RecentChat, 
-    SearchFilters, SearchResult,
+    DetailedConversation, DirEntry, EnrichedProject, FileContent, GeminiAuthConfig, GitInfo,
+    ProcessStatus, ProjectsResponse, QwenConfig, RecentChat, SearchFilters, SearchResult,
 };
 use serde_json::Value;
 use tauri::{AppHandle, State};
@@ -555,7 +554,10 @@ pub async fn delete_project(
 }
 
 #[tauri::command]
-pub async fn get_canonical_path(path: String, state: State<'_, AppState>) -> Result<String, String> {
+pub async fn get_canonical_path(
+    path: String,
+    state: State<'_, AppState>,
+) -> Result<String, String> {
     state
         .backend
         .get_canonical_path(path)

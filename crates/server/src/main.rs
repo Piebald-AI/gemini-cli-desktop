@@ -20,8 +20,8 @@ use tokio::sync::{Mutex, mpsc as tokio_mpsc};
 
 // Import backend functionality
 use backend::{
-    DetailedConversation, DirEntry, EnrichedProject, EventEmitter, 
-    FileContent, GeminiBackend, GitInfo, ProcessStatus, RecentChat, SearchFilters, SearchResult,
+    DetailedConversation, DirEntry, EnrichedProject, EventEmitter, FileContent, GeminiBackend,
+    GitInfo, ProcessStatus, RecentChat, SearchFilters, SearchResult,
 };
 
 static FRONTEND_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/../../frontend/dist");
@@ -471,7 +471,7 @@ async fn get_detailed_conversation(
 ) -> AppResult<Json<DetailedConversation>> {
     let decoded_chat_id = urlencoding::decode(&chat_id)
         .map_err(|e| AnyhowError::msg(format!("Failed to decode chat ID: {}", e)))?;
-    
+
     let backend = state.backend.lock().await;
     Ok(Json(
         backend

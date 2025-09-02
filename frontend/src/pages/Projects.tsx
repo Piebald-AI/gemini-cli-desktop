@@ -5,7 +5,16 @@ import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { api } from "../lib/api";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "../components/ui/dialog";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "../components/ui/dialog";
 import { EnrichedProject } from "../lib/webApi";
 import { useBackend } from "../contexts/BackendContext";
 import { getBackendText } from "../utils/backendText";
@@ -39,15 +48,18 @@ export default function ProjectsPage() {
     }
   }, [t]);
 
-  const handleDeleteProject = React.useCallback(async (projectId: string) => {
-    try {
-      await api.delete_project({ projectId });
-      refreshProjects();
-    } catch (e) {
-      console.error("Failed to delete project:", e);
-      setError(t("projects.failedToDelete"));
-    }
-  }, [refreshProjects, t]);
+  const handleDeleteProject = React.useCallback(
+    async (projectId: string) => {
+      try {
+        await api.delete_project({ projectId });
+        refreshProjects();
+      } catch (e) {
+        console.error("Failed to delete project:", e);
+        setError(t("projects.failedToDelete"));
+      }
+    },
+    [refreshProjects, t]
+  );
 
   React.useEffect(() => {
     refreshProjects();
@@ -59,7 +71,9 @@ export default function ProjectsPage() {
       setError(null);
 
       // Get canonical path from backend
-      const canonicalPath = await api.get_canonical_path({ path: selectedPath });
+      const canonicalPath = await api.get_canonical_path({
+        path: selectedPath,
+      });
 
       // Generate SHA256 hash of the canonical directory path
       const sha256 = await generateSHA256(canonicalPath);
