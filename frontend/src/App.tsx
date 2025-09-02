@@ -178,7 +178,7 @@ function RootLayoutContent() {
     };
 
     setup();
-  }, [conversations, setupEventListenerForConversation]);
+  }, [conversationsWithStatus, setupEventListenerForConversation]);
 
   const handleModelChange = useCallback((model: string) => {
     setSelectedModel(model);
