@@ -4,7 +4,6 @@ use std::process::Stdio;
 use std::sync::{Arc, Mutex};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader as AsyncBufReader};
 use tokio::process::{Child, ChildStdin, ChildStdout, Command};
-use tokio::select;
 use tokio::sync::mpsc;
 use tokio::time::{Duration, sleep};
 
@@ -136,11 +135,11 @@ impl SessionManager {
                         use std::os::windows::process::CommandExt;
                         use std::process::Command as StdCommand;
 
-                        StdCommand::new("taskkill")
-                            .args(["/PID", &pid.to_string(), "/F"])
-                            .creation_flags(CREATE_NO_WINDOW)
-                            .output()
-                            .context("Failed to kill process")?
+                        let mut cmd = StdCommand::new("taskkill");
+                        cmd.args(["/PID", &pid.to_string(), "/F"]);
+                        #[cfg(windows)]
+                        cmd.creation_flags(CREATE_NO_WINDOW);
+                        cmd.output().context("Failed to kill process")?
                     }
                     #[cfg(not(windows))]
                     {
@@ -233,16 +232,8 @@ async fn send_jsonrpc_request<E: EventEmitter>(
     let mut line = String::new();
     let trimmed_line = loop {
         line.clear();
-        select! {
-            result = reader.read_line(&mut line) => {
-                if let Err(e) = result {
-                    anyhow::bail!("Failed to read response: {e}");
-                }
-            }
-            _ = sleep(Duration::from_secs(30)) => {
-                println!("⏰ [TIMEOUT] No response from Gemini CLI after 30 seconds");
-                anyhow::bail!("Timeout waiting for Gemini CLI response. Please check:\n1. Gemini CLI is installed and in PATH\n2. Network connectivity\n3. Authentication configuration");
-            }
+        if let Err(e) = reader.read_line(&mut line).await {
+            anyhow::bail!("Failed to read response: {e}");
         }
 
         let trimmed = line.trim();
@@ -346,6 +337,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
                 );
                 let mut c = Command::new("cmd.exe");
                 c.args(["/C", "qwen", "--experimental-acp"]);
+                #[cfg(windows)]
                 c.creation_flags(CREATE_NO_WINDOW);
                 c
             }
@@ -421,6 +413,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
 
                 let mut c = Command::new("cmd.exe");
                 c.args(args);
+                #[cfg(windows)]
                 c.creation_flags(CREATE_NO_WINDOW);
                 c
             }
