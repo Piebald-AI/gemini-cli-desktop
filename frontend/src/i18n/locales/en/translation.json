@@ -176,7 +176,7 @@
   },
 
   "messages": {
-    "typeToMention": "Type @ to mention files...",
+    "typeToMention": "Type @ to mention files, Shift+Enter for new line",
     "rawJson": "Raw JSON",
     "messageRawJson": "Message Raw JSON",
     "cliInputOutputLogs": "CLI Input/Output Logs",
@@ -185,7 +185,7 @@
   },
 
   "messageInput": {
-    "placeholder": "Type @ to mention files...",
+    "placeholder": "Type @ to mention files, Shift+Enter for new line",
     "viewCliLogs": "View CLI Input/Output",
     "cliLogsTitle": "CLI Input/Output Logs",
     "logTypeIn": "IN",

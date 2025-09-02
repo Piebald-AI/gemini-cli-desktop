@@ -172,7 +172,7 @@
   },
 
   "messages": {
-    "typeToMention": "輸入 @ 來提及檔案...",
+    "typeToMention": "輸入 @ 來提及檔案，Shift+Enter 可換行",
     "rawJson": "原始 JSON",
     "messageRawJson": "訊息原始 JSON",
     "cliInputOutputLogs": "CLI 輸入/輸出記錄",
@@ -181,7 +181,7 @@
   },
 
   "messageInput": {
-    "placeholder": "輸入 @ 來提及檔案...",
+    "placeholder": "輸入 @ 來提及檔案，Shift+Enter 可換行",
     "viewCliLogs": "檢視 CLI 輸入/輸出",
     "cliLogsTitle": "CLI 輸入/輸出記錄",
     "logTypeIn": "輸入",

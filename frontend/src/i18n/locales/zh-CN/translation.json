@@ -172,7 +172,7 @@
   },
 
   "messages": {
-    "typeToMention": "输入 @ 来提及文件...",
+    "typeToMention": "输入 @ 来提及文件，Shift+Enter可换行",
     "rawJson": "原始 JSON",
     "messageRawJson": "消息原始 JSON",
     "cliInputOutputLogs": "CLI 输入/输出日志",
@@ -181,7 +181,7 @@
   },
 
   "messageInput": {
-    "placeholder": "输入 @ 来提及文件...",
+    "placeholder": "输入 @ 来提及文件，Shift+Enter可换行",
     "viewCliLogs": "查看 CLI 输入/输出",
     "cliLogsTitle": "CLI 输入/输出日志",
     "logTypeIn": "输入",

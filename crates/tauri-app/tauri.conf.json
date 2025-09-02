@@ -23,7 +23,16 @@
     },
     "withGlobalTauri": false
   },
-  "plugins": {},
+  "plugins": {
+    "sidecar": {
+      "scripts": [
+        {
+          "name": "gemini-desktop-web",
+          "sidecar": ["../server/target/release/gemini-desktop-web"]
+        }
+      ]
+    }
+  },
   "bundle": {
     "active": true,
     "targets": ["appimage", "deb", "dmg", "rpm"],
