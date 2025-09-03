@@ -107,7 +107,7 @@ export function ImageViewer({
     };
 
     loadImageFile();
-  }, [filePath]);
+  }, [filePath, onImageLoad]);
 
   const zoomIn = () => {
     setInternalScale((prev) => Math.min(5.0, prev + 0.25));
