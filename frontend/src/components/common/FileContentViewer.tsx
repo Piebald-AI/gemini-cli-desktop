@@ -82,25 +82,6 @@ export function FileContentViewer({
       return;
     }
 
-    const fileType = getFileType(filePath);
-
-    // For specialized file types (excel, pdf, image), we don't need to load content
-    // The specialized viewers will handle their own loading
-    if (fileType !== "text") {
-      setFileContent({
-        path: filePath,
-        content: null,
-        size: 0,
-        modified: null,
-        encoding: "binary",
-        is_text: false,
-        is_binary: true,
-        error: null,
-      });
-      setLoading(false);
-      return;
-    }
-
     const loadFileContent = async () => {
       setLoading(true);
       setError(null);
