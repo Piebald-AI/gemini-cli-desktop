@@ -230,7 +230,7 @@ export function ImageViewer({ filePath }: ImageViewerProps) {
             <img
               src={imageData}
               alt={filePath.split("/").pop() || "Image"}
-              className="max-w-none shadow-lg"
+              className="max-w-full max-h-full object-contain shadow-lg"
               style={{
                 transform: `scale(${scale}) rotate(${rotation}deg)`,
                 transition: "transform 0.2s ease-in-out",
