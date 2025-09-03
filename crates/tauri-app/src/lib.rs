@@ -85,6 +85,7 @@ pub fn run() {
             commands::read_settings_file,
             commands::write_settings_file,
             commands::read_file_content,
+            commands::read_binary_file_as_base64,
             commands::get_canonical_path,
             commands::read_file_content_with_options,
             commands::write_file_content,

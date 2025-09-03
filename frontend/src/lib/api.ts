@@ -114,6 +114,7 @@ export interface API {
     is_binary: boolean;
     error: string | null;
   }>;
+  read_binary_file_as_base64(params: { path: string }): Promise<string>;
   read_file_content_with_options(params: {
     path: string;
     forceText: boolean;

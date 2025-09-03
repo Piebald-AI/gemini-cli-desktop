@@ -18,6 +18,12 @@ export default defineConfig({
   build: {
     target: "esnext",
     emptyOutDir: false,
+    rollupOptions: {
+      external: [],
+    },
+  },
+  optimizeDeps: {
+    include: ['pdfjs-dist'],
   },
   define: {
     // eslint-disable-next-line no-undef

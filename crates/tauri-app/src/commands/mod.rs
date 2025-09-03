@@ -530,6 +530,18 @@ pub async fn read_file_content(
 }
 
 #[tauri::command]
+pub async fn read_binary_file_as_base64(
+    path: String,
+    state: State<'_, AppState>,
+) -> Result<String, String> {
+    state
+        .backend
+        .read_binary_file_as_base64(path)
+        .await
+        .map_err(|e| format!("{e:#}"))
+}
+
+#[tauri::command]
 pub async fn delete_conversation(
     chat_id: String,
     state: tauri::State<'_, AppState>,

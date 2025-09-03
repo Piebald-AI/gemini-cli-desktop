@@ -707,6 +707,11 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
         filesystem::read_file_content(path).await
     }
 
+    /// Read binary file as base64 encoded string
+    pub async fn read_binary_file_as_base64(&self, path: String) -> Result<String> {
+        filesystem::read_binary_file_as_base64(path).await
+    }
+
     /// Get the canonical path for a given path
     pub async fn get_canonical_path(&self, path: String) -> Result<String> {
         let canonical_path = std::path::Path::new(&path)

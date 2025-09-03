@@ -682,14 +682,37 @@ pub async fn read_file_content(path: String) -> Result<FileContent> {
     read_file_content_with_options(path, false).await
 }
 
+pub async fn read_binary_file_as_base64(path: String) -> Result<String> {
+    use std::io::Read;
+    use base64::{Engine as _, engine::general_purpose};
+
+    let file_path = Path::new(&path);
+
+    if !file_path.exists() {
+        return Err(anyhow::anyhow!("File does not exist"));
+    }
+
+    if file_path.is_dir() {
+        return Err(anyhow::anyhow!("Path is a directory, not a file"));
+    }
+
+    let mut file = std::fs::File::open(file_path)?;
+    let mut buffer = Vec::new();
+    file.read_to_end(&mut buffer)?;
+
+    Ok(general_purpose::STANDARD.encode(&buffer))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::fs;
     use std::io::Write;
-    use std::os::windows::process::CommandExt;
     use std::time::{SystemTime, UNIX_EPOCH};
     use tempfile::{NamedTempFile, TempDir};
+    
+    #[cfg(windows)]
+    use std::os::windows::process::CommandExt;
 
     #[test]
     fn test_volume_type_serialization() {
