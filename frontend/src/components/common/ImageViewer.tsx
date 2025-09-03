@@ -11,14 +11,32 @@ import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { ScrollArea } from "../ui/scroll-area";
 import { api } from "../../lib/api";
+import { downloadImageData } from "../../utils/download";
 
 interface ImageViewerProps {
   filePath: string;
+  scale?: number;
+  rotation?: number;
+  onImageLoad?: (
+    imageData: string,
+    imageInfo: { width: number; height: number; size: number }
+  ) => void;
+  hideControls?: boolean;
 }
 
-export function ImageViewer({ filePath }: ImageViewerProps) {
-  const [scale, setScale] = useState(1.0);
-  const [rotation, setRotation] = useState(0);
+export function ImageViewer({
+  filePath,
+  scale: externalScale,
+  rotation: externalRotation,
+  onImageLoad,
+  hideControls = false,
+}: ImageViewerProps) {
+  const [internalScale, setInternalScale] = useState(1.0);
+  const [internalRotation, setInternalRotation] = useState(0);
+
+  const scale = externalScale !== undefined ? externalScale : internalScale;
+  const rotation =
+    externalRotation !== undefined ? externalRotation : internalRotation;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [imageData, setImageData] = useState<string | null>(null);
@@ -66,11 +84,17 @@ export function ImageViewer({ filePath }: ImageViewerProps) {
         img.onload = () => {
           // Calculate approximate file size from base64 length
           const approximateSize = Math.round((base64Content.length * 3) / 4);
-          setImageInfo({
+          const info = {
             width: img.width,
             height: img.height,
             size: approximateSize,
-          });
+          };
+          setImageInfo(info);
+
+          // Notify parent if callback provided
+          if (onImageLoad) {
+            onImageLoad(dataUrl, info);
+          }
         };
         img.src = dataUrl;
       } catch (err) {
@@ -86,31 +110,24 @@ export function ImageViewer({ filePath }: ImageViewerProps) {
   }, [filePath]);
 
   const zoomIn = () => {
-    setScale((prev) => Math.min(5.0, prev + 0.25));
+    setInternalScale((prev) => Math.min(5.0, prev + 0.25));
   };
 
   const zoomOut = () => {
-    setScale((prev) => Math.max(0.1, prev - 0.25));
+    setInternalScale((prev) => Math.max(0.1, prev - 0.25));
   };
 
   const resetZoom = () => {
-    setScale(1.0);
+    setInternalScale(1.0);
   };
 
   const rotate = () => {
-    setRotation((prev) => (prev + 90) % 360);
+    setInternalRotation((prev) => (prev + 90) % 360);
   };
 
   const handleDownload = () => {
     if (!imageData) return;
-
-    const fileName = filePath.split("/").pop() || "image.png";
-    const link = document.createElement("a");
-    link.href = imageData;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    downloadImageData(imageData, filePath);
   };
 
   const formatFileSize = (bytes: number): string => {
@@ -151,77 +168,79 @@ export function ImageViewer({ filePath }: ImageViewerProps) {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Controls */}
-      <div className="flex items-center justify-between p-3 border-b bg-muted/30">
-        <div className="flex items-center gap-2">
-          <ImageIcon className="h-4 w-4 text-blue-500" />
-          <span className="text-sm font-medium">Image Viewer</span>
-          {imageInfo && (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Badge variant="secondary" className="text-xs px-1.5 py-0">
-                {imageInfo.width} × {imageInfo.height}
-              </Badge>
-              <Badge variant="secondary" className="text-xs px-1.5 py-0">
-                {formatFileSize(imageInfo.size)}
-              </Badge>
-            </div>
-          )}
+      {/* Controls - only show if not hidden */}
+      {!hideControls && (
+        <div className="flex items-center justify-between p-3 border-b bg-muted/30">
+          <div className="flex items-center gap-2">
+            <ImageIcon className="h-4 w-4 text-blue-500" />
+            <span className="text-sm font-medium">Image Viewer</span>
+            {imageInfo && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Badge variant="secondary" className="text-xs px-1.5 py-0">
+                  {imageInfo.width} × {imageInfo.height}
+                </Badge>
+                <Badge variant="secondary" className="text-xs px-1.5 py-0">
+                  {formatFileSize(imageInfo.size)}
+                </Badge>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* Zoom controls */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={zoomOut}
+              disabled={scale <= 0.1}
+              className="h-7 w-7 p-0"
+            >
+              <ZoomOut className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={resetZoom}
+              className="text-xs h-7 px-2"
+            >
+              {Math.round(scale * 100)}%
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={zoomIn}
+              disabled={scale >= 5.0}
+              className="h-7 w-7 p-0"
+            >
+              <ZoomIn className="h-3.5 w-3.5" />
+            </Button>
+
+            <div className="w-px h-4 bg-border mx-1" />
+
+            {/* Rotation */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={rotate}
+              className="h-7 w-7 p-0"
+            >
+              <RotateCw className="h-3.5 w-3.5" />
+            </Button>
+
+            <div className="w-px h-4 bg-border mx-1" />
+
+            {/* Download */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleDownload}
+              className="h-7 w-7 p-0"
+            >
+              <Download className="h-3.5 w-3.5" />
+            </Button>
+          </div>
         </div>
-
-        <div className="flex items-center gap-2">
-          {/* Zoom controls */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={zoomOut}
-            disabled={scale <= 0.1}
-            className="h-7 w-7 p-0"
-          >
-            <ZoomOut className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={resetZoom}
-            className="text-xs h-7 px-2"
-          >
-            {Math.round(scale * 100)}%
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={zoomIn}
-            disabled={scale >= 5.0}
-            className="h-7 w-7 p-0"
-          >
-            <ZoomIn className="h-3.5 w-3.5" />
-          </Button>
-
-          <div className="w-px h-4 bg-border mx-1" />
-
-          {/* Rotation */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={rotate}
-            className="h-7 w-7 p-0"
-          >
-            <RotateCw className="h-3.5 w-3.5" />
-          </Button>
-
-          <div className="w-px h-4 bg-border mx-1" />
-
-          {/* Download */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleDownload}
-            className="h-7 w-7 p-0"
-          >
-            <Download className="h-3.5 w-3.5" />
-          </Button>
-        </div>
-      </div>
+      )}
 
       {/* Image Content */}
       <ScrollArea className="flex-1 bg-gray-50 dark:bg-gray-950">
