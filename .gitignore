@@ -12,6 +12,9 @@ frontend/dist/*
 frontend/*.local
 !frontend/dist/.gitkeep
 
+# PDF.js worker (auto-copied from node_modules)
+frontend/public/pdf.worker.min.mjs
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

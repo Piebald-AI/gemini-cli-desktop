@@ -302,6 +302,12 @@ struct ReadFileContentRequest {
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+struct ReadBinaryFileAsBase64Request {
+    path: String,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct CanonicalPathRequest {
     path: String,
 }
@@ -762,6 +768,20 @@ async fn read_file_content(
     ))
 }
 
+#[post("/read-binary-file-as-base64", data = "<request>")]
+async fn read_binary_file_as_base64(
+    request: Json<ReadBinaryFileAsBase64Request>,
+    state: &State<AppState>,
+) -> AppResult<Json<String>> {
+    let backend = state.backend.lock().await;
+    Ok(Json(
+        backend
+            .read_binary_file_as_base64(request.path.clone())
+            .await
+            .context("Failed to read binary file as base64")?,
+    ))
+}
+
 #[post("/get-canonical-path", data = "<request>")]
 async fn get_canonical_path(
     request: Json<CanonicalPathRequest>,
@@ -900,6 +920,7 @@ fn rocket() -> _ {
             get_detailed_conversation,
             export_conversation_history,
             read_file_content,
+            read_binary_file_as_base64,
             get_canonical_path,
             read_file_content_with_options,
             write_file_content,
