@@ -1,5 +1,12 @@
 import { useState, useEffect } from "react";
-import { ZoomIn, ZoomOut, RotateCw, Image as ImageIcon, AlertCircle, Download } from "lucide-react";
+import {
+  ZoomIn,
+  ZoomOut,
+  RotateCw,
+  Image as ImageIcon,
+  AlertCircle,
+  Download,
+} from "lucide-react";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { ScrollArea } from "../ui/scroll-area";
@@ -27,19 +34,28 @@ export function ImageViewer({ filePath }: ImageViewerProps) {
       setError(null);
 
       try {
-        const base64Content = await api.read_binary_file_as_base64({ path: filePath });
-        
+        const base64Content = await api.read_binary_file_as_base64({
+          path: filePath,
+        });
+
         if (!base64Content) {
           throw new Error("Failed to read image file");
         }
 
         // Get file extension to determine MIME type
-        const ext = filePath.split('.').pop()?.toLowerCase();
-        const mimeType = ext === 'png' ? 'image/png' : 
-                        ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' :
-                        ext === 'gif' ? 'image/gif' :
-                        ext === 'webp' ? 'image/webp' :
-                        ext === 'svg' ? 'image/svg+xml' : 'image/png';
+        const ext = filePath.split(".").pop()?.toLowerCase();
+        const mimeType =
+          ext === "png"
+            ? "image/png"
+            : ext === "jpg" || ext === "jpeg"
+              ? "image/jpeg"
+              : ext === "gif"
+                ? "image/gif"
+                : ext === "webp"
+                  ? "image/webp"
+                  : ext === "svg"
+                    ? "image/svg+xml"
+                    : "image/png";
 
         // Create data URL from base64 content
         const dataUrl = `data:${mimeType};base64,${base64Content}`;
@@ -53,13 +69,14 @@ export function ImageViewer({ filePath }: ImageViewerProps) {
           setImageInfo({
             width: img.width,
             height: img.height,
-            size: approximateSize
+            size: approximateSize,
           });
         };
         img.src = dataUrl;
-
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load image file");
+        setError(
+          err instanceof Error ? err.message : "Failed to load image file"
+        );
       } finally {
         setLoading(false);
       }
@@ -69,11 +86,11 @@ export function ImageViewer({ filePath }: ImageViewerProps) {
   }, [filePath]);
 
   const zoomIn = () => {
-    setScale(prev => Math.min(5.0, prev + 0.25));
+    setScale((prev) => Math.min(5.0, prev + 0.25));
   };
 
   const zoomOut = () => {
-    setScale(prev => Math.max(0.1, prev - 0.25));
+    setScale((prev) => Math.max(0.1, prev - 0.25));
   };
 
   const resetZoom = () => {
@@ -81,14 +98,14 @@ export function ImageViewer({ filePath }: ImageViewerProps) {
   };
 
   const rotate = () => {
-    setRotation(prev => (prev + 90) % 360);
+    setRotation((prev) => (prev + 90) % 360);
   };
 
   const handleDownload = () => {
     if (!imageData) return;
 
-    const fileName = filePath.split('/').pop() || 'image.png';
-    const link = document.createElement('a');
+    const fileName = filePath.split("/").pop() || "image.png";
+    const link = document.createElement("a");
     link.href = imageData;
     link.download = fileName;
     document.body.appendChild(link);
@@ -150,7 +167,7 @@ export function ImageViewer({ filePath }: ImageViewerProps) {
             </div>
           )}
         </div>
-        
+
         <div className="flex items-center gap-2">
           {/* Zoom controls */}
           <Button
@@ -212,11 +229,11 @@ export function ImageViewer({ filePath }: ImageViewerProps) {
           {imageData && (
             <img
               src={imageData}
-              alt={filePath.split('/').pop() || 'Image'}
+              alt={filePath.split("/").pop() || "Image"}
               className="max-w-none shadow-lg"
               style={{
                 transform: `scale(${scale}) rotate(${rotation}deg)`,
-                transition: 'transform 0.2s ease-in-out',
+                transition: "transform 0.2s ease-in-out",
               }}
             />
           )}

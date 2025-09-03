@@ -7,7 +7,7 @@ import { api } from "../../lib/api";
 
 // Configure PDF.js worker to use local version instead of CDN to avoid CORS issues
 // Serve worker from public directory (copied during build)
-pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
 interface PDFViewerProps {
   filePath: string;
@@ -26,8 +26,10 @@ export function PDFViewer({ filePath }: PDFViewerProps) {
       setError(null);
 
       try {
-        const base64Content = await api.read_binary_file_as_base64({ path: filePath });
-        
+        const base64Content = await api.read_binary_file_as_base64({
+          path: filePath,
+        });
+
         if (!base64Content) {
           throw new Error("Failed to read PDF file");
         }
@@ -36,7 +38,9 @@ export function PDFViewer({ filePath }: PDFViewerProps) {
         const dataUrl = `data:application/pdf;base64,${base64Content}`;
         setPdfFile(dataUrl);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load PDF file");
+        setError(
+          err instanceof Error ? err.message : "Failed to load PDF file"
+        );
       } finally {
         setLoading(false);
       }
@@ -54,11 +58,11 @@ export function PDFViewer({ filePath }: PDFViewerProps) {
   };
 
   const zoomIn = () => {
-    setScale(prev => Math.min(3.0, prev + 0.25));
+    setScale((prev) => Math.min(3.0, prev + 0.25));
   };
 
   const zoomOut = () => {
-    setScale(prev => Math.max(0.5, prev - 0.25));
+    setScale((prev) => Math.max(0.5, prev - 0.25));
   };
 
   if (loading) {
@@ -91,7 +95,7 @@ export function PDFViewer({ filePath }: PDFViewerProps) {
           <FileText className="h-4 w-4 text-red-500" />
           <span className="text-sm font-medium">PDF Viewer</span>
         </div>
-        
+
         <div className="flex items-center gap-2">
           {/* Zoom controls */}
           <Button
@@ -119,10 +123,10 @@ export function PDFViewer({ filePath }: PDFViewerProps) {
           {numPages && (
             <>
               <div className="w-px h-4 bg-border mx-1" />
-              
+
               {/* Page count display */}
               <Badge variant="outline" className="text-xs px-2 py-0.5">
-                {numPages} {numPages === 1 ? 'page' : 'pages'}
+                {numPages} {numPages === 1 ? "page" : "pages"}
               </Badge>
             </>
           )}
@@ -130,11 +134,14 @@ export function PDFViewer({ filePath }: PDFViewerProps) {
       </div>
 
       {/* PDF Content */}
-      <div 
-        className="overflow-auto bg-gray-100 dark:bg-gray-900" 
-        style={{ height: '600px', maxHeight: '70vh' }}
+      <div
+        className="overflow-auto bg-gray-100 dark:bg-gray-900"
+        style={{ height: "600px", maxHeight: "70vh" }}
       >
-        <div className="flex flex-col items-center gap-4 p-4" style={{ minHeight: '100%' }}>
+        <div
+          className="flex flex-col items-center gap-4 p-4"
+          style={{ minHeight: "100%" }}
+        >
           {pdfFile && (
             <Document
               file={pdfFile}
@@ -155,16 +162,17 @@ export function PDFViewer({ filePath }: PDFViewerProps) {
             >
               {/* Render all pages for continuous scrolling */}
               <div className="flex flex-col items-center gap-4">
-                {numPages && Array.from(new Array(numPages), (_, index) => (
-                  <Page
-                    key={`page_${index + 1}`}
-                    pageNumber={index + 1}
-                    scale={scale}
-                    renderTextLayer={false}
-                    renderAnnotationLayer={false}
-                    className="shadow-lg"
-                  />
-                ))}
+                {numPages &&
+                  Array.from(new Array(numPages), (_, index) => (
+                    <Page
+                      key={`page_${index + 1}`}
+                      pageNumber={index + 1}
+                      scale={scale}
+                      renderTextLayer={false}
+                      renderAnnotationLayer={false}
+                      className="shadow-lg"
+                    />
+                  ))}
               </div>
             </Document>
           )}

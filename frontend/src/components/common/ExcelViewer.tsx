@@ -1,6 +1,13 @@
 import { useState, useEffect } from "react";
 import * as XLSX from "xlsx";
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "../ui/table";
+import {
+  Table,
+  TableHeader,
+  TableRow,
+  TableHead,
+  TableBody,
+  TableCell,
+} from "../ui/table";
 import { ScrollArea } from "../ui/scroll-area";
 import { Badge } from "../ui/badge";
 import { FileSpreadsheet, AlertCircle } from "lucide-react";
@@ -23,8 +30,10 @@ export function ExcelViewer({ filePath }: ExcelViewerProps) {
 
       try {
         // Read the Excel file as binary
-        const base64Content = await api.read_binary_file_as_base64({ path: filePath });
-        
+        const base64Content = await api.read_binary_file_as_base64({
+          path: filePath,
+        });
+
         if (!base64Content) {
           throw new Error("Failed to read file content");
         }
@@ -35,17 +44,19 @@ export function ExcelViewer({ filePath }: ExcelViewerProps) {
         for (let i = 0; i < binaryString.length; i++) {
           bytes[i] = binaryString.charCodeAt(i);
         }
-        
+
         // Parse the Excel file
-        const wb = XLSX.read(bytes, { type: 'array' });
+        const wb = XLSX.read(bytes, { type: "array" });
         setWorkbook(wb);
-        
+
         // Set the first sheet as active
         if (wb.SheetNames.length > 0) {
           setActiveSheet(wb.SheetNames[0]);
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load Excel file");
+        setError(
+          err instanceof Error ? err.message : "Failed to load Excel file"
+        );
       } finally {
         setLoading(false);
       }
@@ -88,17 +99,17 @@ export function ExcelViewer({ filePath }: ExcelViewerProps) {
   }
 
   const currentSheet = workbook.Sheets[activeSheet];
-  const jsonData = XLSX.utils.sheet_to_json<string[]>(currentSheet, { 
+  const jsonData = XLSX.utils.sheet_to_json<string[]>(currentSheet, {
     header: 1,
     raw: false,
-    defval: ""
+    defval: "",
   });
 
   // Get the maximum number of columns
-  const maxCols = Math.max(...jsonData.map(row => row.length));
-  
+  const maxCols = Math.max(...jsonData.map((row) => row.length));
+
   // Create column headers
-  const headers = Array.from({ length: maxCols }, (_, i) => 
+  const headers = Array.from({ length: maxCols }, (_, i) =>
     XLSX.utils.encode_col(i)
   );
 
@@ -130,9 +141,14 @@ export function ExcelViewer({ filePath }: ExcelViewerProps) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-12 text-center font-mono text-xs sticky left-0 bg-background">#</TableHead>
+                <TableHead className="w-12 text-center font-mono text-xs sticky left-0 bg-background">
+                  #
+                </TableHead>
                 {headers.map((header) => (
-                  <TableHead key={header} className="text-center font-mono text-xs min-w-24">
+                  <TableHead
+                    key={header}
+                    className="text-center font-mono text-xs min-w-24"
+                  >
                     {header}
                   </TableHead>
                 ))}
@@ -145,7 +161,11 @@ export function ExcelViewer({ filePath }: ExcelViewerProps) {
                     {rowIndex + 1}
                   </TableCell>
                   {headers.map((_, colIndex) => (
-                    <TableCell key={colIndex} className="text-xs max-w-48 truncate" title={row[colIndex] || ""}>
+                    <TableCell
+                      key={colIndex}
+                      className="text-xs max-w-48 truncate"
+                      title={row[colIndex] || ""}
+                    >
                       {row[colIndex] || ""}
                     </TableCell>
                   ))}
@@ -159,7 +179,9 @@ export function ExcelViewer({ filePath }: ExcelViewerProps) {
       {/* Footer info */}
       <div className="p-2 border-t bg-muted/30 text-xs text-muted-foreground flex justify-between">
         <span>Sheet: {activeSheet}</span>
-        <span>{jsonData.length} rows × {maxCols} columns</span>
+        <span>
+          {jsonData.length} rows × {maxCols} columns
+        </span>
       </div>
     </div>
   );

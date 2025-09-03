@@ -47,27 +47,32 @@ export function FileContentViewer({
     return path.split(".").pop()?.toLowerCase() || "";
   };
 
-  const getFileType = useCallback((path: string): 'excel' | 'pdf' | 'image' | 'text' => {
-    const ext = getFileExtension(path);
-    
-    // Excel files
-    if (['xlsx', 'xls', 'xlsm', 'xlsb', 'csv'].includes(ext)) {
-      return 'excel';
-    }
-    
-    // PDF files
-    if (ext === 'pdf') {
-      return 'pdf';
-    }
-    
-    // Image files
-    if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'ico'].includes(ext)) {
-      return 'image';
-    }
-    
-    // Default to text
-    return 'text';
-  }, []);
+  const getFileType = useCallback(
+    (path: string): "excel" | "pdf" | "image" | "text" => {
+      const ext = getFileExtension(path);
+
+      // Excel files
+      if (["xlsx", "xls", "xlsm", "xlsb", "csv"].includes(ext)) {
+        return "excel";
+      }
+
+      // PDF files
+      if (ext === "pdf") {
+        return "pdf";
+      }
+
+      // Image files
+      if (
+        ["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "ico"].includes(ext)
+      ) {
+        return "image";
+      }
+
+      // Default to text
+      return "text";
+    },
+    []
+  );
 
   useEffect(() => {
     if (!filePath) {
@@ -78,16 +83,16 @@ export function FileContentViewer({
     }
 
     const fileType = getFileType(filePath);
-    
+
     // For specialized file types (excel, pdf, image), we don't need to load content
     // The specialized viewers will handle their own loading
-    if (fileType !== 'text') {
+    if (fileType !== "text") {
       setFileContent({
         path: filePath,
         content: null,
         size: 0,
         modified: null,
-        encoding: 'binary',
+        encoding: "binary",
         is_text: false,
         is_binary: true,
         error: null,
@@ -248,7 +253,9 @@ export function FileContentViewer({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className={`max-w-4xl flex flex-col ${getFileType(filePath || '') === 'pdf' ? 'max-h-[95vh]' : 'max-h-[80vh]'}`}>
+      <DialogContent
+        className={`max-w-4xl flex flex-col ${getFileType(filePath || "") === "pdf" ? "max-h-[95vh]" : "max-h-[80vh]"}`}
+      >
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-blue-500 flex-shrink-0" />
@@ -291,7 +298,7 @@ export function FileContentViewer({
           ) : fileContent ? (
             <>
               {/* File actions bar - only show for text files */}
-              {getFileType(fileContent.path) === 'text' && (
+              {getFileType(fileContent.path) === "text" && (
                 <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/50 rounded-md mx-2 mb-2">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <span>{fileContent.encoding}</span>
@@ -392,20 +399,20 @@ export function FileContentViewer({
               <div className="flex-1 min-h-0 overflow-hidden">
                 {(() => {
                   const fileType = getFileType(fileContent.path);
-                  
+
                   // Handle specialized file types
-                  if (fileType === 'excel') {
+                  if (fileType === "excel") {
                     return <ExcelViewer filePath={fileContent.path} />;
                   }
-                  
-                  if (fileType === 'pdf') {
+
+                  if (fileType === "pdf") {
                     return <PDFViewer filePath={fileContent.path} />;
                   }
-                  
-                  if (fileType === 'image') {
+
+                  if (fileType === "image") {
                     return <ImageViewer filePath={fileContent.path} />;
                   }
-                  
+
                   // Handle text files and binary files
                   if (fileContent.is_binary && !forceViewAsText) {
                     return (
@@ -427,7 +434,7 @@ export function FileContentViewer({
                       </div>
                     );
                   }
-                  
+
                   if (fileContent.content !== null) {
                     return (
                       <div className="h-full overflow-auto">
@@ -440,7 +447,7 @@ export function FileContentViewer({
                       </div>
                     );
                   }
-                  
+
                   return (
                     <div className="text-center py-8 text-muted-foreground">
                       <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />

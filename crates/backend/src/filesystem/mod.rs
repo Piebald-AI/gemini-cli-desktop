@@ -683,8 +683,8 @@ pub async fn read_file_content(path: String) -> Result<FileContent> {
 }
 
 pub async fn read_binary_file_as_base64(path: String) -> Result<String> {
-    use std::io::Read;
     use base64::{Engine as _, engine::general_purpose};
+    use std::io::Read;
 
     let file_path = Path::new(&path);
 
@@ -710,7 +710,7 @@ mod tests {
     use std::io::Write;
     use std::time::{SystemTime, UNIX_EPOCH};
     use tempfile::{NamedTempFile, TempDir};
-    
+
     #[cfg(windows)]
     use std::os::windows::process::CommandExt;
 

@@ -186,7 +186,10 @@ export const webApi: API = {
   },
 
   async read_binary_file_as_base64(params) {
-    const response = await apiClient.post<string>("/read-binary-file-as-base64", params);
+    const response = await apiClient.post<string>(
+      "/read-binary-file-as-base64",
+      params
+    );
     return response.data;
   },
 
