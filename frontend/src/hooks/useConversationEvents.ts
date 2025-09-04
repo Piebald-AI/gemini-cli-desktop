@@ -220,7 +220,9 @@ function convertAcpContentToLegacy(acpContent: AcpContent[]): LegacyResult {
   };
 }
 
-function getOptionKind(idx: number): "allow_once" | "allow_always" | "reject_once" | "reject_always" {
+function getOptionKind(
+  idx: number
+): "allow_once" | "allow_always" | "reject_once" | "reject_always" {
   switch (idx) {
     case 0:
       return "allow_once";

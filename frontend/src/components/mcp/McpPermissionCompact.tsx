@@ -43,22 +43,6 @@ export function McpPermissionCompact({
     (opt) => opt.kind === "reject_once"
   );
 
-  const getButtonStyle = (option: McpPermissionOption) => {
-    if (option.kind === "allow_always")
-      return "h-6 w-6 p-0 bg-green-600 hover:bg-green-700 text-white";
-    if (option.kind === "allow_once")
-      return "h-6 w-6 p-0 bg-green-600 hover:bg-green-700 text-white";
-    if (option.kind === "reject_once")
-      return "h-6 w-6 p-0 bg-red-600 hover:bg-red-700 text-white";
-    return "h-6 w-6 p-0";
-  };
-
-  const getButtonIcon = (option: McpPermissionOption) => {
-    if (option.kind.includes("allow")) return <Check className="h-3 w-3" />;
-    if (option.kind.includes("reject")) return <X className="h-3 w-3" />;
-    return <Wrench className="h-3 w-3" />;
-  };
-
   return (
     <div className="mt-4">
       {/* Compact header matching other tool renderers */}
