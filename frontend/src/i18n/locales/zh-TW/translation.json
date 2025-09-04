@@ -512,7 +512,7 @@
     "languageSwitcher": "切換語言",
     "currentLanguage": "目前語言：{{language}}",
     "directoryPanel": "目錄",
-    "returnToDashboard": "返回儀表板"
+    "returnToDashboard": "返回主頁"
   },
 
   "directoryPanel": {

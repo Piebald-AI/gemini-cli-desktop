@@ -512,7 +512,8 @@
     "languageSwitcher": "切换语言",
     "currentLanguage": "当前语言：{{language}}",
     "directoryPanel": "目录",
-    "returnToDashboard": "返回仪表板"
+    "returnToDashboard": "返回主页",
+    "clickToReturnHome": "点击返回首页"
   },
 
   "directoryPanel": {
