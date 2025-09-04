@@ -96,31 +96,33 @@ export const HomeDashboard: React.FC = () => {
                       {(() => {
                         if (message.sender === "user") {
                           return message.parts.map((msgPart, partIndex) => (
-                            <div key={partIndex} className="text-sm text-gray-900 dark:text-gray-100 mb-2">
+                            <div
+                              key={partIndex}
+                              className="text-sm text-gray-900 dark:text-gray-100 mb-2"
+                            >
                               <MessageContent content={msgPart.text} />
                             </div>
                           ));
                         }
 
-                        const groupedParts = message.parts.reduce<GeminiMessagePart[]>(
-                          (acc, part) => {
-                            const lastPart = 
-                              acc.length > 0 ? acc[acc.length - 1] : null;
-                            if (
-                              part.type === "thinking" &&
-                              lastPart &&
-                              lastPart.type === "thinking"
-                            ) {
-                              lastPart.thinking += `
+                        const groupedParts = message.parts.reduce<
+                          GeminiMessagePart[]
+                        >((acc, part) => {
+                          const lastPart =
+                            acc.length > 0 ? acc[acc.length - 1] : null;
+                          if (
+                            part.type === "thinking" &&
+                            lastPart &&
+                            lastPart.type === "thinking"
+                          ) {
+                            lastPart.thinking += `
 
 ${part.thinking}`;
-                            } else {
-                              acc.push({ ...part });
-                            }
-                            return acc;
-                          },
-                          []
-                        );
+                          } else {
+                            acc.push({ ...part });
+                          }
+                          return acc;
+                        }, []);
 
                         return groupedParts.map((msgPart, partIndex) => (
                           <React.Fragment key={partIndex}>
@@ -133,15 +135,16 @@ ${part.thinking}`;
                             ) : msgPart.type === "toolCall" ? (
                               <>
                                 {(() => {
-                                  const hasConfirmation = confirmationRequests.has(
-                                    msgPart.toolCall.id
-                                  );
-                                  const confirmationRequest = 
+                                  const hasConfirmation =
+                                    confirmationRequests.has(
+                                      msgPart.toolCall.id
+                                    );
+                                  const confirmationRequest =
                                     confirmationRequests.get(
                                       msgPart.toolCall.id
                                     );
 
-                                  const finalConfirmationRequest = 
+                                  const finalConfirmationRequest =
                                     confirmationRequest
                                       ? confirmationRequest
                                       : undefined;
@@ -152,9 +155,7 @@ ${part.thinking}`;
                                         msgPart.toolCall.id
                                       }-${hasConfirmation}-${Date.now()}`}
                                       toolCall={msgPart.toolCall}
-                                      hasConfirmationRequest={
-                                        hasConfirmation
-                                      }
+                                      hasConfirmationRequest={hasConfirmation}
                                       confirmationRequest={
                                         finalConfirmationRequest
                                       }
