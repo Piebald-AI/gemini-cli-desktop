@@ -119,24 +119,46 @@ export const useConversationManager = () => {
         const mapHistoryToMessages = (
           entries: ConversationHistoryEntry[]
         ): Message[] => {
-          return entries.map((entry): Message => {
+          return entries.reduce<Message[]>((acc, entry) => {
+            const lastMessage = acc.length > 0 ? acc[acc.length - 1] : null;
             const sender = entry.role as "user" | "assistant";
+
+            // This is the core logic for grouping thinking parts
+            if (
+              lastMessage &&
+              lastMessage.sender === "assistant" &&
+              sender === "assistant"
+            ) {
+              const newParts = parseMessageContent(entry.content);
+              if (
+                newParts[0]?.type === "thinking" &&
+                lastMessage.parts.every((p) => p.type === "thinking")
+              ) {
+                // Merge with the last message
+                (lastMessage.parts as GeminiMessagePart[]).push(...newParts);
+                lastMessage.timestamp = new Date(entry.timestamp_iso);
+                return acc; // Return accumulator since we modified the last message in place
+              }
+            }
+
+            // If not merging, create a new message (type-safe version)
             if (sender === "user") {
-              return {
+              acc.push({
                 id: entry.id,
                 timestamp: new Date(entry.timestamp_iso),
                 sender: "user",
                 parts: [{ type: "text", text: entry.content }],
-              };
+              });
             } else {
-              return {
+              acc.push({
                 id: entry.id,
                 timestamp: new Date(entry.timestamp_iso),
                 sender: "assistant",
                 parts: parseMessageContent(entry.content),
-              };
+              });
             }
-          });
+            return acc;
+          }, []);
         };
 
         if (historyEntries && title) {
