@@ -220,6 +220,19 @@ function convertAcpContentToLegacy(acpContent: AcpContent[]): LegacyResult {
   };
 }
 
+function getOptionKind(idx: number): "allow_once" | "allow_always" | "reject_once" | "reject_always" {
+  switch (idx) {
+    case 0:
+      return "allow_once";
+    case 1:
+      return "allow_always";
+    case 2:
+      return "reject_once";
+    default:
+      return "reject_always";
+  }
+}
+
 export const useConversationEvents = (
   setCliIOLogs: React.Dispatch<React.SetStateAction<CliIO[]>>,
   setConfirmationRequests: React.Dispatch<
@@ -611,17 +624,7 @@ export const useConversationEvents = (
                     ? (request.options as string[]).map((opt, idx) => ({
                         optionId: `option_${idx}`,
                         name: opt,
-                        kind: (idx < 2
-                          ? idx === 0
-                            ? "allow_once"
-                            : "allow_always"
-                          : idx === 2
-                            ? "reject_once"
-                            : "reject_always") as
-                          | "allow_once"
-                          | "allow_always"
-                          | "reject_once"
-                          | "reject_always",
+                        kind: getOptionKind(idx),
                       }))
                     : (request.options as {
                         optionId: string;
@@ -772,6 +775,34 @@ export const useConversationEvents = (
                 })
               ),
               inputJsonRpc: window.pendingToolCallInput,
+              // Include ACP permission options for enhanced approval flows
+              options: Array.isArray(request.options)
+                ? typeof request.options[0] === "string"
+                  ? (request.options as string[]).map((opt, idx) => ({
+                      optionId: `option_${idx}`,
+                      name: opt,
+                      kind: (idx < 2
+                        ? idx === 0
+                          ? "allow_once"
+                          : "allow_always"
+                        : idx === 2
+                          ? "reject_once"
+                          : "reject_always") as
+                        | "allow_once"
+                        | "allow_always"
+                        | "reject_once"
+                        | "reject_always",
+                    }))
+                  : (request.options as {
+                      optionId: string;
+                      name: string;
+                      kind:
+                        | "allow_once"
+                        | "allow_always"
+                        | "reject_once"
+                        | "reject_always";
+                    }[])
+                : [],
             };
 
             setConfirmationRequests((prev) => {

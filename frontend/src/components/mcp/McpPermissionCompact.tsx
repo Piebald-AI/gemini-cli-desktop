@@ -71,54 +71,22 @@ export function McpPermissionCompact({
         <span className="font-medium">{toolName}</span>
         <span className="text-muted-foreground">from {serverName}</span>
 
-        {/* Compact permission buttons in header */}
+        {/* Basic permission buttons in header - Allow and Reject only */}
         <div
           className="ml-auto flex items-center gap-1"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Always allow server (green) */}
-          {serverOptions
-            .filter((opt) => opt.kind === "allow_always")
-            .map((option) => (
-              <Button
-                key={option.optionId}
-                size="sm"
-                variant="default"
-                className={getButtonStyle(option)}
-                onClick={() => onPermissionResponse(option.optionId)}
-                title={option.name}
-              >
-                {getButtonIcon(option)}
-              </Button>
-            ))}
-
-          {/* Always allow tool (green) */}
-          {toolOptions
-            .filter((opt) => opt.kind === "allow_always")
-            .map((option) => (
-              <Button
-                key={option.optionId}
-                size="sm"
-                variant="default"
-                className={getButtonStyle(option)}
-                onClick={() => onPermissionResponse(option.optionId)}
-                title={option.name}
-              >
-                {getButtonIcon(option)}
-              </Button>
-            ))}
-
-          {/* Allow once (blue) */}
+          {/* Allow once (green) */}
           {allowOnceOptions.map((option) => (
             <Button
               key={option.optionId}
               size="sm"
               variant="default"
-              className={getButtonStyle(option)}
+              className="h-6 w-6 p-0 bg-green-600 hover:bg-green-700 text-white"
               onClick={() => onPermissionResponse(option.optionId)}
               title={option.name}
             >
-              {getButtonIcon(option)}
+              <Check className="h-3 w-3" />
             </Button>
           ))}
 
@@ -128,11 +96,11 @@ export function McpPermissionCompact({
               key={option.optionId}
               size="sm"
               variant="default"
-              className={getButtonStyle(option)}
+              className="h-6 w-6 p-0 bg-red-600 hover:bg-red-700 text-white"
               onClick={() => onPermissionResponse(option.optionId)}
               title={option.name}
             >
-              {getButtonIcon(option)}
+              <X className="h-3 w-3" />
             </Button>
           ))}
         </div>
@@ -159,7 +127,7 @@ export function McpPermissionCompact({
           <div className="space-y-1">
             {serverOptions.length > 0 && (
               <div className="flex items-center gap-2 text-xs">
-                <span className="text-green-700">🟢 Server-level:</span>
+                <span className="text-green-700">Server-level:</span>
                 {serverOptions.map((option) => (
                   <Button
                     key={option.optionId}
@@ -176,7 +144,7 @@ export function McpPermissionCompact({
 
             {toolOptions.length > 0 && (
               <div className="flex items-center gap-2 text-xs">
-                <span className="text-green-700">🔧 Tool-level:</span>
+                <span className="text-green-700">Tool-level:</span>
                 {toolOptions.map((option) => (
                   <Button
                     key={option.optionId}
