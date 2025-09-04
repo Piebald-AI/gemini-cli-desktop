@@ -440,7 +440,8 @@
     "languageSwitcher": "Change language",
     "currentLanguage": "Current language: {{language}}",
     "directoryPanel": "Directory",
-    "returnToDashboard": "Return to dashboard"
+    "returnToDashboard": "Return to Home",
+    "clickToReturnHome": "Click to return to Home"
   },
 
   "about": {

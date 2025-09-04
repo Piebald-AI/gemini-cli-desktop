@@ -50,6 +50,11 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             >
               <SmartLogo />
               <DesktopText size="small" />
+              {hasActiveConversation && (
+                <span className="text-xs text-muted-foreground ml-2 hidden sm:inline-block">
+                  {t("header.clickToReturnHome")}
+                </span>
+              )}
             </div>
           </div>
 
