@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ChevronRight, Wrench, Check, X } from "lucide-react";
 import { Button } from "../ui/button";
-import { McpPermissionRequest, McpPermissionOption } from "../../types";
+import { McpPermissionRequest } from "../../types";
 
 interface McpPermissionCompactProps {
   request: McpPermissionRequest;
