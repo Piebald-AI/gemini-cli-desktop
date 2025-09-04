@@ -25,9 +25,9 @@ import {
 } from "../components/ui/card";
 import { Info, UserRound, FolderKanban } from "lucide-react";
 import { ModelContextProtocol } from "../components/common/ModelContextProtocol";
-import { ToolCallConfirmationRequest } from "../utils/toolCallParser";
 import { getBackendText } from "../utils/backendText";
 import { useBackend } from "../contexts/BackendContext";
+import { GeminiMessagePart } from "../types";
 
 export const HomeDashboard: React.FC = () => {
   const { t } = useTranslation();
@@ -59,9 +59,7 @@ export const HomeDashboard: React.FC = () => {
               {currentConversation.messages.map((message, index) => (
                 <div
                   key={message.id}
-                  className={`w-full ${
-                    message.sender === "user" ? "flex justify-start" : ""
-                  }`}
+                  className={`w-full ${message.sender === "user" ? "flex justify-start" : ""}`}
                 >
                   <div className="w-full">
                     {/* Header with logo and timestamp */}
@@ -94,64 +92,98 @@ export const HomeDashboard: React.FC = () => {
                       </span>
                     </div>
 
-                    {message.parts.map((msgPart) =>
-                      msgPart.type === "thinking" ? (
-                        <ThinkingBlock thinking={msgPart.thinking} />
-                      ) : msgPart.type === "text" ? (
-                        /* Message Content */
-                        <div className="text-sm text-gray-900 dark:text-gray-100 mb-2">
-                          <MessageContent content={msgPart.text} />
-                        </div>
-                      ) : msgPart.type === "toolCall" ? (
-                        <>
-                          {(() => {
-                            const hasConfirmation = confirmationRequests.has(
-                              msgPart.toolCall.id
-                            );
-                            const confirmationRequest =
-                              confirmationRequests.get(msgPart.toolCall.id);
+                    <>
+                      {(() => {
+                        if (message.sender === "user") {
+                          return message.parts.map((msgPart, partIndex) => (
+                            <div
+                              key={partIndex}
+                              className="text-sm text-gray-900 dark:text-gray-100 mb-2"
+                            >
+                              <MessageContent content={msgPart.text} />
+                            </div>
+                          ));
+                        }
 
-                            // Force type assertion to debug the issue
-                            const confirmationRequestTyped =
-                              confirmationRequest as
-                                | ToolCallConfirmationRequest
-                                | undefined;
-                            console.log(
-                              "Confirmation request typed:",
-                              confirmationRequestTyped
-                            );
+                        const groupedParts = message.parts.reduce<
+                          GeminiMessagePart[]
+                        >((acc, part) => {
+                          const lastPart =
+                            acc.length > 0 ? acc[acc.length - 1] : null;
+                          if (
+                            part.type === "thinking" &&
+                            lastPart &&
+                            lastPart.type === "thinking"
+                          ) {
+                            lastPart.thinking += `
 
-                            // Try with explicit undefined check
-                            const finalConfirmationRequest = confirmationRequest
-                              ? confirmationRequest
-                              : undefined;
+${part.thinking}`;
+                          } else {
+                            acc.push({ ...part });
+                          }
+                          return acc;
+                        }, []);
 
-                            return (
-                              <ToolCallDisplay
-                                key={`${msgPart.toolCall.id}-${hasConfirmation}-${Date.now()}`}
-                                toolCall={msgPart.toolCall}
-                                hasConfirmationRequest={hasConfirmation}
-                                confirmationRequest={finalConfirmationRequest}
-                                confirmationRequests={confirmationRequests}
-                                onConfirm={handleConfirmToolCall}
-                              />
-                            );
-                          })()}
-                        </>
-                      ) : null
-                    )}
+                        return groupedParts.map((msgPart, partIndex) => (
+                          <React.Fragment key={partIndex}>
+                            {msgPart.type === "thinking" ? (
+                              <ThinkingBlock thinking={msgPart.thinking} />
+                            ) : msgPart.type === "text" ? (
+                              <div className="text-sm text-gray-900 dark:text-gray-100 mb-2">
+                                <MessageContent content={msgPart.text} />
+                              </div>
+                            ) : msgPart.type === "toolCall" ? (
+                              <>
+                                {(() => {
+                                  const hasConfirmation =
+                                    confirmationRequests.has(
+                                      msgPart.toolCall.id
+                                    );
+                                  const confirmationRequest =
+                                    confirmationRequests.get(
+                                      msgPart.toolCall.id
+                                    );
 
-                    {currentConversation.isStreaming &&
-                      index === currentConversation.messages.length - 1 &&
-                      message.parts.some(
-                        (part) =>
-                          part.type === "text" || part.type === "thinking"
-                      ) && (
-                        <div className="text-gray-400 italic text-xs">
-                          <span className="animate-pulse">●</span>{" "}
-                          {t("dashboard.generating")}
-                        </div>
-                      )}
+                                  const finalConfirmationRequest =
+                                    confirmationRequest
+                                      ? confirmationRequest
+                                      : undefined;
+
+                                  return (
+                                    <ToolCallDisplay
+                                      key={`${
+                                        msgPart.toolCall.id
+                                      }-${hasConfirmation}-${Date.now()}`}
+                                      toolCall={msgPart.toolCall}
+                                      hasConfirmationRequest={hasConfirmation}
+                                      confirmationRequest={
+                                        finalConfirmationRequest
+                                      }
+                                      confirmationRequests={
+                                        confirmationRequests
+                                      }
+                                      onConfirm={handleConfirmToolCall}
+                                    />
+                                  );
+                                })()}
+                              </>
+                            ) : null}
+                          </React.Fragment>
+                        ));
+                      })()}
+
+                      {currentConversation.isStreaming &&
+                        index === currentConversation.messages.length - 1 &&
+                        message.parts.some(
+                          (part) =>
+                            part.type === "text" || part.type === "thinking"
+                        ) && (
+                          <div className="text-gray-400 italic text-xs">
+                            <span className="animate-pulse">●</span>{" "}
+                            {t("dashboard.generating")}
+                          </div>
+                        )}
+                    </>
 
                     {/* Info button for raw JSON */}
                     <div className="mt-2 flex justify-start">
