@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "npm run copy-pdf-worker && vite",
     "build": "npm run copy-pdf-worker && tsc && vite build",
-    "copy-pdf-worker": "cp node_modules/pdfjs-dist/build/pdf.worker.min.mjs public/",
+    "copy-pdf-worker": "node -e \"require('fs').copyFileSync('node_modules/pdfjs-dist/build/pdf.worker.min.mjs', 'public/pdf.worker.min.mjs')\"",
     "preview": "vite preview",
     "tauri": "tauri",
     "format": "pnpm prettier src --write",
