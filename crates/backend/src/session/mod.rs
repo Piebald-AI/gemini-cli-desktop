@@ -355,7 +355,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
             }
         } else {
             println!("🔧 [HANDSHAKE] Setting up Gemini CLI environment");
-            
+
             // Configure environment based on Gemini auth method
             if let Some(auth) = &gemini_auth {
                 match auth.method.as_str() {
