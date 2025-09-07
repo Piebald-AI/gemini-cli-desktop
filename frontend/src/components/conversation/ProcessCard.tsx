@@ -11,6 +11,8 @@ import {
 import { X, Clock, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { Conversation, ProcessStatus } from "../../types";
+import { InlineSessionProgress } from "../common/InlineSessionProgress";
+import { SessionProgressPayload } from "../../types/session";
 
 interface ProcessCardProps {
   conversation: Conversation;
@@ -25,6 +27,8 @@ interface ProcessCardProps {
   ) => void;
   formatLastUpdated: (date: Date) => string;
   onRemoveConversation: (id: string) => void;
+  progress?: SessionProgressPayload | null;
+  activeConversation?: string | null;
 }
 
 export function ProcessCard({
@@ -38,6 +42,8 @@ export function ProcessCard({
   setSelectedConversationForEnd,
   formatLastUpdated,
   onRemoveConversation,
+  progress,
+  activeConversation,
 }: ProcessCardProps) {
   const { t } = useTranslation();
 
@@ -333,6 +339,15 @@ export function ProcessCard({
             </div>
           </div>
         </div>
+
+        {progress &&
+          activeConversation === conversation.id &&
+          progress.stage !== "ready" && (
+            <div className="px-4 pb-3">
+              <hr className="border-gray-200 dark:border-gray-700 mb-3" />
+              <InlineSessionProgress progress={progress} className="w-full" />
+            </div>
+          )}
       </div>
     );
   }

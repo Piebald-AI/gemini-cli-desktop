@@ -24,6 +24,7 @@ import { getBackendText } from "../../utils/backendText";
 import type { Conversation, ProcessStatus } from "../../types";
 import { api } from "@/lib/api";
 import { ProcessCard } from "./ProcessCard";
+import { useConversation } from "../../contexts/ConversationContext";
 
 interface ConversationListProps {
   conversations: Conversation[];
@@ -59,6 +60,8 @@ export function ConversationList({
   } | null>(null);
   const [selectedModel, setSelectedModel] =
     useState<string>("gemini-2.5-flash");
+
+  const { progress } = useConversation();
 
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
@@ -531,6 +534,8 @@ export function ConversationList({
                   setSelectedConversationForEnd={setSelectedConversationForEnd}
                   formatLastUpdated={formatLastUpdated}
                   onRemoveConversation={onRemoveConversation}
+                  progress={progress}
+                  activeConversation={activeConversation}
                 />
               );
             })

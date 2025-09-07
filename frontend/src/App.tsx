@@ -9,7 +9,6 @@ import {
 } from "./components/conversation/MessageInputBar";
 import { AppHeader } from "./components/layout/AppHeader";
 import { CustomTitleBar } from "./components/layout/CustomTitleBar";
-import { CliWarnings } from "./components/common/CliWarnings";
 import { DirectoryPanel } from "./components/common/DirectoryPanel";
 import { SidebarInset } from "./components/ui/sidebar";
 import { Toaster } from "./components/ui/sonner";
@@ -32,6 +31,7 @@ import { useMessageHandler } from "./hooks/useMessageHandler";
 import { useToolCallConfirmation } from "./hooks/useToolCallConfirmation";
 import { useConversationEvents } from "./hooks/useConversationEvents";
 import { useCliInstallation } from "./hooks/useCliInstallation";
+import { useSessionProgress } from "./hooks/useSessionProgress";
 import { useTauriMenu } from "./hooks/useTauriMenu";
 import { CliIO, Conversation, Message } from "./types";
 import "./index.css";
@@ -39,6 +39,8 @@ import { platform } from "@tauri-apps/plugin-os";
 import { AboutDialog } from "./components/common/AboutDialog";
 
 function RootLayoutContent() {
+  const { progress, startListeningForSession } = useSessionProgress();
+
   const [selectedModel, setSelectedModel] =
     useState<string>("gemini-2.5-flash");
   const [cliIOLogs, setCliIOLogs] = useState<CliIO[]>([]);
@@ -119,6 +121,15 @@ function RootLayoutContent() {
     return conversationsWithStatus.find((c) => c.id === activeConversation);
   }, [conversationsWithStatus, activeConversation]);
 
+  const currentConversation = useMemo(() => {
+    return currentConversationWithStatus
+      ? ({
+          ...currentConversationWithStatus,
+          isActive: undefined,
+        } as unknown as Conversation)
+      : undefined;
+  }, [currentConversationWithStatus]);
+
   const {
     confirmationRequests,
     setConfirmationRequests,
@@ -152,6 +163,8 @@ function RootLayoutContent() {
       setWorkingDirectory(currentConversationWithStatus.workingDirectory);
     }
   }, [currentConversationWithStatus]);
+
+  // Progress listener started in startNewConversation
 
   useEffect(() => {
     const setup = async () => {
@@ -191,9 +204,10 @@ function RootLayoutContent() {
     async (
       title: string,
       workingDirectory?: string,
-      initialMessages: Message[] = []
+      initialMessages: Message[] = [],
+      conversationId?: string
     ): Promise<string> => {
-      const convId = Date.now().toString();
+      const convId = conversationId || Date.now().toString();
       createNewConversation(
         convId,
         title,
@@ -204,6 +218,13 @@ function RootLayoutContent() {
       setActiveConversation(convId);
 
       if (workingDirectory) {
+        // Start listening for progress before starting the session
+        await startListeningForSession(convId);
+        console.log(
+          "🔄 [APP] Started listening for session progress: ",
+          convId
+        );
+
         console.log("Debug - apiConfig:", apiConfig);
         console.log("Debug - selectedBackend:", selectedBackend);
 
@@ -258,6 +279,7 @@ function RootLayoutContent() {
       backendState.configs.gemini,
       createNewConversation,
       setActiveConversation,
+      startListeningForSession,
     ]
   );
 
@@ -301,75 +323,68 @@ function RootLayoutContent() {
     }
   }, []);
 
+  // Conversation context with progress
+  const contextValue = useMemo(
+    () => ({
+      conversations,
+      activeConversation,
+      currentConversation,
+      input,
+      isCliInstalled,
+      messagesContainerRef,
+      cliIOLogs,
+      handleInputChange,
+      handleSendMessage,
+      selectedModel,
+      startNewConversation,
+      loadConversationFromHistory,
+      handleConfirmToolCall,
+      confirmationRequests,
+      removeConversation,
+      progress,
+    }),
+    [
+      conversations,
+      activeConversation,
+      currentConversation,
+      input,
+      isCliInstalled,
+      messagesContainerRef,
+      cliIOLogs,
+      handleInputChange,
+      handleSendMessage,
+      selectedModel,
+      startNewConversation,
+      loadConversationFromHistory,
+      handleConfirmToolCall,
+      confirmationRequests,
+      removeConversation,
+      progress,
+    ]
+  );
+
   return (
-    <AppSidebar
-      conversations={conversationsWithStatus}
-      activeConversation={activeConversation}
-      processStatuses={processStatuses}
-      onConversationSelect={setActiveConversation}
-      onKillProcess={handleKillProcess}
-      onRemoveConversation={removeConversation}
-      onModelChange={handleModelChange}
-      open={sidebarOpen}
-      onOpenChange={setSidebarOpen}
-    >
-      <SidebarInset>
-        <AppHeader
-          onDirectoryPanelToggle={toggleDirectoryPanel}
-          isDirectoryPanelOpen={directoryPanelOpen}
-          hasActiveConversation={!!activeConversation}
-          onReturnToDashboard={() => setActiveConversation(null)}
-        />
-
-        <div className="flex-1 flex bg-background min-h-0 h-full">
-          {/* Main content area */}
-          <div className="flex-1 flex flex-col max-w-full h-full">
-            <CliWarnings
-              selectedModel={selectedModel}
-              isCliInstalled={isCliInstalled}
-            />
-
-            <ConversationContext.Provider
-              value={useMemo(
-                () => ({
-                  conversations: conversationsWithStatus,
-                  activeConversation,
-                  currentConversation: currentConversationWithStatus,
-                  input,
-                  isCliInstalled,
-                  messagesContainerRef,
-                  cliIOLogs,
-                  handleInputChange,
-                  handleSendMessage,
-                  selectedModel,
-                  startNewConversation,
-                  loadConversationFromHistory,
-                  removeConversation,
-                  handleConfirmToolCall,
-                  confirmationRequests,
-                }),
-                [
-                  conversationsWithStatus,
-                  activeConversation,
-                  currentConversationWithStatus,
-                  input,
-                  isCliInstalled,
-                  messagesContainerRef,
-                  cliIOLogs,
-                  handleInputChange,
-                  handleSendMessage,
-                  selectedModel,
-                  startNewConversation,
-                  loadConversationFromHistory,
-                  removeConversation,
-                  handleConfirmToolCall,
-                  confirmationRequests,
-                ]
-              )}
-            >
-              <Outlet />
-            </ConversationContext.Provider>
-
+    <ConversationContext.Provider value={contextValue}>
+      <AppSidebar
+        conversations={conversationsWithStatus}
+        activeConversation={activeConversation}
+        processStatuses={processStatuses}
+        onConversationSelect={setActiveConversation}
+        onKillProcess={handleKillProcess}
+        onRemoveConversation={removeConversation}
+        onModelChange={handleModelChange}
+        open={sidebarOpen}
+        onOpenChange={setSidebarOpen}
+      >
+        <SidebarInset>
+          <AppHeader
+            onDirectoryPanelToggle={toggleDirectoryPanel}
+            isDirectoryPanelOpen={directoryPanelOpen}
+            hasActiveConversation={!!activeConversation}
+            onReturnToDashboard={() => setActiveConversation(null)}
+          />
+          <div className="flex flex-col h-full">
+            <Outlet context={{ workingDirectory }} />
             {currentConversationWithStatus && (
               <>
                 {console.log(
@@ -407,9 +422,9 @@ function RootLayoutContent() {
               className="w-80 flex-shrink-0"
             />
           )}
-        </div>
-      </SidebarInset>
-    </AppSidebar>
+        </SidebarInset>
+      </AppSidebar>
+    </ConversationContext.Provider>
   );
 }
 
@@ -423,6 +438,7 @@ function RootLayoutInner() {
       <div className="size-full">
         <RootLayoutContent />
       </div>
+
       {/* About Dialog for non-Windows platforms using Tauri menu */}
       {!__WEB__ && platform() !== "windows" && (
         <AboutDialog

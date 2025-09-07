@@ -36,7 +36,8 @@ use crate::acp::{
 };
 use crate::cli::StreamAssistantMessageChunkParams;
 use crate::events::{
-    CliIoPayload, CliIoType, EventEmitter, GeminiOutputPayload, GeminiThoughtPayload, InternalEvent,
+    CliIoPayload, CliIoType, EventEmitter, GeminiOutputPayload, GeminiThoughtPayload,
+    InternalEvent, SessionProgressPayload, SessionProgressStage,
 };
 use crate::rpc::{FileRpcLogger, JsonRpcRequest, JsonRpcResponse, NoOpRpcLogger, RpcLogger};
 use anyhow::{Context, Result};
@@ -288,6 +289,102 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
 ) -> Result<(mpsc::UnboundedSender<String>, Arc<dyn RpcLogger>)> {
     let is_qwen = backend_config.is_some();
     let cli_name = if is_qwen { "Qwen Code" } else { "Gemini" };
+
+    // Create event forwarding system early so we can use it for progress events
+    let (event_tx, mut event_rx) = mpsc::unbounded_channel::<InternalEvent>();
+    let _session_id_for_events = session_id.clone();
+    let emitter_for_events = emitter.clone();
+
+    // Start event forwarding task
+    tokio::spawn(async move {
+        while let Some(internal_event) = event_rx.recv().await {
+            println!("📨 Processing internal_event: {internal_event:?}");
+            match internal_event {
+                InternalEvent::CliIo {
+                    session_id,
+                    payload,
+                } => {
+                    let _ = emitter_for_events.emit(&format!("cli-io-{session_id}"), payload);
+                }
+                InternalEvent::GeminiOutput {
+                    session_id,
+                    payload,
+                } => {
+                    let _ = emitter_for_events.emit(&format!("ai-chunk-{session_id}"), payload);
+                }
+                InternalEvent::GeminiThought {
+                    session_id,
+                    payload,
+                } => {
+                    let _ = emitter_for_events.emit(&format!("ai-thought-{session_id}"), payload);
+                }
+                #[allow(deprecated)]
+                InternalEvent::ToolCall { .. } => {
+                    // No-op: Use AcpSessionUpdate instead
+                }
+                #[allow(deprecated)]
+                InternalEvent::ToolCallUpdate { .. } => {
+                    // No-op: Use AcpSessionUpdate instead
+                }
+                #[allow(deprecated)]
+                InternalEvent::ToolCallConfirmation { .. } => {
+                    // No-op: Use AcpPermissionRequest instead
+                }
+                InternalEvent::GeminiTurnFinished { session_id } => {
+                    let _ =
+                        emitter_for_events.emit(&format!("ai-turn-finished-{session_id}"), true);
+                }
+                InternalEvent::Error {
+                    session_id,
+                    payload,
+                } => {
+                    let _ =
+                        emitter_for_events.emit(&format!("ai-error-{session_id}"), payload.error);
+                }
+                InternalEvent::SessionProgress {
+                    session_id,
+                    payload,
+                } => {
+                    let _ =
+                        emitter_for_events.emit(&format!("session-progress-{session_id}"), payload);
+                }
+                // Pure ACP events - emit directly with new event names
+                InternalEvent::AcpSessionUpdate { session_id, update } => {
+                    println!(
+                        "🔧 [EDIT-DEBUG] Emitting acp-session-update-{session_id} event: {update:?}"
+                    );
+                    let emit_result = emitter_for_events
+                        .emit(&format!("acp-session-update-{session_id}"), update);
+                    if emit_result.is_err() {
+                        println!(
+                            "🔧 [EDIT-DEBUG] Failed to emit acp-session-update event: {emit_result:?}"
+                        );
+                    }
+                }
+                InternalEvent::AcpPermissionRequest {
+                    session_id,
+                    request_id,
+                    request,
+                } => {
+                    println!(
+                        "🔧 [REQUEST-DEBUG] Emitting acp-permission-request-{session_id} event: {request:?}"
+                    );
+                    let emit_result = emitter_for_events.emit(
+                        &format!("acp-permission-request-{session_id}"),
+                        serde_json::json!({
+                            "request_id": request_id,
+                            "request": request
+                        }),
+                    );
+                    if emit_result.is_err() {
+                        println!(
+                            "🔧 [REQUEST-DEBUG] Failed to emit acp-permission-request event: {emit_result:?}"
+                        );
+                    }
+                }
+            }
+        }
+    });
     println!("🚀 [HANDSHAKE] Starting {cli_name} session initialization for: {session_id}");
     println!("🚀 [HANDSHAKE] Working directory: {working_directory}");
     println!("🚀 [HANDSHAKE] Model: {model}");
@@ -302,6 +399,17 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
     if let Some(auth) = &gemini_auth {
         println!("🚀 [HANDSHAKE] Auth method: {}", auth.method);
     }
+
+    // Emit starting progress
+    let _ = event_tx.send(InternalEvent::SessionProgress {
+        session_id: session_id.clone(),
+        payload: SessionProgressPayload {
+            stage: SessionProgressStage::Starting,
+            message: format!("Starting {} session initialization", cli_name),
+            progress_percent: Some(5),
+            details: Some(format!("Working directory: {}", working_directory)),
+        },
+    });
 
     let rpc_logger: Arc<dyn RpcLogger> =
         match FileRpcLogger::new(Some(&working_directory), Some(cli_name)) {
@@ -451,6 +559,15 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
     }
 
     // Pre-flight check: Test if CLI is available
+    let _ = event_tx.send(InternalEvent::SessionProgress {
+        session_id: session_id.clone(),
+        payload: SessionProgressPayload {
+            stage: SessionProgressStage::ValidatingCli,
+            message: format!("Validating {} CLI availability", cli_name),
+            progress_percent: Some(15),
+            details: Some("Testing CLI installation and connectivity".to_string()),
+        },
+    });
     println!("🔍 [PRECHECK] Testing CLI availability...");
     if !is_qwen {
         // Test Gemini CLI availability
@@ -497,6 +614,15 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
         println!("🔍 [PRECHECK] Skipping CLI check for Qwen (uses API directly)");
     }
 
+    let _ = event_tx.send(InternalEvent::SessionProgress {
+        session_id: session_id.clone(),
+        payload: SessionProgressPayload {
+            stage: SessionProgressStage::SpawningProcess,
+            message: format!("Spawning {} process", cli_name),
+            progress_percent: Some(25),
+            details: Some("Starting CLI subprocess with configured parameters".to_string()),
+        },
+    });
     println!("🔄 [HANDSHAKE] Spawning CLI process...");
     let mut child = cmd.spawn().map_err(|e| {
         let cmd_name = if is_qwen { "qwen" } else { "gemini" };
@@ -563,6 +689,15 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
     println!("📡 [HANDSHAKE] Set up stdin/stdout/stderr communication channels");
 
     // Step 1: Initialize
+    let _ = event_tx.send(InternalEvent::SessionProgress {
+        session_id: session_id.clone(),
+        payload: SessionProgressPayload {
+            stage: SessionProgressStage::Initializing,
+            message: "Initializing ACP protocol".to_string(),
+            progress_percent: Some(40),
+            details: Some("Establishing communication protocol with CLI".to_string()),
+        },
+    });
     println!("🤝 [HANDSHAKE] Step 1/3: Sending initialize request");
     let init_params = InitializeParams {
         protocol_version: 1,
@@ -630,6 +765,15 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
     println!("✅ [HANDSHAKE] Step 1/3: Initialize completed successfully for: {session_id}");
 
     // Step 2: Create new session
+    let _ = event_tx.send(InternalEvent::SessionProgress {
+        session_id: session_id.clone(),
+        payload: SessionProgressPayload {
+            stage: SessionProgressStage::CreatingSession,
+            message: "Creating ACP session".to_string(),
+            progress_percent: Some(80),
+            details: Some("Establishing working directory and session context".to_string()),
+        },
+    });
     println!("📁 [HANDSHAKE] Step 2/3: Creating new ACP session");
     let session_params = SessionNewParams {
         cwd: working_directory.clone(),
@@ -660,6 +804,17 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
         if msg.contains("Authentication required") {
             println!("⚠️ [HANDSHAKE] Session creation request failed - needs auth");
             // Step 3: Authenticate - choose method based on configuration
+            let _ = event_tx.send(InternalEvent::SessionProgress {
+                session_id: session_id.clone(),
+                payload: SessionProgressPayload {
+                    stage: SessionProgressStage::Authenticating,
+                    message: "Authenticating with AI service".to_string(),
+                    progress_percent: Some(65),
+                    details: Some(
+                        "Verifying credentials and establishing authenticated session".to_string(),
+                    ),
+                },
+            });
             println!("🔐 [HANDSHAKE] Step 3/3: Determining authentication method");
             let auth_method_id = if let Some(auth) = &gemini_auth {
                 println!("🔐 [HANDSHAKE] Using provided auth method: {}", auth.method);
@@ -780,104 +935,25 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
         );
     }
 
+    // Emit session ready progress
+    let _ = event_tx.send(InternalEvent::SessionProgress {
+        session_id: session_id.clone(),
+        payload: SessionProgressPayload {
+            stage: SessionProgressStage::Ready,
+            message: "Session ready".to_string(),
+            progress_percent: Some(100),
+            details: Some(format!(
+                "Session {} is now active and ready for use",
+                session_result.session_id
+            )),
+        },
+    });
+
     // Emit real-time status change - session became active
     if let Ok(statuses) = session_manager.get_process_statuses() {
         println!("📡 [STATUS-WS] Emitting process status change after session became active");
         let _ = emitter.emit("process-status-changed", &statuses);
     }
-
-    let (event_tx, mut event_rx) = mpsc::unbounded_channel::<InternalEvent>();
-
-    let session_id_for_events = session_id.clone();
-    tokio::spawn(async move {
-        while let Some(internal_event) = event_rx.recv().await {
-            println!("📨 Processing internal_event: {internal_event:?}");
-            match internal_event {
-                InternalEvent::CliIo {
-                    session_id,
-                    payload,
-                } => {
-                    let _ = emitter.emit(&format!("cli-io-{session_id}"), payload);
-                }
-                InternalEvent::GeminiOutput {
-                    session_id,
-                    payload,
-                } => {
-                    let _ = emitter.emit(&format!("ai-output-{session_id}"), payload.text);
-                }
-                InternalEvent::GeminiThought {
-                    session_id,
-                    payload,
-                } => {
-                    let _ = emitter.emit(&format!("ai-thought-{session_id}"), payload.thought);
-                }
-                // Deprecated events - no-op, use ACP equivalents instead
-                #[allow(deprecated)]
-                InternalEvent::ToolCall { .. } => {
-                    // No-op: Use AcpSessionUpdate instead
-                }
-                #[allow(deprecated)]
-                InternalEvent::ToolCallUpdate { .. } => {
-                    // No-op: Use AcpSessionUpdate instead
-                }
-                #[allow(deprecated)]
-                InternalEvent::ToolCallConfirmation { .. } => {
-                    // No-op: Use AcpPermissionRequest instead
-                }
-                InternalEvent::GeminiTurnFinished { session_id } => {
-                    let _ = emitter.emit(&format!("ai-turn-finished-{session_id}"), true);
-                }
-                InternalEvent::Error {
-                    session_id,
-                    payload,
-                } => {
-                    let _ = emitter.emit(&format!("ai-error-{session_id}"), payload.error);
-                }
-                // Pure ACP events - emit directly with new event names
-                InternalEvent::AcpSessionUpdate { session_id, update } => {
-                    println!(
-                        "🔧 [EDIT-DEBUG] Emitting acp-session-update-{session_id} event: {update:?}"
-                    );
-                    let emit_result =
-                        emitter.emit(&format!("acp-session-update-{session_id}"), update);
-                    if emit_result.is_err() {
-                        println!(
-                            "🔧 [EDIT-DEBUG] Failed to emit acp-session-update event: {emit_result:?}"
-                        );
-                    } else {
-                        println!(
-                            "🔧 [EDIT-DEBUG] Successfully emitted acp-session-update-{session_id} event"
-                        );
-                    }
-                }
-                InternalEvent::AcpPermissionRequest {
-                    session_id,
-                    request_id,
-                    request,
-                } => {
-                    println!(
-                        "🚨 BACKEND: Emitting acp-permission-request-{session_id} with request_id={request_id}"
-                    );
-                    println!(
-                        "🚨 BACKEND: Request payload: {:?}",
-                        serde_json::json!({
-                            "request_id": request_id,
-                            "request": &request
-                        })
-                    );
-                    let _ = emitter.emit(
-                        &format!("acp-permission-request-{session_id}"),
-                        serde_json::json!({
-                            "request_id": request_id,
-                            "request": request
-                        }),
-                    );
-                    println!("🚨 BACKEND: Event emitted successfully");
-                }
-            }
-        }
-        println!("🔄 Event forwarding task finished for session: {session_id_for_events}");
-    });
 
     let session_id_clone = session_id.clone();
     let processes_clone = session_manager.get_processes().clone();
