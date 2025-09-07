@@ -27,7 +27,7 @@ export const AboutDialog: React.FC<AboutDialogProps> = ({
   const backendText = getBackendText(selectedBackend);
 
   const appName = backendText.desktopName;
-  const appVersion = "0.3.3";
+  const appVersion = "0.3.4";
   const currentYear = new Date().getFullYear();
 
   return (
