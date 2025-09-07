@@ -66,6 +66,7 @@ pub struct CliIoPayload {
 pub enum CliIoType {
     Input,
     Output,
+    Error,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
