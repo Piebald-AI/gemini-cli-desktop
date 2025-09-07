@@ -7,10 +7,8 @@ import {
   MessageInputBar,
   MessageInputBarRef,
 } from "./components/conversation/MessageInputBar";
-import { SessionProgressModal } from "./components/conversation/SessionProgressModal";
 import { AppHeader } from "./components/layout/AppHeader";
 import { CustomTitleBar } from "./components/layout/CustomTitleBar";
-import { CliWarnings } from "./components/common/CliWarnings";
 import { DirectoryPanel } from "./components/common/DirectoryPanel";
 import { SidebarInset } from "./components/ui/sidebar";
 import { Toaster } from "./components/ui/sonner";
@@ -123,12 +121,14 @@ function RootLayoutContent() {
     return conversationsWithStatus.find((c) => c.id === activeConversation);
   }, [conversationsWithStatus, activeConversation]);
 
-  const currentConversation = currentConversationWithStatus
-    ? ({
-        ...currentConversationWithStatus,
-        isActive: undefined,
-      } as unknown as Conversation)
-    : undefined;
+  const currentConversation = useMemo(() => {
+    return currentConversationWithStatus
+      ? ({
+          ...currentConversationWithStatus,
+          isActive: undefined,
+        } as unknown as Conversation)
+      : undefined;
+  }, [currentConversationWithStatus]);
 
   const {
     confirmationRequests,

@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { listen } from "../lib/listen";
-import { SessionProgressPayload, SessionProgressStage } from "../types/session";
+import { SessionProgressPayload } from "../types/session";
 
 export function useSessionProgress() {
   const [progress, setProgress] = useState<SessionProgressPayload | null>(null);
