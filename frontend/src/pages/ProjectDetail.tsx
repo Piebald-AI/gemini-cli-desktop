@@ -54,8 +54,7 @@ export default function ProjectDetailPage() {
   const [loadingDiscussionId, setLoadingDiscussionId] = React.useState<
     string | null
   >(null);
-  const { progress, startListeningForSession } =
-    useSessionProgress();
+  const { progress, startListeningForSession } = useSessionProgress();
 
   // Debug logging
   React.useEffect(() => {
@@ -261,9 +260,7 @@ export default function ProjectDetailPage() {
               <div className="flex flex-col items-end gap-2">
                 <Button
                   onClick={handleNewDiscussion}
-                  disabled={
-                    !projectData || isCreatingDiscussion || !!progress
-                  }
+                  disabled={!projectData || isCreatingDiscussion || !!progress}
                   className="inline-flex items-center gap-2"
                 >
                   {isCreatingDiscussion || !!progress ? (
