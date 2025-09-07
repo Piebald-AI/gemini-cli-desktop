@@ -341,13 +341,13 @@ export function ProcessCard({
         </div>
 
         {progress && activeConversation === conversation.id && progress.stage !== "ready" && (
-          <>
-            <hr className="border-gray-200 dark:border-gray-700 my-3" />
+          <div className="px-4 pb-3">
+            <hr className="border-gray-200 dark:border-gray-700 mb-3" />
             <InlineSessionProgress
               progress={progress}
               className="w-full"
             />
-          </>
+          </div>
         )}
       </div>
     );

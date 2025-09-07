@@ -2,6 +2,7 @@ import React, { createContext, useContext } from "react";
 import { Conversation, CliIO, Message } from "../types";
 import { ToolCallConfirmationRequest } from "../utils/toolCallParser";
 import { ConversationHistoryEntry } from "../lib/webApi";
+import { SessionProgressPayload } from "../types/session";
 
 // Context for sharing conversation state with child routes
 export interface ConversationContextType {

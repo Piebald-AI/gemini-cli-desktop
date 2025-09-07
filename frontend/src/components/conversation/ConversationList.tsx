@@ -24,7 +24,7 @@ import { getBackendText } from "../../utils/backendText";
 import type { Conversation, ProcessStatus } from "../../types";
 import { api } from "@/lib/api";
 import { ProcessCard } from "./ProcessCard";
-rt { useConversation } from "../../contexts/ConversationContext";
+import { useConversation } from "../../contexts/ConversationContext";
 
 interface ConversationListProps {
   conversations: Conversation[];
