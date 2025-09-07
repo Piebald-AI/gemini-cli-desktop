@@ -215,7 +215,7 @@ async fn send_jsonrpc_request<E: EventEmitter>(
         .await
         .context("Failed to write request")?;
     stdin
-        .write_all(b"\n")
+        .write_all(if cfg!(windows) { b"\r\n" } else { b"\n" })
         .await
         .context("Failed to write newline")?;
     stdin.flush().await.context("Failed to flush")?;
@@ -229,12 +229,14 @@ async fn send_jsonrpc_request<E: EventEmitter>(
     );
 
     // Read response - keep reading lines until we get valid JSON
+    println!("⏳ Waiting for response from CLI...");
     let mut line = String::new();
     let trimmed_line = loop {
         line.clear();
         if let Err(e) = reader.read_line(&mut line).await {
             anyhow::bail!("Failed to read response: {e}");
         }
+        println!("Read line from CLI: '{}'", line.trim());
 
         let trimmed = line.trim();
         println!("🔍 RAW OUTPUT FROM GEMINI CLI: {trimmed}");
@@ -353,6 +355,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
             }
         } else {
             println!("🔧 [HANDSHAKE] Setting up Gemini CLI environment");
+
             // Configure environment based on Gemini auth method
             if let Some(auth) = &gemini_auth {
                 match auth.method.as_str() {
@@ -413,6 +416,8 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
 
                 let mut c = Command::new("cmd.exe");
                 c.args(args);
+                // Force unbuffered output for Python-based CLIs
+                c.env("PYTHONUNBUFFERED", "1");
                 #[cfg(windows)]
                 c.creation_flags(CREATE_NO_WINDOW);
                 c
@@ -524,9 +529,38 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
         .stdout
         .take()
         .context("Failed to get stdout from child process")?;
+    let stderr = child
+        .stderr
+        .take()
+        .context("Failed to get stderr from child process")?;
 
     let mut reader = AsyncBufReader::new(stdout);
-    println!("📡 [HANDSHAKE] Set up stdin/stdout communication channels");
+    let mut stderr_reader = AsyncBufReader::new(stderr);
+
+    // Spawn a task to log stderr
+    let session_id_for_stderr = session_id.clone();
+    let emitter_for_stderr = emitter.clone();
+    tokio::spawn(async move {
+        let mut line = String::new();
+        loop {
+            match stderr_reader.read_line(&mut line).await {
+                Ok(0) => break,
+                Ok(_) => {
+                    println!("🔍 STDERR from CLI: {}", line.trim());
+                    let _ = emitter_for_stderr.emit(
+                        &format!("cli-io-{}", session_id_for_stderr),
+                        CliIoPayload {
+                            io_type: CliIoType::Error,
+                            data: line.clone(),
+                        },
+                    );
+                    line.clear();
+                }
+                Err(_) => break,
+            }
+        }
+    });
+    println!("📡 [HANDSHAKE] Set up stdin/stdout/stderr communication channels");
 
     // Step 1: Initialize
     println!("🤝 [HANDSHAKE] Step 1/3: Sending initialize request");
@@ -902,7 +936,7 @@ async fn handle_session_io_internal(
                             eprintln!("Failed to write to stdin: {e}");
                             break;
                         }
-                        if let Err(e) = stdin.write_all(b"\n").await {
+                        if let Err(e) = stdin.write_all(if cfg!(windows) { b"\r\n" } else { b"\n" }).await {
                             eprintln!("Failed to write newline: {e}");
                             break;
                         }
