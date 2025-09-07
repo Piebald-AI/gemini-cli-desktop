@@ -141,12 +141,12 @@ Once the server is running, open your web browser and go to `http://localhost:18
 - Access Gemini CLI/Qwen Code running on **remote machines** with the web UI
 - `@`-mentioning files
 - Dangerous `--yolo` mode support
-
-### Planned/in progress
-
 - MCP server management and integration
 - Git repository viewing
 - Resuming saved conversations
+
+### Planned/in progress
+
 - Token/cost information
 - LLxprt integration ([#24](https://github.com/Piebald-AI/gemini-desktop/issues/24))
 - Multi-modal support
