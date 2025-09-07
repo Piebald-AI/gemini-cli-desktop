@@ -1,12 +1,18 @@
 import { Progress } from "../ui/progress";
-import { SessionProgressPayload, SessionProgressStage } from "../../types/session";
+import {
+  SessionProgressPayload,
+  SessionProgressStage,
+} from "../../types/session";
 
 interface InlineSessionProgressProps {
   progress: SessionProgressPayload | null;
   className?: string;
 }
 
-export function InlineSessionProgress({ progress, className }: InlineSessionProgressProps) {
+export function InlineSessionProgress({
+  progress,
+  className,
+}: InlineSessionProgressProps) {
   if (!progress || progress.stage === SessionProgressStage.Ready) {
     return null;
   }

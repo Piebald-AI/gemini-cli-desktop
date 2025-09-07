@@ -340,15 +340,14 @@ export function ProcessCard({
           </div>
         </div>
 
-        {progress && activeConversation === conversation.id && progress.stage !== "ready" && (
-          <div className="px-4 pb-3">
-            <hr className="border-gray-200 dark:border-gray-700 mb-3" />
-            <InlineSessionProgress
-              progress={progress}
-              className="w-full"
-            />
-          </div>
-        )}
+        {progress &&
+          activeConversation === conversation.id &&
+          progress.stage !== "ready" && (
+            <div className="px-4 pb-3">
+              <hr className="border-gray-200 dark:border-gray-700 mb-3" />
+              <InlineSessionProgress progress={progress} className="w-full" />
+            </div>
+          )}
       </div>
     );
   }

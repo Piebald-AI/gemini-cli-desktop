@@ -41,10 +41,7 @@ import { platform } from "@tauri-apps/plugin-os";
 import { AboutDialog } from "./components/common/AboutDialog";
 
 function RootLayoutContent() {
-  const {
-    progress,
-    startListeningForSession,
-  } = useSessionProgress();
+  const { progress, startListeningForSession } = useSessionProgress();
 
   const [selectedModel, setSelectedModel] =
     useState<string>("gemini-2.5-flash");
@@ -126,8 +123,11 @@ function RootLayoutContent() {
     return conversationsWithStatus.find((c) => c.id === activeConversation);
   }, [conversationsWithStatus, activeConversation]);
 
-  const currentConversation = currentConversationWithStatus 
-    ? ({ ...currentConversationWithStatus, isActive: undefined } as unknown as Conversation) 
+  const currentConversation = currentConversationWithStatus
+    ? ({
+        ...currentConversationWithStatus,
+        isActive: undefined,
+      } as unknown as Conversation)
     : undefined;
 
   const {
@@ -220,7 +220,10 @@ function RootLayoutContent() {
       if (workingDirectory) {
         // Start listening for progress before starting the session
         await startListeningForSession(convId);
-        console.log("🔄 [APP] Started listening for session progress: ", convId);
+        console.log(
+          "🔄 [APP] Started listening for session progress: ",
+          convId
+        );
 
         console.log("Debug - apiConfig:", apiConfig);
         console.log("Debug - selectedBackend:", selectedBackend);

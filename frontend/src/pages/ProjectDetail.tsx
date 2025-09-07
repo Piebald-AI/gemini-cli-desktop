@@ -54,11 +54,15 @@ export default function ProjectDetailPage() {
   const [loadingDiscussionId, setLoadingDiscussionId] = React.useState<
     string | null
   >(null);
-  const { progress, startListeningForSession, isInProgress } = useSessionProgress();
-  
+  const { progress, startListeningForSession, isInProgress } =
+    useSessionProgress();
+
   // Debug logging
   React.useEffect(() => {
-    console.log("🔍 [ProjectDetail] Progress state:", { progress, isInProgress });
+    console.log("🔍 [ProjectDetail] Progress state:", {
+      progress,
+      isInProgress,
+    });
   }, [progress, isInProgress]);
 
   const fetchDiscussions = React.useCallback(async () => {
@@ -111,13 +115,16 @@ export default function ProjectDetailPage() {
       const title = t("projects.newDiscussionTitle", {
         projectName: projectData.metadata.friendly_name,
       });
-      const conversationId = await startNewConversation(title, projectData.metadata.path);
-      
+      const conversationId = await startNewConversation(
+        title,
+        projectData.metadata.path
+      );
+
       // Start listening for session progress
       if (startListeningForSession) {
         await startListeningForSession(conversationId);
       }
-      
+
       navigate("/");
     } catch (error) {
       console.error("Failed to create new discussion:", error);
@@ -254,23 +261,22 @@ export default function ProjectDetailPage() {
               <div className="flex flex-col items-end gap-2">
                 <Button
                   onClick={handleNewDiscussion}
-                  disabled={!projectData || isCreatingDiscussion || isInProgress}
+                  disabled={
+                    !projectData || isCreatingDiscussion || isInProgress
+                  }
                   className="inline-flex items-center gap-2"
                 >
-                  {(isCreatingDiscussion || isInProgress) ? (
+                  {isCreatingDiscussion || isInProgress ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
                     <Plus className="h-4 w-4" />
                   )}
-                  {(isCreatingDiscussion || isInProgress)
+                  {isCreatingDiscussion || isInProgress
                     ? t("projects.creating")
                     : t("projects.newDiscussion")}
                 </Button>
                 {isInProgress && progress && (
-                  <InlineSessionProgress 
-                    progress={progress}
-                    className="w-48"
-                  />
+                  <InlineSessionProgress progress={progress} className="w-48" />
                 )}
               </div>
             </div>

@@ -36,8 +36,8 @@ use crate::acp::{
 };
 use crate::cli::StreamAssistantMessageChunkParams;
 use crate::events::{
-    CliIoPayload, CliIoType, EventEmitter, GeminiOutputPayload, GeminiThoughtPayload, InternalEvent,
-    SessionProgressPayload, SessionProgressStage,
+    CliIoPayload, CliIoType, EventEmitter, GeminiOutputPayload, GeminiThoughtPayload,
+    InternalEvent, SessionProgressPayload, SessionProgressStage,
 };
 use crate::rpc::{FileRpcLogger, JsonRpcRequest, JsonRpcResponse, NoOpRpcLogger, RpcLogger};
 use anyhow::{Context, Result};
@@ -292,7 +292,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
     let (event_tx, mut event_rx) = mpsc::unbounded_channel::<InternalEvent>();
     let _session_id_for_events = session_id.clone();
     let emitter_for_events = emitter.clone();
-    
+
     // Start event forwarding task
     tokio::spawn(async move {
         while let Some(internal_event) = event_rx.recv().await {
@@ -329,27 +329,30 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
                     // No-op: Use AcpPermissionRequest instead
                 }
                 InternalEvent::GeminiTurnFinished { session_id } => {
-                    let _ = emitter_for_events.emit(&format!("ai-turn-finished-{session_id}"), true);
+                    let _ =
+                        emitter_for_events.emit(&format!("ai-turn-finished-{session_id}"), true);
                 }
                 InternalEvent::Error {
                     session_id,
                     payload,
                 } => {
-                    let _ = emitter_for_events.emit(&format!("ai-error-{session_id}"), payload.error);
+                    let _ =
+                        emitter_for_events.emit(&format!("ai-error-{session_id}"), payload.error);
                 }
                 InternalEvent::SessionProgress {
                     session_id,
                     payload,
                 } => {
-                    let _ = emitter_for_events.emit(&format!("session-progress-{session_id}"), payload);
+                    let _ =
+                        emitter_for_events.emit(&format!("session-progress-{session_id}"), payload);
                 }
                 // Pure ACP events - emit directly with new event names
                 InternalEvent::AcpSessionUpdate { session_id, update } => {
                     println!(
                         "🔧 [EDIT-DEBUG] Emitting acp-session-update-{session_id} event: {update:?}"
                     );
-                    let emit_result =
-                        emitter_for_events.emit(&format!("acp-session-update-{session_id}"), update);
+                    let emit_result = emitter_for_events
+                        .emit(&format!("acp-session-update-{session_id}"), update);
                     if emit_result.is_err() {
                         println!(
                             "🔧 [EDIT-DEBUG] Failed to emit acp-session-update event: {emit_result:?}"
@@ -773,7 +776,9 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
                     stage: SessionProgressStage::Authenticating,
                     message: "Authenticating with AI service".to_string(),
                     progress_percent: Some(65),
-                    details: Some("Verifying credentials and establishing authenticated session".to_string()),
+                    details: Some(
+                        "Verifying credentials and establishing authenticated session".to_string(),
+                    ),
                 },
             });
             println!("🔐 [HANDSHAKE] Step 3/3: Determining authentication method");
@@ -903,7 +908,10 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
             stage: SessionProgressStage::Ready,
             message: "Session ready".to_string(),
             progress_percent: Some(100),
-            details: Some(format!("Session {} is now active and ready for use", session_result.session_id)),
+            details: Some(format!(
+                "Session {} is now active and ready for use",
+                session_result.session_id
+            )),
         },
     });
 
@@ -912,7 +920,6 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
         println!("📡 [STATUS-WS] Emitting process status change after session became active");
         let _ = emitter.emit("process-status-changed", &statuses);
     }
-
 
     let session_id_clone = session_id.clone();
     let processes_clone = session_manager.get_processes().clone();
