@@ -187,6 +187,8 @@ export const useMessageHandler = ({
           };
         }
 
+        // Session progress will be handled by useSessionProgress hook
+        // which should be integrated at the component level
         await api.start_session({
           sessionId: convId,
           workingDirectory: ".",

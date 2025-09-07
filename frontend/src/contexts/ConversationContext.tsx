@@ -1,5 +1,5 @@
 import React, { createContext, useContext } from "react";
-import { Conversation, CliIO } from "../types";
+import { Conversation, CliIO, Message } from "../types";
 import { ToolCallConfirmationRequest } from "../utils/toolCallParser";
 import { ConversationHistoryEntry } from "../lib/webApi";
 
@@ -22,7 +22,9 @@ export interface ConversationContextType {
   selectedModel: string;
   startNewConversation: (
     title: string,
-    workingDirectory?: string
+    workingDirectory?: string,
+    initialMessages?: Message[],
+    conversationId?: string
   ) => Promise<string>;
   loadConversationFromHistory: (
     chatId: string,
@@ -33,6 +35,7 @@ export interface ConversationContextType {
   handleConfirmToolCall: (toolCallId: string, outcome: string) => Promise<void>;
   confirmationRequests: Map<string, ToolCallConfirmationRequest>;
   removeConversation: (conversationId: string) => void;
+  progress: SessionProgressPayload | null;
 }
 
 export const ConversationContext = createContext<

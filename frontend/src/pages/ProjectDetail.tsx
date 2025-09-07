@@ -10,6 +10,8 @@ import { ArrowLeft, Plus, Loader2, Trash2 } from "lucide-react";
 import { EnrichedProject } from "../lib/webApi";
 import { useTranslation } from "react-i18next";
 import { GitInfo } from "../components/common/GitInfo";
+import { InlineSessionProgress } from "../components/common/InlineSessionProgress";
+import { useSessionProgress } from "../hooks/useSessionProgress";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -52,6 +54,12 @@ export default function ProjectDetailPage() {
   const [loadingDiscussionId, setLoadingDiscussionId] = React.useState<
     string | null
   >(null);
+  const { progress, startListeningForSession, isInProgress } = useSessionProgress();
+  
+  // Debug logging
+  React.useEffect(() => {
+    console.log("🔍 [ProjectDetail] Progress state:", { progress, isInProgress });
+  }, [progress, isInProgress]);
 
   const fetchDiscussions = React.useCallback(async () => {
     if (!projectId) return;
@@ -103,7 +111,13 @@ export default function ProjectDetailPage() {
       const title = t("projects.newDiscussionTitle", {
         projectName: projectData.metadata.friendly_name,
       });
-      await startNewConversation(title, projectData.metadata.path);
+      const conversationId = await startNewConversation(title, projectData.metadata.path);
+      
+      // Start listening for session progress
+      if (startListeningForSession) {
+        await startListeningForSession(conversationId);
+      }
+      
       navigate("/");
     } catch (error) {
       console.error("Failed to create new discussion:", error);
@@ -237,20 +251,28 @@ export default function ProjectDetailPage() {
               <h2 className="text-lg font-medium">
                 {t("projects.previousDiscussions")}
               </h2>
-              <Button
-                onClick={handleNewDiscussion}
-                disabled={!projectData || isCreatingDiscussion}
-                className="inline-flex items-center gap-2"
-              >
-                {isCreatingDiscussion ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Plus className="h-4 w-4" />
+              <div className="flex flex-col items-end gap-2">
+                <Button
+                  onClick={handleNewDiscussion}
+                  disabled={!projectData || isCreatingDiscussion || isInProgress}
+                  className="inline-flex items-center gap-2"
+                >
+                  {(isCreatingDiscussion || isInProgress) ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Plus className="h-4 w-4" />
+                  )}
+                  {(isCreatingDiscussion || isInProgress)
+                    ? t("projects.creating")
+                    : t("projects.newDiscussion")}
+                </Button>
+                {isInProgress && progress && (
+                  <InlineSessionProgress 
+                    progress={progress}
+                    className="w-48"
+                  />
                 )}
-                {isCreatingDiscussion
-                  ? t("projects.creating")
-                  : t("projects.newDiscussion")}
-              </Button>
+              </div>
             </div>
 
             {error ? (

@@ -52,6 +52,11 @@ pub enum InternalEvent {
         session_id: String,
         payload: ErrorPayload,
     },
+    // Session initialization progress events
+    SessionProgress {
+        session_id: String,
+        payload: SessionProgressPayload,
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -81,6 +86,27 @@ pub struct GeminiThoughtPayload {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ErrorPayload {
     pub error: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SessionProgressPayload {
+    pub stage: SessionProgressStage,
+    pub message: String,
+    pub progress_percent: Option<u8>, // 0-100
+    pub details: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SessionProgressStage {
+    Starting,
+    ValidatingCli,
+    SpawningProcess,
+    Initializing,
+    Authenticating,
+    CreatingSession,
+    Ready,
+    Failed,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
