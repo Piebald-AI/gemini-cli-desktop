@@ -405,6 +405,7 @@ function RootLayoutContent() {
                   }
                   isContinuingConversation={isContinuingConversation}
                   isNew={currentConversationWithStatus.isNew}
+                  isStreaming={currentConversationWithStatus.isStreaming}
                 />
               </>
             )}
