@@ -14,7 +14,10 @@ export function InlineSessionProgress({
   progress,
   className,
 }: InlineSessionProgressProps) {
-  const isActive = progress && progress.stage !== SessionProgressStage.Ready && progress.stage !== SessionProgressStage.Failed;
+  const isActive =
+    progress &&
+    progress.stage !== SessionProgressStage.Ready &&
+    progress.stage !== SessionProgressStage.Failed;
   const { formattedMessage } = useWittyLoadingPhrase({ isActive: !!isActive });
 
   if (!progress || progress.stage === SessionProgressStage.Ready) {

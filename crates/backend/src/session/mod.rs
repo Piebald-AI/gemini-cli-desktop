@@ -310,13 +310,15 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
                     session_id,
                     payload,
                 } => {
-                    let _ = emitter_for_events.emit(&format!("ai-output-{session_id}"), payload.text);
+                    let _ =
+                        emitter_for_events.emit(&format!("ai-output-{session_id}"), payload.text);
                 }
                 InternalEvent::GeminiThought {
                     session_id,
                     payload,
                 } => {
-                    let _ = emitter_for_events.emit(&format!("ai-thought-{session_id}"), payload.thought);
+                    let _ = emitter_for_events
+                        .emit(&format!("ai-thought-{session_id}"), payload.thought);
                 }
                 #[allow(deprecated)]
                 InternalEvent::ToolCall { .. } => {

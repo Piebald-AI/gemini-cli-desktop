@@ -128,7 +128,7 @@ export const MessageInputBar = forwardRef<
           {isTimerActive && (
             <div className="mb-2 text-center">
               <span className="text-sm text-muted-foreground bg-muted px-2 py-1 rounded-md">
-{currentPhrase} {formattedDuration}
+                {currentPhrase} {formattedDuration}
               </span>
             </div>
           )}

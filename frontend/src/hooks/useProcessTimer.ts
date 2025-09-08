@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
 export interface UseProcessTimerOptions {
   startTime?: number;
@@ -7,11 +7,7 @@ export interface UseProcessTimerOptions {
 }
 
 export function useProcessTimer(options: UseProcessTimerOptions = {}) {
-  const {
-    startTime,
-    isActive = true,
-    updateInterval = 1000
-  } = options;
+  const { startTime, isActive = true, updateInterval = 1000 } = options;
 
   const [duration, setDuration] = useState(0);
 
@@ -56,6 +52,6 @@ export function useProcessTimer(options: UseProcessTimerOptions = {}) {
 
   return {
     duration,
-    formattedDuration: formatDuration(duration)
+    formattedDuration: formatDuration(duration),
   };
 }

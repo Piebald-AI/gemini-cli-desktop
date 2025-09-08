@@ -1,22 +1,26 @@
-import { useState, useEffect, useRef } from 'react';
-import { getRandomLoadingPhrase } from '../utils/loadingPhrases';
+import { useState, useEffect, useRef } from "react";
+import { getRandomLoadingPhrase } from "../utils/loadingPhrases";
 
 interface UseWittyLoadingPhraseOptions {
   isActive?: boolean;
   rotationIntervalMs?: number;
 }
 
-export function useWittyLoadingPhrase(options: UseWittyLoadingPhraseOptions = {}) {
+export function useWittyLoadingPhrase(
+  options: UseWittyLoadingPhraseOptions = {}
+) {
   const {
     isActive = true,
     rotationIntervalMs = 15000, // 15 seconds
   } = options;
-  
+
   const [currentPhrase, setCurrentPhrase] = useState(getRandomLoadingPhrase);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const startTimeRef = useRef<number>(Date.now());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const elapsedIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const elapsedIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
+    null
+  );
 
   // Reset start time when becoming active
   useEffect(() => {
