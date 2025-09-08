@@ -105,6 +105,7 @@ export const useMessageHandler = ({
 
         updateConversation(activeConversation, (conv) => {
           conv.messages.push(newMessage);
+          conv.isStreaming = true; // Start streaming indicator when sending message
         });
 
         // Check if this is the 3rd user message and generate title

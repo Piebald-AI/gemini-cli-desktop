@@ -65,7 +65,7 @@ interface SessionUpdateEventPayload {
   locations?: ToolLocation[];
   status?: string;
   result?: string;
-  content?: AcpContent[] | string;
+  content?: AcpContent[] | string | { text: string };
   chunk?: string;
   thought?: string;
   serverName?: string;

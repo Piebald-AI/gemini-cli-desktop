@@ -14,6 +14,8 @@ import { useBackend } from "../../contexts/BackendContext";
 import { getBackendText } from "../../utils/backendText";
 import { CliIO } from "../../types";
 import { GitInfo } from "../common/GitInfo";
+import { useMessageTimer } from "../../hooks/useMessageTimer";
+import { useWittyLoadingPhrase } from "../../hooks/useWittyLoadingPhrase";
 
 interface MessageInputBarProps {
   input: string;
@@ -31,6 +33,7 @@ interface MessageInputBarProps {
   onContinueConversation: () => void;
   isContinuingConversation: boolean;
   isNew?: boolean;
+  isStreaming?: boolean;
 }
 
 export interface MessageInputBarRef {
@@ -54,6 +57,7 @@ export const MessageInputBar = forwardRef<
       onContinueConversation,
       isContinuingConversation,
       isNew,
+      isStreaming,
     },
     ref
   ) => {
@@ -61,6 +65,16 @@ export const MessageInputBar = forwardRef<
     const { selectedBackend } = useBackend();
     const backendText = getBackendText(selectedBackend);
     const mentionInputRef = useRef<MentionInputRef>(null);
+
+    // Use message timer hook to track generation time
+    const { formattedDuration, isActive: isTimerActive } = useMessageTimer({
+      isGenerating: isStreaming || false,
+    });
+
+    // Use witty loading phrase hook for entertaining messages
+    const { currentPhrase } = useWittyLoadingPhrase({
+      isActive: isTimerActive,
+    });
 
     // Expose the insertMention method via ref
     useImperativeHandle(
@@ -110,9 +124,19 @@ export const MessageInputBar = forwardRef<
     return (
       <div className="sticky bottom-0 bg-white dark:bg-neutral-900 flex items-center">
         <div className="px-6 pb-3 pt-2 w-full">
+          {/* Message timer - positioned above input when active */}
+          {isTimerActive && (
+            <div className="mb-2 text-center">
+              <span className="text-sm text-muted-foreground bg-muted px-2 py-1 rounded-md">
+{currentPhrase} {formattedDuration}
+              </span>
+            </div>
+          )}
           {/* Git info - positioned above input */}
           {workingDirectory && workingDirectory !== "." && (
-            <GitInfo directory={workingDirectory} compact={true} />
+            <div className="mb-2">
+              <GitInfo directory={workingDirectory} compact={true} />
+            </div>
           )}
           <form
             className="flex gap-2 items-end mt-2"

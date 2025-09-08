@@ -17,7 +17,8 @@ export function ThinkingBlock({ thinking }: ThinkingBlockProps) {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
 
-  if (!thinking || thinking.trim().length === 0) {
+  // Type guard: ensure thinking is a string
+  if (!thinking || typeof thinking !== 'string' || thinking.trim().length === 0) {
     return null;
   }
 
