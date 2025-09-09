@@ -1,7 +1,7 @@
 {
   "name": "gemini-desktop",
   "private": true,
-  "version": "0.3.4",
+  "version": "0.3.5",
   "type": "module",
   "scripts": {
     "dev": "npm run copy-pdf-worker && vite",
