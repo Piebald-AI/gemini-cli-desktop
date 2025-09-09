@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useRef } from "react";
 import { listen } from "@/lib/listen";
 import { getWebSocketManager } from "../lib/webApi";
 import { Conversation, Message, CliIO } from "../types";
@@ -245,6 +245,11 @@ export const useConversationEvents = (
     updateFn: (conv: Conversation, lastMsg: Message) => void
   ) => void
 ) => {
+  // Buffer agent text chunks seen on CLI output in case the UI misses
+  // ai-output streaming events (web WS race). Cleared on turn finish.
+  const pendingAssistantTextRef = useRef<Map<string, string>>(new Map());
+  const sawAiOutputRef = useRef<Map<string, boolean>>(new Map());
+
   const setupEventListenerForConversation = useCallback(
     async (conversationId: string): Promise<() => void> => {
       // In web mode, ensure WebSocket connection is ready before registering listeners
@@ -276,6 +281,41 @@ export const useConversationEvents = (
             const jsonData = JSON.parse(event.payload.data);
 
             if (event.payload.type === "output") {
+              // Collect assistant text chunks for defensive fallback
+              try {
+                let extractedText: string | undefined;
+                if (jsonData.method === "session/update") {
+                  // ACP structured event
+                  const upd = jsonData.params?.update;
+                  if (
+                    upd?.sessionUpdate === "agent_message_chunk" &&
+                    typeof upd?.content?.text === "string"
+                  ) {
+                    extractedText = upd.content.text as string;
+                  } else if (
+                    // Some variants emit chunk instead of content
+                    upd?.sessionUpdate === "agent_message_chunk" &&
+                    typeof upd?.chunk === "string"
+                  ) {
+                    extractedText = upd.chunk as string;
+                  }
+                } else if (jsonData.method === "streamAssistantMessageChunk") {
+                  const text = jsonData.params?.chunk?.text;
+                  if (typeof text === "string") extractedText = text as string;
+                }
+
+                if (extractedText && extractedText.length > 0) {
+                  const prev =
+                    pendingAssistantTextRef.current.get(conversationId) || "";
+                  pendingAssistantTextRef.current.set(
+                    conversationId,
+                    prev + extractedText
+                  );
+                }
+              } catch {
+                // Ignore fallback parsing errors
+              }
+
               // If it's a requestToolCallConfirmation input, store it for when the tool call is created
               if (jsonData.method === "requestToolCallConfirmation") {
                 window.pendingToolCallInput = event.payload.data;
@@ -307,6 +347,8 @@ export const useConversationEvents = (
         const unlistenAiOutput = await listen<string>(
           `ai-output-${sanitizedId}`,
           (event) => {
+            // Mark that we received streaming for this turn to avoid fallback duplication
+            sawAiOutputRef.current.set(conversationId, true);
             updateConversation(conversationId, (conv, lastMsg) => {
               conv.isStreaming = true;
               if (lastMsg.sender === "assistant") {
@@ -828,8 +870,41 @@ export const useConversationEvents = (
         const unlistenAiTurnFinished = await listen<boolean>(
           `ai-turn-finished-${sanitizedId}`,
           () => {
-            updateConversation(conversationId, (conv) => {
+            updateConversation(conversationId, (conv, lastMsg) => {
               conv.isStreaming = false;
+              const saw = sawAiOutputRef.current.get(conversationId) || false;
+              const buffered =
+                pendingAssistantTextRef.current.get(conversationId) || "";
+
+              // Defensive fallback: if no streaming was seen but we buffered text
+              // from CLI logs, inject it so the UI shows something.
+              if (!saw && buffered.trim().length > 0) {
+                // If the last message is assistant with text, append; else create new
+                if (
+                  lastMsg?.sender === "assistant" &&
+                  lastMsg.parts.length > 0 &&
+                  lastMsg.parts[lastMsg.parts.length - 1].type === "text"
+                ) {
+                  (lastMsg.parts[lastMsg.parts.length - 1] as any).text +=
+                    buffered;
+                } else {
+                  conv.messages.push({
+                    id: Date.now().toString(),
+                    sender: "assistant",
+                    timestamp: new Date(),
+                    parts: [
+                      {
+                        type: "text" as const,
+                        text: buffered,
+                      },
+                    ],
+                  });
+                }
+              }
+
+              // Reset flags for next turn
+              pendingAssistantTextRef.current.delete(conversationId);
+              sawAiOutputRef.current.delete(conversationId);
             });
           }
         );
@@ -851,6 +926,9 @@ export const useConversationEvents = (
           `🧹 Cleaning up event listeners for conversation: ${conversationId}`
         );
         unlistenFunctions.forEach((unlisten) => unlisten());
+        // Also clear any buffered state for this conversation
+        pendingAssistantTextRef.current.delete(conversationId);
+        sawAiOutputRef.current.delete(conversationId);
       };
     },
     [setCliIOLogs, setConfirmationRequests, updateConversation]
