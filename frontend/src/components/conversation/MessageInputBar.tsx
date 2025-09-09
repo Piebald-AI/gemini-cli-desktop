@@ -99,7 +99,7 @@ export const MessageInputBar = forwardRef<
         return null;
       }
       return (
-        <div className="sticky bottom-0 bg-white dark:bg-neutral-900 flex items-center p-6">
+        <div className="mt-auto border-t bg-white dark:bg-neutral-900 flex items-center p-6">
           <Button
             className="w-full"
             onClick={onContinueConversation}
@@ -122,7 +122,7 @@ export const MessageInputBar = forwardRef<
     }
 
     return (
-      <div className="sticky bottom-0 bg-white dark:bg-neutral-900 flex items-center">
+      <div className="mt-auto border-t bg-white dark:bg-neutral-900 flex items-center">
         <div className="px-6 pb-3 pt-2 w-full">
           {/* Message timer - positioned above input when active */}
           {isTimerActive && (
