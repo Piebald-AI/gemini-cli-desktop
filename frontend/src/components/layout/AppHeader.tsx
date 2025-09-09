@@ -64,7 +64,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           <div className="flex-1"></div>
 
           {/* Right section - Settings + Directory Toggle + Piebald branding */}
-          <div className="flex flex-1 items-center justify-end gap-4">
+          <div className="flex flex-1 items-center justify-end gap-2">
             {onOpenSettings && (
               <Button
                 variant="ghost"

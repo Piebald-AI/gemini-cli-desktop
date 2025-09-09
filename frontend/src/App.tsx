@@ -8,6 +8,7 @@ import {
   MessageInputBarRef,
 } from "./components/conversation/MessageInputBar";
 import { AppHeader } from "./components/layout/AppHeader";
+import { ConversationSearchDialog } from "./components/conversation/ConversationSearchDialog";
 import { CustomTitleBar } from "./components/layout/CustomTitleBar";
 import { DirectoryPanel } from "./components/common/DirectoryPanel";
 import { SidebarInset } from "./components/ui/sidebar";
@@ -48,12 +49,14 @@ function RootLayoutContent() {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [directoryPanelOpen, setDirectoryPanelOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [workingDirectory, setWorkingDirectory] = useState<string>(".");
   const [isContinuingConversation, setIsContinuingConversation] =
     useState(false);
   const messageInputBarRef = useRef<MessageInputBarRef>(null);
   const listenerCleanups = useRef(new Map<string, () => void>());
+  // Global search dialog state (declared above)
 
   // Get the current working directory (default fallback)
   useEffect(() => {
@@ -178,6 +181,22 @@ function RootLayoutContent() {
     return () =>
       window.removeEventListener(
         "app:open-settings",
+        handler as unknown as WindowEventHandler
+      );
+  }, []);
+
+  // Open Search dialog when a global event is dispatched
+  useEffect(() => {
+    const handler = () => setSearchOpen(true);
+    // Type guard to satisfy TS without any
+    type WindowEventHandler = (this: Window, ev: Event) => unknown;
+    window.addEventListener(
+      "app:open-search",
+      handler as unknown as WindowEventHandler
+    );
+    return () =>
+      window.removeEventListener(
+        "app:open-search",
         handler as unknown as WindowEventHandler
       );
   }, []);
@@ -393,6 +412,7 @@ function RootLayoutContent() {
         onModelChange={handleModelChange}
         open={sidebarOpen}
         onOpenChange={setSidebarOpen}
+        onOpenSearch={() => setSearchOpen(true)}
       >
         <SidebarInset>
           {/* Grid layout: header spans all columns; content + optional right panel */}
@@ -462,6 +482,13 @@ function RootLayoutContent() {
           </div>
         </SidebarInset>
       </AppSidebar>
+      {/* Global Search Dialog */}
+      <ConversationSearchDialog
+        open={searchOpen}
+        onOpenChange={setSearchOpen}
+        onConversationSelect={(id) => setActiveConversation(id)}
+        fullScreen
+      />
       {/* Settings Dialog */}
       <SettingsDialog
         open={isSettingsOpen}

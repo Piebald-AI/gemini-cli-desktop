@@ -243,7 +243,11 @@
     "searchResults": "Search Results",
     "searching": "Searching...",
     "searchConversations": "Search conversations...",
-    "searchFilters": "Search Filters"
+    "searchFilters": "Search Filters",
+    "startTyping": "Start typing to search",
+    "hint": "Enter keywords to find messages",
+    "tryDifferentTerms": "Try different search terms",
+    "includeThinking": "Include thinking"
   },
 
   "fileSystem": {
