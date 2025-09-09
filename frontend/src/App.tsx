@@ -169,11 +169,16 @@ function RootLayoutContent() {
   // Open Settings dialog when a global event is dispatched
   useEffect(() => {
     const handler = () => setIsSettingsOpen(true);
-    window.addEventListener("app:open-settings", handler as EventListener);
+    // Type guard for addEventListener/removeEventListener signature without using any
+    type WindowEventHandler = (this: Window, ev: Event) => unknown;
+    window.addEventListener(
+      "app:open-settings",
+      handler as unknown as WindowEventHandler
+    );
     return () =>
       window.removeEventListener(
         "app:open-settings",
-        handler as EventListener
+        handler as unknown as WindowEventHandler
       );
   }, []);
 

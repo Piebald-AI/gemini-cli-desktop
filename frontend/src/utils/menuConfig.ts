@@ -58,7 +58,11 @@ export const getMenuShortcuts = (): Record<
       [modifierKey]: true,
       display: `${displayModifier}M`,
     },
-    openSettings: { key: ",", [modifierKey]: true, display: `${displayModifier},` },
+    openSettings: {
+      key: ",",
+      [modifierKey]: true,
+      display: `${displayModifier},`,
+    },
     toggleTheme: undefined, // No accelerator in Linux menu
     refresh: { key: "r", [modifierKey]: true, display: `${displayModifier}R` },
     showAbout: undefined, // No accelerator in Linux menu

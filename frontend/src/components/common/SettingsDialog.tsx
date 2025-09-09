@@ -5,7 +5,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -17,9 +16,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertTriangle } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useBackend, useBackendConfig } from "@/contexts/BackendContext";
-import { getBackendText } from "@/utils/backendText";
 import { GeminiAuthMethod } from "@/types/backend";
 
 interface SettingsDialogProps {
@@ -40,13 +42,15 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
   const { config: geminiConfig, updateConfig: updateGeminiConfig } =
     useBackendConfig("gemini");
 
-  const backendText = getBackendText(selectedBackend);
+  // Derive translations directly where needed; remove unused variable to satisfy TS
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-auto">
         <DialogHeader>
-          <DialogTitle>{t("advancedSettings", { defaultValue: "Settings" })}</DialogTitle>
+          <DialogTitle>
+            {t("advancedSettings", { defaultValue: "Settings" })}
+          </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6 py-2">
@@ -229,7 +233,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                     }
                   >
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder={t("conversations.selectAuthMethod")} />
+                      <SelectValue
+                        placeholder={t("conversations.selectAuthMethod")}
+                      />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="oauth-personal">
@@ -271,7 +277,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                       placeholder={t("backend.enterApiKey")}
                     />
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      {t("conversations.getApiKeyFrom")} {" "}
+                      {t("conversations.getApiKeyFrom")}{" "}
                       <a
                         href="https://aistudio.google.com/apikey"
                         target="_blank"
