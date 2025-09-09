@@ -404,48 +404,49 @@ pub async fn search_chats(
                                             &line[start..],
                                         )
                                     {
-                                            parsed_json = true;
-                                            // Default timestamp if line prefix missing
-                                            let ts = if !line_ts.is_empty() {
-                                                line_ts.clone()
-                                            } else {
-                                                // Fallback to file-based timestamp
-                                                let dt = DateTime::<Local>::from(
-                                                    std::time::UNIX_EPOCH
-                                                        + std::time::Duration::from_millis(
-                                                            timestamp_ms,
-                                                        ),
-                                                );
-                                                dt.to_rfc3339()
-                                            };
+                                        parsed_json = true;
+                                        // Default timestamp if line prefix missing
+                                        let ts = if !line_ts.is_empty() {
+                                            line_ts.clone()
+                                        } else {
+                                            // Fallback to file-based timestamp
+                                            let dt = DateTime::<Local>::from(
+                                                std::time::UNIX_EPOCH
+                                                    + std::time::Duration::from_millis(
+                                                        timestamp_ms,
+                                                    ),
+                                            );
+                                            dt.to_rfc3339()
+                                        };
 
-                                            if let Some(method) =
-                                                json.get("method").and_then(|m| m.as_str())
-                                            {
-                                                match method {
-                                                    "session/prompt" => {
-                                                        if let Some(params) = json.get("params")
-                                                            && let Some(prompt) = params
-                                                                .get("prompt")
-                                                                .and_then(|p| p.as_array())
-                                                        {
-                                                            for content_block in prompt {
-                                                                if let Some(text) = content_block
-                                                                    .get("text")
-                                                                    .and_then(|t| t.as_str())
-                                                                {
-                                                                    let hay = if case_sensitive {
-                                                                        text.to_string()
-                                                                    } else {
-                                                                        text.to_lowercase()
-                                                                    };
-                                                                    let needle = if case_sensitive {
-                                                                        query.clone()
-                                                                    } else {
-                                                                        query_lower.clone()
-                                                                    };
-                                                                    if hay.contains(&needle) {
-                                                                        let snippet = if text.len() > 200 {
+                                        if let Some(method) =
+                                            json.get("method").and_then(|m| m.as_str())
+                                        {
+                                            match method {
+                                                "session/prompt" => {
+                                                    if let Some(params) = json.get("params")
+                                                        && let Some(prompt) = params
+                                                            .get("prompt")
+                                                            .and_then(|p| p.as_array())
+                                                    {
+                                                        for content_block in prompt {
+                                                            if let Some(text) = content_block
+                                                                .get("text")
+                                                                .and_then(|t| t.as_str())
+                                                            {
+                                                                let hay = if case_sensitive {
+                                                                    text.to_string()
+                                                                } else {
+                                                                    text.to_lowercase()
+                                                                };
+                                                                let needle = if case_sensitive {
+                                                                    query.clone()
+                                                                } else {
+                                                                    query_lower.clone()
+                                                                };
+                                                                if hay.contains(&needle) {
+                                                                    let snippet =
+                                                                        if text.len() > 200 {
                                                                             format!(
                                                                                 "{}...",
                                                                                 &text[..200]
@@ -453,71 +454,71 @@ pub async fn search_chats(
                                                                         } else {
                                                                             text.to_string()
                                                                         };
-                                                                        matches.push(MessageMatch {
-                                                                            content_snippet: snippet,
-                                                                            line_number: (i + 1) as u32,
-                                                                            context_before: None,
-                                                                            context_after: None,
-                                                                            role: "user".to_string(),
-                                                                            timestamp_iso: ts.clone(),
-                                                                        });
-                                                                        matched = true;
-                                                                    }
+                                                                    matches.push(MessageMatch {
+                                                                        content_snippet: snippet,
+                                                                        line_number: (i + 1) as u32,
+                                                                        context_before: None,
+                                                                        context_after: None,
+                                                                        role: "user".to_string(),
+                                                                        timestamp_iso: ts.clone(),
+                                                                    });
+                                                                    matched = true;
                                                                 }
                                                             }
                                                         }
                                                     }
-                                                    "agent_message_chunk" => {
-                                                        if let Some(params) = json.get("params")
-                                                            && let Some(chunk) = params
-                                                                .get("chunk")
-                                                                .and_then(|c| c.as_str())
-                                                        {
-                                                            let hay = if case_sensitive {
+                                                }
+                                                "agent_message_chunk" => {
+                                                    if let Some(params) = json.get("params")
+                                                        && let Some(chunk) = params
+                                                            .get("chunk")
+                                                            .and_then(|c| c.as_str())
+                                                    {
+                                                        let hay = if case_sensitive {
+                                                            chunk.to_string()
+                                                        } else {
+                                                            chunk.to_lowercase()
+                                                        };
+                                                        let needle = if case_sensitive {
+                                                            query.clone()
+                                                        } else {
+                                                            query_lower.clone()
+                                                        };
+                                                        if hay.contains(&needle) {
+                                                            let snippet = if chunk.len() > 200 {
+                                                                format!("{}...", &chunk[..200])
+                                                            } else {
                                                                 chunk.to_string()
-                                                            } else {
-                                                                chunk.to_lowercase()
                                                             };
-                                                            let needle = if case_sensitive {
-                                                                query.clone()
-                                                            } else {
-                                                                query_lower.clone()
-                                                            };
-                                                            if hay.contains(&needle) {
-                                                                let snippet = if chunk.len() > 200 {
-                                                                    format!("{}...", &chunk[..200])
-                                                                } else {
-                                                                    chunk.to_string()
-                                                                };
-                                                                matches.push(MessageMatch {
-                                                                    content_snippet: snippet,
-                                                                    line_number: (i + 1) as u32,
-                                                                    context_before: None,
-                                                                    context_after: None,
-                                                                    role: "assistant".to_string(),
-                                                                    timestamp_iso: ts.clone(),
-                                                                });
-                                                                matched = true;
-                                                            }
+                                                            matches.push(MessageMatch {
+                                                                content_snippet: snippet,
+                                                                line_number: (i + 1) as u32,
+                                                                context_before: None,
+                                                                context_after: None,
+                                                                role: "assistant".to_string(),
+                                                                timestamp_iso: ts.clone(),
+                                                            });
+                                                            matched = true;
                                                         }
                                                     }
-                                                    "session/update" => {
-                                                        if let Some(params) = json.get("params")
-                                                            && let Some(update) =
-                                                                params.get("update")
-                                                            && let Some(session_update) =
-                                                                update.get("sessionUpdate")
-                                                                    .and_then(|s| s.as_str())
-                                                            && let Some(content) =
-                                                                update.get("content")
-                                                            && let Some(text) = content
-                                                                .get("text")
-                                                                .and_then(|t| t.as_str())
+                                                }
+                                                "session/update" => {
+                                                    if let Some(params) = json.get("params")
+                                                        && let Some(update) = params.get("update")
+                                                        && let Some(session_update) = update
+                                                            .get("sessionUpdate")
+                                                            .and_then(|s| s.as_str())
+                                                        && let Some(content) = update.get("content")
+                                                        && let Some(text) = content
+                                                            .get("text")
+                                                            .and_then(|t| t.as_str())
+                                                    {
+                                                        // If this is a thought chunk, only include if explicitly enabled
+                                                        if session_update == "agent_thought_chunk"
+                                                            && !include_thinking
                                                         {
-                                                            // If this is a thought chunk, only include if explicitly enabled
-                                                            if session_update == "agent_thought_chunk" && !include_thinking {
-                                                                // Skip matching thought chunks unless requested
-                                                            } else {
+                                                            // Skip matching thought chunks unless requested
+                                                        } else {
                                                             let hay = if case_sensitive {
                                                                 text.to_string()
                                                             } else {
@@ -544,48 +545,48 @@ pub async fn search_chats(
                                                                 });
                                                                 matched = true;
                                                             }
-                                                            }
                                                         }
                                                     }
-                                                    "agent_thought_chunk" => {
-                                                        if include_thinking
-                                                            && let Some(params) = json.get("params")
-                                                            && let Some(chunk) = params
-                                                                .get("chunk")
-                                                                .and_then(|c| c.as_str())
-                                                        {
-                                                                let hay = if case_sensitive {
-                                                                    chunk.to_string()
-                                                                } else {
-                                                                    chunk.to_lowercase()
-                                                                };
-                                                                let needle = if case_sensitive {
-                                                                    query.clone()
-                                                                } else {
-                                                                    query_lower.clone()
-                                                                };
-                                                                if hay.contains(&needle) {
-                                                                    let snippet = if chunk.len() > 200 {
-                                                                        format!("{}...", &chunk[..200])
-                                                                    } else {
-                                                                        chunk.to_string()
-                                                                    };
-                                                                    matches.push(MessageMatch {
-                                                                        content_snippet: snippet,
-                                                                        line_number: (i + 1) as u32,
-                                                                        context_before: None,
-                                                                        context_after: None,
-                                                                        role: "assistant".to_string(),
-                                                                        timestamp_iso: ts.clone(),
-                                                                    });
-                                                                    matched = true;
-                                                                }
-                                                            }
-                                                    }
-                                                    _ => {}
                                                 }
+                                                "agent_thought_chunk" => {
+                                                    if include_thinking
+                                                        && let Some(params) = json.get("params")
+                                                        && let Some(chunk) = params
+                                                            .get("chunk")
+                                                            .and_then(|c| c.as_str())
+                                                    {
+                                                        let hay = if case_sensitive {
+                                                            chunk.to_string()
+                                                        } else {
+                                                            chunk.to_lowercase()
+                                                        };
+                                                        let needle = if case_sensitive {
+                                                            query.clone()
+                                                        } else {
+                                                            query_lower.clone()
+                                                        };
+                                                        if hay.contains(&needle) {
+                                                            let snippet = if chunk.len() > 200 {
+                                                                format!("{}...", &chunk[..200])
+                                                            } else {
+                                                                chunk.to_string()
+                                                            };
+                                                            matches.push(MessageMatch {
+                                                                content_snippet: snippet,
+                                                                line_number: (i + 1) as u32,
+                                                                context_before: None,
+                                                                context_after: None,
+                                                                role: "assistant".to_string(),
+                                                                timestamp_iso: ts.clone(),
+                                                            });
+                                                            matched = true;
+                                                        }
+                                                    }
+                                                }
+                                                _ => {}
                                             }
                                         }
+                                    }
 
                                     // Fallback to raw line matching ONLY when the line is not JSON.
                                     // This prevents raw JSON-RPC logs from appearing in results.
@@ -1588,7 +1589,8 @@ Another line with different content"#;
         // Create log files
         let log1 = project_dir.join("rpc-log-1640995100000.log");
         let log2 = project_dir.join("rpc-log-1640995200000.log");
-        let content = r#"{"method":"session/prompt","params":{"prompt":[{"text":"Test message"}]}}"#;
+        let content =
+            r#"{"method":"session/prompt","params":{"prompt":[{"text":"Test message"}]}}"#;
         fs::write(&log1, content).unwrap();
         fs::write(&log2, content).unwrap();
 
