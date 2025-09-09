@@ -13,7 +13,10 @@ import { useTranslation } from "react-i18next";
 
 import type { Conversation, ProcessStatus } from "../../types";
 import { InlineSessionProgress } from "../common/InlineSessionProgress";
-import { SessionProgressPayload, SessionProgressStage } from "../../types/session";
+import {
+  SessionProgressPayload,
+  SessionProgressStage,
+} from "../../types/session";
 
 interface ProcessCardProps {
   conversation: Conversation;

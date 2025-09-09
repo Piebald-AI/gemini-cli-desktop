@@ -4,14 +4,12 @@ import { SessionProgressPayload, SessionProgressStage } from "../types/session";
 
 export function useSessionProgress() {
   const [progress, setProgress] = useState<SessionProgressPayload | null>(null);
-  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const currentUnlistenRef = useRef<(() => void) | null>(null);
 
   const handleProgressEvent = useCallback(
     (sessionId: string, payload: SessionProgressPayload) => {
       console.log(`🔄 [SESSION-PROGRESS] Session ${sessionId}:`, payload);
       // Always accept events for the listener's bound sessionId
-      setCurrentSessionId(sessionId);
       setProgress(payload);
     },
     []
@@ -24,12 +22,15 @@ export function useSessionProgress() {
         try {
           currentUnlistenRef.current();
         } catch (e) {
-          console.warn("⚠️ [SESSION-PROGRESS] Error while unlistening previous session", e);
+          console.warn(
+            "⚠️ [SESSION-PROGRESS] Error while unlistening previous session",
+            e
+          );
         }
         currentUnlistenRef.current = null;
       }
 
-      setCurrentSessionId(sessionId);
+      // Track only the listener; we don't need to store sessionId in state
 
       const eventName = `session-progress-${sessionId}`;
 
@@ -64,12 +65,14 @@ export function useSessionProgress() {
 
   const resetProgress = useCallback(() => {
     setProgress(null);
-    setCurrentSessionId(null);
     if (currentUnlistenRef.current) {
       try {
         currentUnlistenRef.current();
       } catch (e) {
-        console.warn("⚠️ [SESSION-PROGRESS] Error while unlistening on reset", e);
+        console.warn(
+          "⚠️ [SESSION-PROGRESS] Error while unlistening on reset",
+          e
+        );
       }
       currentUnlistenRef.current = null;
     }

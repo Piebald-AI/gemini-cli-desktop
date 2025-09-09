@@ -41,7 +41,8 @@ import { AboutDialog } from "./components/common/AboutDialog";
 import { SettingsDialog } from "./components/common/SettingsDialog";
 
 function RootLayoutContent() {
-  const { progress, startListeningForSession, seedProgress } = useSessionProgress();
+  const { progress, startListeningForSession, seedProgress } =
+    useSessionProgress();
 
   const [selectedModel, setSelectedModel] =
     useState<string>("gemini-2.5-flash");
@@ -304,7 +305,9 @@ function RootLayoutContent() {
           seedProgress({
             message: `Starting ${backendName} session initialization`,
             progress_percent: 5,
-            details: workingDirectory ? `Working directory: ${workingDirectory}` : undefined,
+            details: workingDirectory
+              ? `Working directory: ${workingDirectory}`
+              : undefined,
           });
         } catch (e) {
           console.warn("⚠️ [APP] Failed to seed initial progress", e);
@@ -329,6 +332,7 @@ function RootLayoutContent() {
       createNewConversation,
       setActiveConversation,
       startListeningForSession,
+      seedProgress,
     ]
   );
 
