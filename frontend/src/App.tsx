@@ -432,7 +432,9 @@ function RootLayoutContent() {
                     handleInputChange={handleInputChange}
                     handleSendMessage={handleSendMessage}
                     workingDirectory={workingDirectory}
-                    isConversationActive={currentConversationWithStatus.isActive}
+                    isConversationActive={
+                      currentConversationWithStatus.isActive
+                    }
                     onContinueConversation={() =>
                       handleContinueConversation(currentConversationWithStatus)
                     }
