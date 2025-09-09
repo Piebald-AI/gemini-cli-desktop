@@ -313,6 +313,24 @@ function RootLayoutContent() {
           console.warn("⚠️ [APP] Failed to seed initial progress", e);
         }
 
+        // IMPORTANT: Attach conversation event listeners BEFORE starting the session
+        // to avoid losing early streaming chunks (race observed in web mode).
+        try {
+          if (!listenerCleanups.current.has(convId)) {
+            const cleanup = await setupEventListenerForConversation(convId);
+            listenerCleanups.current.set(convId, cleanup);
+            console.log(
+              "👂 [APP] Pre-attached conversation listeners before start_session:",
+              convId
+            );
+          }
+        } catch (e) {
+          console.error(
+            "❌ [APP] Failed to pre-attach conversation listeners:",
+            e
+          );
+        }
+
         await api.start_session({
           sessionId: convId,
           workingDirectory,
@@ -332,6 +350,7 @@ function RootLayoutContent() {
       createNewConversation,
       setActiveConversation,
       startListeningForSession,
+      setupEventListenerForConversation,
       seedProgress,
     ]
   );
