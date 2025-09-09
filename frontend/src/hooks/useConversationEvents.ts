@@ -1,4 +1,5 @@
 import React, { useCallback, useRef } from "react";
+import type { TextMessagePart } from "../types";
 import { listen } from "@/lib/listen";
 import { getWebSocketManager } from "../lib/webApi";
 import { Conversation, Message, CliIO } from "../types";
@@ -885,8 +886,9 @@ export const useConversationEvents = (
                   lastMsg.parts.length > 0 &&
                   lastMsg.parts[lastMsg.parts.length - 1].type === "text"
                 ) {
-                  (lastMsg.parts[lastMsg.parts.length - 1] as any).text +=
-                    buffered;
+                  (
+                    lastMsg.parts[lastMsg.parts.length - 1] as TextMessagePart
+                  ).text += buffered;
                 } else {
                   conv.messages.push({
                     id: Date.now().toString(),

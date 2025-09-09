@@ -350,6 +350,7 @@ function RootLayoutContent() {
       createNewConversation,
       setActiveConversation,
       startListeningForSession,
+      setupEventListenerForConversation,
       seedProgress,
     ]
   );
