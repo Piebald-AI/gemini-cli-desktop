@@ -38,6 +38,15 @@
   - Screenshots/GIFs for UI changes (`frontend/`), and notes for behavior changes.
   - Small, focused changes preferred; include migration notes if config or APIs change.
 
+### Commit/PR message newlines (shell quoting)
+- Plain quotes do not turn `\n` into newlines. Use one of:
+  - Multiple `-m` flags for subject/body: `git commit -m "feat(scope): subject" -m "Body line 1\nBody line 2"` (note: `\n` inside a single `-m` is literal; use separate `-m` for paragraphs).
+  - ANSI-C quoting to embed real newlines: `git commit -m $'feat(scope): subject\n\n- bullet 1\n- bullet 2'`.
+  - `printf` substitution: `git commit -m "$(printf 'feat(scope): subject\n\n- bullet 1\n- bullet 2\n')"`.
+  - From a file or heredoc: `git commit -F COMMIT_MSG.txt` or `git commit -F- <<'EOF' ... EOF`.
+- For GitHub CLI PR bodies prefer real newlines:
+  - `gh pr create --title '...' --body-file PR_BODY.md` or `gh pr edit <num> --body-file - <<'EOF' ... EOF`.
+
 ## Security & Configuration Tips
 - Do not commit secrets or API keys. Prefer local OS keychain/env vars.
 - Web dev/build sets `GEMINI_DESKTOP_WEB=true` (handled by `just`).

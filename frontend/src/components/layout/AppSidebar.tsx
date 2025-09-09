@@ -22,6 +22,7 @@ interface AppSidebarProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   children: React.ReactNode;
+  onOpenSearch?: () => void;
 }
 
 export function AppSidebar({
@@ -35,6 +36,7 @@ export function AppSidebar({
   open,
   onOpenChange,
   children,
+  onOpenSearch,
 }: AppSidebarProps) {
   const { t } = useTranslation();
   return (
@@ -54,6 +56,7 @@ export function AppSidebar({
             onKillProcess={onKillProcess}
             onModelChange={onModelChange}
             onRemoveConversation={onRemoveConversation}
+            onOpenSearch={onOpenSearch}
           />
         </SidebarContent>
         <SidebarFooter className="mt-auto p-2 border-t border-sidebar-border">

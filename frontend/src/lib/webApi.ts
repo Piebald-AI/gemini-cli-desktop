@@ -263,12 +263,16 @@ export interface MessageMatch {
   line_number: number;
   context_before?: string;
   context_after?: string;
+  role: string; // "user", "assistant", or "unknown"
+  timestamp_iso: string;
 }
 
 export interface SearchFilters {
   date_range?: [string, string]; // ISO strings (start, end)
   project_hash?: string;
   max_results?: number;
+  case_sensitive?: boolean; // optional UI hint; backend may ignore
+  include_thinking?: boolean; // include agent_thought_chunk in search
 }
 
 export interface ProjectListItem {
