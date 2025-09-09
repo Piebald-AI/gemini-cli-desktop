@@ -46,6 +46,7 @@
   - From a file or heredoc: `git commit -F COMMIT_MSG.txt` or `git commit -F- <<'EOF' ... EOF`.
 - For GitHub CLI PR bodies prefer real newlines:
   - `gh pr create --title '...' --body-file PR_BODY.md` or `gh pr edit <num> --body-file - <<'EOF' ... EOF`.
+Once done creating the commit, run git log to verify that the commit was correctly formatted & parsed.  After you've made the PR, verify it as well. Then, delete `PR_BODY.md` and any other artifacts.  Do not niclude any notes for reviewers sections.
 
 ## Security & Configuration Tips
 - Do not commit secrets or API keys. Prefer local OS keychain/env vars.
