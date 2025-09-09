@@ -28,6 +28,7 @@ import {
   RotateCcw,
   Info,
   ChevronDown,
+  Settings as SettingsIcon,
 } from "lucide-react";
 import { AboutDialog } from "@/components/common/AboutDialog";
 
@@ -282,6 +283,18 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
                 </div>
                 <span className="text-xs text-muted-foreground">
                   {menuShortcuts.goMcpServers?.display}
+                </span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={handlers.openSettings}
+                className="flex items-center justify-between text-xs"
+              >
+                <div className="flex items-center gap-2">
+                  <SettingsIcon size={14} />
+                  {labels.settings}
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  {menuShortcuts.openSettings?.display}
                 </span>
               </DropdownMenuItem>
             </DropdownMenuContent>

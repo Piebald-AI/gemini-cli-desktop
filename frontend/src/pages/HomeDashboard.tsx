@@ -267,6 +267,8 @@ ${part.thinking}`;
               </CardHeader>
             </Card>
           </div>
+
+          {/* Settings link moved to sidebar footer */}
         </div>
       )}
     </>
