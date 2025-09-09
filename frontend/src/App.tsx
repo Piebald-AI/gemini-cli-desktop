@@ -395,53 +395,69 @@ function RootLayoutContent() {
         onOpenChange={setSidebarOpen}
       >
         <SidebarInset>
-          <AppHeader
-            onDirectoryPanelToggle={toggleDirectoryPanel}
-            isDirectoryPanelOpen={directoryPanelOpen}
-            hasActiveConversation={!!activeConversation}
-            onReturnToDashboard={() => setActiveConversation(null)}
-            onOpenSettings={() => setIsSettingsOpen(true)}
-          />
-          <div className="flex flex-col h-full">
-            <Outlet context={{ workingDirectory }} />
-            {currentConversationWithStatus && (
-              <>
-                {console.log(
-                  "📝 [App] Rendering MessageInputBar with workingDirectory:",
-                  workingDirectory
-                )}
-                <MessageInputBar
-                  ref={messageInputBarRef}
-                  input={input}
-                  isCliInstalled={isCliInstalled}
-                  cliIOLogs={cliIOLogs}
-                  handleInputChange={handleInputChange}
-                  handleSendMessage={handleSendMessage}
+          {/* Grid layout: header spans all columns; content + optional right panel */}
+          <div
+            className="grid h-full"
+            style={{
+              gridTemplateRows: "auto 1fr",
+              gridTemplateColumns:
+                directoryPanelOpen && activeConversation ? "1fr 20rem" : "1fr",
+            }}
+          >
+            {/* Header */}
+            <div className="row-start-1 col-span-full">
+              <AppHeader
+                onDirectoryPanelToggle={toggleDirectoryPanel}
+                isDirectoryPanelOpen={directoryPanelOpen}
+                hasActiveConversation={!!activeConversation}
+                onReturnToDashboard={() => setActiveConversation(null)}
+                onOpenSettings={() => setIsSettingsOpen(true)}
+              />
+            </div>
+
+            {/* Main content column */}
+            <div className="row-start-2 col-start-1 flex flex-col min-w-0 min-h-0">
+              <Outlet context={{ workingDirectory }} />
+              {currentConversationWithStatus && (
+                <>
+                  {console.log(
+                    "📝 [App] Rendering MessageInputBar with workingDirectory:",
+                    workingDirectory
+                  )}
+                  <MessageInputBar
+                    ref={messageInputBarRef}
+                    input={input}
+                    isCliInstalled={isCliInstalled}
+                    cliIOLogs={cliIOLogs}
+                    handleInputChange={handleInputChange}
+                    handleSendMessage={handleSendMessage}
+                    workingDirectory={workingDirectory}
+                    isConversationActive={currentConversationWithStatus.isActive}
+                    onContinueConversation={() =>
+                      handleContinueConversation(currentConversationWithStatus)
+                    }
+                    isContinuingConversation={isContinuingConversation}
+                    isNew={currentConversationWithStatus.isNew}
+                    isStreaming={currentConversationWithStatus.isStreaming}
+                  />
+                </>
+              )}
+            </div>
+
+            {/* Right directory panel */}
+            {directoryPanelOpen && activeConversation && (
+              <div className="row-start-2 col-start-2 border-l min-h-0">
+                <DirectoryPanel
                   workingDirectory={workingDirectory}
-                  isConversationActive={currentConversationWithStatus.isActive}
-                  onContinueConversation={() =>
-                    handleContinueConversation(currentConversationWithStatus)
-                  }
-                  isContinuingConversation={isContinuingConversation}
-                  isNew={currentConversationWithStatus.isNew}
-                  isStreaming={currentConversationWithStatus.isStreaming}
+                  onDirectoryChange={(path) => {
+                    console.log("📁 [App] Directory changed to:", path);
+                  }}
+                  onMentionInsert={handleMentionInsert}
+                  className="w-[20rem] h-full"
                 />
-              </>
+              </div>
             )}
           </div>
-
-          {/* Directory Panel */}
-          {directoryPanelOpen && activeConversation && (
-            <DirectoryPanel
-              workingDirectory={workingDirectory}
-              onDirectoryChange={(path) => {
-                console.log("📁 [App] Directory changed to:", path);
-                // Optionally update working directory or perform other actions
-              }}
-              onMentionInsert={handleMentionInsert}
-              className="w-80 flex-shrink-0"
-            />
-          )}
         </SidebarInset>
       </AppSidebar>
       {/* Settings Dialog */}
