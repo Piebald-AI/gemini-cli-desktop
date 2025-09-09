@@ -399,10 +399,11 @@ pub async fn search_chats(
                                     // If it was, we will not fall back to raw-line matching to avoid
                                     // surfacing internal JSON-RPC payloads in search results.
                                     let mut parsed_json = false;
-                                    if let Some(start) = json_start {
-                                        if let Ok(json) =
-                                            serde_json::from_str::<serde_json::Value>(&line[start..])
-                                        {
+                                    if let Some(start) = json_start
+                                        && let Ok(json) = serde_json::from_str::<serde_json::Value>(
+                                            &line[start..],
+                                        )
+                                    {
                                             parsed_json = true;
                                             // Default timestamp if line prefix missing
                                             let ts = if !line_ts.is_empty() {
@@ -547,12 +548,12 @@ pub async fn search_chats(
                                                         }
                                                     }
                                                     "agent_thought_chunk" => {
-                                                        if include_thinking {
-                                                            if let Some(params) = json.get("params")
-                                                                && let Some(chunk) = params
-                                                                    .get("chunk")
-                                                                    .and_then(|c| c.as_str())
-                                                            {
+                                                        if include_thinking
+                                                            && let Some(params) = json.get("params")
+                                                            && let Some(chunk) = params
+                                                                .get("chunk")
+                                                                .and_then(|c| c.as_str())
+                                                        {
                                                                 let hay = if case_sensitive {
                                                                     chunk.to_string()
                                                                 } else {
@@ -580,13 +581,11 @@ pub async fn search_chats(
                                                                     matched = true;
                                                                 }
                                                             }
-                                                        }
                                                     }
                                                     _ => {}
                                                 }
                                             }
                                         }
-                                    }
 
                                     // Fallback to raw line matching ONLY when the line is not JSON.
                                     // This prevents raw JSON-RPC logs from appearing in results.

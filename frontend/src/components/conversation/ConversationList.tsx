@@ -109,13 +109,27 @@ export function ConversationList({
               readOnly
               placeholder={t("search.searchConversations")}
               className="h-9 cursor-pointer pl-9"
-              onFocus={() => (onOpenSearch ? onOpenSearch() : window.dispatchEvent(new Event("app:open-search")))}
-              onClick={() => (onOpenSearch ? onOpenSearch() : window.dispatchEvent(new Event("app:open-search")))}
+              onFocus={() => {
+                if (onOpenSearch) {
+                  onOpenSearch();
+                } else {
+                  window.dispatchEvent(new Event("app:open-search"));
+                }
+              }}
+              onClick={() => {
+                if (onOpenSearch) {
+                  onOpenSearch();
+                } else {
+                  window.dispatchEvent(new Event("app:open-search"));
+                }
+              }}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
-                  onOpenSearch
-                    ? onOpenSearch()
-                    : window.dispatchEvent(new Event("app:open-search"));
+                  if (onOpenSearch) {
+                    onOpenSearch();
+                  } else {
+                    window.dispatchEvent(new Event("app:open-search"));
+                  }
                 }
               }}
             />
@@ -161,7 +175,6 @@ export function ConversationList({
             })
         )}
       </div>
-
     </div>
   );
 }

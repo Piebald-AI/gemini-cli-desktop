@@ -31,7 +31,8 @@ export function ConversationSearchDialog({
   fullScreen = true,
 }: ConversationSearchDialogProps) {
   const { t } = useTranslation();
-  const { loadConversationFromHistory, startNewConversation } = useConversation();
+  const { loadConversationFromHistory, startNewConversation } =
+    useConversation();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -116,82 +117,98 @@ export function ConversationSearchDialog({
         }
       >
         <div className="flex flex-col h-full min-h-0">
-        <DialogHeader className="px-6 pt-5 pb-3 border-b">
-          <DialogTitle>Search Chats</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
-        </DialogHeader>
+          <DialogHeader className="px-6 pt-5 pb-3 border-b">
+            <DialogTitle>Search Chats</DialogTitle>
+            <DialogDescription>{description}</DialogDescription>
+          </DialogHeader>
 
-        <div className="p-4">
-          <div className="flex gap-3 items-center">
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={t("search.searchConversations")}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleSearch(searchQuery, {});
-              }}
-              className="flex-1 h-11"
-            />
-            <Button
-              onClick={() => handleSearch(searchQuery, {})}
-              disabled={!searchQuery.trim() || isSearching}
-              className="h-11"
-            >
-              {t("search.search", { defaultValue: "Search" })}
-            </Button>
-          </div>
-          <div className="mt-3 flex items-center gap-6">
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="case-sensitive"
-                checked={caseSensitive}
-                onCheckedChange={(v) => setCaseSensitive(Boolean(v))}
+          <div className="p-4">
+            <div className="flex gap-3 items-center">
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={t("search.searchConversations")}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSearch(searchQuery, {});
+                }}
+                className="flex-1 h-11"
               />
-              <Label htmlFor="case-sensitive" className="text-sm cursor-pointer">
-                Case-sensitive
-              </Label>
+              <Button
+                onClick={() => handleSearch(searchQuery, {})}
+                disabled={!searchQuery.trim() || isSearching}
+                className="h-11"
+              >
+                {t("search.search", { defaultValue: "Search" })}
+              </Button>
             </div>
+            <div className="mt-3 flex items-center gap-6">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="case-sensitive"
+                  checked={caseSensitive}
+                  onCheckedChange={(v) => setCaseSensitive(Boolean(v))}
+                />
+                <Label
+                  htmlFor="case-sensitive"
+                  className="text-sm cursor-pointer"
+                >
+                  Case-sensitive
+                </Label>
+              </div>
 
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="include-thinking"
-                checked={includeThinking}
-                onCheckedChange={(v) => setIncludeThinking(Boolean(v))}
-              />
-              <Label htmlFor="include-thinking" className="text-sm cursor-pointer">
-                {t("search.includeThinking", { defaultValue: "Include thinking" })}
-              </Label>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="include-thinking"
+                  checked={includeThinking}
+                  onCheckedChange={(v) => setIncludeThinking(Boolean(v))}
+                />
+                <Label
+                  htmlFor="include-thinking"
+                  className="text-sm cursor-pointer"
+                >
+                  {t("search.includeThinking", {
+                    defaultValue: "Include thinking",
+                  })}
+                </Label>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className={fullScreen ? "px-4 pb-5 flex-1 min-h-0 overflow-y-auto" : "px-4 pb-5 max-h-[65vh] overflow-y-auto"}>
-          <SearchResults
-            results={searchResults}
-            isSearching={isSearching}
-            onConversationSelect={handleSelect}
-            query={searchQuery}
-            caseSensitive={caseSensitive}
-            onResume={async ({ chatId, projectHash, title }) => {
-              try {
-                // Find the project directory from its hash
-                const projects = await api.list_enriched_projects();
-                const match = projects.find((p) => p.sha256 === projectHash);
-                if (!match) {
-                  toast.error("Project not found locally for this conversation.");
-                  return;
+          <div
+            className={
+              fullScreen
+                ? "px-4 pb-5 flex-1 min-h-0 overflow-y-auto"
+                : "px-4 pb-5 max-h-[65vh] overflow-y-auto"
+            }
+          >
+            <SearchResults
+              results={searchResults}
+              isSearching={isSearching}
+              onConversationSelect={handleSelect}
+              query={searchQuery}
+              caseSensitive={caseSensitive}
+              onResume={async ({ projectHash, title }) => {
+                try {
+                  // Find the project directory from its hash
+                  const projects = await api.list_enriched_projects();
+                  const match = projects.find((p) => p.sha256 === projectHash);
+                  if (!match) {
+                    toast.error(
+                      "Project not found locally for this conversation."
+                    );
+                    return;
+                  }
+
+                  const resumeTitle = title || "Resumed Conversation";
+                  await startNewConversation(resumeTitle, match.metadata.path);
+                  onOpenChange(false);
+                } catch (e) {
+                  console.error("Failed to resume conversation:", e);
+                  toast.error("Failed to resume conversation");
                 }
-
-                const resumeTitle = title || "Resumed Conversation";
-                await startNewConversation(resumeTitle, match.metadata.path);
-                onOpenChange(false);
-              } catch (e) {
-                console.error("Failed to resume conversation:", e);
-                toast.error("Failed to resume conversation");
-              }
-            }}
-          />
-        </div>
+              }}
+            />
+          </div>
         </div>
       </DialogContent>
     </Dialog>

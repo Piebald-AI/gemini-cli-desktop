@@ -34,7 +34,11 @@ export function SearchResults({
   const toggleExpanded = useCallback((chatId: string) => {
     setExpandedResults((prev) => {
       const next = new Set(prev);
-      next.has(chatId) ? next.delete(chatId) : next.add(chatId);
+      if (next.has(chatId)) {
+        next.delete(chatId);
+      } else {
+        next.add(chatId);
+      }
       return next;
     });
   }, []);
@@ -126,7 +130,9 @@ export function SearchResults({
         {t("search.noResultsFound", { defaultValue: "No conversations found" })}
       </p>
       <p className="text-xs mt-1">
-        {t("search.tryDifferentTerms", { defaultValue: "Try different search terms" })}
+        {t("search.tryDifferentTerms", {
+          defaultValue: "Try different search terms",
+        })}
       </p>
     </div>
   );
@@ -142,7 +148,6 @@ export function SearchResults({
 
   return (
     <div className="space-y-2">
-
       {results.map((result) => {
         const isExpanded = expandedResults.has(result.chat.id);
         // Backend formats id as "<project_hash>/<filename>"
@@ -152,7 +157,10 @@ export function SearchResults({
           : result.matches.slice(0, 2);
 
         return (
-          <div key={result.chat.id} className="rounded-md border border-gray-200 dark:border-gray-800 bg-white dark:bg-neutral-900">
+          <div
+            key={result.chat.id}
+            className="rounded-md border border-gray-200 dark:border-gray-800 bg-white dark:bg-neutral-900"
+          >
             {/* Chat section header */}
             <div className="px-3 py-2 border-b text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -202,14 +210,22 @@ export function SearchResults({
                   role="button"
                   tabIndex={0}
                   onClick={() => onConversationSelect(result.chat.id)}
-                  onKeyDown={(e) => e.key === "Enter" && onConversationSelect(result.chat.id)}
+                  onKeyDown={(e) =>
+                    e.key === "Enter" && onConversationSelect(result.chat.id)
+                  }
                 >
                   <div className="px-3 py-2 text-sm leading-relaxed">
                     <div className="flex items-center gap-2 text-[12px] mb-1 text-gray-600 dark:text-gray-300">
                       <span className="font-medium">
-                        {match.role === "assistant" ? "Gemini" : match.role === "user" ? "User" : "Message"}
+                        {match.role === "assistant"
+                          ? "Gemini"
+                          : match.role === "user"
+                            ? "User"
+                            : "Message"}
                       </span>
-                      <span className="text-gray-400">{formatTime(match.timestamp_iso)}</span>
+                      <span className="text-gray-400">
+                        {formatTime(match.timestamp_iso)}
+                      </span>
                     </div>
                     {highlightText(match.content_snippet, query, caseSensitive)}
                   </div>
@@ -221,8 +237,11 @@ export function SearchResults({
                   className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
                   onClick={() => toggleExpanded(result.chat.id)}
                 >
-                  Show {result.matches.length - visibleMatches.length} more match
-                  {result.matches.length - visibleMatches.length !== 1 ? "es" : ""}
+                  Show {result.matches.length - visibleMatches.length} more
+                  match
+                  {result.matches.length - visibleMatches.length !== 1
+                    ? "es"
+                    : ""}
                 </button>
               )}
               {isExpanded && result.matches.length > 2 && (
