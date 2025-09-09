@@ -37,6 +37,7 @@ import { CliIO, Conversation, Message } from "./types";
 import "./index.css";
 import { platform } from "@tauri-apps/plugin-os";
 import { AboutDialog } from "./components/common/AboutDialog";
+import { SettingsDialog } from "./components/common/SettingsDialog";
 
 function RootLayoutContent() {
   const { progress, startListeningForSession } = useSessionProgress();
@@ -47,6 +48,7 @@ function RootLayoutContent() {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [directoryPanelOpen, setDirectoryPanelOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [workingDirectory, setWorkingDirectory] = useState<string>(".");
   const [isContinuingConversation, setIsContinuingConversation] =
     useState(false);
@@ -163,6 +165,17 @@ function RootLayoutContent() {
       setWorkingDirectory(currentConversationWithStatus.workingDirectory);
     }
   }, [currentConversationWithStatus]);
+
+  // Open Settings dialog when a global event is dispatched
+  useEffect(() => {
+    const handler = () => setIsSettingsOpen(true);
+    window.addEventListener("app:open-settings", handler as EventListener);
+    return () =>
+      window.removeEventListener(
+        "app:open-settings",
+        handler as EventListener
+      );
+  }, []);
 
   // Progress listener started in startNewConversation
 
@@ -382,6 +395,7 @@ function RootLayoutContent() {
             isDirectoryPanelOpen={directoryPanelOpen}
             hasActiveConversation={!!activeConversation}
             onReturnToDashboard={() => setActiveConversation(null)}
+            onOpenSettings={() => setIsSettingsOpen(true)}
           />
           <div className="flex flex-col h-full">
             <Outlet context={{ workingDirectory }} />
@@ -425,6 +439,12 @@ function RootLayoutContent() {
           )}
         </SidebarInset>
       </AppSidebar>
+      {/* Settings Dialog */}
+      <SettingsDialog
+        open={isSettingsOpen}
+        onOpenChange={setIsSettingsOpen}
+        onModelChange={handleModelChange}
+      />
     </ConversationContext.Provider>
   );
 }

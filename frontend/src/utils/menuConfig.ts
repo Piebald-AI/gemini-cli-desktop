@@ -7,6 +7,7 @@ export interface MenuHandler {
   goHome: () => void;
   goProjects: () => void;
   goMcpServers: () => void;
+  openSettings: () => void;
   toggleTheme: () => void;
   refresh: () => void;
   showAbout: () => void;
@@ -57,6 +58,7 @@ export const getMenuShortcuts = (): Record<
       [modifierKey]: true,
       display: `${displayModifier}M`,
     },
+    openSettings: { key: ",", [modifierKey]: true, display: `${displayModifier},` },
     toggleTheme: undefined, // No accelerator in Linux menu
     refresh: { key: "r", [modifierKey]: true, display: `${displayModifier}R` },
     showAbout: undefined, // No accelerator in Linux menu
@@ -71,6 +73,15 @@ export const createMenuHandlers = (
   goHome: () => navigate("/"),
   goProjects: () => navigate("/projects"),
   goMcpServers: () => navigate("/mcp"),
+  openSettings: () => {
+    // Broadcast an app-wide event to open the Settings dialog
+    try {
+      window.dispatchEvent(new CustomEvent("app:open-settings"));
+    } catch {
+      // Fallback for environments without CustomEvent
+      window.dispatchEvent(new Event("app:open-settings"));
+    }
+  },
   toggleTheme: () => {
     const html = document.documentElement;
     html.classList.toggle("dark");
@@ -94,6 +105,7 @@ export const getMenuLabels = (
     file: t("titleBar.file"),
     view: t("titleBar.view"),
     help: t("titleBar.help"),
+    settings: t("titleBar.settings", { defaultValue: "Settings…" }),
     home: t("titleBar.home"),
     projects: t("titleBar.projects"),
     mcpServers: t("titleBar.mcpServers"),

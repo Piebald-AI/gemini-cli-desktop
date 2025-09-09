@@ -51,6 +51,12 @@ export const useTauriMenu = () => {
               accelerator: currentPlatform === "macos" ? "Cmd+M" : "Ctrl+M",
               action: handlers.goMcpServers,
             }),
+            await MenuItem.new({
+              id: "settings",
+              text: labels.settings,
+              accelerator: currentPlatform === "macos" ? "Cmd+," : "Ctrl+,",
+              action: handlers.openSettings,
+            }),
           ],
         });
 
@@ -91,6 +97,12 @@ export const useTauriMenu = () => {
                 text: t("titleBar.about", { name: "Gemini Desktop" }),
                 action: handlers.showAbout,
               }),
+              await MenuItem.new({
+                id: "settings",
+                text: labels.settings,
+                accelerator: "Cmd+,",
+                action: handlers.openSettings,
+              }),
               await PredefinedMenuItem.new({
                 item: "Separator",
               }),
@@ -130,6 +142,12 @@ export const useTauriMenu = () => {
                 text: labels.mcpServers,
                 accelerator: "Ctrl+M",
                 action: handlers.goMcpServers,
+              }),
+              await MenuItem.new({
+                id: "settings",
+                text: labels.settings,
+                accelerator: "Ctrl+,",
+                action: handlers.openSettings,
               }),
               await PredefinedMenuItem.new({
                 item: "Separator",

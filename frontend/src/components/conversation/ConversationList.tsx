@@ -1,25 +1,13 @@
 import { useTranslation } from "react-i18next";
+import { useState, useCallback } from "react";
 
 import { Button } from "../ui/button";
-
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
-import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
-import { Input } from "../ui/input";
-import { Checkbox } from "../ui/checkbox";
-import { X, MessageCircle, AlertTriangle } from "lucide-react";
-import { useState, useCallback } from "react";
+import { X, MessageCircle } from "lucide-react";
 import { SearchResult, SearchFilters } from "../../lib/webApi";
 import { SearchInput } from "../common/SearchInput";
 import { SearchResults } from "../common/SearchResults";
 import { useSidebar } from "../ui/sidebar";
-import { GeminiAuthMethod } from "../../types/backend";
-import { useBackend, useBackendConfig } from "../../contexts/BackendContext";
+import { useBackend } from "../../contexts/BackendContext";
 import { getBackendText } from "../../utils/backendText";
 import type { Conversation, ProcessStatus } from "../../types";
 import { api } from "@/lib/api";
@@ -32,7 +20,7 @@ interface ConversationListProps {
   processStatuses: ProcessStatus[];
   onConversationSelect: (conversationId: string) => void;
   onKillProcess: (conversationId: string) => void;
-  onModelChange?: (model: string) => void;
+  onModelChange?: (model: string) => void; // kept for compatibility
   onRemoveConversation: (id: string) => void;
 }
 
@@ -42,24 +30,16 @@ export function ConversationList({
   processStatuses,
   onConversationSelect,
   onKillProcess,
-  onModelChange,
   onRemoveConversation,
 }: ConversationListProps) {
-  const { t, i18n } = useTranslation();
-  // Use backend context instead of props
-  const { selectedBackend, switchBackend } = useBackend();
-  const { config: qwenConfig, updateConfig: updateQwenConfig } =
-    useBackendConfig("qwen");
-  const { config: geminiConfig, updateConfig: updateGeminiConfig } =
-    useBackendConfig("gemini");
+  const { t } = useTranslation();
+  const { selectedBackend } = useBackend();
   const { isMobile, setOpenMobile } = useSidebar();
   const backendText = getBackendText(selectedBackend);
   const [selectedConversationForEnd, setSelectedConversationForEnd] = useState<{
     id: string;
     title: string;
   } | null>(null);
-  const [selectedModel, setSelectedModel] =
-    useState<string>("gemini-2.5-flash");
 
   const { progress } = useConversation();
 
@@ -69,19 +49,14 @@ export function ConversationList({
   const [isSearching, setIsSearching] = useState(false);
 
   const getProcessStatus = (conversation: Conversation) => {
-    // First try direct ID match
     let status = processStatuses.find(
       (status) => status.conversation_id === conversation.id
     );
-
-    // If no direct match and conversation has metadata with timestamp,
-    // try matching by timestamp (for historical conversations with active processes)
     if (!status && conversation.metadata?.timestamp) {
       status = processStatuses.find(
         (status) => status.conversation_id === conversation.metadata!.timestamp
       );
     }
-
     return status;
   };
 
@@ -117,7 +92,7 @@ export function ConversationList({
       }
     },
     []
-  ); // Empty dependency array since this function doesn't depend on any props or state
+  );
 
   return (
     <div className="h-full overflow-y-auto">
@@ -161,341 +136,7 @@ export function ConversationList({
           />
         </div>
 
-        {/* Backend Selector */}
-        <div className="mt-4">
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
-            {t("conversations.backend")}
-          </label>
-          <Select
-            value={selectedBackend}
-            onValueChange={(value) => {
-              console.log("Backend changed to:", value);
-              switchBackend(value as "gemini" | "qwen");
-              // Reset model selection when backend changes
-              if (value === "gemini") {
-                setSelectedModel("gemini-2.5-flash");
-                onModelChange?.("gemini-2.5-flash");
-              } else {
-                setSelectedModel(qwenConfig.model || "qwen/qwen3-coder:free");
-                onModelChange?.(qwenConfig.model || "qwen/qwen3-coder:free");
-              }
-            }}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder={t("conversations.selectBackend")} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="gemini">{t("backend.geminiCli")}</SelectItem>
-              <SelectItem value="qwen">{t("backend.qwenCode")}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Language Selector */}
-        <div className="mt-4">
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
-            {t("conversations.language")}
-          </label>
-          <Select
-            value={i18n.language}
-            onValueChange={(value) => {
-              i18n.changeLanguage(value);
-            }}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder={t("conversations.selectLanguage")} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="en">
-                <div className="flex items-center gap-2">
-                  <span>English</span>
-                </div>
-              </SelectItem>
-              <SelectItem value="zh-CN">
-                <div className="flex items-center gap-2">
-                  <span>简体中文</span>
-                </div>
-              </SelectItem>
-              <SelectItem value="zh-TW">
-                <div className="flex items-center gap-2">
-                  <span>繁體中文</span>
-                </div>
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Qwen Code Configuration */}
-        {selectedBackend === "qwen" && (
-          <div className="mt-4 space-y-3 p-3 border border-gray-200 dark:border-gray-700 rounded-md">
-            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              {t("backend.qwenConfiguration")}
-            </h4>
-
-            {/* OAuth Checkbox */}
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="oauth-checkbox"
-                checked={qwenConfig.useOAuth}
-                onCheckedChange={(checked) =>
-                  updateQwenConfig({ useOAuth: checked === true })
-                }
-              />
-              <label
-                htmlFor="oauth-checkbox"
-                className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer"
-              >
-                {t("conversations.oauth")}
-              </label>
-            </div>
-
-            {!qwenConfig.useOAuth && (
-              <>
-                <div>
-                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
-                    {t("conversations.apiKey")}
-                  </label>
-                  <Input
-                    type="password"
-                    value={qwenConfig.apiKey}
-                    onChange={(e) =>
-                      updateQwenConfig({
-                        apiKey: e.target.value,
-                      })
-                    }
-                    placeholder={t("conversations.apiKey")}
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
-                    {t("conversations.baseUrl")}
-                  </label>
-                  <Input
-                    type="text"
-                    value={qwenConfig.baseUrl}
-                    onChange={(e) =>
-                      updateQwenConfig({
-                        baseUrl: e.target.value,
-                      })
-                    }
-                    placeholder="https://openrouter.ai/api/v1"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
-                    {t("conversations.model")}
-                  </label>
-                  <Input
-                    type="text"
-                    value={qwenConfig.model}
-                    onChange={(e) => {
-                      updateQwenConfig({
-                        model: e.target.value,
-                      });
-                      setSelectedModel(
-                        e.target.value || "qwen/qwen3-coder:free"
-                      );
-                      onModelChange?.(
-                        e.target.value || "qwen/qwen3-coder:free"
-                      );
-                    }}
-                    placeholder="qwen/qwen3-coder:free"
-                  />
-                </div>
-              </>
-            )}
-          </div>
-        )}
-
-        {/* Gemini Configuration */}
-        {selectedBackend === "gemini" && (
-          <>
-            <div className="mt-4">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
-                {t("conversations.model")}
-              </label>
-              <Select
-                value={selectedModel}
-                onValueChange={(value) => {
-                  console.log("Model changed to:", value);
-                  setSelectedModel(value);
-                  updateGeminiConfig({ defaultModel: value });
-                  onModelChange?.(value);
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder={t("conversations.selectModel")} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="gemini-2.5-pro">
-                    {t("backend.geminiModels.pro")}
-                  </SelectItem>
-                  <SelectItem value="gemini-2.5-flash">
-                    {t("backend.geminiModels.flash")}
-                  </SelectItem>
-                  <SelectItem value="gemini-2.5-flash-lite">
-                    <div className="flex items-center gap-2">
-                      <span>{t("backend.geminiModels.flashLite")}</span>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <AlertTriangle className="h-4 w-4 text-yellow-500" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>{t("backend.stillWaiting")}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Gemini Authentication Configuration */}
-            <div className="space-y-3 mt-4">
-              {/* Authentication Method Selector */}
-              <div>
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
-                  {t("conversations.authMethod")}
-                </label>
-                <Select
-                  value={geminiConfig.authMethod}
-                  onValueChange={(value) =>
-                    updateGeminiConfig({
-                      authMethod: value as GeminiAuthMethod,
-                    })
-                  }
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue
-                      placeholder={t("conversations.selectAuthMethod")}
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="oauth-personal">
-                      <div className="flex flex-col">
-                        <span>{t("backend.googleOAuth")}</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="gemini-api-key">
-                      <div className="flex flex-col">
-                        <span>{t("backend.apiKey")}</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="vertex-ai">
-                      <div className="flex flex-col">
-                        <span>{t("backend.vertexAi")}</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="cloud-shell">
-                      <div className="flex flex-col">
-                        <span>{t("backend.cloudShell")}</span>
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* API Key input - only show for API key auth */}
-              {geminiConfig.authMethod === "gemini-api-key" && (
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
-                    {t("conversations.geminiApiKey")}
-                  </label>
-                  <Input
-                    type="password"
-                    value={geminiConfig.apiKey}
-                    onChange={(e) =>
-                      updateGeminiConfig({
-                        apiKey: e.target.value,
-                      })
-                    }
-                    placeholder={t("conversations.enterGeminiApiKey")}
-                  />
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    {t("conversations.getApiKeyFrom")}{" "}
-                    <a
-                      href="https://aistudio.google.com/apikey"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-500 hover:underline"
-                    >
-                      {t("backend.googleAiStudio")}
-                    </a>
-                  </p>
-                </div>
-              )}
-
-              {/* Vertex AI configuration - only show for Vertex AI auth */}
-              {geminiConfig.authMethod === "vertex-ai" && (
-                <>
-                  <div>
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
-                      {t("conversations.gcpProjectId")}
-                    </label>
-                    <Input
-                      type="text"
-                      value={geminiConfig.vertexProject || ""}
-                      onChange={(e) =>
-                        updateGeminiConfig({
-                          vertexProject: e.target.value,
-                        })
-                      }
-                      placeholder={t("backend.enterProjectId")}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
-                      {t("conversations.locationRegion")}
-                    </label>
-                    <Input
-                      type="text"
-                      value={geminiConfig.vertexLocation || ""}
-                      onChange={(e) =>
-                        updateGeminiConfig({
-                          vertexLocation: e.target.value,
-                        })
-                      }
-                      placeholder={t("backend.enterLocation")}
-                    />
-                  </div>
-                </>
-              )}
-
-              {/* OAuth information */}
-              {geminiConfig.authMethod === "oauth-personal" && (
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {t("conversations.oauthLimits")}
-                </p>
-              )}
-
-              {/* Cloud Shell information */}
-              {geminiConfig.authMethod === "cloud-shell" && (
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {t("conversations.cloudShellInfo")}
-                </p>
-              )}
-
-              {/* YOLO Mode Checkbox */}
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="yolo-checkbox"
-                  checked={geminiConfig.yolo || false}
-                  onCheckedChange={(checked) => {
-                    updateGeminiConfig({ yolo: checked === true });
-                  }}
-                />
-                <label
-                  htmlFor="yolo-checkbox"
-                  className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer"
-                >
-                  {t("conversations.yoloMode")}
-                </label>
-              </div>
-            </div>
-          </>
-        )}
+        {/* Settings moved to SettingsDialog; sidebar now focuses on search and conversations */}
       </div>
 
       {/* Search Results or Conversation List */}
@@ -544,3 +185,4 @@ export function ConversationList({
     </div>
   );
 }
+

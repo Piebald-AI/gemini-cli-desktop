@@ -1,6 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { FolderTree } from "lucide-react";
+import { FolderTree, Settings as SettingsIcon } from "lucide-react";
 import { SmartLogo } from "../branding/SmartLogo";
 import { DesktopText } from "../branding/DesktopText";
 import { PiebaldLogo } from "../branding/PiebaldLogo";
@@ -12,6 +12,7 @@ interface AppHeaderProps {
   isDirectoryPanelOpen?: boolean;
   hasActiveConversation?: boolean;
   onReturnToDashboard?: () => void;
+  onOpenSettings?: () => void;
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
@@ -19,6 +20,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   isDirectoryPanelOpen = false,
   hasActiveConversation = false,
   onReturnToDashboard,
+  onOpenSettings,
 }) => {
   const { t } = useTranslation();
 
@@ -61,8 +63,18 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           {/* Center section - Empty spacer */}
           <div className="flex-1"></div>
 
-          {/* Right section - Directory Toggle + Piebald branding */}
+          {/* Right section - Settings + Directory Toggle + Piebald branding */}
           <div className="flex flex-1 items-center justify-end gap-4">
+            {onOpenSettings && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onOpenSettings}
+                title={t("settings.open", { defaultValue: "Settings" })}
+              >
+                <SettingsIcon className="h-4 w-4" />
+              </Button>
+            )}
             {onDirectoryPanelToggle && hasActiveConversation && (
               <Button
                 variant="ghost"

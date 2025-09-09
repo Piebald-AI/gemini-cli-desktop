@@ -23,7 +23,7 @@ import {
   CardTitle,
   CardDescription,
 } from "../components/ui/card";
-import { Info, UserRound, FolderKanban } from "lucide-react";
+import { Info, UserRound, FolderKanban, Settings as SettingsIcon } from "lucide-react";
 import { ModelContextProtocol } from "../components/common/ModelContextProtocol";
 import { getBackendText } from "../utils/backendText";
 import { useBackend } from "../contexts/BackendContext";
@@ -267,6 +267,8 @@ ${part.thinking}`;
               </CardHeader>
             </Card>
           </div>
+
+          {/* Settings link moved to sidebar footer */}
         </div>
       )}
     </>
