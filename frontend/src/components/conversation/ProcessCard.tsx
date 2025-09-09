@@ -13,7 +13,10 @@ import { useTranslation } from "react-i18next";
 
 import type { Conversation, ProcessStatus } from "../../types";
 import { InlineSessionProgress } from "../common/InlineSessionProgress";
-import { SessionProgressPayload } from "../../types/session";
+import {
+  SessionProgressPayload,
+  SessionProgressStage,
+} from "../../types/session";
 
 interface ProcessCardProps {
   conversation: Conversation;
@@ -343,7 +346,7 @@ export function ProcessCard({
 
         {progress &&
           activeConversation === conversation.id &&
-          progress.stage !== "ready" && (
+          progress.stage !== SessionProgressStage.Ready && (
             <div className="px-4 pb-3">
               <hr className="border-gray-200 dark:border-gray-700 mb-3" />
               <InlineSessionProgress progress={progress} className="w-full" />
