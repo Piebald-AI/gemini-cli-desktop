@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "npm run copy-pdf-worker && vite",
     "build": "npm run copy-pdf-worker && tsc && vite build",
-    "copy-pdf-worker": "cp node_modules/pdfjs-dist/build/pdf.worker.min.mjs public/",
+    "copy-pdf-worker": "copyfiles -f node_modules/pdfjs-dist/build/pdf.worker.min.mjs public",
     "preview": "vite preview",
     "tauri": "tauri",
     "format": "pnpm prettier src --write",
@@ -94,6 +94,7 @@
     "@typescript-eslint/eslint-plugin": "^8.40.0",
     "@typescript-eslint/parser": "^8.40.0",
     "@vitejs/plugin-react": "^5.0.1",
+    "copyfiles": "^2.4.1",
     "eslint": "^9.33.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
