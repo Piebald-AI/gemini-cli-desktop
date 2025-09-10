@@ -44,7 +44,9 @@
     "currentDirectory": "当前目录",
     "showLess": "显示更少",
     "showMoreLines": "显示更多 {{count}} 行",
-    "completedSuccessfully": "成功完成。"
+    "completedSuccessfully": "成功完成。",
+    "settings": "设置",
+    "settingsTab": "设置"
   },
 
   "navigation": {
@@ -82,7 +84,8 @@
     "refresh": "刷新",
     "about": "关于 {{name}}",
     "quit": "退出 {{name}}",
-    "exit": "退出"
+    "exit": "退出",
+    "settingsMenu": "设置..."
   },
 
   "projects": {

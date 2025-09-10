@@ -66,7 +66,7 @@ export function AppSidebar({
             className="w-full text-left text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 px-2 py-2 rounded-md hover:bg-sidebar-accent"
           >
             <SettingsIcon className="h-4 w-4" />
-            {t("dashboard.settingsLink", { defaultValue: "Settings" })}
+            {t("common.settings")}
           </button>
         </SidebarFooter>
       </Sidebar>

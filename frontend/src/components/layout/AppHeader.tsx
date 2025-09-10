@@ -70,7 +70,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                 variant="ghost"
                 size="icon"
                 onClick={onOpenSettings}
-                title={t("settings.open", { defaultValue: "Settings" })}
+                title={t("common.settings")}
               >
                 <SettingsIcon className="h-4 w-4" />
               </Button>
