@@ -48,9 +48,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-auto">
         <DialogHeader>
-          <DialogTitle>
-            {t("common.settingsTab")}
-          </DialogTitle>
+          <DialogTitle>{t("common.settingsTab")}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6 py-2">
