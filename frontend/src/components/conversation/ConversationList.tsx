@@ -72,7 +72,7 @@ export function ConversationList({
   // Search moved into modal (ConversationSearchDialog)
 
   return (
-    <div className="h-full overflow-y-auto">
+    <div className="flex flex-col min-h-0">
       {/* Header */}
       <div className="p-4 border-b border-neutral-200 dark:border-neutral-700">
         <div className="flex items-center justify-between">

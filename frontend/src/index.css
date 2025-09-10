@@ -205,3 +205,11 @@ tr[class*="code-fold"] a,
     cursor: col-resize !important;
   }
 }
+
+/* Adjust fullscreen dialog position on Windows/Linux to account for title bar */
+.os-windows [role="dialog"][class*="w-screen"],
+.os-linux [role="dialog"][class*="w-screen"],
+.os-web [role="dialog"][class*="w-screen"] {
+  top: 2rem;
+  height: calc(100vh - 2rem);
+}

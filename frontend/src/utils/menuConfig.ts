@@ -109,7 +109,7 @@ export const getMenuLabels = (
     file: t("titleBar.file"),
     view: t("titleBar.view"),
     help: t("titleBar.help"),
-    settings: t("titleBar.settings", { defaultValue: "Settings…" }),
+    settings: t("titleBar.settingsMenu"),
     home: t("titleBar.home"),
     projects: t("titleBar.projects"),
     mcpServers: t("titleBar.mcpServers"),

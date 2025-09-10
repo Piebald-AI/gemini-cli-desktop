@@ -291,7 +291,7 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
               >
                 <div className="flex items-center gap-2">
                   <SettingsIcon size={14} />
-                  {labels.settings}
+                  {t("titleBar.settingsMenu")}
                 </div>
                 <span className="text-xs text-muted-foreground">
                   {menuShortcuts.openSettings?.display}

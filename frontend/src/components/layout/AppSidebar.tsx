@@ -59,14 +59,14 @@ export function AppSidebar({
             onOpenSearch={onOpenSearch}
           />
         </SidebarContent>
-        <SidebarFooter className="mt-auto p-2 border-t border-sidebar-border">
+        <SidebarFooter className="mt-auto p-2 border-t border-sidebar-border shrink-0 h-22">
           <button
             type="button"
             onClick={() => window.dispatchEvent(new Event("app:open-settings"))}
             className="w-full text-left text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 px-2 py-2 rounded-md hover:bg-sidebar-accent"
           >
             <SettingsIcon className="h-4 w-4" />
-            {t("dashboard.settingsLink", { defaultValue: "Settings" })}
+            {t("common.settings")}
           </button>
         </SidebarFooter>
       </Sidebar>

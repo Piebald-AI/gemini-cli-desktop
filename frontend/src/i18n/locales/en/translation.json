@@ -44,7 +44,9 @@
     "currentDirectory": "current directory",
     "showLess": "Show less",
     "showMoreLines": "Show {{count}} more lines",
-    "completedSuccessfully": "Completed successfully."
+    "completedSuccessfully": "Completed successfully.",
+    "settings": "Settings",
+    "settingsTab": "Settings"
   },
 
   "navigation": {
@@ -85,7 +87,8 @@
     "refresh": "Refresh",
     "about": "About {{name}}",
     "quit": "Quit {{name}}",
-    "exit": "Exit"
+    "exit": "Exit",
+    "settingsMenu": "Settings..."
   },
 
   "projects": {

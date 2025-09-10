@@ -53,7 +53,7 @@ export const useTauriMenu = () => {
             }),
             await MenuItem.new({
               id: "settings",
-              text: labels.settings,
+              text: t("titleBar.settingsMenu"),
               accelerator: currentPlatform === "macos" ? "Cmd+," : "Ctrl+,",
               action: handlers.openSettings,
             }),
@@ -99,7 +99,7 @@ export const useTauriMenu = () => {
               }),
               await MenuItem.new({
                 id: "settings",
-                text: labels.settings,
+                text: t("titleBar.settingsMenu"),
                 accelerator: "Cmd+,",
                 action: handlers.openSettings,
               }),
@@ -145,7 +145,7 @@ export const useTauriMenu = () => {
               }),
               await MenuItem.new({
                 id: "settings",
-                text: labels.settings,
+                text: t("titleBar.settingsMenu"),
                 accelerator: "Ctrl+,",
                 action: handlers.openSettings,
               }),
