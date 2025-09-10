@@ -538,6 +538,19 @@ function RootLayoutInner() {
   // Set up Tauri menu for non-Windows desktop platforms
   const { isAboutDialogOpen, setIsAboutDialogOpen } = useTauriMenu();
 
+  // Add OS-specific class to body for styling
+  useEffect(() => {
+    const setOsClass = async () => {
+      if (!__WEB__) {
+        const p = await platform();
+        document.body.classList.add(`os-${p}`);
+      } else {
+        document.body.classList.add("os-web");
+      }
+    };
+    setOsClass();
+  }, []);
+
   return (
     <div className="h-screen w-full">
       <CustomTitleBar />
