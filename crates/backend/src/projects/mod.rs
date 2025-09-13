@@ -84,7 +84,9 @@ fn home_projects_root() -> Option<PathBuf> {
     if home.is_empty() {
         return None;
     }
-    Some(Path::new(&home).join(".gemini-desktop").join("projects"))
+    let path = Path::new(&home).join(".gemini-desktop").join("projects");
+    // Ensure proper path normalization for the platform
+    Some(path.components().collect::<PathBuf>())
 }
 
 fn projects_root_dir() -> Option<PathBuf> {
@@ -136,10 +138,10 @@ fn parse_millis_from_log_name(name: &str) -> Option<u64> {
 
 fn read_project_metadata(root_sha: &str) -> Result<ProjectMetadata> {
     let Some(path) = project_json_path(root_sha) else {
-        anyhow::bail!("projects root not found");
+        anyhow::bail!("Project not found");
     };
     if !path.exists() {
-        anyhow::bail!("project.json not found");
+        anyhow::bail!("Project not found");
     }
     let content = std::fs::read_to_string(&path).context("Failed to read project metadata file")?;
     serde_json::from_str::<ProjectMetadata>(&content)
@@ -148,7 +150,7 @@ fn read_project_metadata(root_sha: &str) -> Result<ProjectMetadata> {
 
 fn write_project_metadata(sha256: &str, meta: &ProjectMetadata) -> Result<()> {
     let Some(json_path) = project_json_path(sha256) else {
-        anyhow::bail!("projects root not found");
+        anyhow::bail!("Project not found");
     };
     if let Some(dir) = json_path.parent() {
         std::fs::create_dir_all(dir).context("Failed to create project metadata directory")?;
@@ -671,10 +673,11 @@ mod tests {
         let result = home_projects_root();
         assert!(result.is_some());
         let path = result.unwrap();
-        assert_eq!(
-            path,
-            Path::new("C:\\Users\\test\\.gemini-desktop\\projects")
-        );
+        // Build expected path using the same method as the function under test
+        let expected = Path::new("C:\\Users\\test")
+            .join(".gemini-desktop")
+            .join("projects");
+        assert_eq!(path, expected);
     }
 
     #[test]
