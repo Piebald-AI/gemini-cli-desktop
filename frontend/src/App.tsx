@@ -223,11 +223,13 @@ function RootLayoutContent() {
 
       // Add listeners for new conversations
       for (const conversation of conversationsWithStatus) {
-        if (!listenerCleanups.current.has(conversation.id) && 
-            !pendingListenerSetup.current.has(conversation.id)) {
+        if (
+          !listenerCleanups.current.has(conversation.id) &&
+          !pendingListenerSetup.current.has(conversation.id)
+        ) {
           // Mark as pending to prevent duplicate setup
           pendingListenerSetup.current.add(conversation.id);
-          
+
           try {
             const cleanup = await setupEventListenerForConversation(
               conversation.id
@@ -326,11 +328,13 @@ function RootLayoutContent() {
         // IMPORTANT: Attach conversation event listeners BEFORE starting the session
         // to avoid losing early streaming chunks (race observed in web mode).
         try {
-          if (!listenerCleanups.current.has(convId) && 
-              !pendingListenerSetup.current.has(convId)) {
+          if (
+            !listenerCleanups.current.has(convId) &&
+            !pendingListenerSetup.current.has(convId)
+          ) {
             // Mark as pending to prevent duplicate setup
             pendingListenerSetup.current.add(convId);
-            
+
             try {
               const cleanup = await setupEventListenerForConversation(convId);
               listenerCleanups.current.set(convId, cleanup);
