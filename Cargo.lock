@@ -350,7 +350,7 @@ checksum = "c08606f8c3cbf4ce6ec8e28fb0014a2c086708fe954eaa885384a6165172e7e8"
 
 [[package]]
 name = "backend"
-version = "0.3.6"
+version = "0.3.7"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
@@ -5381,7 +5381,7 @@ dependencies = [
 
 [[package]]
 name = "tauri-app"
-version = "0.3.6"
+version = "0.3.7"
 dependencies = [
  "anyhow",
  "backend",
