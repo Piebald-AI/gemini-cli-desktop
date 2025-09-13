@@ -59,7 +59,7 @@ export function AppSidebar({
             onOpenSearch={onOpenSearch}
           />
         </SidebarContent>
-        <SidebarFooter className="mt-auto p-2 border-t border-sidebar-border shrink-0 h-22">
+        <SidebarFooter className="mt-auto p-2 border-t border-sidebar-border shrink-0">
           <button
             type="button"
             onClick={() => window.dispatchEvent(new Event("app:open-settings"))}

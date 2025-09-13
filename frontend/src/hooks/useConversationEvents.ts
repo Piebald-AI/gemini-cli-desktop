@@ -430,44 +430,67 @@ export const useConversationEvents = (
             if (update.sessionUpdate === "tool_call") {
               // Handle tool call start
               updateConversation(conversationId, (conv, lastMsg) => {
-                // Convert ACP ToolCallKind to tool name
-                const toolName = getToolNameFromKind(
-                  update.kind,
-                  update.title,
-                  update.locations,
-                  update.toolCallId || ""
-                );
+                // Check if a tool call with this ID already exists
+                let toolCallExists = false;
+                for (const msg of conv.messages) {
+                  for (const msgPart of msg.parts) {
+                    if (
+                      msgPart.type === "toolCall" &&
+                      msgPart.toolCall.id === update.toolCallId
+                    ) {
+                      toolCallExists = true;
+                      // Update the existing tool call instead of creating a duplicate
+                      msgPart.toolCall.status = mapAcpStatus(update.status);
+                      if (update.title) {
+                        msgPart.toolCall.label = update.title;
+                      }
+                      break;
+                    }
+                  }
+                  if (toolCallExists) break;
+                }
 
-                const newToolCall: ToolCall = {
-                  id: update.toolCallId || "",
-                  name: toolName,
-                  parameters: {
-                    locations: update.locations,
-                    serverName: update.serverName,
-                    toolName: update.toolName,
-                  },
-                  status: mapAcpStatus(update.status),
-                  label: update.title,
-                };
+                // Only create a new tool call if it doesn't already exist
+                if (!toolCallExists) {
+                  // Convert ACP ToolCallKind to tool name
+                  const toolName = getToolNameFromKind(
+                    update.kind,
+                    update.title,
+                    update.locations,
+                    update.toolCallId || ""
+                  );
 
-                // Add tool call to the existing assistant message or create one if needed
-                if (lastMsg.sender === "assistant") {
-                  lastMsg.parts.push({
-                    type: "toolCall",
-                    toolCall: newToolCall,
-                  });
-                } else {
-                  conv.messages.push({
-                    id: Date.now().toString(),
-                    sender: "assistant",
-                    timestamp: new Date(),
-                    parts: [
-                      {
-                        type: "toolCall",
-                        toolCall: newToolCall,
-                      },
-                    ],
-                  });
+                  const newToolCall: ToolCall = {
+                    id: update.toolCallId || "",
+                    name: toolName,
+                    parameters: {
+                      locations: update.locations,
+                      serverName: update.serverName,
+                      toolName: update.toolName,
+                    },
+                    status: mapAcpStatus(update.status),
+                    label: update.title,
+                  };
+
+                  // Add tool call to the existing assistant message or create one if needed
+                  if (lastMsg.sender === "assistant") {
+                    lastMsg.parts.push({
+                      type: "toolCall",
+                      toolCall: newToolCall,
+                    });
+                  } else {
+                    conv.messages.push({
+                      id: Date.now().toString(),
+                      sender: "assistant",
+                      timestamp: new Date(),
+                      parts: [
+                        {
+                          type: "toolCall",
+                          toolCall: newToolCall,
+                        },
+                      ],
+                    });
+                  }
                 }
               });
             } else if (update.sessionUpdate === "tool_call_update") {
