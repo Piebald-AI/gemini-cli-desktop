@@ -143,6 +143,7 @@ The project is organized as a Rust workspace with three main crates:
   - `I18nExample.tsx` - Translation demonstration component
 - **`conversation/`** - Chat interface components
   - `ConversationList.tsx` - Message history and pagination
+  - `ConversationSearchDialog.tsx` - Search dialog for conversations
   - `MessageInputBar.tsx` - Text input with mention support and Shift+Enter support
   - `MessageActions.tsx` - Message-level actions (copy, retry, etc.)
   - `MessageContent.tsx` - Message body rendering
@@ -214,10 +215,18 @@ The project is organized as a Rust workspace with three main crates:
 - **`useCliInstallation.ts`** - CLI availability detection
 - **`useConversationEvents.ts`** - Real-time event handling
 - **`useConversationManager.ts`** - Conversation state management
+- **`useFileSystemNavigation.ts`** - File system navigation utilities
 - **`useMessageHandler.ts`** - Message processing and display
+- **`useMessageTimer.ts`** - Message timing utilities
 - **`useProcessManager.ts`** - Session lifecycle management
+- **`useProcessTimer.ts`** - Process timing utilities
+- **`useRecursiveFileSearch.ts`** - Recursive file search functionality
 - **`useResizable.ts`** - Sidebar resize functionality with mouse drag handling
+- **`useSessionProgress.ts`** - Session progress tracking
+- **`useTauriMenu.ts`** - Tauri menu integration
+- **`useTauriRustMenu.ts`** - Rust-based Tauri menu utilities
 - **`useToolCallConfirmation.ts`** - User approval workflow
+- **`useWittyLoadingPhrase.ts`** - Loading phrase generation
 - **`use-mobile.ts`** - Responsive design utilities
 
 #### Internationalization (`i18n/`)
@@ -230,14 +239,18 @@ The project is organized as a Rust workspace with three main crates:
   - `zh-TW/translation.json` - Traditional Chinese translations
 
 #### Utilities and Helpers
-- **`utils/toolCallParser.ts`** - Tool call parsing and validation
-- **`utils/toolInputParser.ts`** - Tool input formatting and validation
-- **`utils/wordDiff.ts`** - Word-level text difference calculation
 - **`utils/backendDefaults.ts`** - Default backend configuration values
 - **`utils/backendText.ts`** - Backend-specific text and messaging
 - **`utils/backendValidation.ts`** - Backend configuration validation
-- **`utils/mcpValidation.ts`** - Model Context Protocol validation
+- **`utils/download.ts`** - File download utilities
+- **`utils/fileSystemHelpers.ts`** - File system utility functions
 - **`utils/helpers.ts`** - General utility functions
+- **`utils/loadingPhrases.ts`** - Loading phrase generation
+- **`utils/mcpValidation.ts`** - Model Context Protocol validation
+- **`utils/menuConfig.ts`** - Menu configuration utilities
+- **`utils/syntaxHighlighter.ts`** - Syntax highlighting configuration
+- **`utils/toolCallParser.ts`** - Tool call parsing and validation
+- **`utils/toolInputParser.ts`** - Tool input formatting and validation
 
 ## Technology Stack
 
