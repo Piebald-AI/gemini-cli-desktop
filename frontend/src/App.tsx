@@ -57,6 +57,7 @@ function RootLayoutContent() {
     useState(false);
   const messageInputBarRef = useRef<MessageInputBarRef>(null);
   const listenerCleanups = useRef(new Map<string, () => void>());
+  const pendingListenerSetup = useRef(new Set<string>());
   // Global search dialog state (declared above)
 
   // Get the current working directory (default fallback)
@@ -222,11 +223,22 @@ function RootLayoutContent() {
 
       // Add listeners for new conversations
       for (const conversation of conversationsWithStatus) {
-        if (!listenerCleanups.current.has(conversation.id)) {
-          const cleanup = await setupEventListenerForConversation(
-            conversation.id
-          );
-          listenerCleanups.current.set(conversation.id, cleanup);
+        if (
+          !listenerCleanups.current.has(conversation.id) &&
+          !pendingListenerSetup.current.has(conversation.id)
+        ) {
+          // Mark as pending to prevent duplicate setup
+          pendingListenerSetup.current.add(conversation.id);
+
+          try {
+            const cleanup = await setupEventListenerForConversation(
+              conversation.id
+            );
+            listenerCleanups.current.set(conversation.id, cleanup);
+          } finally {
+            // Remove from pending set regardless of success/failure
+            pendingListenerSetup.current.delete(conversation.id);
+          }
         }
       }
     };
@@ -316,13 +328,24 @@ function RootLayoutContent() {
         // IMPORTANT: Attach conversation event listeners BEFORE starting the session
         // to avoid losing early streaming chunks (race observed in web mode).
         try {
-          if (!listenerCleanups.current.has(convId)) {
-            const cleanup = await setupEventListenerForConversation(convId);
-            listenerCleanups.current.set(convId, cleanup);
-            console.log(
-              "👂 [APP] Pre-attached conversation listeners before start_session:",
-              convId
-            );
+          if (
+            !listenerCleanups.current.has(convId) &&
+            !pendingListenerSetup.current.has(convId)
+          ) {
+            // Mark as pending to prevent duplicate setup
+            pendingListenerSetup.current.add(convId);
+
+            try {
+              const cleanup = await setupEventListenerForConversation(convId);
+              listenerCleanups.current.set(convId, cleanup);
+              console.log(
+                "👂 [APP] Pre-attached conversation listeners before start_session:",
+                convId
+              );
+            } finally {
+              // Remove from pending set regardless of success/failure
+              pendingListenerSetup.current.delete(convId);
+            }
           }
         } catch (e) {
           console.error(
