@@ -1,5 +1,15 @@
 # Gemini Desktop
 
+[![CI](https://github.com/Piebald-AI/gemini-desktop/workflows/CI/badge.svg)](https://github.com/Piebald-AI/gemini-desktop/actions)
+[![Release & Publish](https://github.com/Piebald-AI/gemini-desktop/workflows/Release%20%26%20Publish/badge.svg)](https://github.com/Piebald-AI/gemini-desktop/actions)
+[![GitHub all releases](https://img.shields.io/github/downloads/Piebald-AI/gemini-desktop/total)](https://github.com/Piebald-AI/gemini-desktop/releases)
+[![GitHub release](https://img.shields.io/github/v/release/Piebald-AI/gemini-desktop)](https://github.com/Piebald-AI/gemini-desktop/releases)
+[![Mentioned in Awesome Gemini CLI](https://awesome.re/mentioned-badge.svg)](https://github.com/Piebald-AI/awesome-gemini-cli)
+
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)](https://github.com/Piebald-AI/gemini-desktop/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Built with Tauri](https://img.shields.io/badge/built%20with-Tauri-FFC131)](https://tauri.app/)
+
 A powerful desktop and web interface for Gemini CLI and Qwen Code with visual tool confirmation, real-time thought processes, code diff viewing, chat history search, and file @-mentions. Built with Rust and React for performance and reliability.
 
 Use with **Gemini CLI:**
