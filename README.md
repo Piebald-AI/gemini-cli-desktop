@@ -1,6 +1,6 @@
 # Gemini Desktop
 
-A powerful desktop and web interface for Google's Gemini CLI and Qwen Code. Built with Rust and React for performance and reliability.
+A powerful desktop and web interface for Gemini CLI and Qwen Code. Built with Rust and React for performance and reliability.
 
 Use with **Gemini CLI:**
 
@@ -15,6 +15,7 @@ Use with **Qwen Code:**
 **Download pre-built releases:** [GitHub Releases](https://github.com/Piebald-AI/gemini-desktop/releases)
 
 **Available builds:**
+
 - Windows (x64)
 - macOS (Intel & Apple Silicon)
 - Linux (x64 AppImage)
@@ -36,11 +37,13 @@ Use with **Qwen Code:**
 ### Prerequisites & Dependencies
 
 **Install the `just` task runner:**
+
 - **macOS/Linux:** `cargo install just` or `asdf plugin add just && asdf install just latest`
 - **Ubuntu:** `snap install --edge --classic just`
 - **Windows:** `winget install --id Casey.Just`
 
 **Linux system dependencies (Ubuntu/Debian):**
+
 ```bash
 sudo apt install libgdk-pixbuf-2.0-dev libpango1.0-dev \
   libjavascriptcoregtk-4.1-dev libatk1.0-dev libsoup-3.0-dev \
@@ -71,12 +74,14 @@ just lint
 ### Build from Source
 
 **Prerequisites:**
+
 - [Rust](https://rust-lang.org)
 - [Node.js](https://nodejs.org)
 - [pnpm](https://pnpm.io)
 - [just](https://just.systems)
 
 **Build & Run:**
+
 ```bash
 git clone https://github.com/Piebald-AI/gemini-desktop
 cd gemini-desktop
