@@ -1,6 +1,6 @@
 # Gemini Desktop
 
-A powerful desktop and web interface for Gemini CLI and Qwen Code. Built with Rust and React for performance and reliability.
+A powerful desktop and web interface for Gemini CLI and Qwen Code with visual tool confirmation, real-time thought processes, code diff viewing, chat history search, and file @-mentions. Built with Rust and React for performance and reliability.
 
 Use with **Gemini CLI:**
 
