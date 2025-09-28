@@ -1,4 +1,4 @@
-# Gemini Desktop
+# Gemini CLI Desktop
 
 [![CI](https://github.com/Piebald-AI/gemini-desktop/workflows/CI/badge.svg)](https://github.com/Piebald-AI/gemini-desktop/actions)
 [![Release & Publish](https://github.com/Piebald-AI/gemini-desktop/workflows/Release%20%26%20Publish/badge.svg)](https://github.com/Piebald-AI/gemini-desktop/actions)
@@ -10,7 +10,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Built with Tauri](https://img.shields.io/badge/built%20with-Tauri-FFC131)](https://tauri.app/)
 
-A powerful desktop and web interface for Gemini CLI and Qwen Code with visual tool confirmation, real-time thought processes, code diff viewing, chat history search, and file @-mentions. Built with Rust and React for performance and reliability.
+A powerful **desktop** and **web** interface for **Gemini CLI** and **Qwen Code** with visual tool confirmation, real-time thought processes, code diff viewing, chat history management & search, a file tree browser, and file @-mentions. Built with Rust and React for performance and reliability.
 
 Use with **Gemini CLI:**
 
