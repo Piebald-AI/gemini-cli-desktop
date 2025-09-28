@@ -271,8 +271,16 @@ function ToolCallDisplayComponent({
     };
   };
 
-  // Simple icon for running state - no transitions
+  // Prefer a terminal glyph for command-style tools so the user can spot them quickly
   const getRunningIcon = (toolCall: ToolCall) => {
+    if (
+      toolCall.name === "run_shell_command" ||
+      toolCall.name === "execute_command" ||
+      toolCall.label?.toLowerCase()?.includes("running command")
+    ) {
+      return <Terminal className="h-4 w-4 text-muted-foreground" />;
+    }
+
     const loadingState = getLoadingState(toolCall);
     return loadingState.icon;
   };
