@@ -217,6 +217,7 @@ struct StartSessionRequest {
     model: Option<String>,
     backend_config: Option<backend::session::QwenConfig>,
     gemini_auth: Option<backend::session::GeminiAuthConfig>,
+    llxprt_config: Option<backend::session::LLxprtConfig>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -537,6 +538,7 @@ async fn start_session(
                 model,
                 req.backend_config,
                 req.gemini_auth.clone(),
+                req.llxprt_config,
             )
             .await
             .context("Failed to initialize session")?;
@@ -575,6 +577,7 @@ async fn send_message(request: Json<SendMessageRequest>, state: &State<AppState>
                 model,
                 req.backend_config,
                 req.gemini_auth,
+                None, // llxprt_config not available in send_message
             )
             .await
             .context("Failed to initialize session")?;

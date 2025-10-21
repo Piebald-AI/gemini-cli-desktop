@@ -9,6 +9,9 @@ const BACKEND_CONFIG = {
   qwen: {
     backendDownloadUrl: "https://github.com/qwenlm/qwen-code",
   },
+  llxprt: {
+    backendDownloadUrl: "https://github.com/Piebald-AI/llxprt-code",
+  },
 } as const;
 
 /**
@@ -20,11 +23,21 @@ export const getBackendText = (backend: BackendType) => {
 
   // Get backend-specific names from translations
   const backendDisplayName =
-    backend === "qwen" ? t("backend.qwenCode") : t(`backend.${backend}Cli`);
-  const appDisplayName = t(`backend.${backend}Desktop`);
-  const backendShortname = t(`backend.${backend}`);
+    backend === "qwen"
+      ? t("backend.qwenCode")
+      : backend === "llxprt"
+        ? "LLxprt Code"
+        : t(`backend.${backend}Cli`);
+  const appDisplayName =
+    backend === "llxprt" ? "LLxprt Desktop" : t(`backend.${backend}Desktop`);
+  const backendShortname =
+    backend === "llxprt" ? "LLxprt" : t(`backend.${backend}`);
   const backendModelFamilyNameOrTool =
-    backend === "gemini" ? t("backend.gemini") : t("backend.qwenCode");
+    backend === "gemini"
+      ? t("backend.gemini")
+      : backend === "llxprt"
+        ? "LLxprt Code"
+        : t("backend.qwenCode");
 
   return {
     name: backendDisplayName,

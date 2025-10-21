@@ -18,13 +18,13 @@ This file provides comprehensive guidance to Claude Code (claude.ai/code) when w
 
 ## Project Overview
 
-Gemini Desktop is a powerful, cross-platform desktop and web application that provides a modern UI for **Gemini CLI** and **Qwen Code**. Built with Rust (Tauri) and React/TypeScript, it enables structured interaction with AI models through the Agent Communication Protocol (ACP).
+Gemini Desktop is a powerful, cross-platform desktop and web application that provides a modern UI for **Gemini CLI**, **Qwen Code**, and **LLxprt Code**. Built with Rust (Tauri) and React/TypeScript, it enables structured interaction with AI models through the Agent Communication Protocol (ACP).
 
 ### Key Features
 - **Dual deployment modes**: Native desktop app and web application
 - **Real-time communication**: WebSocket-based event system for live updates
 - **Tool call confirmation**: User approval workflow for AI agent actions
-- **Multi-backend support**: Gemini CLI and Qwen Code integration
+- **Multi-backend support**: Gemini CLI, Qwen Code, and LLxprt Code integration with support for 9+ AI providers (Anthropic, OpenAI, OpenRouter, Gemini, Qwen, Groq, Together, xAI, and custom endpoints)
 - **Project management**: Session-based workspace management with chat history
 - **Security-first design**: Comprehensive command filtering and permission system
 - **Internationalization**: Full i18n support with language switching for English, Chinese Simplified, and Traditional Chinese
@@ -50,11 +50,15 @@ The project is organized as a Rust workspace with three main crates:
   - Content blocks for text, images, audio, and resources
   - Comprehensive test suite with property-based testing
 - **Session Management** (`session/mod.rs`) - CLI process orchestration
-  - Gemini and Qwen backend support
+  - Multi-backend support: Gemini CLI, Qwen Code, and LLxprt Code
+  - LLxprt provider configuration for 9+ AI providers (Anthropic, OpenAI, OpenRouter, Gemini, Qwen, Groq, Together, xAI, custom)
   - Working directory context preservation
   - Process lifecycle management
-  - Authentication handling (API keys, Vertex AI)
+  - Authentication handling (API keys, Vertex AI, OAuth)
   - Robust JSON parsing with non-JSON line filtering
+  - Environment variable cleanup with RAII pattern for security
+  - API key masking in logs for security compliance
+  - SSRF protection with URL validation
 - **Event System** (`events/mod.rs`) - Real-time communication backbone
   - Event emission and broadcasting
   - WebSocket integration
@@ -465,6 +469,25 @@ The application implements a comprehensive security model for command execution:
 - **Pattern-based detection** for complex injection attempts
 - **Cross-platform compatibility** (Windows/Unix commands)
 - **Process isolation** with controlled execution environment
+- **API key masking** in logs (implemented in `session/mod.rs:mask_api_key()`)
+  - Shows only first 4 and last 4 characters: `sk-a...xyz`
+  - Prevents credential leakage in logs
+  - Applied to all logging points (11 instances)
+- **SSRF Protection** (implemented in `session/mod.rs:validate_base_url()`)
+  - 5-layer security validation:
+    1. HTTPS enforcement (except localhost in dev)
+    2. Private IP blocking (10.x, 172.16.x, 192.168.x, 169.254.x)
+    3. Cloud metadata endpoint blocking (169.254.169.254, metadata.google.internal)
+    4. URL length validation (max 500 characters)
+    5. Scheme validation (http/https only)
+  - Prevents Server-Side Request Forgery attacks
+  - Duplicated in frontend validation for defense in depth
+- **Environment Variable Cleanup** (RAII pattern)
+  - `EnvVarGuard` struct with Drop trait for automatic cleanup
+  - `SessionEnvironment` manages multiple environment variables
+  - Prevents credential leakage to other processes
+  - Guarantees cleanup even on panic
+  - 10 comprehensive tests for multi-session isolation
 
 ### Tauri Security Model
 
@@ -716,17 +739,71 @@ gemini-desktop/
 #### Session Management
 - **Working directories** preserved per session
 - **Process isolation** with unique identifiers
-- **Multi-backend support** with Gemini and Qwen configurations
+- **Multi-backend support** with Gemini, Qwen, and LLxprt configurations
 - **Chat history** stored in structured format
 - **Tool call logs** for debugging and replay
 - **Custom title bar** for enhanced desktop experience
 - **Full internationalization** with language detection and persistence
 
+#### Backend Configuration Types
+
+**Gemini Configuration**:
+```typescript
+interface GeminiConfig {
+  type: "gemini";
+  authMethod: "oauth-personal" | "gemini-api-key" | "vertex-ai" | "cloud-shell";
+  apiKey: string;
+  models: string[];
+  defaultModel: string;
+  vertexProject?: string;  // Required for Vertex AI
+  vertexLocation?: string; // Required for Vertex AI
+  yolo?: boolean;          // Experimental features flag
+}
+```
+
+**Qwen Configuration**:
+```typescript
+interface QwenConfig {
+  type: "qwen";
+  apiKey: string;
+  baseUrl: string;
+  model: string;
+  useOAuth: boolean;
+}
+```
+
+**LLxprt Configuration** (NEW):
+```typescript
+type LLxprtProvider = "anthropic" | "openai" | "openrouter" | "gemini"
+                    | "qwen" | "groq" | "together" | "xai" | "custom";
+
+interface LLxprtConfig {
+  type: "llxprt";
+  provider: LLxprtProvider;
+  apiKey: string;
+  model: string;
+  baseUrl?: string;  // Required for custom providers, optional for others
+}
+```
+
+**Provider-Specific Defaults** (defined in `frontend/src/utils/providerConfig.ts`):
+- **Anthropic**: `claude-3-5-sonnet-20241022`, API key format: `sk-ant-*`
+- **OpenAI**: `gpt-4o`, API key format: `sk-*`
+- **OpenRouter**: `anthropic/claude-3.5-sonnet`, base URL: `https://openrouter.ai/api/v1`
+- **Gemini** (via LLxprt): `gemini-2.0-flash-exp`
+- **Qwen** (via LLxprt): `qwen-max`
+- **Groq**: `llama-3.3-70b-versatile`
+- **Together**: `meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo`
+- **xAI**: `grok-2-latest`
+- **Custom**: User-defined endpoint
+
 #### Authentication
 - **API key storage** (encrypted/secure storage planned)
-- **Multiple provider support** (Gemini, Vertex AI, Qwen)
+- **Multiple provider support** (Gemini, Vertex AI, Qwen, Anthropic, OpenAI, OpenRouter, Groq, Together, xAI, custom)
 - **Session-based authentication** for web mode
 - **Unified backend configuration** with validation
+- **API key format validation** for supported providers
+- **Secure logging** with API key masking (shows only first 4 and last 4 characters)
 
 #### Internationalization
 - **Language support**: English, Simplified Chinese, Traditional Chinese

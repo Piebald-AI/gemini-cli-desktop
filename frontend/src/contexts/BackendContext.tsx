@@ -14,6 +14,7 @@ import {
   ApiConfig,
   GeminiConfig,
   QwenConfig,
+  LLxprtConfig,
 } from "../types/backend";
 import { validateBackendConfig } from "../utils/backendValidation";
 import { defaultBackendState } from "../utils/backendDefaults";
@@ -45,6 +46,10 @@ const loadFromStorage = (): BackendState => {
           qwen: {
             ...defaultBackendState.configs.qwen,
             ...parsed.configs?.qwen,
+          },
+          llxprt: {
+            ...defaultBackendState.configs.llxprt,
+            ...parsed.configs?.llxprt,
           },
         },
       };
@@ -244,7 +249,9 @@ export const BackendProvider: React.FC<BackendProviderProps> = ({
     const currentModel =
       state.selectedBackend === "gemini"
         ? (currentConfig as GeminiConfig).defaultModel
-        : (currentConfig as QwenConfig).model;
+        : state.selectedBackend === "llxprt"
+          ? (currentConfig as LLxprtConfig).model
+          : (currentConfig as QwenConfig).model;
 
     const getApiConfig = (): ApiConfig | null => {
       if (state.selectedBackend === "qwen") {
@@ -258,6 +265,13 @@ export const BackendProvider: React.FC<BackendProviderProps> = ({
             model: qwenConfig.model,
           };
         }
+      } else if (state.selectedBackend === "llxprt") {
+        const llxprtConfig = state.configs.llxprt;
+        return {
+          api_key: llxprtConfig.apiKey,
+          base_url: llxprtConfig.baseUrl || undefined,
+          model: llxprtConfig.model,
+        };
       } else if (state.selectedBackend === "gemini") {
         const geminiConfig = state.configs.gemini;
         if (geminiConfig.authMethod === "gemini-api-key") {

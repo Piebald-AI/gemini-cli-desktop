@@ -1,7 +1,8 @@
 use crate::state::AppState;
 use backend::{
     DetailedConversation, DirEntry, EnrichedProject, FileContent, GeminiAuthConfig, GitInfo,
-    ProcessStatus, ProjectsResponse, QwenConfig, RecentChat, SearchFilters, SearchResult,
+    LLxprtConfig, ProcessStatus, ProjectsResponse, QwenConfig, RecentChat, SearchFilters,
+    SearchResult,
 };
 use serde_json::Value;
 use tauri::{AppHandle, State};
@@ -26,6 +27,7 @@ pub async fn start_session(
     model: Option<String>,
     backend_config: Option<QwenConfig>,
     gemini_auth: Option<GeminiAuthConfig>,
+    llxprt_config: Option<LLxprtConfig>,
     state: State<'_, AppState>,
 ) -> Result<(), String> {
     if let Some(working_directory) = working_directory {
@@ -38,12 +40,13 @@ pub async fn start_session(
                 model,
                 backend_config,
                 gemini_auth,
+                llxprt_config,
             )
             .await
             .map_err(|e| format!("{e:#}"))
     } else {
-        // Skip CLI check if using Qwen backend
-        if backend_config.is_some() {
+        // Skip CLI check if using Qwen or LLxprt backend
+        if backend_config.is_some() || llxprt_config.is_some() {
             Ok(())
         } else {
             Err("Failed to get backend config".to_string())
