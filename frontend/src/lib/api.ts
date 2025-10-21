@@ -36,6 +36,12 @@ export interface API {
       vertex_project?: string;
       vertex_location?: string;
     };
+    llxprtConfig?: {
+      provider: string;
+      api_key: string;
+      model: string;
+      base_url?: string;
+    };
   }): Promise<void>;
   send_message(params: {
     sessionId: string;

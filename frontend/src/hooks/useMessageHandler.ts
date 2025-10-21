@@ -155,6 +155,7 @@ export const useMessageHandler = ({
         console.log("🔍 [useMessageHandler] apiConfig:", apiConfig);
         let backendConfig = undefined;
         let geminiAuth = undefined;
+        let llxprtConfig = undefined;
 
         if (selectedBackend === "qwen") {
           // Always set backend_config for Qwen, even with OAuth
@@ -167,6 +168,18 @@ export const useMessageHandler = ({
           console.log(
             "🔍 [useMessageHandler] Setting backend_config for Qwen:",
             backendConfig
+          );
+        } else if (selectedBackend === "llxprt") {
+          const llxprtCfg = backendState.configs.llxprt;
+          llxprtConfig = {
+            provider: llxprtCfg.provider,
+            api_key: llxprtCfg.apiKey,
+            model: llxprtCfg.model,
+            base_url: llxprtCfg.baseUrl || undefined,
+          };
+          console.log(
+            "🔍 [useMessageHandler] Setting llxprt_config for LLxprt:",
+            llxprtConfig
           );
         } else if (selectedBackend === "gemini") {
           const geminiConfig = backendState.configs.gemini;
@@ -196,6 +209,7 @@ export const useMessageHandler = ({
           model: selectedModel,
           backendConfig,
           geminiAuth,
+          llxprtConfig,
         });
 
         await api.send_message({
@@ -228,6 +242,7 @@ export const useMessageHandler = ({
       conversations,
       selectedModel,
       backendState.configs.gemini,
+      backendState.configs.llxprt,
       getApiConfig,
       selectedBackend,
       updateConversation,

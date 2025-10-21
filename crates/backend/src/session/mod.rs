@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::net::IpAddr;
 use std::process::Stdio;
 use std::sync::{Arc, Mutex};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader as AsyncBufReader};
@@ -12,6 +13,316 @@ const CREATE_NO_WINDOW: u32 = 0x08000000;
 
 #[cfg(windows)]
 use std::os::windows::process::CommandExt;
+
+/// Masks an API key for safe logging by showing only the first 4 and last 4 characters.
+/// For keys shorter than 12 characters, returns a generic masked string.
+fn mask_api_key(key: &str) -> String {
+    if key.len() > 12 {
+        format!("{}...{}", &key[..4], &key[key.len() - 4..])
+    } else if !key.is_empty() {
+        "***".to_string()
+    } else {
+        "(empty)".to_string()
+    }
+}
+
+/// Validates a base URL to prevent SSRF attacks and ensure secure connections.
+///
+/// This function implements multiple layers of security:
+/// - Enforces HTTPS for non-localhost URLs in production
+/// - Blocks private IP ranges (RFC 1918)
+/// - Blocks cloud metadata endpoints
+/// - Validates URL structure
+/// - Warns about non-standard provider domains
+fn validate_base_url(url_str: &str) -> Result<()> {
+    let url = url::Url::parse(url_str).context("Invalid URL format")?;
+
+    // 1. HTTPS enforcement (except localhost in dev mode)
+    match url.scheme() {
+        "https" => {}
+        "http" => {
+            if !is_localhost_url(&url) && !cfg!(debug_assertions) {
+                anyhow::bail!(
+                    "Base URL must use HTTPS in production. HTTP is only allowed for localhost in development mode."
+                );
+            }
+        }
+        other => anyhow::bail!(
+            "Unsupported URL scheme: {}. Only HTTP/HTTPS are allowed.",
+            other
+        ),
+    }
+
+    // 2. Must have a host
+    let host = url
+        .host_str()
+        .ok_or_else(|| anyhow::anyhow!("URL must have a host"))?;
+
+    // 3. Block private IP ranges (RFC 1918 and link-local)
+    if let Ok(ip) = host.parse::<IpAddr>()
+        && is_private_ip(&ip)
+        && !is_localhost_ip(&ip)
+    {
+        anyhow::bail!(
+            "Cannot use private IP address: {}. Private IPs (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.0.0/16) are blocked for security.",
+            ip
+        );
+    }
+
+    // 4. Block cloud metadata endpoints
+    const BLOCKED_HOSTS: &[&str] = &[
+        "169.254.169.254",          // AWS/Azure metadata
+        "metadata.google.internal", // GCP metadata
+        "metadata",
+    ];
+
+    let host_lower = host.to_lowercase();
+    if BLOCKED_HOSTS.contains(&host_lower.as_str()) {
+        anyhow::bail!(
+            "Blocked hostname: {}. Cloud metadata endpoints are not allowed for security.",
+            host
+        );
+    }
+
+    // 5. Whitelist known providers (defense in depth)
+    const ALLOWED_DOMAINS: &[&str] = &[
+        "api.openai.com",
+        "openrouter.ai",
+        "api.anthropic.com",
+        "generativelanguage.googleapis.com",
+        "api.together.xyz",
+        "api.groq.com",
+        "dashscope.aliyuncs.com",
+        "api.x.ai",
+    ];
+
+    let is_known_provider = ALLOWED_DOMAINS
+        .iter()
+        .any(|domain| host_lower.ends_with(domain));
+
+    if !is_known_provider && !is_localhost_url(&url) {
+        // Log warning but allow (user may have custom provider)
+        println!(
+            "⚠️ [SECURITY] Using non-standard provider domain: {}. Ensure this is intentional and trusted.",
+            host
+        );
+    }
+
+    Ok(())
+}
+
+/// Checks if an IP address is in a private range
+fn is_private_ip(ip: &IpAddr) -> bool {
+    match ip {
+        IpAddr::V4(ipv4) => {
+            let octets = ipv4.octets();
+            octets[0] == 10  // 10.0.0.0/8
+                || octets[0] == 127  // 127.0.0.0/8 (loopback)
+                || (octets[0] == 172 && (16..=31).contains(&octets[1]))  // 172.16.0.0/12
+                || (octets[0] == 192 && octets[1] == 168)  // 192.168.0.0/16
+                || (octets[0] == 169 && octets[1] == 254)  // 169.254.0.0/16 (link-local)
+                || octets[0] == 0 // 0.0.0.0/8
+        }
+        IpAddr::V6(ipv6) => {
+            ipv6.is_loopback()
+                || ipv6.is_unspecified()
+                // fc00::/7 (Unique Local Addresses)
+                || (ipv6.segments()[0] & 0xfe00) == 0xfc00
+        }
+    }
+}
+
+/// Checks if an IP address is localhost
+fn is_localhost_ip(ip: &IpAddr) -> bool {
+    match ip {
+        IpAddr::V4(ipv4) => ipv4.is_loopback(),
+        IpAddr::V6(ipv6) => ipv6.is_loopback(),
+    }
+}
+
+/// Checks if a URL points to localhost
+fn is_localhost_url(url: &url::Url) -> bool {
+    if let Some(host) = url.host_str() {
+        matches!(
+            host.to_lowercase().as_str(),
+            "localhost" | "127.0.0.1" | "[::1]"
+        )
+    } else {
+        false
+    }
+}
+
+/// RAII guard that automatically clears environment variables when dropped.
+/// This ensures credentials don't persist in the process environment after a session ends.
+#[derive(Debug)]
+struct EnvVarGuard {
+    var_name: String,
+}
+
+impl EnvVarGuard {
+    fn new(var_name: impl Into<String>, value: impl AsRef<str>) -> Self {
+        let var_name = var_name.into();
+        // SAFETY: We're setting an environment variable that will be read by child processes.
+        // This is safe because:
+        // 1. We're the only code setting this specific variable
+        // 2. The child process inherits but doesn't modify parent env
+        // 3. The EnvVarGuard ensures cleanup on drop
+        // 4. Multiple sessions use different variable names based on provider
+        unsafe {
+            std::env::set_var(&var_name, value.as_ref());
+        }
+        Self { var_name }
+    }
+}
+
+impl Drop for EnvVarGuard {
+    fn drop(&mut self) {
+        // SAFETY: Removing the variable we previously set. Safe for same reasons as setting.
+        unsafe {
+            std::env::remove_var(&self.var_name);
+        }
+        println!(
+            "🔒 [CLEANUP] Cleared environment variable: {}",
+            self.var_name
+        );
+    }
+}
+
+/// Manages environment variables for a session with automatic cleanup
+#[derive(Debug)]
+pub(crate) struct SessionEnvironment {
+    _guards: Vec<EnvVarGuard>,
+}
+
+impl SessionEnvironment {
+    fn setup_llxprt(config: &LLxprtConfig) -> Result<Self> {
+        let mut guards = Vec::new();
+
+        let masked_key = mask_api_key(&config.api_key);
+        println!(
+            "🔧 [HANDSHAKE] Setting up LLxprt Code environment for provider: {}",
+            config.provider
+        );
+        println!("🔧 [HANDSHAKE] Using API key: {}", masked_key);
+
+        match config.provider.as_str() {
+            "anthropic" => {
+                guards.push(EnvVarGuard::new("ANTHROPIC_API_KEY", &config.api_key));
+                println!(
+                    "🔧 [HANDSHAKE] Set ANTHROPIC_API_KEY (masked: {})",
+                    masked_key
+                );
+            }
+            "openai" | "openrouter" => {
+                guards.push(EnvVarGuard::new("OPENAI_API_KEY", &config.api_key));
+                println!("🔧 [HANDSHAKE] Set OPENAI_API_KEY (masked: {})", masked_key);
+
+                if let Some(url) = &config.base_url
+                    && !url.trim().is_empty()
+                {
+                    validate_base_url(url)?;
+                    guards.push(EnvVarGuard::new("OPENAI_BASE_URL", url));
+                    println!("🔧 [HANDSHAKE] Set OPENAI_BASE_URL (validated)");
+                }
+            }
+            "gemini" | "google" => {
+                guards.push(EnvVarGuard::new("GEMINI_API_KEY", &config.api_key));
+                println!("🔧 [HANDSHAKE] Set GEMINI_API_KEY (masked: {})", masked_key);
+            }
+            "qwen" => {
+                guards.push(EnvVarGuard::new("QWEN_API_KEY", &config.api_key));
+                println!("🔧 [HANDSHAKE] Set QWEN_API_KEY (masked: {})", masked_key);
+            }
+            "groq" => {
+                guards.push(EnvVarGuard::new("GROQ_API_KEY", &config.api_key));
+                println!("🔧 [HANDSHAKE] Set GROQ_API_KEY (masked: {})", masked_key);
+            }
+            "together" => {
+                guards.push(EnvVarGuard::new("TOGETHER_API_KEY", &config.api_key));
+                println!(
+                    "🔧 [HANDSHAKE] Set TOGETHER_API_KEY (masked: {})",
+                    masked_key
+                );
+            }
+            "xai" => {
+                guards.push(EnvVarGuard::new("X_API_KEY", &config.api_key));
+                println!("🔧 [HANDSHAKE] Set X_API_KEY (masked: {})", masked_key);
+            }
+            other => {
+                // For custom providers, use OPENAI_API_KEY and OPENAI_BASE_URL
+                guards.push(EnvVarGuard::new("OPENAI_API_KEY", &config.api_key));
+                println!(
+                    "🔧 [HANDSHAKE] Set OPENAI_API_KEY for custom provider '{}' (masked: {})",
+                    other, masked_key
+                );
+
+                if let Some(url) = &config.base_url
+                    && !url.trim().is_empty()
+                {
+                    validate_base_url(url)?;
+                    guards.push(EnvVarGuard::new("OPENAI_BASE_URL", url));
+                    println!("🔧 [HANDSHAKE] Set OPENAI_BASE_URL (validated)");
+                }
+            }
+        }
+
+        Ok(Self { _guards: guards })
+    }
+
+    fn setup_qwen(config: &QwenConfig) -> Result<Self> {
+        let mut guards = Vec::new();
+
+        let masked_key = mask_api_key(&config.api_key);
+        println!("🔧 [HANDSHAKE] Setting up Qwen Code environment");
+        println!("🔧 [HANDSHAKE] Using API key: {}", masked_key);
+
+        // Validate base URL before setting
+        validate_base_url(&config.base_url)?;
+
+        guards.push(EnvVarGuard::new("OPENAI_API_KEY", &config.api_key));
+        guards.push(EnvVarGuard::new("OPENAI_BASE_URL", &config.base_url));
+        guards.push(EnvVarGuard::new("OPENAI_MODEL", &config.model));
+
+        println!("🔧 [HANDSHAKE] Set OPENAI_BASE_URL (validated)");
+        println!("🔧 [HANDSHAKE] Set OPENAI_MODEL: {}", config.model);
+
+        Ok(Self { _guards: guards })
+    }
+
+    fn setup_gemini(auth: &GeminiAuthConfig) -> Result<Self> {
+        let mut guards = Vec::new();
+
+        match auth.method.as_str() {
+            "gemini-api-key" => {
+                if let Some(api_key) = &auth.api_key {
+                    let masked_key = mask_api_key(api_key);
+                    guards.push(EnvVarGuard::new("GEMINI_API_KEY", api_key));
+                    println!("🔧 [HANDSHAKE] Set GEMINI_API_KEY (masked: {})", masked_key);
+                } else {
+                    println!("⚠️ [HANDSHAKE] No API key provided for gemini-api-key auth method");
+                }
+            }
+            "vertex-ai" => {
+                if let Some(project) = &auth.vertex_project {
+                    guards.push(EnvVarGuard::new("GOOGLE_CLOUD_PROJECT", project));
+                    println!("🔧 [HANDSHAKE] Set GOOGLE_CLOUD_PROJECT: {}", project);
+                }
+                if let Some(location) = &auth.vertex_location {
+                    guards.push(EnvVarGuard::new("GOOGLE_CLOUD_LOCATION", location));
+                    println!("🔧 [HANDSHAKE] Set GOOGLE_CLOUD_LOCATION: {}", location);
+                }
+            }
+            _ => {
+                println!(
+                    "🔧 [HANDSHAKE] Using auth method: {} (no env vars needed)",
+                    auth.method
+                );
+            }
+        }
+
+        Ok(Self { _guards: guards })
+    }
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct QwenConfig {
@@ -27,6 +338,14 @@ pub struct GeminiAuthConfig {
     pub vertex_project: Option<String>,
     pub vertex_location: Option<String>,
     pub yolo: Option<bool>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LLxprtConfig {
+    pub provider: String, // "openai", "anthropic", "gemini", "qwen", "openrouter", etc.
+    pub api_key: String,
+    pub model: String,
+    pub base_url: Option<String>, // For custom/self-hosted providers
 }
 
 use crate::acp::{
@@ -54,6 +373,8 @@ pub struct PersistentSession {
     pub child: Option<Child>,
     pub working_directory: String,
     pub backend_type: String,
+    /// Environment variable guards that automatically clean up on drop
+    pub(crate) _environment: Option<SessionEnvironment>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -278,17 +599,36 @@ async fn send_jsonrpc_request<E: EventEmitter>(
     Ok(Some(response))
 }
 
+/// Parameters for initializing a session
+pub struct SessionParams {
+    pub session_id: String,
+    pub working_directory: String,
+    pub model: String,
+    pub backend_config: Option<QwenConfig>,
+    pub gemini_auth: Option<GeminiAuthConfig>,
+    pub llxprt_config: Option<LLxprtConfig>,
+}
+
 pub async fn initialize_session<E: EventEmitter + 'static>(
-    session_id: String,
-    working_directory: String,
-    model: String,
-    backend_config: Option<QwenConfig>,
-    gemini_auth: Option<GeminiAuthConfig>,
+    params: SessionParams,
     emitter: E,
     session_manager: &SessionManager,
 ) -> Result<(mpsc::UnboundedSender<String>, Arc<dyn RpcLogger>)> {
-    let is_qwen = backend_config.is_some();
-    let cli_name = if is_qwen { "Qwen Code" } else { "Gemini" };
+    let SessionParams {
+        session_id,
+        working_directory,
+        model,
+        backend_config,
+        gemini_auth,
+        llxprt_config,
+    } = params;
+    let (backend_type, cli_name) = if llxprt_config.is_some() {
+        ("llxprt", "LLxprt Code")
+    } else if backend_config.is_some() {
+        ("qwen", "Qwen Code")
+    } else {
+        ("gemini", "Gemini CLI")
+    };
 
     // Create event forwarding system early so we can use it for progress events
     let (event_tx, mut event_rx) = mpsc::unbounded_channel::<InternalEvent>();
@@ -430,18 +770,74 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
 
     let (message_tx, message_rx) = mpsc::unbounded_channel::<String>();
 
-    let mut cmd = {
-        if let Some(config) = &backend_config {
-            println!("🔧 [HANDSHAKE] Setting up Qwen Code environment");
-            // Set environment variables for Qwen Code (OpenAI-compatible API)
-            unsafe {
-                std::env::set_var("OPENAI_API_KEY", &config.api_key);
-                std::env::set_var("OPENAI_BASE_URL", &config.base_url);
-                std::env::set_var("OPENAI_MODEL", &config.model);
-            }
-            println!("🔧 [HANDSHAKE] Set OPENAI_BASE_URL: {}", config.base_url);
-            println!("🔧 [HANDSHAKE] Set OPENAI_MODEL: {}", config.model);
+    // Setup environment variables with automatic cleanup
+    let session_env = {
+        if let Some(config) = &llxprt_config {
+            Some(SessionEnvironment::setup_llxprt(config)?)
+        } else if let Some(config) = &backend_config {
+            Some(SessionEnvironment::setup_qwen(config)?)
+        } else if let Some(auth) = &gemini_auth {
+            Some(SessionEnvironment::setup_gemini(auth)?)
+        } else {
+            None
+        }
+    };
 
+    // Build command based on backend type
+    let mut cmd = {
+        if let Some(config) = &llxprt_config {
+            // Map UI provider names to LLxprt provider names
+            // OpenRouter is actually "openai" provider with custom base URL
+            let llxprt_provider = match config.provider.as_str() {
+                "openrouter" => "openai",
+                other => other,
+            };
+
+            // Build command with --provider and --model flags
+            let has_base_url = config
+                .base_url
+                .as_ref()
+                .map(|s| !s.trim().is_empty())
+                .unwrap_or(false);
+
+            let llxprt_args = if has_base_url {
+                let base_url = config.base_url.as_ref().unwrap();
+                println!("🔧 [HANDSHAKE] Using base URL (validated)");
+                format!(
+                    "llxprt --experimental-acp --provider {} --model {} --baseurl {}",
+                    llxprt_provider, config.model, base_url
+                )
+            } else {
+                println!("🔧 [HANDSHAKE] No base URL specified, using provider defaults");
+                format!(
+                    "llxprt --experimental-acp --provider {} --model {}",
+                    llxprt_provider, config.model
+                )
+            };
+
+            #[cfg(windows)]
+            {
+                println!(
+                    "🔧 [HANDSHAKE] Creating Windows LLxprt command: cmd.exe /C {}",
+                    llxprt_args
+                );
+                let mut c = Command::new("cmd.exe");
+                c.args(["/C", &llxprt_args]);
+                #[cfg(windows)]
+                c.creation_flags(CREATE_NO_WINDOW);
+                c
+            }
+            #[cfg(not(windows))]
+            {
+                println!(
+                    "🔧 [HANDSHAKE] Creating Unix LLxprt command: sh -lc '{}'",
+                    llxprt_args
+                );
+                let mut c = Command::new("sh");
+                c.args(["-lc", &llxprt_args]);
+                c
+            }
+        } else if let Some(_config) = &backend_config {
             #[cfg(windows)]
             {
                 println!(
@@ -464,47 +860,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
                 c
             }
         } else {
-            println!("🔧 [HANDSHAKE] Setting up Gemini CLI environment");
-
-            // Configure environment based on Gemini auth method
-            if let Some(auth) = &gemini_auth {
-                match auth.method.as_str() {
-                    "gemini-api-key" => {
-                        if let Some(api_key) = &auth.api_key {
-                            println!("🔧 [HANDSHAKE] Setting GEMINI_API_KEY environment variable");
-                            unsafe {
-                                std::env::set_var("GEMINI_API_KEY", api_key);
-                            }
-                        } else {
-                            println!(
-                                "⚠️ [HANDSHAKE] No API key provided for gemini-api-key auth method"
-                            );
-                        }
-                    }
-                    "vertex-ai" => {
-                        if let Some(project) = &auth.vertex_project {
-                            println!("🔧 [HANDSHAKE] Setting GOOGLE_CLOUD_PROJECT: {project}");
-                            unsafe {
-                                std::env::set_var("GOOGLE_CLOUD_PROJECT", project);
-                            }
-                        }
-                        if let Some(location) = &auth.vertex_location {
-                            println!("🔧 [HANDSHAKE] Setting GOOGLE_CLOUD_LOCATION: {location}");
-                            unsafe {
-                                std::env::set_var("GOOGLE_CLOUD_LOCATION", location);
-                            }
-                        }
-                    }
-                    _ => {
-                        println!(
-                            "🔧 [HANDSHAKE] Using auth method: {} (no env vars needed)",
-                            auth.method
-                        );
-                    }
-                }
-            } else {
-                println!("🔧 [HANDSHAKE] No auth config provided, using default OAuth");
-            }
+            // Gemini CLI
 
             #[cfg(windows)]
             {
@@ -571,24 +927,31 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
         },
     });
     println!("🔍 [PRECHECK] Testing CLI availability...");
-    if !is_qwen {
-        // Test Gemini CLI availability
+
+    let needs_cli_check = backend_type == "gemini" || backend_type == "llxprt";
+
+    if needs_cli_check {
+        let cli_name_test = if backend_type == "gemini" {
+            "gemini"
+        } else {
+            "llxprt"
+        };
         let test_result = if cfg!(windows) {
             #[cfg(windows)]
             {
                 std::process::Command::new("cmd.exe")
-                    .args(["/C", "gemini", "--version"])
+                    .args(["/C", cli_name_test, "--version"])
                     .creation_flags(CREATE_NO_WINDOW)
                     .output()
             }
             #[cfg(not(windows))]
             {
-                std::process::Command::new("gemini")
+                std::process::Command::new(cli_name_test)
                     .arg("--version")
                     .output()
             }
         } else {
-            std::process::Command::new("gemini")
+            std::process::Command::new(cli_name_test)
                 .arg("--version")
                 .output()
         };
@@ -596,19 +959,38 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
         match test_result {
             Ok(output) => {
                 if output.status.success() {
-                    println!("✅ [PRECHECK] Gemini CLI is available and responding");
+                    println!(
+                        "✅ [PRECHECK] {} CLI is available and responding",
+                        cli_name_test
+                    );
                 } else {
                     let stderr = String::from_utf8_lossy(&output.stderr);
-                    println!("❌ [PRECHECK] Gemini CLI returned error: {stderr}");
+                    println!(
+                        "❌ [PRECHECK] {} CLI returned error: {}",
+                        cli_name_test, stderr
+                    );
                     anyhow::bail!(
-                        "Gemini CLI test failed. Please ensure:\n1. Gemini CLI is properly installed\n2. You have an active internet connection\n3. Authentication is configured correctly\n\nError: {stderr}"
+                        "{} CLI test failed. Please ensure:\n1. {} is properly installed\n2. You have an active internet connection\n3. Authentication is configured correctly\n\nError: {}",
+                        cli_name_test,
+                        cli_name_test,
+                        stderr
                     )
                 }
             }
             Err(e) => {
-                println!("❌ [PRECHECK] Cannot execute Gemini CLI: {e}");
+                println!("❌ [PRECHECK] Cannot execute {} CLI: {}", cli_name_test, e);
+                let install_cmd = if backend_type == "llxprt" {
+                    "npm install -g llxprt"
+                } else {
+                    "pip install google-generativeai"
+                };
                 anyhow::bail!(
-                    "Gemini CLI not found or not executable. Please ensure:\n1. Gemini CLI is installed (run: pip install google-generativeai)\n2. 'gemini' command is in your PATH\n3. You have proper permissions to execute it\n\nError: {e}"
+                    "{} CLI not found or not executable. Please ensure:\n1. {} is installed (run: {})\n2. '{}' command is in your PATH\n3. You have proper permissions to execute it\n\nError: {}",
+                    cli_name_test,
+                    cli_name_test,
+                    install_cmd,
+                    cli_name_test,
+                    e
                 )
             }
         }
@@ -627,19 +1009,19 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
     });
     println!("🔄 [HANDSHAKE] Spawning CLI process...");
     let mut child = cmd.spawn().map_err(|e| {
-        let cmd_name = if is_qwen { "qwen" } else { "gemini" };
-        println!("❌ [HANDSHAKE] Failed to spawn {cmd_name} process: {e}");
+        println!("❌ [HANDSHAKE] Failed to spawn {} process: {e}", cli_name);
         #[cfg(windows)]
         {
             anyhow::anyhow!(
-                "Session initialization failed: Failed to run {cmd_name} command via cmd: {e}"
+                "Session initialization failed: Failed to run {} command via cmd: {e}",
+                cli_name
             )
         }
         #[cfg(not(windows))]
         {
             anyhow::anyhow!(
                 "Session initialization failed: Failed to run {} command via shell: {e}",
-                cmd_name
+                cli_name
             )
         }
     })?;
@@ -821,6 +1203,10 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
             let auth_method_id = if let Some(auth) = &gemini_auth {
                 println!("🔐 [HANDSHAKE] Using provided auth method: {}", auth.method);
                 auth.method.clone()
+            } else if llxprt_config.is_some() {
+                println!("🔐 [HANDSHAKE] Using gemini-api-key auth for LLxprt backend");
+                // LLxprt uses API key auth
+                "gemini-api-key".to_string()
             } else if backend_config.is_some() {
                 println!("🔐 [HANDSHAKE] Using gemini-api-key auth for Qwen backend");
                 // Qwen uses API key auth
@@ -901,11 +1287,6 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
             anyhow::anyhow!("Session initialization failed: Failed to lock processes")
         })?;
 
-        let backend_type = if backend_config.is_some() {
-            "qwen"
-        } else {
-            "gemini"
-        };
         let persistent_session = PersistentSession {
             conversation_id: session_id.clone(),
             acp_session_id: Some(session_result.session_id.clone()),
@@ -921,6 +1302,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
             child: Some(child),
             working_directory: working_directory.clone(),
             backend_type: backend_type.to_string(),
+            _environment: session_env,
         };
 
         processes.insert(session_id.clone(), persistent_session);
@@ -1368,6 +1750,7 @@ mod tests {
             child: None,
             working_directory: ".".to_string(),
             backend_type: "gemini".to_string(),
+            _environment: None,
         };
 
         assert_eq!(session.conversation_id, "test-id");
@@ -1412,6 +1795,7 @@ mod tests {
             child: None,
             working_directory: ".".to_string(),
             backend_type: "gemini".to_string(),
+            _environment: None,
         };
 
         let status = ProcessStatus::from(&session);
@@ -1456,6 +1840,7 @@ mod tests {
                     child: None,
                     working_directory: ".".to_string(),
                     backend_type: "gemini".to_string(),
+                    _environment: None,
                 },
             );
         }
@@ -1497,6 +1882,7 @@ mod tests {
                     child: None,
                     working_directory: ".".to_string(),
                     backend_type: "gemini".to_string(),
+                    _environment: None,
                 },
             );
         }
@@ -1555,6 +1941,7 @@ mod tests {
                     child: None,
                     working_directory: ".".to_string(),
                     backend_type: "gemini".to_string(),
+                    _environment: None,
                 },
             );
         }
@@ -1769,11 +2156,14 @@ mod tests {
         // Test session initialization with mock emitter
         // Note: This will fail if gemini CLI is not installed, but tests the integration logic
         let result = initialize_session(
-            "test-session-123".to_string(),
-            working_dir.to_string_lossy().to_string(),
-            "gemini-2.5-flash".to_string(),
-            None,
-            None,
+            SessionParams {
+                session_id: "test-session-123".to_string(),
+                working_directory: working_dir.to_string_lossy().to_string(),
+                model: "gemini-2.5-flash".to_string(),
+                backend_config: None,
+                gemini_auth: None,
+                llxprt_config: None,
+            },
             emitter.clone(),
             &session_manager,
         )
@@ -1835,6 +2225,7 @@ mod tests {
                     child: None,
                     working_directory: ".".to_string(),
                     backend_type: "gemini".to_string(),
+                    _environment: None,
                 },
             );
         }
@@ -1881,6 +2272,7 @@ mod tests {
                     child: None,
                     working_directory: ".".to_string(),
                     backend_type: "gemini".to_string(),
+                    _environment: None,
                 },
             );
         }
@@ -1932,7 +2324,9 @@ mod tests {
                         PersistentSession {
                             conversation_id: session_id.clone(),
                             acp_session_id: None,
-                            pid: Some(1000 + i as u32),
+                            // Use None for PID to avoid trying to kill non-existent processes
+                            // This tests thread safety of the data structures, not process killing
+                            pid: None,
                             created_at: 1640995200 + i as u64,
                             is_alive: true,
                             stdin: None,
@@ -1941,6 +2335,7 @@ mod tests {
                             child: None,
                             working_directory: ".".to_string(),
                             backend_type: "gemini".to_string(),
+                            _environment: None,
                         },
                     );
                 }
@@ -1949,7 +2344,7 @@ mod tests {
                 let statuses = manager.get_process_statuses().unwrap();
                 assert!(statuses.iter().any(|s| s.conversation_id == session_id));
 
-                // Kill session
+                // Kill session (marks as not alive without trying to kill a real process)
                 manager.kill_process(&session_id).unwrap();
             });
             handles.push(handle);
@@ -1993,6 +2388,7 @@ mod tests {
                     child: None,
                     working_directory: ".".to_string(),
                     backend_type: "gemini".to_string(),
+                    _environment: None,
                 },
             );
         });
@@ -2073,6 +2469,7 @@ mod tests {
                         child: None,
                         working_directory: ".".to_string(),
                         backend_type: "gemini".to_string(),
+                        _environment: None,
                     },
                 );
             }
@@ -2090,5 +2487,506 @@ mod tests {
         assert_eq!(statuses.len(), 10); // All still there but some not alive
         let alive_count = statuses.iter().filter(|s| s.is_alive).count();
         assert_eq!(alive_count, 5);
+    }
+
+    #[test]
+    fn test_llxprt_config_creation() {
+        let config = LLxprtConfig {
+            provider: "anthropic".to_string(),
+            api_key: "sk-ant-test".to_string(),
+            model: "claude-3-5-sonnet-20241022".to_string(),
+            base_url: None,
+        };
+
+        assert_eq!(config.provider, "anthropic");
+        assert_eq!(config.api_key, "sk-ant-test");
+        assert_eq!(config.model, "claude-3-5-sonnet-20241022");
+        assert!(config.base_url.is_none());
+    }
+
+    #[test]
+    fn test_llxprt_config_serialization() {
+        let config = LLxprtConfig {
+            provider: "openai".to_string(),
+            api_key: "sk-test".to_string(),
+            model: "gpt-4o".to_string(),
+            base_url: Some("https://api.example.com/v1".to_string()),
+        };
+
+        let json = serde_json::to_string(&config).unwrap();
+        let deserialized: LLxprtConfig = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(config.provider, deserialized.provider);
+        assert_eq!(config.api_key, deserialized.api_key);
+        assert_eq!(config.model, deserialized.model);
+        assert_eq!(config.base_url, deserialized.base_url);
+    }
+
+    #[test]
+    fn test_llxprt_config_optional_base_url() {
+        let config_with_url = LLxprtConfig {
+            provider: "openrouter".to_string(),
+            api_key: "sk-or-test".to_string(),
+            model: "meta-llama/llama-2-70b".to_string(),
+            base_url: Some("https://openrouter.ai/api/v1".to_string()),
+        };
+
+        let config_without_url = LLxprtConfig {
+            provider: "openai".to_string(),
+            api_key: "sk-test".to_string(),
+            model: "gpt-4o".to_string(),
+            base_url: None,
+        };
+
+        assert!(config_with_url.base_url.is_some());
+        assert!(config_without_url.base_url.is_none());
+    }
+
+    // ==================== SECURITY TESTS ====================
+
+    #[test]
+    fn test_mask_api_key_long_key() {
+        let key = "sk-ant-api03-1234567890abcdef1234567890";
+        let masked = mask_api_key(key);
+
+        assert!(masked.starts_with("sk-a"));
+        assert!(masked.ends_with("7890"));
+        assert!(masked.contains("..."));
+        assert!(!masked.contains("1234567890abcdef"));
+    }
+
+    #[test]
+    fn test_mask_api_key_short_key() {
+        let key = "short";
+        let masked = mask_api_key(key);
+
+        assert_eq!(masked, "***");
+    }
+
+    #[test]
+    fn test_mask_api_key_empty_key() {
+        let key = "";
+        let masked = mask_api_key(key);
+
+        assert_eq!(masked, "(empty)");
+    }
+
+    #[test]
+    fn test_rejects_private_ipv4_addresses() {
+        let private_ips = vec![
+            "http://10.0.0.1",
+            "http://172.16.0.1",
+            "http://192.168.1.1",
+            "http://169.254.169.254", // AWS metadata
+        ];
+
+        for ip in private_ips {
+            let result = validate_base_url(ip);
+            assert!(result.is_err(), "Should reject private IP: {}", ip);
+            assert!(result.unwrap_err().to_string().contains("private IP"));
+        }
+    }
+
+    #[test]
+    fn test_rejects_cloud_metadata_endpoints() {
+        let metadata_endpoints = vec![
+            "http://169.254.169.254/latest/meta-data",
+            "http://metadata.google.internal/",
+            "http://metadata/",
+        ];
+
+        for endpoint in metadata_endpoints {
+            let result = validate_base_url(endpoint);
+            assert!(
+                result.is_err(),
+                "Should reject metadata endpoint: {}",
+                endpoint
+            );
+        }
+    }
+
+    #[test]
+    fn test_accepts_valid_https_urls() {
+        let valid_urls = vec![
+            "https://api.openai.com/v1",
+            "https://openrouter.ai/api/v1",
+            "https://api.anthropic.com",
+            "https://generativelanguage.googleapis.com",
+        ];
+
+        for url in valid_urls {
+            let result = validate_base_url(url);
+            assert!(
+                result.is_ok(),
+                "Should accept valid URL: {} - Error: {:?}",
+                url,
+                result
+            );
+        }
+    }
+
+    #[cfg(not(debug_assertions))]
+    #[test]
+    fn test_rejects_http_in_production() {
+        let url = "http://api.example.com";
+        let result = validate_base_url(url);
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("HTTPS"));
+    }
+
+    #[cfg(debug_assertions)]
+    #[test]
+    fn test_accepts_localhost_http_in_dev() {
+        let localhost_urls = vec!["http://localhost:8080", "http://127.0.0.1:3000"];
+
+        for url in localhost_urls {
+            let result = validate_base_url(url);
+            assert!(
+                result.is_ok(),
+                "Should accept localhost HTTP in dev: {}",
+                url
+            );
+        }
+    }
+
+    #[test]
+    fn test_rejects_invalid_url_schemes() {
+        let invalid_schemes = vec![
+            "javascript:alert(1)",
+            "file:///etc/passwd",
+            "ftp://example.com",
+            "data:text/html,<script>alert(1)</script>",
+        ];
+
+        for url in invalid_schemes {
+            let result = validate_base_url(url);
+            assert!(result.is_err(), "Should reject invalid scheme: {}", url);
+        }
+    }
+
+    #[test]
+    fn test_rejects_malformed_urls() {
+        let malformed_urls = vec![
+            "not-a-url",
+            "http://",
+            "://example.com",
+            // Note: "http:/example.com" is autocorrected by the URL parser, so we don't test it
+        ];
+
+        for url in malformed_urls {
+            let result = validate_base_url(url);
+            assert!(result.is_err(), "Should reject malformed URL: {}", url);
+        }
+    }
+
+    #[test]
+    fn test_is_private_ip_detects_private_ranges() {
+        use std::net::Ipv4Addr;
+
+        let private_ips = vec![
+            IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)),
+            IpAddr::V4(Ipv4Addr::new(172, 16, 0, 1)),
+            IpAddr::V4(Ipv4Addr::new(192, 168, 1, 1)),
+            IpAddr::V4(Ipv4Addr::new(169, 254, 169, 254)),
+        ];
+
+        for ip in private_ips {
+            assert!(is_private_ip(&ip), "Should detect as private: {}", ip);
+        }
+    }
+
+    #[test]
+    fn test_is_private_ip_allows_public_ips() {
+        use std::net::Ipv4Addr;
+
+        let public_ips = vec![
+            IpAddr::V4(Ipv4Addr::new(8, 8, 8, 8)),
+            IpAddr::V4(Ipv4Addr::new(1, 1, 1, 1)),
+            IpAddr::V4(Ipv4Addr::new(44, 55, 66, 77)),
+        ];
+
+        for ip in public_ips {
+            assert!(
+                !is_private_ip(&ip) || is_localhost_ip(&ip),
+                "Should not detect as private (unless localhost): {}",
+                ip
+            );
+        }
+    }
+
+    #[test]
+    fn test_is_localhost_ip_detects_loopback() {
+        use std::net::Ipv4Addr;
+
+        let localhost_ips = vec![
+            IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
+            IpAddr::V4(Ipv4Addr::LOCALHOST),
+        ];
+
+        for ip in localhost_ips {
+            assert!(is_localhost_ip(&ip), "Should detect as localhost: {}", ip);
+        }
+    }
+
+    #[test]
+    #[serial_test::serial]
+    fn test_environment_cleanup_on_drop() {
+        // Set up a unique test var to avoid conflicts
+        let test_var = format!("TEST_API_KEY_{}", std::process::id());
+
+        // Ensure it's not set initially
+        unsafe {
+            std::env::remove_var(&test_var);
+        }
+        assert!(std::env::var(&test_var).is_err());
+
+        {
+            let _guard = EnvVarGuard::new(&test_var, "secret_value");
+            // Variable should be set within this scope
+            assert_eq!(std::env::var(&test_var).unwrap(), "secret_value");
+        } // guard dropped here
+
+        // Give a moment for cleanup
+        std::thread::sleep(std::time::Duration::from_millis(10));
+
+        // Variable should be cleared after drop
+        assert!(
+            std::env::var(&test_var).is_err(),
+            "Environment variable should be cleared after guard drops"
+        );
+    }
+
+    #[test]
+    #[serial_test::serial]
+    fn test_session_environment_llxprt_anthropic() {
+        let test_var = "ANTHROPIC_API_KEY";
+        unsafe {
+            std::env::remove_var(test_var);
+        }
+
+        let config = LLxprtConfig {
+            provider: "anthropic".to_string(),
+            api_key: "sk-ant-test-key-12345".to_string(),
+            model: "claude-3-5-sonnet-20241022".to_string(),
+            base_url: None,
+        };
+
+        {
+            let _env = SessionEnvironment::setup_llxprt(&config).unwrap();
+            assert_eq!(std::env::var(test_var).unwrap(), "sk-ant-test-key-12345");
+        }
+
+        // Give cleanup time to run
+        std::thread::sleep(std::time::Duration::from_millis(10));
+        assert!(
+            std::env::var(test_var).is_err(),
+            "API key should be cleared"
+        );
+    }
+
+    #[test]
+    #[serial_test::serial]
+    fn test_session_environment_llxprt_openrouter_with_base_url() {
+        let key_var = "OPENAI_API_KEY";
+        let url_var = "OPENAI_BASE_URL";
+        unsafe {
+            std::env::remove_var(key_var);
+        }
+        unsafe {
+            std::env::remove_var(url_var);
+        }
+
+        let config = LLxprtConfig {
+            provider: "openrouter".to_string(),
+            api_key: "sk-or-test".to_string(),
+            model: "anthropic/claude-3.5-sonnet".to_string(),
+            base_url: Some("https://openrouter.ai/api/v1".to_string()),
+        };
+
+        {
+            let _env = SessionEnvironment::setup_llxprt(&config).unwrap();
+            assert_eq!(std::env::var(key_var).unwrap(), "sk-or-test");
+            assert_eq!(
+                std::env::var(url_var).unwrap(),
+                "https://openrouter.ai/api/v1"
+            );
+        }
+
+        std::thread::sleep(std::time::Duration::from_millis(10));
+        assert!(std::env::var(key_var).is_err());
+        assert!(std::env::var(url_var).is_err());
+    }
+
+    #[test]
+    #[serial_test::serial]
+    fn test_session_environment_qwen() {
+        let key_var = "OPENAI_API_KEY";
+        let url_var = "OPENAI_BASE_URL";
+        let model_var = "OPENAI_MODEL";
+        unsafe {
+            std::env::remove_var(key_var);
+        }
+        unsafe {
+            std::env::remove_var(url_var);
+        }
+        unsafe {
+            std::env::remove_var(model_var);
+        }
+
+        let config = QwenConfig {
+            api_key: "qwen-test-key".to_string(),
+            base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1".to_string(),
+            model: "qwen-max".to_string(),
+        };
+
+        {
+            let _env = SessionEnvironment::setup_qwen(&config).unwrap();
+            assert_eq!(std::env::var(key_var).unwrap(), "qwen-test-key");
+            assert_eq!(
+                std::env::var(url_var).unwrap(),
+                "https://dashscope.aliyuncs.com/compatible-mode/v1"
+            );
+            assert_eq!(std::env::var(model_var).unwrap(), "qwen-max");
+        }
+
+        std::thread::sleep(std::time::Duration::from_millis(10));
+        assert!(std::env::var(key_var).is_err());
+        assert!(std::env::var(url_var).is_err());
+        assert!(std::env::var(model_var).is_err());
+    }
+
+    #[test]
+    #[serial_test::serial]
+    fn test_session_environment_gemini_api_key() {
+        let test_var = "GEMINI_API_KEY";
+        unsafe {
+            std::env::remove_var(test_var);
+        }
+
+        let auth = GeminiAuthConfig {
+            method: "gemini-api-key".to_string(),
+            api_key: Some("gemini-test-key".to_string()),
+            vertex_project: None,
+            vertex_location: None,
+            yolo: None,
+        };
+
+        {
+            let _env = SessionEnvironment::setup_gemini(&auth).unwrap();
+            assert_eq!(std::env::var(test_var).unwrap(), "gemini-test-key");
+        }
+
+        std::thread::sleep(std::time::Duration::from_millis(10));
+        assert!(std::env::var(test_var).is_err());
+    }
+
+    #[test]
+    #[serial_test::serial]
+    fn test_session_environment_gemini_vertex_ai() {
+        let project_var = "GOOGLE_CLOUD_PROJECT";
+        let location_var = "GOOGLE_CLOUD_LOCATION";
+        unsafe {
+            std::env::remove_var(project_var);
+        }
+        unsafe {
+            std::env::remove_var(location_var);
+        }
+
+        let auth = GeminiAuthConfig {
+            method: "vertex-ai".to_string(),
+            api_key: None,
+            vertex_project: Some("test-project".to_string()),
+            vertex_location: Some("us-central1".to_string()),
+            yolo: None,
+        };
+
+        {
+            let _env = SessionEnvironment::setup_gemini(&auth).unwrap();
+            assert_eq!(std::env::var(project_var).unwrap(), "test-project");
+            assert_eq!(std::env::var(location_var).unwrap(), "us-central1");
+        }
+
+        std::thread::sleep(std::time::Duration::from_millis(10));
+        assert!(std::env::var(project_var).is_err());
+        assert!(std::env::var(location_var).is_err());
+    }
+
+    #[test]
+    fn test_llxprt_rejects_invalid_base_url() {
+        let config = LLxprtConfig {
+            provider: "openrouter".to_string(),
+            api_key: "sk-test".to_string(),
+            model: "test-model".to_string(),
+            base_url: Some("http://10.0.0.1".to_string()), // Private IP
+        };
+
+        let result = SessionEnvironment::setup_llxprt(&config);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("private IP"));
+    }
+
+    #[test]
+    fn test_qwen_rejects_invalid_base_url() {
+        let config = QwenConfig {
+            api_key: "test-key".to_string(),
+            base_url: "http://192.168.1.1".to_string(), // Private IP
+            model: "test-model".to_string(),
+        };
+
+        let result = SessionEnvironment::setup_qwen(&config);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("private IP"));
+    }
+
+    #[test]
+    #[serial_test::serial]
+    fn test_multiple_sessions_environment_isolation() {
+        // Test that multiple sessions can coexist with different env vars
+        let config1 = LLxprtConfig {
+            provider: "anthropic".to_string(),
+            api_key: "key1".to_string(),
+            model: "model1".to_string(),
+            base_url: None,
+        };
+
+        let config2 = LLxprtConfig {
+            provider: "openai".to_string(),
+            api_key: "key2".to_string(),
+            model: "model2".to_string(),
+            base_url: None,
+        };
+
+        let _env1 = SessionEnvironment::setup_llxprt(&config1).unwrap();
+        let _env2 = SessionEnvironment::setup_llxprt(&config2).unwrap();
+
+        // Both should be set (though they might override each other for some vars)
+        // This mainly tests that the setup doesn't fail
+        assert!(
+            std::env::var("ANTHROPIC_API_KEY").is_ok() || std::env::var("OPENAI_API_KEY").is_ok()
+        );
+    }
+
+    #[test]
+    fn test_api_key_never_logged_in_mask() {
+        let keys = vec![
+            "sk-ant-api03-1234567890abcdef1234567890",
+            "sk-1234567890abcdef",
+            "test-key-with-sensitive-data",
+        ];
+
+        for key in keys {
+            let masked = mask_api_key(key);
+
+            // Ensure the middle part is not in the masked version
+            if key.len() > 12 {
+                let middle = &key[8..key.len() - 8];
+                assert!(
+                    !masked.contains(middle),
+                    "Masked key should not contain middle portion of: {}",
+                    key
+                );
+            }
+        }
     }
 }

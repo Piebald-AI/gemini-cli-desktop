@@ -369,6 +369,7 @@ dependencies = [
  "tempfile",
  "tokio",
  "tokio-test",
+ "url",
  "uuid",
  "windows-sys 0.60.2",
 ]

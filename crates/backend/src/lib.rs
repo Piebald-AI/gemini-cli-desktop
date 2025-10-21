@@ -52,8 +52,8 @@ pub use security::{execute_terminal_command, is_command_safe};
 use std::path::Path;
 
 pub use session::{
-    GeminiAuthConfig, PersistentSession, ProcessStatus, QwenConfig, SessionManager,
-    initialize_session,
+    GeminiAuthConfig, LLxprtConfig, PersistentSession, ProcessStatus, QwenConfig, SessionManager,
+    SessionParams, initialize_session,
 };
 // Standard library imports
 use anyhow::{Context, Result};
@@ -192,7 +192,7 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
         }
     }
 
-    /// Initialize a new CLI session (Gemini or Qwen)
+    /// Initialize a new CLI session (Gemini, Qwen, or LLxprt)
     pub async fn initialize_session(
         &self,
         session_id: String,
@@ -200,8 +200,11 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
         model: String,
         backend_config: Option<QwenConfig>,
         gemini_auth: Option<GeminiAuthConfig>,
+        llxprt_config: Option<LLxprtConfig>,
     ) -> Result<()> {
-        let requested_backend = if backend_config.is_some() {
+        let requested_backend = if llxprt_config.is_some() {
+            "llxprt"
+        } else if backend_config.is_some() {
             "qwen"
         } else {
             "gemini"
@@ -237,11 +240,14 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
         }
 
         let (_message_tx, _rpc_logger) = initialize_session(
-            session_id,
-            working_directory,
-            model,
-            backend_config,
-            gemini_auth,
+            SessionParams {
+                session_id,
+                working_directory,
+                model,
+                backend_config,
+                gemini_auth,
+                llxprt_config,
+            },
             self.emitter.clone(),
             &self.session_manager,
         )
