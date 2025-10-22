@@ -160,10 +160,12 @@ export const useMessageHandler = ({
         if (selectedBackend === "qwen") {
           // Always set backend_config for Qwen, even with OAuth
           // This ensures the backend knows to use qwen CLI instead of gemini CLI
+          const qwenCfg = backendState.configs.qwen;
           backendConfig = {
             api_key: apiConfig?.api_key || "", // Empty string if OAuth
             base_url: apiConfig?.base_url || "https://openrouter.ai/api/v1",
             model: apiConfig?.model || selectedModel,
+            yolo: qwenCfg.yolo,
           };
           console.log(
             "🔍 [useMessageHandler] Setting backend_config for Qwen:",
@@ -198,6 +200,7 @@ export const useMessageHandler = ({
               geminiConfig.authMethod === "vertex-ai"
                 ? geminiConfig.vertexLocation
                 : undefined,
+            yolo: geminiConfig.yolo,
           };
         }
 
@@ -242,6 +245,7 @@ export const useMessageHandler = ({
       conversations,
       selectedModel,
       backendState.configs.gemini,
+      backendState.configs.qwen,
       backendState.configs.llxprt,
       getApiConfig,
       selectedBackend,

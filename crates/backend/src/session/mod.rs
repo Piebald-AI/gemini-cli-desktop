@@ -329,6 +329,7 @@ pub struct QwenConfig {
     pub api_key: String,
     pub base_url: String,
     pub model: String,
+    pub yolo: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -837,25 +838,41 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
                 c.args(["-lc", &llxprt_args]);
                 c
             }
-        } else if let Some(_config) = &backend_config {
+        } else if let Some(config) = &backend_config {
+            let yolo_flag = config.yolo.unwrap_or(false);
+
             #[cfg(windows)]
             {
-                println!(
-                    "🔧 [HANDSHAKE] Creating Windows Qwen command: cmd.exe /C qwen --experimental-acp"
-                );
+                let mut args = vec!["/C", "qwen"];
+                if yolo_flag {
+                    args.push("--yolo");
+                }
+                args.push("--experimental-acp");
+
+                let command_display = if yolo_flag {
+                    "cmd.exe /C qwen --yolo --experimental-acp"
+                } else {
+                    "cmd.exe /C qwen --experimental-acp"
+                };
+                println!("🔧 [HANDSHAKE] Creating Windows Qwen command: {command_display}");
                 let mut c = Command::new("cmd.exe");
-                c.args(["/C", "qwen", "--experimental-acp"]);
+                c.args(args);
                 #[cfg(windows)]
                 c.creation_flags(CREATE_NO_WINDOW);
                 c
             }
             #[cfg(not(windows))]
             {
+                let qwen_command = if yolo_flag {
+                    "qwen --yolo --experimental-acp".to_string()
+                } else {
+                    "qwen --experimental-acp".to_string()
+                };
                 println!(
-                    "🔧 [HANDSHAKE] Creating Unix Qwen command: sh -lc 'qwen --experimental-acp'"
+                    "🔧 [HANDSHAKE] Creating Unix Qwen command: sh -lc '{}'",
+                    qwen_command
                 );
                 let mut c = Command::new("sh");
-                let qwen_command = "qwen --experimental-acp".to_string();
                 c.args(["-lc", &qwen_command]);
                 c
             }
@@ -2838,6 +2855,7 @@ mod tests {
             api_key: "qwen-test-key".to_string(),
             base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1".to_string(),
             model: "qwen-max".to_string(),
+            yolo: None,
         };
 
         {
@@ -2932,6 +2950,7 @@ mod tests {
             api_key: "test-key".to_string(),
             base_url: "http://192.168.1.1".to_string(), // Private IP
             model: "test-model".to_string(),
+            yolo: None,
         };
 
         let result = SessionEnvironment::setup_qwen(&config);
