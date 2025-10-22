@@ -346,7 +346,43 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                       placeholder="qwen/qwen3-coder:free"
                     />
                   </div>
+
+                  {/* YOLO Mode Checkbox */}
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="qwen-yolo-checkbox"
+                      checked={qwenConfig.yolo || false}
+                      onCheckedChange={(checked) => {
+                        updateQwenConfig({ yolo: checked === true });
+                      }}
+                    />
+                    <label
+                      htmlFor="qwen-yolo-checkbox"
+                      className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer"
+                    >
+                      {t("conversations.yoloMode")}
+                    </label>
+                  </div>
                 </>
+              )}
+
+              {/* YOLO Mode Checkbox for OAuth */}
+              {qwenConfig.useOAuth && (
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="qwen-oauth-yolo-checkbox"
+                    checked={qwenConfig.yolo || false}
+                    onCheckedChange={(checked) => {
+                      updateQwenConfig({ yolo: checked === true });
+                    }}
+                  />
+                  <label
+                    htmlFor="qwen-oauth-yolo-checkbox"
+                    className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer"
+                  >
+                    {t("conversations.yoloMode")}
+                  </label>
+                </div>
               )}
             </div>
           )}

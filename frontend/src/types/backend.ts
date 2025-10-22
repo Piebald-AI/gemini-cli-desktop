@@ -25,6 +25,7 @@ export interface QwenConfig {
   baseUrl: string;
   model: string;
   useOAuth: boolean;
+  yolo?: boolean;
 }
 
 // Provider names as union type for type safety
@@ -136,10 +137,18 @@ export interface GeminiAuth {
   yolo?: boolean;
 }
 
+export interface QwenAuth {
+  api_key?: string;
+  base_url?: string;
+  model?: string;
+  yolo?: boolean;
+}
+
 export interface BackendConfigParams {
   api_key: string;
   base_url: string;
   model: string;
+  yolo?: boolean;
 }
 
 export interface SessionParams {
@@ -148,6 +157,7 @@ export interface SessionParams {
   model: string;
   backendConfig?: BackendConfigParams;
   geminiAuth?: GeminiAuth;
+  qwenAuth?: QwenAuth;
   [key: string]: unknown;
 }
 

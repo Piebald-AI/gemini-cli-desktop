@@ -29,12 +29,14 @@ export interface API {
       api_key: string;
       base_url: string;
       model: string;
+      yolo?: boolean;
     };
     geminiAuth?: {
       method: string;
       api_key?: string;
       vertex_project?: string;
       vertex_location?: string;
+      yolo?: boolean;
     };
     llxprtConfig?: {
       provider: string;
@@ -52,6 +54,7 @@ export interface API {
       api_key: string;
       base_url: string;
       model: string;
+      yolo?: boolean;
     };
   }): Promise<void>;
   get_process_statuses(): Promise<ProcessStatus[]>;
