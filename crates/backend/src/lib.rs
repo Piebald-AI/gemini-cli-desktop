@@ -6,7 +6,6 @@ pub mod filesystem;
 pub mod projects;
 pub mod rpc;
 pub mod search;
-pub mod security;
 pub mod session;
 
 // Test utilities (only available in test builds)
@@ -48,7 +47,6 @@ pub use search::{
     ConversationHistoryEntry, DetailedConversation, MessageMatch, RecentChat, SearchFilters,
     SearchResult,
 };
-pub use security::{execute_terminal_command, is_command_safe};
 use std::path::Path;
 
 pub use session::{
@@ -476,33 +474,78 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
     }
 
     /// Execute a confirmed command
+    /// Note: Command execution security is now delegated to the underlying CLIs (Gemini CLI, Qwen Code, LLxprt Code)
     pub async fn execute_confirmed_command(&self, command: String) -> Result<String> {
         println!("🖥️ Executing confirmed command: {command}");
+        println!("⚠️  Note: Security filtering delegated to underlying CLI");
 
-        match execute_terminal_command(&command).await {
-            Ok(output) => {
-                println!("✅ Command executed successfully");
-
-                let _ = self.emit_command_result(&CommandResult {
-                    command: command.clone(),
-                    success: true,
-                    output: Some(output.clone()),
-                    error: None,
-                });
-
-                Ok(output)
+        // Execute command directly - the CLIs handle security
+        let output = {
+            #[cfg(windows)]
+            {
+                use std::os::windows::process::CommandExt;
+                const CREATE_NO_WINDOW: u32 = 0x08000000;
+                Command::new("cmd.exe")
+                    .args(["/C", &command])
+                    .creation_flags(CREATE_NO_WINDOW)
+                    .output()
+                    .await
             }
-            Err(error) => {
-                println!("❌ Command execution failed: {error}");
+            #[cfg(not(windows))]
+            {
+                Command::new("sh").args(["-lc", &command]).output().await
+            }
+        };
+
+        match output {
+            Ok(result) => {
+                let stdout = String::from_utf8_lossy(&result.stdout);
+                let stderr = String::from_utf8_lossy(&result.stderr);
+
+                if result.status.success() {
+                    let output_text = format!(
+                        "Exit code: {}\nOutput:\n{}",
+                        result.status.code().unwrap_or(0),
+                        stdout
+                    );
+
+                    let _ = self.emit_command_result(&CommandResult {
+                        command: command.clone(),
+                        success: true,
+                        output: Some(output_text.clone()),
+                        error: None,
+                    });
+
+                    Ok(output_text)
+                } else {
+                    let error_text = format!(
+                        "Command execution failed - Exit code: {}\nError:\n{}\nOutput:\n{}",
+                        result.status.code().unwrap_or(-1),
+                        stderr,
+                        stdout
+                    );
+
+                    let _ = self.emit_command_result(&CommandResult {
+                        command: command.clone(),
+                        success: false,
+                        output: None,
+                        error: Some(error_text.clone()),
+                    });
+
+                    anyhow::bail!("{}", error_text)
+                }
+            }
+            Err(e) => {
+                let error_text = format!("Failed to execute command: {}", e);
 
                 let _ = self.emit_command_result(&CommandResult {
                     command: command.clone(),
                     success: false,
                     output: None,
-                    error: Some(error.to_string()),
+                    error: Some(error_text.clone()),
                 });
 
-                Err(error)
+                anyhow::bail!("{}", error_text)
             }
         }
     }
