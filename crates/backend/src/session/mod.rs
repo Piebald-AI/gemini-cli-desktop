@@ -29,21 +29,24 @@ fn mask_api_key(key: &str) -> String {
 /// Validates a base URL to prevent SSRF attacks and ensure secure connections.
 ///
 /// This function implements multiple layers of security:
-/// - Enforces HTTPS for non-localhost URLs in production
 /// - Blocks private IP ranges (RFC 1918)
 /// - Blocks cloud metadata endpoints
 /// - Validates URL structure
-/// - Warns about non-standard provider domains
+/// - Warns about non-standard provider domains and HTTP usage
 fn validate_base_url(url_str: &str) -> Result<()> {
     let url = url::Url::parse(url_str).context("Invalid URL format")?;
 
-    // 1. HTTPS enforcement (except localhost in dev mode)
+    // 1. Scheme validation (only http/https allowed)
     match url.scheme() {
         "https" => {}
         "http" => {
-            if !is_localhost_url(&url) && !cfg!(debug_assertions) {
-                anyhow::bail!(
-                    "Base URL must use HTTPS in production. HTTP is only allowed for localhost in development mode."
+            // Allow HTTP for localhost in any mode
+            if !is_localhost_url(&url) {
+                // Warn about HTTP usage but don't block it
+                // Users may have legitimate HTTP-only endpoints (internal APIs, development servers)
+                println!(
+                    "⚠️ [SECURITY] Using HTTP (not HTTPS) for: {}. This is not recommended for production use as traffic is unencrypted.",
+                    url
                 );
             }
         }
@@ -2642,14 +2645,14 @@ mod tests {
         }
     }
 
-    #[cfg(not(debug_assertions))]
     #[test]
-    fn test_rejects_http_in_production() {
+    fn test_allows_http_with_warning() {
+        // HTTP is now allowed (with a warning) for legitimate use cases
+        // like internal APIs and development servers
         let url = "http://api.example.com";
         let result = validate_base_url(url);
 
-        assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("HTTPS"));
+        assert!(result.is_ok(), "HTTP should be allowed with warning");
     }
 
     #[cfg(debug_assertions)]
