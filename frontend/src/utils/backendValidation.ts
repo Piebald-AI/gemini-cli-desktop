@@ -77,12 +77,13 @@ function validateUrlSecurity(urlString: string): {
     };
   }
 
-  // 2. HTTPS enforcement (except localhost)
+  // 2. Warn about HTTP usage (but don't block)
   if (url.protocol === "http:" && !isLocalhost(url.hostname)) {
-    return {
-      valid: false,
-      error: i18n.t("validation.httpsRequired"),
-    };
+    // Warn about HTTP usage but don't block it
+    // Users may have legitimate HTTP-only endpoints (internal APIs, development servers)
+    console.warn(
+      `[SECURITY] Using HTTP (not HTTPS) for: ${urlString}. This is not recommended for production use as traffic is unencrypted.`
+    );
   }
 
   // 3. Block private IPs (except localhost)
