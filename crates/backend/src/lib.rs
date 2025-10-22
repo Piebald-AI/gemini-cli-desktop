@@ -493,10 +493,7 @@ impl<E: EventEmitter + 'static> GeminiBackend<E> {
             }
             #[cfg(not(windows))]
             {
-                Command::new("sh")
-                    .args(["-lc", &command])
-                    .output()
-                    .await
+                Command::new("sh").args(["-lc", &command]).output().await
             }
         };
 
