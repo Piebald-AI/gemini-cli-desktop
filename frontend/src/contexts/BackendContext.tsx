@@ -16,7 +16,6 @@ import {
   QwenConfig,
   LLxprtConfig,
 } from "../types/backend";
-import { validateBackendConfig } from "../utils/backendValidation";
 import { defaultBackendState } from "../utils/backendDefaults";
 
 const BackendContext = createContext<BackendContextValue | undefined>(
@@ -84,18 +83,13 @@ const backendReducer = (
         selectedBackend: action.backend,
       };
 
-      // Validate the new backend
-      const currentConfig = newState.configs[action.backend];
-      const validation = validateBackendConfig(action.backend, currentConfig);
-
+      // Security validation delegated to underlying CLIs
       return {
         ...newState,
-        isValid: validation.isValid,
+        isValid: true,
         errors: {
           ...state.errors,
-          [action.backend]: validation.isValid
-            ? ""
-            : validation.errors.join(", "),
+          [action.backend]: "",
         },
       };
     }
@@ -109,28 +103,18 @@ const backendReducer = (
         },
       };
 
-      // Validate the updated config
-      const validation = validateBackendConfig(
-        action.backend,
-        updatedConfigs[action.backend]
-      );
-
+      // Security validation delegated to underlying CLIs
       const newState = {
         ...state,
         configs: updatedConfigs,
         errors: {
           ...state.errors,
-          [action.backend]: validation.isValid
-            ? ""
-            : validation.errors.join(", "),
+          [action.backend]: "",
         },
       };
 
       // Update overall validity
-      newState.isValid =
-        state.selectedBackend === action.backend
-          ? validation.isValid
-          : state.isValid;
+      newState.isValid = true;
 
       return newState;
     }
@@ -218,20 +202,9 @@ export const BackendProvider: React.FC<BackendProviderProps> = ({
       },
 
       validateConfig: (backend: BackendType): boolean => {
-        const config = state.configs[backend];
-        const validation = validateBackendConfig(backend, config);
-
-        if (!validation.isValid) {
-          dispatch({
-            type: "SET_VALIDATION_ERROR",
-            backend,
-            error: validation.errors.join(", "),
-          });
-        } else {
-          dispatch({ type: "CLEAR_VALIDATION_ERROR", backend });
-        }
-
-        return validation.isValid;
+        // Security validation delegated to underlying CLIs
+        dispatch({ type: "CLEAR_VALIDATION_ERROR", backend });
+        return true;
       },
 
       resetConfig: (backend: BackendType) => {

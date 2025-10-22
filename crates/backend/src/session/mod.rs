@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::net::IpAddr;
 use std::process::Stdio;
 use std::sync::{Arc, Mutex};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader as AsyncBufReader};
@@ -13,147 +12,6 @@ const CREATE_NO_WINDOW: u32 = 0x08000000;
 
 #[cfg(windows)]
 use std::os::windows::process::CommandExt;
-
-/// Masks an API key for safe logging by showing only the first 4 and last 4 characters.
-/// For keys shorter than 12 characters, returns a generic masked string.
-fn mask_api_key(key: &str) -> String {
-    if key.len() > 12 {
-        format!("{}...{}", &key[..4], &key[key.len() - 4..])
-    } else if !key.is_empty() {
-        "***".to_string()
-    } else {
-        "(empty)".to_string()
-    }
-}
-
-/// Validates a base URL to prevent SSRF attacks and ensure secure connections.
-///
-/// This function implements multiple layers of security:
-/// - Blocks private IP ranges (RFC 1918)
-/// - Blocks cloud metadata endpoints
-/// - Validates URL structure
-/// - Warns about non-standard provider domains and HTTP usage
-fn validate_base_url(url_str: &str) -> Result<()> {
-    let url = url::Url::parse(url_str).context("Invalid URL format")?;
-
-    // 1. Scheme validation (only http/https allowed)
-    match url.scheme() {
-        "https" => {}
-        "http" => {
-            // Allow HTTP for localhost in any mode
-            if !is_localhost_url(&url) {
-                // Warn about HTTP usage but don't block it
-                // Users may have legitimate HTTP-only endpoints (internal APIs, development servers)
-                println!(
-                    "⚠️ [SECURITY] Using HTTP (not HTTPS) for: {}. This is not recommended for production use as traffic is unencrypted.",
-                    url
-                );
-            }
-        }
-        other => anyhow::bail!(
-            "Unsupported URL scheme: {}. Only HTTP/HTTPS are allowed.",
-            other
-        ),
-    }
-
-    // 2. Must have a host
-    let host = url
-        .host_str()
-        .ok_or_else(|| anyhow::anyhow!("URL must have a host"))?;
-
-    // 3. Block private IP ranges (RFC 1918 and link-local)
-    if let Ok(ip) = host.parse::<IpAddr>()
-        && is_private_ip(&ip)
-        && !is_localhost_ip(&ip)
-    {
-        anyhow::bail!(
-            "Cannot use private IP address: {}. Private IPs (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.0.0/16) are blocked for security.",
-            ip
-        );
-    }
-
-    // 4. Block cloud metadata endpoints
-    const BLOCKED_HOSTS: &[&str] = &[
-        "169.254.169.254",          // AWS/Azure metadata
-        "metadata.google.internal", // GCP metadata
-        "metadata",
-    ];
-
-    let host_lower = host.to_lowercase();
-    if BLOCKED_HOSTS.contains(&host_lower.as_str()) {
-        anyhow::bail!(
-            "Blocked hostname: {}. Cloud metadata endpoints are not allowed for security.",
-            host
-        );
-    }
-
-    // 5. Whitelist known providers (defense in depth)
-    const ALLOWED_DOMAINS: &[&str] = &[
-        "api.openai.com",
-        "openrouter.ai",
-        "api.anthropic.com",
-        "generativelanguage.googleapis.com",
-        "api.together.xyz",
-        "api.groq.com",
-        "dashscope.aliyuncs.com",
-        "api.x.ai",
-    ];
-
-    let is_known_provider = ALLOWED_DOMAINS
-        .iter()
-        .any(|domain| host_lower.ends_with(domain));
-
-    if !is_known_provider && !is_localhost_url(&url) {
-        // Log warning but allow (user may have custom provider)
-        println!(
-            "⚠️ [SECURITY] Using non-standard provider domain: {}. Ensure this is intentional and trusted.",
-            host
-        );
-    }
-
-    Ok(())
-}
-
-/// Checks if an IP address is in a private range
-fn is_private_ip(ip: &IpAddr) -> bool {
-    match ip {
-        IpAddr::V4(ipv4) => {
-            let octets = ipv4.octets();
-            octets[0] == 10  // 10.0.0.0/8
-                || octets[0] == 127  // 127.0.0.0/8 (loopback)
-                || (octets[0] == 172 && (16..=31).contains(&octets[1]))  // 172.16.0.0/12
-                || (octets[0] == 192 && octets[1] == 168)  // 192.168.0.0/16
-                || (octets[0] == 169 && octets[1] == 254)  // 169.254.0.0/16 (link-local)
-                || octets[0] == 0 // 0.0.0.0/8
-        }
-        IpAddr::V6(ipv6) => {
-            ipv6.is_loopback()
-                || ipv6.is_unspecified()
-                // fc00::/7 (Unique Local Addresses)
-                || (ipv6.segments()[0] & 0xfe00) == 0xfc00
-        }
-    }
-}
-
-/// Checks if an IP address is localhost
-fn is_localhost_ip(ip: &IpAddr) -> bool {
-    match ip {
-        IpAddr::V4(ipv4) => ipv4.is_loopback(),
-        IpAddr::V6(ipv6) => ipv6.is_loopback(),
-    }
-}
-
-/// Checks if a URL points to localhost
-fn is_localhost_url(url: &url::Url) -> bool {
-    if let Some(host) = url.host_str() {
-        matches!(
-            host.to_lowercase().as_str(),
-            "localhost" | "127.0.0.1" | "[::1]"
-        )
-    } else {
-        false
-    }
-}
 
 /// RAII guard that automatically clears environment variables when dropped.
 /// This ensures credentials don't persist in the process environment after a session ends.
@@ -201,70 +59,61 @@ impl SessionEnvironment {
     fn setup_llxprt(config: &LLxprtConfig) -> Result<Self> {
         let mut guards = Vec::new();
 
-        let masked_key = mask_api_key(&config.api_key);
         println!(
             "🔧 [HANDSHAKE] Setting up LLxprt Code environment for provider: {}",
             config.provider
         );
-        println!("🔧 [HANDSHAKE] Using API key: {}", masked_key);
+        println!("🔧 [HANDSHAKE] Using API key (security delegated to CLI)");
 
         match config.provider.as_str() {
             "anthropic" => {
                 guards.push(EnvVarGuard::new("ANTHROPIC_API_KEY", &config.api_key));
-                println!(
-                    "🔧 [HANDSHAKE] Set ANTHROPIC_API_KEY (masked: {})",
-                    masked_key
-                );
+                println!("🔧 [HANDSHAKE] Set ANTHROPIC_API_KEY");
             }
             "openai" | "openrouter" => {
                 guards.push(EnvVarGuard::new("OPENAI_API_KEY", &config.api_key));
-                println!("🔧 [HANDSHAKE] Set OPENAI_API_KEY (masked: {})", masked_key);
+                println!("🔧 [HANDSHAKE] Set OPENAI_API_KEY");
 
                 if let Some(url) = &config.base_url
                     && !url.trim().is_empty()
                 {
-                    validate_base_url(url)?;
                     guards.push(EnvVarGuard::new("OPENAI_BASE_URL", url));
-                    println!("🔧 [HANDSHAKE] Set OPENAI_BASE_URL (validated)");
+                    println!("🔧 [HANDSHAKE] Set OPENAI_BASE_URL");
                 }
             }
             "gemini" | "google" => {
                 guards.push(EnvVarGuard::new("GEMINI_API_KEY", &config.api_key));
-                println!("🔧 [HANDSHAKE] Set GEMINI_API_KEY (masked: {})", masked_key);
+                println!("🔧 [HANDSHAKE] Set GEMINI_API_KEY");
             }
             "qwen" => {
                 guards.push(EnvVarGuard::new("QWEN_API_KEY", &config.api_key));
-                println!("🔧 [HANDSHAKE] Set QWEN_API_KEY (masked: {})", masked_key);
+                println!("🔧 [HANDSHAKE] Set QWEN_API_KEY");
             }
             "groq" => {
                 guards.push(EnvVarGuard::new("GROQ_API_KEY", &config.api_key));
-                println!("🔧 [HANDSHAKE] Set GROQ_API_KEY (masked: {})", masked_key);
+                println!("🔧 [HANDSHAKE] Set GROQ_API_KEY");
             }
             "together" => {
                 guards.push(EnvVarGuard::new("TOGETHER_API_KEY", &config.api_key));
-                println!(
-                    "🔧 [HANDSHAKE] Set TOGETHER_API_KEY (masked: {})",
-                    masked_key
-                );
+                println!("🔧 [HANDSHAKE] Set TOGETHER_API_KEY");
             }
             "xai" => {
                 guards.push(EnvVarGuard::new("X_API_KEY", &config.api_key));
-                println!("🔧 [HANDSHAKE] Set X_API_KEY (masked: {})", masked_key);
+                println!("🔧 [HANDSHAKE] Set X_API_KEY");
             }
             other => {
                 // For custom providers, use OPENAI_API_KEY and OPENAI_BASE_URL
                 guards.push(EnvVarGuard::new("OPENAI_API_KEY", &config.api_key));
                 println!(
-                    "🔧 [HANDSHAKE] Set OPENAI_API_KEY for custom provider '{}' (masked: {})",
-                    other, masked_key
+                    "🔧 [HANDSHAKE] Set OPENAI_API_KEY for custom provider '{}'",
+                    other
                 );
 
                 if let Some(url) = &config.base_url
                     && !url.trim().is_empty()
                 {
-                    validate_base_url(url)?;
                     guards.push(EnvVarGuard::new("OPENAI_BASE_URL", url));
-                    println!("🔧 [HANDSHAKE] Set OPENAI_BASE_URL (validated)");
+                    println!("🔧 [HANDSHAKE] Set OPENAI_BASE_URL");
                 }
             }
         }
@@ -275,18 +124,14 @@ impl SessionEnvironment {
     fn setup_qwen(config: &QwenConfig) -> Result<Self> {
         let mut guards = Vec::new();
 
-        let masked_key = mask_api_key(&config.api_key);
         println!("🔧 [HANDSHAKE] Setting up Qwen Code environment");
-        println!("🔧 [HANDSHAKE] Using API key: {}", masked_key);
-
-        // Validate base URL before setting
-        validate_base_url(&config.base_url)?;
+        println!("🔧 [HANDSHAKE] Using API key (security delegated to CLI)");
 
         guards.push(EnvVarGuard::new("OPENAI_API_KEY", &config.api_key));
         guards.push(EnvVarGuard::new("OPENAI_BASE_URL", &config.base_url));
         guards.push(EnvVarGuard::new("OPENAI_MODEL", &config.model));
 
-        println!("🔧 [HANDSHAKE] Set OPENAI_BASE_URL (validated)");
+        println!("🔧 [HANDSHAKE] Set OPENAI_BASE_URL");
         println!("🔧 [HANDSHAKE] Set OPENAI_MODEL: {}", config.model);
 
         Ok(Self { _guards: guards })
@@ -298,9 +143,8 @@ impl SessionEnvironment {
         match auth.method.as_str() {
             "gemini-api-key" => {
                 if let Some(api_key) = &auth.api_key {
-                    let masked_key = mask_api_key(api_key);
                     guards.push(EnvVarGuard::new("GEMINI_API_KEY", api_key));
-                    println!("🔧 [HANDSHAKE] Set GEMINI_API_KEY (masked: {})", masked_key);
+                    println!("🔧 [HANDSHAKE] Set GEMINI_API_KEY");
                 } else {
                     println!("⚠️ [HANDSHAKE] No API key provided for gemini-api-key auth method");
                 }
@@ -2563,191 +2407,6 @@ mod tests {
     }
 
     // ==================== SECURITY TESTS ====================
-
-    #[test]
-    fn test_mask_api_key_long_key() {
-        let key = "sk-ant-api03-1234567890abcdef1234567890";
-        let masked = mask_api_key(key);
-
-        assert!(masked.starts_with("sk-a"));
-        assert!(masked.ends_with("7890"));
-        assert!(masked.contains("..."));
-        assert!(!masked.contains("1234567890abcdef"));
-    }
-
-    #[test]
-    fn test_mask_api_key_short_key() {
-        let key = "short";
-        let masked = mask_api_key(key);
-
-        assert_eq!(masked, "***");
-    }
-
-    #[test]
-    fn test_mask_api_key_empty_key() {
-        let key = "";
-        let masked = mask_api_key(key);
-
-        assert_eq!(masked, "(empty)");
-    }
-
-    #[test]
-    fn test_rejects_private_ipv4_addresses() {
-        let private_ips = vec![
-            "http://10.0.0.1",
-            "http://172.16.0.1",
-            "http://192.168.1.1",
-            "http://169.254.169.254", // AWS metadata
-        ];
-
-        for ip in private_ips {
-            let result = validate_base_url(ip);
-            assert!(result.is_err(), "Should reject private IP: {}", ip);
-            assert!(result.unwrap_err().to_string().contains("private IP"));
-        }
-    }
-
-    #[test]
-    fn test_rejects_cloud_metadata_endpoints() {
-        let metadata_endpoints = vec![
-            "http://169.254.169.254/latest/meta-data",
-            "http://metadata.google.internal/",
-            "http://metadata/",
-        ];
-
-        for endpoint in metadata_endpoints {
-            let result = validate_base_url(endpoint);
-            assert!(
-                result.is_err(),
-                "Should reject metadata endpoint: {}",
-                endpoint
-            );
-        }
-    }
-
-    #[test]
-    fn test_accepts_valid_https_urls() {
-        let valid_urls = vec![
-            "https://api.openai.com/v1",
-            "https://openrouter.ai/api/v1",
-            "https://api.anthropic.com",
-            "https://generativelanguage.googleapis.com",
-        ];
-
-        for url in valid_urls {
-            let result = validate_base_url(url);
-            assert!(
-                result.is_ok(),
-                "Should accept valid URL: {} - Error: {:?}",
-                url,
-                result
-            );
-        }
-    }
-
-    #[test]
-    fn test_allows_http_with_warning() {
-        // HTTP is now allowed (with a warning) for legitimate use cases
-        // like internal APIs and development servers
-        let url = "http://api.example.com";
-        let result = validate_base_url(url);
-
-        assert!(result.is_ok(), "HTTP should be allowed with warning");
-    }
-
-    #[cfg(debug_assertions)]
-    #[test]
-    fn test_accepts_localhost_http_in_dev() {
-        let localhost_urls = vec!["http://localhost:8080", "http://127.0.0.1:3000"];
-
-        for url in localhost_urls {
-            let result = validate_base_url(url);
-            assert!(
-                result.is_ok(),
-                "Should accept localhost HTTP in dev: {}",
-                url
-            );
-        }
-    }
-
-    #[test]
-    fn test_rejects_invalid_url_schemes() {
-        let invalid_schemes = vec![
-            "javascript:alert(1)",
-            "file:///etc/passwd",
-            "ftp://example.com",
-            "data:text/html,<script>alert(1)</script>",
-        ];
-
-        for url in invalid_schemes {
-            let result = validate_base_url(url);
-            assert!(result.is_err(), "Should reject invalid scheme: {}", url);
-        }
-    }
-
-    #[test]
-    fn test_rejects_malformed_urls() {
-        let malformed_urls = vec![
-            "not-a-url",
-            "http://",
-            "://example.com",
-            // Note: "http:/example.com" is autocorrected by the URL parser, so we don't test it
-        ];
-
-        for url in malformed_urls {
-            let result = validate_base_url(url);
-            assert!(result.is_err(), "Should reject malformed URL: {}", url);
-        }
-    }
-
-    #[test]
-    fn test_is_private_ip_detects_private_ranges() {
-        use std::net::Ipv4Addr;
-
-        let private_ips = vec![
-            IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)),
-            IpAddr::V4(Ipv4Addr::new(172, 16, 0, 1)),
-            IpAddr::V4(Ipv4Addr::new(192, 168, 1, 1)),
-            IpAddr::V4(Ipv4Addr::new(169, 254, 169, 254)),
-        ];
-
-        for ip in private_ips {
-            assert!(is_private_ip(&ip), "Should detect as private: {}", ip);
-        }
-    }
-
-    #[test]
-    fn test_is_private_ip_allows_public_ips() {
-        use std::net::Ipv4Addr;
-
-        let public_ips = vec![
-            IpAddr::V4(Ipv4Addr::new(8, 8, 8, 8)),
-            IpAddr::V4(Ipv4Addr::new(1, 1, 1, 1)),
-            IpAddr::V4(Ipv4Addr::new(44, 55, 66, 77)),
-        ];
-
-        for ip in public_ips {
-            assert!(
-                !is_private_ip(&ip) || is_localhost_ip(&ip),
-                "Should not detect as private (unless localhost): {}",
-                ip
-            );
-        }
-    }
-
-    #[test]
-    fn test_is_localhost_ip_detects_loopback() {
-        use std::net::Ipv4Addr;
-
-        let localhost_ips = vec![
-            IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
-            IpAddr::V4(Ipv4Addr::LOCALHOST),
-        ];
-
-        for ip in localhost_ips {
-            assert!(is_localhost_ip(&ip), "Should detect as localhost: {}", ip);
-        }
-    }
 
     #[test]
     #[serial_test::serial]
