@@ -211,7 +211,7 @@ export const BackendProvider: React.FC<BackendProviderProps> = ({
         dispatch({ type: "RESET_CONFIG", backend });
       },
     }),
-    [state.configs]
+    []
   );
 
   // Memoized computed values
