@@ -78,9 +78,7 @@ jobs:
 
       - name: Build Windows installer
         if: matrix.os == 'windows-2025'
-        run: |
-          winget install --id JRSoftware.InnoSetup --disable-interactivity --accept-source-agreements --accept-package-agreements
-          & "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe" installer.iss
+        run: iscc installer.iss
 
       - name: Remove spaces from installer names
         if: matrix.os != 'windows-2025'
