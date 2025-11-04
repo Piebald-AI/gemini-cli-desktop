@@ -42,7 +42,7 @@ i18n
     // Language detection options
     detection: {
       order: ["localStorage", "navigator"],
-      lookupLocalStorage: "gemini-desktop-language",
+      lookupLocalStorage: "gemini-cli-desktop-language",
       caches: ["localStorage"],
     },
 

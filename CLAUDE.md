@@ -93,7 +93,7 @@ The project is organized as a Rust workspace with three main crates:
 - **WebSocket handlers** - Real-time event broadcasting to web clients
 - **Static file serving** - Embedded frontend distribution
 - **Connection management** - WebSocket lifecycle and error handling
-- **Binary target**: `gemini-desktop-web`
+- **Binary target**: `gemini-cli-desktop-web`
 
 #### **`crates/tauri-app`** - Desktop Application
 - **Native wrapper** around the React frontend
@@ -101,7 +101,7 @@ The project is organized as a Rust workspace with three main crates:
 - **Event emission** to frontend via Tauri's event system
 - **Cross-platform capabilities** with minimal permissions
 - **Menu system** (`menu.rs`) - Native application menus with i18n support
-- **Binary target**: `gemini-desktop`
+- **Binary target**: `gemini-cli-desktop`
 
 ### Frontend Architecture
 
@@ -677,7 +677,7 @@ export interface API {
 - **Auto-updater** integration ready
 
 #### Web Application
-- **Backend server** (`gemini-desktop-web`) with embedded frontend
+- **Backend server** (`gemini-cli-desktop-web`) with embedded frontend
 - **Self-hosted** deployment option
 - **Docker containerization** ready
 - **Reverse proxy** compatible
@@ -698,7 +698,7 @@ export interface API {
 
 ### Project Structure
 ```
-gemini-desktop/
+gemini-cli-desktop/
 ├── crates/                 # Rust workspace
 │   ├── backend/           # Core business logic
 │   ├── server/            # Web server implementation
@@ -732,7 +732,7 @@ gemini-desktop/
 ### Runtime Configuration
 
 #### Project Storage
-- **Location**: `~/.gemini-desktop/projects/`
+- **Location**: `~/.gemini-cli-desktop/projects/`
 - **Format**: JSON files with SHA256-based naming
 - **Content**: Project metadata, chat history, search indexes
 

@@ -29,7 +29,7 @@ frontend/public/pdf.worker.min.mjs
 target
 
 # Gemini CLI Desktop test artifacts
-.gemini-desktop/
+.gemini-cli-desktop/
 
 # .claude
 .claude
