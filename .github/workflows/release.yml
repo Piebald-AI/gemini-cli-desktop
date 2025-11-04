@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04, macos-13, macos-14, windows-2025]
+        os: [ubuntu-22.04, macos-15-intel, macos-15, windows-2025]
     permissions:
       contents: write
     steps:
@@ -64,8 +64,8 @@ jobs:
           cd target/release
           case "${{ matrix.os }}" in
             ubuntu-22.04) PLATFORM="linux-x64-gnu";;
-            macos-13) PLATFORM="macos-x64";;
-            macos-14) PLATFORM="macos-arm64";;
+            macos-15-intel) PLATFORM="macos-x64";;
+            macos-15) PLATFORM="macos-arm64";;
             *) echo "Invalid OS: ${{ matrix.os }}"; exit 1;;
           esac
           tar -czf gemini-cli-desktop-web-${PLATFORM}.tar.gz gemini-cli-desktop-web
