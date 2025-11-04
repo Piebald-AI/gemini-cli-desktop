@@ -207,7 +207,9 @@ ${part.thinking}`;
               {/* Generating indicator as separate assistant message */}
               {currentConversation.isStreaming &&
                 currentConversation.messages.length > 0 &&
-                currentConversation.messages[currentConversation.messages.length - 1].sender === "user" && (
+                currentConversation.messages[
+                  currentConversation.messages.length - 1
+                ].sender === "user" && (
                   <div className="w-full">
                     {/* Header with logo */}
                     <div className="flex items-center gap-2 mb-4">

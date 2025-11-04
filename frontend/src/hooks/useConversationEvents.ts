@@ -13,11 +13,11 @@ function sanitizeEventName(conversationId: string): string {
 }
 
 interface ToolLocation {
-  path?: string;  // Most common - full file path
-  file?: string;  // Legacy - filename only
-  directory?: string;  // Directory path
-  line?: number;  // Optional line number
-  column?: number;  // Optional column number
+  path?: string; // Most common - full file path
+  file?: string; // Legacy - filename only
+  directory?: string; // Directory path
+  line?: number; // Optional line number
+  column?: number; // Optional column number
   [key: string]: unknown;
 }
 
