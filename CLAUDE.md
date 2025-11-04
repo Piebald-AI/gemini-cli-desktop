@@ -18,7 +18,7 @@ This file provides comprehensive guidance to Claude Code (claude.ai/code) when w
 
 ## Project Overview
 
-Gemini Desktop is a powerful, cross-platform desktop and web application that provides a modern UI for **Gemini CLI**, **Qwen Code**, and **LLxprt Code**. Built with Rust (Tauri) and React/TypeScript, it enables structured interaction with AI models through the Agent Communication Protocol (ACP).
+Gemini CLI Desktop is a powerful, cross-platform desktop and web application that provides a modern UI for **Gemini CLI**, **Qwen Code**, and **LLxprt Code**. Built with Rust (Tauri) and React/TypeScript, it enables structured interaction with AI models through the Agent Communication Protocol (ACP).
 
 ### Key Features
 - **Dual deployment modes**: Native desktop app and web application
@@ -594,7 +594,7 @@ export interface API {
   list_directory_contents(params: { path: string }): Promise<DirEntry[]>;
   list_files_recursive(params: { path: string }): Promise<DirEntry[]>;
   list_volumes(): Promise<DirEntry[]>;
-  
+
   // Git operations
   get_git_info(params: { path: string }): Promise<GitInfo | null>;
 

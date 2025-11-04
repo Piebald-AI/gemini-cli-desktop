@@ -14,11 +14,11 @@ A powerful **desktop** and **web** interface for **Gemini CLI** and **Qwen Code*
 
 Use with **Gemini CLI:**
 
-<img alt="Screenshot of Gemini Desktop" src="./assets/screenshot.png" width="600">
+<img alt="Screenshot of Gemini CLI Desktop" src="./assets/screenshot.png" width="600">
 
 Use with **Qwen Code:**
 
-<img alt="Screenshot of Gemini Desktop for Qwen Code" src="./assets/qwen-desktop.png" width="600">
+<img alt="Screenshot of Gemini CLI Desktop for Qwen Code" src="./assets/qwen-desktop.png" width="600">
 
 ## Quick Start
 

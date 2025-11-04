@@ -56,7 +56,7 @@ export const HomeDashboard: React.FC = () => {
             className="flex-1 min-h-0 overflow-y-auto p-6 relative"
           >
             <div className="space-y-8 pb-4">
-              {currentConversation.messages.map((message, index) => (
+              {currentConversation.messages.map((message) => (
                 <div
                   key={message.id}
                   className={`w-full ${message.sender === "user" ? "flex justify-start" : ""}`}
@@ -116,7 +116,7 @@ export const HomeDashboard: React.FC = () => {
                             lastPart.type === "thinking"
                           ) {
                             lastPart.thinking += `
-
+                            
 ${part.thinking}`;
                           } else {
                             acc.push({ ...part });
@@ -171,18 +171,6 @@ ${part.thinking}`;
                           </React.Fragment>
                         ));
                       })()}
-
-                      {currentConversation.isStreaming &&
-                        index === currentConversation.messages.length - 1 &&
-                        message.parts.some(
-                          (part) =>
-                            part.type === "text" || part.type === "thinking"
-                        ) && (
-                          <div className="text-gray-400 italic text-xs">
-                            <span className="animate-pulse">●</span>{" "}
-                            {t("dashboard.generating")}
-                          </div>
-                        )}
                     </>
 
                     {/* Info button for raw JSON */}
@@ -215,6 +203,28 @@ ${part.thinking}`;
                   </div>
                 </div>
               ))}
+
+              {/* Generating indicator as separate assistant message */}
+              {currentConversation.isStreaming &&
+                currentConversation.messages.length > 0 &&
+                currentConversation.messages[
+                  currentConversation.messages.length - 1
+                ].sender === "user" && (
+                  <div className="w-full">
+                    {/* Header with logo */}
+                    <div className="flex items-center gap-2 mb-4">
+                      <div>
+                        <SmartLogo />
+                      </div>
+                    </div>
+
+                    {/* Generating indicator */}
+                    <div className="text-gray-400 text-xs flex items-center gap-2">
+                      <span className="animate-pulse">●</span>
+                      <span>{t("dashboard.generating")}</span>
+                    </div>
+                  </div>
+                )}
             </div>
           </div>
         )

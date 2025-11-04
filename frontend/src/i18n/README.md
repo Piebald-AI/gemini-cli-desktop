@@ -1,6 +1,6 @@
 # Internationalization (i18n) Guide
 
-This document provides a comprehensive guide on how to use the internationalization system in the Gemini Desktop frontend application.
+This document provides a comprehensive guide on how to use the internationalization system in the Gemini CLI Desktop frontend application.
 
 ## Overview
 

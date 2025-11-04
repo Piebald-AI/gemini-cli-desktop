@@ -91,10 +91,10 @@ export const useTauriMenu = () => {
             items: [
               await MenuItem.new({
                 id: "about",
-                // Always use "Gemini Desktop" on macOS because the OS displays the app name in the
-                // top menu bar, so "Gemini Desktop -> About Qwen Desktop" would be more confusing
-                // than just keeping it consistent as "Gemini Desktop"
-                text: t("titleBar.about", { name: "Gemini Desktop" }),
+                // Always use "Gemini CLI Desktop" on macOS because the OS displays the app name in the
+                // top menu bar, so "Gemini CLI Desktop -> About Qwen Code Desktop" would be more confusing
+                // than just keeping it consistent as "Gemini CLI Desktop"
+                text: t("titleBar.about", { name: "Gemini CLI Desktop" }),
                 action: handlers.showAbout,
               }),
               await MenuItem.new({
@@ -109,7 +109,7 @@ export const useTauriMenu = () => {
               await MenuItem.new({
                 id: "quit",
                 // Same reasoning as About menu - keep consistent with OS-displayed app name
-                text: t("titleBar.quit", { name: "Gemini Desktop" }),
+                text: t("titleBar.quit", { name: "Gemini CLI Desktop" }),
                 accelerator: "Cmd+Q",
                 action: handlers.quit,
               }),

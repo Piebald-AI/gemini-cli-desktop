@@ -85,10 +85,10 @@ jobs:
         run: |
           cd target/release/bundle
 
-          find appimage rpm deb dmg -maxdepth 1 -type f -name 'Gemini Desktop*' 2>/dev/null \
+          find appimage rpm deb dmg -maxdepth 1 -type f -name 'Gemini CLI Desktop*' 2>/dev/null \
           -exec bash -c '
           for f; do
-              mv "$f" "$(dirname "$f")/$(basename "$f" | sed "s/^Gemini Desktop/GeminiDesktop/")"
+              mv "$f" "$(dirname "$f")/$(basename "$f" | sed "s/^Gemini CLI Desktop/GeminiCLIDesktop/")"
           done
           ' _ {} + || true
 

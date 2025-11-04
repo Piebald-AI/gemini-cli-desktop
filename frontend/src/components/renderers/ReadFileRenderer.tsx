@@ -29,8 +29,63 @@ export function ReadFileRenderer({ toolCall }: ReadFileRendererProps) {
     let files: string[] = [];
     let isPatternBased = false;
 
-    // First, check if this is actually a ReadManyFiles result by looking at the markdown
-    if (result?.markdown && typeof result.markdown === "string") {
+    // DEBUG LOGGING - Full tool call dump
+    console.log("========== ReadFileRenderer DEBUG ==========");
+    console.log("[ReadFileRenderer] Tool Call ID:", toolCall.id);
+    console.log("[ReadFileRenderer] Tool Call Name:", toolCall.name);
+    console.log("[ReadFileRenderer] Tool Call Label:", toolCall.label);
+    console.log("[ReadFileRenderer] Tool Call Status:", toolCall.status);
+    console.log(
+      "[ReadFileRenderer] Tool Call Parameters:",
+      JSON.stringify(toolCall.parameters, null, 2)
+    );
+    console.log(
+      "[ReadFileRenderer] Tool Call Result:",
+      JSON.stringify(toolCall.result, null, 2)
+    );
+    console.log(
+      "[ReadFileRenderer] Tool Call InputJsonRpc:",
+      toolCall.inputJsonRpc
+    );
+    console.log("===========================================");
+
+    // FIRST PRIORITY: Check toolCall.parameters.locations (for ACP tool calls)
+    // This is where locations are stored for structured ACP events
+    if (
+      toolCall.parameters?.locations &&
+      Array.isArray(toolCall.parameters.locations)
+    ) {
+      console.log(
+        "[ReadFileRenderer] ✓ Found parameters.locations array, length:",
+        toolCall.parameters.locations.length
+      );
+      if (toolCall.parameters.locations.length > 0) {
+        files = toolCall.parameters.locations.map((loc: unknown) => {
+          console.log("[ReadFileRenderer] Processing location:", loc);
+          if (typeof loc === "object" && loc !== null && "path" in loc) {
+            const path = (loc as { path: string }).path;
+            console.log("[ReadFileRenderer] ✓ Extracted path:", path);
+            return path;
+          }
+          console.log(
+            "[ReadFileRenderer] ⚠ Location is not object with path, stringifying"
+          );
+          return String(loc);
+        });
+        console.log("[ReadFileRenderer] ✓ Final extracted files:", files);
+      } else {
+        console.log("[ReadFileRenderer] ✗ parameters.locations is empty array");
+      }
+    } else {
+      console.log("[ReadFileRenderer] ✗ No parameters.locations found");
+    }
+
+    // SECOND PRIORITY: Check if this is actually a ReadManyFiles result by looking at the markdown
+    if (
+      files.length === 0 &&
+      result?.markdown &&
+      typeof result.markdown === "string"
+    ) {
       const markdown = result.markdown;
 
       // Check if it's a ReadManyFiles result
@@ -62,83 +117,101 @@ export function ReadFileRenderer({ toolCall }: ReadFileRendererProps) {
       }
     }
 
-    // Fallback to original parsing logic
-    try {
-      if (toolCall.inputJsonRpc) {
-        const input = JSON.parse(toolCall.inputJsonRpc);
-        const params = input.params || {};
-
-        // Check for locations array first
-        if (
-          params.locations &&
-          Array.isArray(params.locations) &&
-          params.locations.length > 0
-        ) {
-          files = params.locations.map((loc: unknown) => {
-            if (typeof loc === "object" && loc !== null && "path" in loc) {
-              return (loc as { path: string }).path;
-            }
-            return String(loc);
-          });
-        }
-        // If locations is empty but we have a label with patterns, parse the label
-        else if (
-          params.locations &&
-          Array.isArray(params.locations) &&
-          params.locations.length === 0 &&
-          params.label
-        ) {
-          isPatternBased = true;
-          // Extract patterns from label like "Will attempt to read and concatenate files using patterns: `**/Cargo.toml`"
-          const patternMatch = params.label.match(/using patterns?: `([^`]+)`/);
-          if (patternMatch) {
-            files = [patternMatch[1]];
-          } else {
-            // Fallback: look for any backtick-enclosed patterns in the label
-            const patterns = params.label.match(/`([^`]+)`/g);
-            if (patterns) {
-              files = patterns.map((p: string) => p.replace(/`/g, ""));
-            }
-          }
-        }
-        // Fallback to single file parameters
-        else if (
-          params.file ||
-          params.path ||
-          params.filename ||
-          params.filePath
-        ) {
-          const singleFile =
-            params.file || params.path || params.filename || params.filePath;
-          files = [singleFile];
-        }
-      }
-    } catch {
-      // Ignore parsing errors
-    }
-
-    // Fallback: check toolCall.parameters directly
-    if (files.length === 0 && toolCall.parameters?.locations) {
-      if (Array.isArray(toolCall.parameters.locations)) {
-        files = toolCall.parameters.locations.map((loc: unknown) => {
-          if (typeof loc === "object" && loc !== null && "path" in loc) {
-            return (loc as { path: string }).path;
-          }
-          return String(loc);
-        });
-      }
-    }
-
+    // THIRD PRIORITY: Fallback to parsing inputJsonRpc (legacy format)
     if (files.length === 0) {
-      files = [result?.message || t("common.unknownFile")];
+      try {
+        if (toolCall.inputJsonRpc) {
+          const input = JSON.parse(toolCall.inputJsonRpc);
+          const params = input.params || {};
+
+          // Check for locations array first
+          if (
+            params.locations &&
+            Array.isArray(params.locations) &&
+            params.locations.length > 0
+          ) {
+            files = params.locations.map((loc: unknown) => {
+              if (typeof loc === "object" && loc !== null && "path" in loc) {
+                return (loc as { path: string }).path;
+              }
+              return String(loc);
+            });
+          }
+          // If locations is empty but we have a label with patterns, parse the label
+          else if (
+            params.locations &&
+            Array.isArray(params.locations) &&
+            params.locations.length === 0 &&
+            params.label
+          ) {
+            isPatternBased = true;
+            // Extract patterns from label like "Will attempt to read and concatenate files using patterns: `**/Cargo.toml`"
+            const patternMatch = params.label.match(
+              /using patterns?: `([^`]+)`/
+            );
+            if (patternMatch) {
+              files = [patternMatch[1]];
+            } else {
+              // Fallback: look for any backtick-enclosed patterns in the label
+              const patterns = params.label.match(/`([^`]+)`/g);
+              if (patterns) {
+                files = patterns.map((p: string) => p.replace(/`/g, ""));
+              }
+            }
+          }
+          // Fallback to single file parameters
+          else if (
+            params.file ||
+            params.path ||
+            params.filename ||
+            params.filePath
+          ) {
+            const singleFile =
+              params.file || params.path || params.filename || params.filePath;
+            files = [singleFile];
+          }
+        }
+      } catch {
+        // Ignore parsing errors
+      }
     }
 
-    return {
+    // LAST RESORT: Use label or show unknown file
+    if (files.length === 0) {
+      console.log(
+        "[ReadFileRenderer] ⚠ No files found yet, trying label fallback"
+      );
+      // Try to use the label/title if it looks like a filename
+      if (
+        toolCall.label &&
+        toolCall.label.length > 0 &&
+        toolCall.label.length < 200
+      ) {
+        console.log(
+          "[ReadFileRenderer] ✓ Using label as filename:",
+          toolCall.label
+        );
+        files = [toolCall.label];
+      } else {
+        console.log(
+          '[ReadFileRenderer] ✗ Label not suitable, falling back to "unknown file"'
+        );
+        console.log("[ReadFileRenderer] Label length:", toolCall.label?.length);
+        files = [result?.message || t("common.unknownFile")];
+      }
+    }
+
+    const finalResult = {
       isMultiple: files.length > 1 || isPatternBased,
       files,
       displayPath: files.length === 1 ? files[0] : `${files.length} files`,
       isPatternBased,
     };
+
+    console.log("[ReadFileRenderer] 🎯 FINAL RESULT:", finalResult);
+    console.log("========== END DEBUG ==========\n");
+
+    return finalResult;
   };
 
   // Get status message
