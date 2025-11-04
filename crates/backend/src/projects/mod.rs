@@ -84,7 +84,9 @@ fn home_projects_root() -> Option<PathBuf> {
     if home.is_empty() {
         return None;
     }
-    let path = Path::new(&home).join(".gemini-desktop").join("projects");
+    let path = Path::new(&home)
+        .join(".gemini-cli-desktop")
+        .join("projects");
     // Ensure proper path normalization for the platform
     Some(path.components().collect::<PathBuf>())
 }
@@ -661,7 +663,7 @@ mod tests {
         let result = home_projects_root();
         assert!(result.is_some());
         let path = result.unwrap();
-        assert_eq!(path, Path::new("/test/home/.gemini-desktop/projects"));
+        assert_eq!(path, Path::new("/test/home/.gemini-cli-desktop/projects"));
     }
 
     #[test]
@@ -675,7 +677,7 @@ mod tests {
         let path = result.unwrap();
         // Build expected path using the same method as the function under test
         let expected = Path::new("C:\\Users\\test")
-            .join(".gemini-desktop")
+            .join(".gemini-cli-desktop")
             .join("projects");
         assert_eq!(path, expected);
     }
@@ -712,7 +714,7 @@ mod tests {
         let path = result.unwrap();
         assert_eq!(
             path,
-            Path::new("/test/home/.gemini-desktop/projects/abcd1234/project.json")
+            Path::new("/test/home/.gemini-cli-desktop/projects/abcd1234/project.json")
         );
     }
 
@@ -768,7 +770,7 @@ mod tests {
         // Create project directory and metadata file
         let projects_dir = temp_dir
             .path()
-            .join(".gemini-desktop/projects")
+            .join(".gemini-cli-desktop/projects")
             .join(&valid_sha);
         fs::create_dir_all(&projects_dir).unwrap();
 
@@ -801,7 +803,7 @@ mod tests {
         // Create project directory and invalid metadata file
         let projects_dir = temp_dir
             .path()
-            .join(".gemini-desktop/projects")
+            .join(".gemini-cli-desktop/projects")
             .join(&valid_sha);
         fs::create_dir_all(&projects_dir).unwrap();
 
@@ -849,7 +851,9 @@ mod tests {
         assert!(result.is_ok());
 
         // Verify the file was created
-        let projects_dir = temp_dir.path().join(".gemini-desktop/projects/abcd1234");
+        let projects_dir = temp_dir
+            .path()
+            .join(".gemini-cli-desktop/projects/abcd1234");
         let json_path = projects_dir.join("project.json");
         assert!(json_path.exists());
 
@@ -921,7 +925,7 @@ mod tests {
 
         let projects_dir = temp_dir
             .path()
-            .join(".gemini-desktop/projects")
+            .join(".gemini-cli-desktop/projects")
             .join(&valid_sha);
         fs::create_dir_all(&projects_dir).unwrap();
         let json_path = projects_dir.join("project.json");
@@ -1077,7 +1081,7 @@ mod tests {
         env_guard.set("HOME", temp_dir.path().to_str().unwrap());
 
         // Create projects directory but leave it empty
-        let projects_dir = temp_dir.path().join(".gemini-desktop/projects");
+        let projects_dir = temp_dir.path().join(".gemini-cli-desktop/projects");
         fs::create_dir_all(&projects_dir).unwrap();
 
         let result = list_projects(10, 0).unwrap();
@@ -1091,7 +1095,7 @@ mod tests {
         let mut env_guard = EnvGuard::new();
         env_guard.set("HOME", temp_dir.path().to_str().unwrap());
 
-        let projects_dir = temp_dir.path().join(".gemini-desktop/projects");
+        let projects_dir = temp_dir.path().join(".gemini-cli-desktop/projects");
         fs::create_dir_all(&projects_dir).unwrap();
 
         // Create valid project directory (64-char hex)
@@ -1121,7 +1125,7 @@ mod tests {
         let mut env_guard = EnvGuard::new();
         env_guard.set("HOME", temp_dir.path().to_str().unwrap());
 
-        let projects_dir = temp_dir.path().join(".gemini-desktop/projects");
+        let projects_dir = temp_dir.path().join(".gemini-cli-desktop/projects");
         fs::create_dir_all(&projects_dir).unwrap();
 
         // Create 3 project directories with log files
@@ -1156,7 +1160,7 @@ mod tests {
         let mut env_guard = EnvGuard::new();
         env_guard.set("HOME", temp_dir.path().to_str().unwrap());
 
-        let projects_dir = temp_dir.path().join(".gemini-desktop/projects");
+        let projects_dir = temp_dir.path().join(".gemini-cli-desktop/projects");
         fs::create_dir_all(&projects_dir).unwrap();
 
         let result = list_enriched_projects().unwrap();
@@ -1169,7 +1173,7 @@ mod tests {
         let mut env_guard = EnvGuard::new();
         env_guard.set("HOME", temp_dir.path().to_str().unwrap());
 
-        let projects_dir = temp_dir.path().join(".gemini-desktop/projects");
+        let projects_dir = temp_dir.path().join(".gemini-cli-desktop/projects");
         fs::create_dir_all(&projects_dir).unwrap();
 
         // Create project directory and add a log so it is treated as a valid project

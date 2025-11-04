@@ -260,7 +260,9 @@ pub async fn get_recent_chats() -> Result<Vec<RecentChat>> {
     let home = std::env::var("HOME")
         .unwrap_or_else(|_| std::env::var("USERPROFILE").unwrap_or_else(|_| ".".to_string()));
 
-    let projects_dir = Path::new(&home).join(".gemini-desktop").join("projects");
+    let projects_dir = Path::new(&home)
+        .join(".gemini-cli-desktop")
+        .join("projects");
 
     let mut all_chats = Vec::new();
 
@@ -331,7 +333,9 @@ pub async fn search_chats(
     let home = std::env::var("HOME")
         .unwrap_or_else(|_| std::env::var("USERPROFILE").unwrap_or_else(|_| ".".to_string()));
 
-    let projects_dir = Path::new(&home).join(".gemini-desktop").join("projects");
+    let projects_dir = Path::new(&home)
+        .join(".gemini-cli-desktop")
+        .join("projects");
     let mut results = Vec::new();
 
     let query_lower = query.to_lowercase();
@@ -683,7 +687,7 @@ pub async fn get_project_discussions(project_id: &str) -> Result<Vec<RecentChat>
         .unwrap_or_else(|_| std::env::var("USERPROFILE").unwrap_or_else(|_| ".".to_string()));
 
     let project_dir = Path::new(&home)
-        .join(".gemini-desktop")
+        .join(".gemini-cli-desktop")
         .join("projects")
         .join(project_id);
 
@@ -740,7 +744,7 @@ pub async fn get_detailed_conversation(chat_id: &str) -> Result<DetailedConversa
         .unwrap_or_else(|_| std::env::var("USERPROFILE").unwrap_or_else(|_| ".".to_string()));
 
     let log_path = Path::new(&home)
-        .join(".gemini-desktop")
+        .join(".gemini-cli-desktop")
         .join("projects")
         .join(project_hash)
         .join(filename);
@@ -1080,7 +1084,7 @@ pub async fn delete_conversation(chat_id: &str) -> Result<()> {
         .unwrap_or_else(|_| std::env::var("USERPROFILE").unwrap_or_else(|_| ".".to_string()));
 
     let log_path = Path::new(&home)
-        .join(".gemini-desktop")
+        .join(".gemini-cli-desktop")
         .join("projects")
         .join(project_hash)
         .join(filename);
@@ -1456,7 +1460,7 @@ Another line with different content"#;
         let mut env_guard = EnvGuard::new();
         env_guard.set("HOME", temp_dir.path().to_str().unwrap());
 
-        let projects_dir = temp_dir.path().join(".gemini-desktop/projects");
+        let projects_dir = temp_dir.path().join(".gemini-cli-desktop/projects");
         let project1_hash = "5".repeat(64); // Use 64-character hex string
         let project2_hash = "6".repeat(64); // Use 64-character hex string
         let project1_dir = projects_dir.join(&project1_hash);
@@ -1489,7 +1493,7 @@ Another line with different content"#;
         let mut env_guard = EnvGuard::new();
         env_guard.set("HOME", temp_dir.path().to_str().unwrap());
 
-        let projects_dir = temp_dir.path().join(".gemini-desktop/projects");
+        let projects_dir = temp_dir.path().join(".gemini-cli-desktop/projects");
         let valid_project_hash = "7".repeat(64); // Use 64-character hex string
         let project_dir = projects_dir.join(&valid_project_hash);
         fs::create_dir_all(&project_dir).unwrap();
@@ -1520,7 +1524,7 @@ Another line with different content"#;
         let mut env_guard = EnvGuard::new();
         env_guard.set("HOME", temp_dir.path().to_str().unwrap());
 
-        let projects_dir = temp_dir.path().join(".gemini-desktop/projects");
+        let projects_dir = temp_dir.path().join(".gemini-cli-desktop/projects");
         let valid_project_hash = "4".repeat(64); // Use 64-character hex string
         let project_dir = projects_dir.join(&valid_project_hash);
         fs::create_dir_all(&project_dir).unwrap();
@@ -1549,7 +1553,7 @@ Another line with different content"#;
         let mut env_guard = EnvGuard::new();
         env_guard.set("HOME", temp_dir.path().to_str().unwrap());
 
-        let projects_dir = temp_dir.path().join(".gemini-desktop/projects");
+        let projects_dir = temp_dir.path().join(".gemini-cli-desktop/projects");
         let valid_project_hash = "3".repeat(64); // Use 64-character hex string
         let project_dir = projects_dir.join(&valid_project_hash);
         fs::create_dir_all(&project_dir).unwrap();
@@ -1581,7 +1585,7 @@ Another line with different content"#;
         let mut env_guard = EnvGuard::new();
         env_guard.set("HOME", temp_dir.path().to_str().unwrap());
 
-        let projects_dir = temp_dir.path().join(".gemini-desktop/projects");
+        let projects_dir = temp_dir.path().join(".gemini-cli-desktop/projects");
         let valid_project_hash = "8".repeat(64); // Use 64-character hex string
         let project_dir = projects_dir.join(&valid_project_hash);
         fs::create_dir_all(&project_dir).unwrap();
@@ -1607,7 +1611,7 @@ Another line with different content"#;
         let mut env_guard = EnvGuard::new();
         env_guard.set("HOME", temp_dir.path().to_str().unwrap());
 
-        let projects_dir = temp_dir.path().join(".gemini-desktop/projects");
+        let projects_dir = temp_dir.path().join(".gemini-cli-desktop/projects");
         let valid_project_hash = "9".repeat(64); // Use 64-character hex string
         let project_dir = projects_dir.join(&valid_project_hash);
         fs::create_dir_all(&project_dir).unwrap();

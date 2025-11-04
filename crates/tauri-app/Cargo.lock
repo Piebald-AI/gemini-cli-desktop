@@ -1229,7 +1229,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "gemini-desktop"
+name = "gemini-cli-desktop"
 version = "0.1.0"
 dependencies = [
  "serde",

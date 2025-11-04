@@ -129,12 +129,12 @@ impl TestDirManager {
         Ok(subdir)
     }
 
-    /// Create the standard .gemini-desktop/projects structure
+    /// Create the standard .gemini-cli-desktop/projects structure
     pub fn create_projects_structure(&self) -> std::io::Result<PathBuf> {
         let projects_dir = self
             .temp_dir
             .path()
-            .join(".gemini-desktop")
+            .join(".gemini-cli-desktop")
             .join("projects");
         std::fs::create_dir_all(&projects_dir)?;
         Ok(projects_dir)
@@ -398,7 +398,7 @@ mod tests {
         let projects_dir = manager.create_projects_structure().unwrap();
 
         assert!(projects_dir.exists());
-        assert!(projects_dir.ends_with(".gemini-desktop/projects"));
+        assert!(projects_dir.ends_with(".gemini-cli-desktop/projects"));
     }
 
     #[test]

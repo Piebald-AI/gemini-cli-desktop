@@ -58,7 +58,7 @@ jobs:
       - name: Build project
         run: just build-all
 
-      - name: Archive `gemini-desktop-web` executable (macOS/Linux)
+      - name: Archive `gemini-cli-desktop-web` executable (macOS/Linux)
         if: matrix.os != 'windows-2025'
         run: |
           cd target/release
@@ -68,13 +68,13 @@ jobs:
             macos-14) PLATFORM="macos-arm64";;
             *) echo "Invalid OS: ${{ matrix.os }}"; exit 1;;
           esac
-          tar -czf gemini-desktop-web-${PLATFORM}.tar.gz gemini-desktop-web
+          tar -czf gemini-cli-desktop-web-${PLATFORM}.tar.gz gemini-cli-desktop-web
 
-      - name: Archive `gemini-desktop-web` executable (Windows)
+      - name: Archive `gemini-cli-desktop-web` executable (Windows)
         if: matrix.os == 'windows-2025'
         run: |
           cd target/release
-          7z a -tzip gemini-desktop-web-windows-x64-msvc.zip gemini-desktop-web.exe
+          7z a -tzip gemini-cli-desktop-web-windows-x64-msvc.zip gemini-cli-desktop-web.exe
 
       - name: Build Windows installer
         if: matrix.os == 'windows-2025'
@@ -101,6 +101,6 @@ jobs:
             target/release/bundle/rpm/*.rpm
             target/release/bundle/appimage/*.AppImage
             target/release/GeminiDesktopSetup.exe
-            target/release/gemini-desktop-web-*.tar.gz
-            target/release/gemini-desktop-web-*.zip
+            target/release/gemini-cli-desktop-web-*.tar.gz
+            target/release/gemini-cli-desktop-web-*.zip
           generate_release_notes: true

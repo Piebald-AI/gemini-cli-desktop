@@ -95,7 +95,7 @@ impl FileRpcLogger {
             .unwrap_or_else(|_| std::env::var("USERPROFILE").unwrap_or_else(|_| ".".to_string()));
 
         let log_dir = std::path::Path::new(&home_dir)
-            .join(".gemini-desktop")
+            .join(".gemini-cli-desktop")
             .join("projects")
             .join(&project_hash);
 

@@ -6,7 +6,7 @@ authors = ["Piebald LLC <support@piebald.ai>"]
 edition = "2021"
 
 [[bin]]
-name = "gemini-desktop"
+name = "gemini-cli-desktop"
 path = "src/main.rs"
 
 [lib]

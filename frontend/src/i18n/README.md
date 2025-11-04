@@ -231,7 +231,7 @@ The system automatically detects the user's preferred language based on:
 
 ### Storage
 
-Language preferences are automatically saved to localStorage with the key `gemini-desktop-language`.
+Language preferences are automatically saved to localStorage with the key `gemini-cli-desktop-language`.
 
 ### Development Mode
 

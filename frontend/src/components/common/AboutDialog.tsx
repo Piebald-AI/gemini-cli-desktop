@@ -27,7 +27,7 @@ export const AboutDialog: React.FC<AboutDialogProps> = ({
   const backendText = getBackendText(selectedBackend);
 
   const appName = backendText.desktopName;
-  const appVersion = "0.3.11";
+  const appVersion = "0.3.12";
   const currentYear = new Date().getFullYear();
 
   return (
@@ -65,7 +65,7 @@ export const AboutDialog: React.FC<AboutDialogProps> = ({
               {t("about.description")}
             </ReactMarkdown>{" "}
             <a
-              href="https://github.com/Piebald-AI/gemini-desktop"
+              href="https://github.com/Piebald-AI/gemini-cli-desktop"
               target="_blank"
               rel="noopener noreferrer"
               className="text-primary hover:underline"

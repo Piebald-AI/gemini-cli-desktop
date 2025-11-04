@@ -2,10 +2,10 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define AppName "Gemini CLI Desktop"
-#define AppVersion "0.3.11"
+#define AppVersion "0.3.12"
 #define AppPublisher "Piebald LLC"
-#define AppURL "https://github.com/Piebald-AI/gemini-desktop"
-#define AppExeName "gemini-desktop.exe"
+#define AppURL "https://github.com/Piebald-AI/gemini-cli-desktop"
+#define AppExeName "gemini-cli-desktop.exe"
 
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application. Do not use the same AppId value in installers for other applications.

@@ -1,12 +1,12 @@
 # Gemini CLI Desktop
 
-[![CI](https://github.com/Piebald-AI/gemini-desktop/workflows/CI/badge.svg)](https://github.com/Piebald-AI/gemini-desktop/actions)
-[![Release & Publish](https://github.com/Piebald-AI/gemini-desktop/workflows/Release%20%26%20Publish/badge.svg)](https://github.com/Piebald-AI/gemini-desktop/actions)
-[![GitHub all releases](https://img.shields.io/github/downloads/Piebald-AI/gemini-desktop/total)](https://github.com/Piebald-AI/gemini-desktop/releases)
-[![GitHub release](https://img.shields.io/github/v/release/Piebald-AI/gemini-desktop)](https://github.com/Piebald-AI/gemini-desktop/releases)
+[![CI](https://github.com/Piebald-AI/gemini-cli-desktop/workflows/CI/badge.svg)](https://github.com/Piebald-AI/gemini-cli-desktop/actions)
+[![Release & Publish](https://github.com/Piebald-AI/gemini-cli-desktop/workflows/Release%20%26%20Publish/badge.svg)](https://github.com/Piebald-AI/gemini-cli-desktop/actions)
+[![GitHub all releases](https://img.shields.io/github/downloads/Piebald-AI/gemini-cli-desktop/total)](https://github.com/Piebald-AI/gemini-cli-desktop/releases)
+[![GitHub release](https://img.shields.io/github/v/release/Piebald-AI/gemini-cli-desktop)](https://github.com/Piebald-AI/gemini-cli-desktop/releases)
 [![Mentioned in Awesome Gemini CLI](https://awesome.re/mentioned-badge.svg)](https://github.com/Piebald-AI/awesome-gemini-cli)
 
-[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)](https://github.com/Piebald-AI/gemini-desktop/releases)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)](https://github.com/Piebald-AI/gemini-cli-desktop/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Built with Tauri](https://img.shields.io/badge/built%20with-Tauri-FFC131)](https://tauri.app/)
 
@@ -22,7 +22,7 @@ Use with **Qwen Code:**
 
 ## Quick Start
 
-**Download pre-built releases:** [GitHub Releases](https://github.com/Piebald-AI/gemini-desktop/releases)
+**Download pre-built releases:** [GitHub Releases](https://github.com/Piebald-AI/gemini-cli-desktop/releases)
 
 **Available builds:**
 
@@ -93,15 +93,15 @@ just lint
 **Build & Run:**
 
 ```bash
-git clone https://github.com/Piebald-AI/gemini-desktop
-cd gemini-desktop
+git clone https://github.com/Piebald-AI/gemini-cli-desktop
+cd gemini-cli-desktop
 just deps build-all
 
 # Desktop app
-./target/release/gemini-desktop
+./target/release/gemini-cli-desktop
 
 # Web server (access at http://localhost:1858)
-./target/release/gemini-desktop-web
+./target/release/gemini-cli-desktop-web
 ```
 
 ### Release Process
