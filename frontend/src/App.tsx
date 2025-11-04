@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
-import { Routes, Route, Outlet, Navigate } from "react-router-dom";
+import { Routes, Route, Outlet, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { api } from "./lib/api";
 import { AppSidebar } from "./components/layout/AppSidebar";
@@ -43,6 +43,11 @@ import { SettingsDialog } from "./components/common/SettingsDialog";
 function RootLayoutContent() {
   const { progress, startListeningForSession, seedProgress } =
     useSessionProgress();
+
+  // Get current route to conditionally render MessageInputBar only on home page
+  const location = useLocation();
+  const navigate = useNavigate();
+  const isHomePage = location.pathname === "/";
 
   const [selectedModel, setSelectedModel] =
     useState<string>("gemini-2.5-flash");
@@ -418,6 +423,18 @@ function RootLayoutContent() {
     }
   }, []);
 
+  // Handle conversation selection from sidebar
+  const handleConversationSelect = useCallback(
+    (conversationId: string) => {
+      setActiveConversation(conversationId);
+      // Navigate to home page to show the conversation
+      if (location.pathname !== "/") {
+        navigate("/");
+      }
+    },
+    [navigate, location.pathname, setActiveConversation]
+  );
+
   // Conversation context with progress
   const contextValue = useMemo(
     () => ({
@@ -464,7 +481,7 @@ function RootLayoutContent() {
         conversations={conversationsWithStatus}
         activeConversation={activeConversation}
         processStatuses={processStatuses}
-        onConversationSelect={setActiveConversation}
+        onConversationSelect={handleConversationSelect}
         onKillProcess={handleKillProcess}
         onRemoveConversation={removeConversation}
         onModelChange={handleModelChange}
@@ -496,7 +513,7 @@ function RootLayoutContent() {
             {/* Main content column */}
             <div className="row-start-2 col-start-1 flex flex-col min-w-0 min-h-0">
               <Outlet context={{ workingDirectory }} />
-              {currentConversationWithStatus && (
+              {currentConversationWithStatus && isHomePage && (
                 <>
                   {console.log(
                     "📝 [App] Rendering MessageInputBar with workingDirectory:",

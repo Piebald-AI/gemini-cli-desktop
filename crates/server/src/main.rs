@@ -358,7 +358,7 @@ where
 
 pub type AppResult<T> = std::result::Result<T, AnyhowResponder>;
 
-/// Serves the frontend for Gemini Desktop from the embedded built files.
+/// Serves the frontend for Gemini CLI Desktop from the embedded built files.
 #[get("/<path..>")]
 fn index(path: PathBuf) -> Result<(ContentType, &'static [u8]), Status> {
     let file = FRONTEND_DIR

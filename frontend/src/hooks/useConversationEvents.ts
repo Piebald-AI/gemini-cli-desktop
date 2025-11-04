@@ -13,8 +13,11 @@ function sanitizeEventName(conversationId: string): string {
 }
 
 interface ToolLocation {
-  file?: string;
-  directory?: string;
+  path?: string;  // Most common - full file path
+  file?: string;  // Legacy - filename only
+  directory?: string;  // Directory path
+  line?: number;  // Optional line number
+  column?: number;  // Optional column number
   [key: string]: unknown;
 }
 
@@ -129,21 +132,43 @@ function getToolNameFromKind(
       // Check tool call ID first for more reliable identification
       if (toolCallId && toolCallId.startsWith("read_many_files")) {
         return "read_many_files";
-      } else if (toolCallId && toolCallId.startsWith("list_directory")) {
+      }
+      if (toolCallId && toolCallId.startsWith("list_directory")) {
         return "list_directory";
-      } else if (toolCallId && toolCallId.startsWith("read_file")) {
-        return "read_file";
-      } else if (
-        title &&
-        title.toLowerCase().includes("directory") &&
-        !title.toLowerCase().includes("target dir")
-      ) {
-        return "list_directory"; // CORRECTED: ACP uses "list_directory", not "ls"
-      } else if (locations && locations.length > 1) {
-        return "read_many_files";
-      } else {
+      }
+      if (toolCallId && toolCallId.startsWith("read_file")) {
         return "read_file";
       }
+
+      // Check title for ReadManyFiles patterns (BEFORE checking locations length!)
+      // ReadManyFiles titles contain "concatenate", "patterns", or "target dir"
+      // This is critical because locations array is empty [] when the tool starts!
+      if (title) {
+        const lowerTitle = title.toLowerCase();
+        if (
+          lowerTitle.includes("concatenate") ||
+          lowerTitle.includes("using patterns") ||
+          (lowerTitle.includes("target dir") && lowerTitle.includes("patterns"))
+        ) {
+          return "read_many_files";
+        }
+
+        // Check if it's a directory listing
+        if (
+          lowerTitle.includes("directory") &&
+          !lowerTitle.includes("target dir")
+        ) {
+          return "list_directory"; // CORRECTED: ACP uses "list_directory", not "ls"
+        }
+      }
+
+      // Check if multiple files (may be empty at first for ReadManyFiles!)
+      if (locations && locations.length > 1) {
+        return "read_many_files";
+      }
+
+      // Default to read_file
+      return "read_file";
     case "edit":
       return "replace"; // CORRECTED: ACP uses "replace", not "edit" or "write_file"
     case "execute":
