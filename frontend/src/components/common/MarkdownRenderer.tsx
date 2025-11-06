@@ -1,4 +1,16 @@
 import React from "react";
+
+/**
+ * MarkdownRenderer
+ *
+ * NOTE: This component intentionally clamps extremely long "words" (e.g. long HTML, base64,
+ * or no-whitespace content) so they wrap inside the message area instead of expanding the
+ * layout and pushing out the sidebar (issue #91).
+ *
+ * The key is the Tailwind class:
+ * - break-words: allows long tokens to wrap
+ * - break-all: as a fallback for pathological cases
+ */
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";

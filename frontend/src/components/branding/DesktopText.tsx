@@ -20,7 +20,7 @@ export const DesktopText: React.FC<DesktopTextProps> = ({
 
   return (
     <span className={`font-medium ${gradientClass} ${sizeClass} ${className}`}>
-      Desktop
+      CLI Desktop
     </span>
   );
 };

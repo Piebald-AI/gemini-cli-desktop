@@ -56,10 +56,10 @@ server-dev:
 
 [group('web')]
 [working-directory("frontend")]
-frontend-dev-web $GEMINI_DESKTOP_WEB="true":
+frontend-dev-web $GEMINI_CLI_DESKTOP_WEB="true":
     pnpm dev
 
 [group('web')]
-build-web $GEMINI_DESKTOP_WEB="true":
+build-web $GEMINI_CLI_DESKTOP_WEB="true":
     cd frontend ; pnpm build
     cd crates/server ; cargo build --release

@@ -336,7 +336,7 @@ just deps dev-web
 - **HMR WebSocket**: `ws://localhost:1421` (Hot Module Replacement)
 
 ### Environment Variables
-- `GEMINI_DESKTOP_WEB="true"` - Enables web mode in frontend
+- `GEMINI_CLI_DESKTOP_WEB="true"` - Enables web mode in frontend
 - `TAURI_DEV_HOST` - Custom development host for Tauri
 - `TAURI_APP_PATH` - Path to Tauri application (relative to frontend)
 - `TAURI_FRONTEND_PATH` - Frontend directory path
@@ -378,7 +378,7 @@ just test [args]            # Run tests with optional arguments
 - **Tailwind CSS processing** with @tailwindcss/vite plugin
 - **Bundle optimization** for production
 - **Proxy setup** for API routes in development
-- **Environment variable injection** (`GEMINI_DESKTOP_WEB` flag)
+- **Environment variable injection** (`GEMINI_CLI_DESKTOP_WEB` flag)
 - **React plugin** with fast refresh support
 - **Node.js compatibility** for server-side dependencies
 

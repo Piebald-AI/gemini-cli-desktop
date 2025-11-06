@@ -100,7 +100,7 @@ jobs:
             target/release/bundle/deb/*.deb
             target/release/bundle/rpm/*.rpm
             target/release/bundle/appimage/*.AppImage
-            target/release/GeminiDesktopSetup.exe
+            target/release/GeminiCLIDesktopSetup.exe
             target/release/gemini-cli-desktop-web-*.tar.gz
             target/release/gemini-cli-desktop-web-*.zip
           generate_release_notes: true
