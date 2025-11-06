@@ -23,11 +23,11 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    include: ['pdfjs-dist'],
+    include: ["pdfjs-dist"],
   },
   define: {
     // eslint-disable-next-line no-undef
-    __WEB__: JSON.stringify(process.env.GEMINI_DESKTOP_WEB === "true"),
+    __WEB__: JSON.stringify(process.env.GEMINI_CLI_DESKTOP_WEB === "true"),
   },
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
