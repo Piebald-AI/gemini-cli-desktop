@@ -29,7 +29,11 @@ export const getBackendText = (backend: BackendType) => {
         ? "LLxprt Code"
         : t(`backend.${backend}Cli`);
   const appDisplayName =
-    backend === "llxprt" ? "LLxprt Desktop" : t(`backend.${backend}Desktop`);
+    backend === "llxprt"
+      ? "LLxprt Desktop"
+      : backend === "qwen"
+        ? t("backend.qwenCodeDesktop")
+        : t("backend.geminiCliDesktop");
   const backendShortname =
     backend === "llxprt" ? "LLxprt" : t(`backend.${backend}`);
   const backendModelFamilyNameOrTool =
