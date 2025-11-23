@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define AppName "Gemini CLI Desktop"
-#define AppVersion "0.3.12"
+#define AppVersion "0.3.13"
 #define AppPublisher "Piebald LLC"
 #define AppURL "https://github.com/Piebald-AI/gemini-cli-desktop"
 #define AppExeName "gemini-cli-desktop.exe"
