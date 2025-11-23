@@ -186,6 +186,14 @@ jobs:
             /f piebald_llc.crt `
             /csp "Google Cloud KMS Provider" `
             /kc ${{ vars.GCP_KMS_KEY }} `
+            target/release/gemini-cli-desktop.exe
+
+          signtool sign `
+            /v /debug /fd sha256 `
+            /t http://timestamp.digicert.com `
+            /f piebald_llc.crt `
+            /csp "Google Cloud KMS Provider" `
+            /kc ${{ vars.GCP_KMS_KEY }} `
             target/release/gemini-cli-desktop-web.exe
 
       - name: Archive `gemini-cli-desktop-web` executable (macOS/Linux)

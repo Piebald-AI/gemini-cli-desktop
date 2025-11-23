@@ -1,6 +1,6 @@
 [package]
 name = "tauri-app"
-version = "0.3.13"
+version = "0.3.14"
 description = "Desktop/web UI for Gemini CLI/Qwen Code.  Manage projects, switch between tools, search across past conversations, and manage MCP servers, all from one interface, locally or remotely."
 authors = ["Piebald LLC <support@piebald.ai>"]
 edition = "2021"
