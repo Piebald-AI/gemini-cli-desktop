@@ -15,9 +15,26 @@ jobs:
         os: [ubuntu-22.04, macos-15-intel, macos-15, windows-2025]
     permissions:
       contents: write
+      id-token: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Fetch secrets from Infisical
+        if: startsWith(matrix.os, 'windows-') || startsWith(matrix.os, 'macos-')
+        uses: Infisical/secrets-action@v1.0.15
+        with:
+          method: oidc
+          identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
+          env-slug: prod
+          project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
+
+      - name: Authenticate with GCP
+        if: startsWith(matrix.os, 'windows-')
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -55,8 +72,121 @@ jobs:
       - name: Install dependencies
         run: just deps
 
+      - name: Import macOS code signing certificate
+        if: startsWith(matrix.os, 'macos-')
+        run: |
+          # Create variables
+          CERTIFICATE_PATH=$RUNNER_TEMP/certificate.p12
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
+
+          echo -n "${{ env.APPLE_CODE_SIGNING_CERT }}" | base64 --decode -o $CERTIFICATE_PATH
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          security import $CERTIFICATE_PATH -P '${{ env.APPLE_CODE_SIGNING_CERT_PASSWORD }}' -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+
+          echo "APPLE_SIGNING_IDENTITY=$(security find-identity -v -p codesigning | grep "Piebald LLC" | awk -F '"' '{print $2}')" >> $GITHUB_ENV
+
+          # Write API key and set path in environment
+          API_KEY_PATH=$RUNNER_TEMP/apple-api-key
+          echo -n "${{ env.APP_STORE_CONNECT_API_KEY }}" | base64 --decode -o $API_KEY_PATH
+          echo "APPLE_API_KEY_PATH=$API_KEY_PATH" >> $GITHUB_ENV
+
       - name: Build project
+        env:
+          APPLE_API_ISSUER: ${{ env.APP_STORE_CONNECT_API_KEY_ISSUER }}
+          APPLE_API_KEY: ${{ env.APP_STORE_CONNECT_API_KEY_ID }}
         run: just build-all
+
+      - name: Codesign `gemini-cli-desktop-web` executable (macOS)
+        if: startsWith(matrix.os, 'macos-')
+        run: |
+          codesign --force --options runtime \
+            --sign "$APPLE_SIGNING_IDENTITY" \
+            --timestamp \
+            --identifier ai.piebald.gemini-cli-desktop.web \
+            target/release/gemini-cli-desktop-web
+
+      - name: Create notarization archive for `gemini-cli-desktop-web` (macOS)
+        if: startsWith(matrix.os, 'macos-')
+        run: |
+          cd target/release
+          case "${{ matrix.os }}" in
+            macos-15-intel) PLATFORM="macos-x64";;
+            macos-15) PLATFORM="macos-arm64";;
+            *) echo "Unsupported macOS: ${{ matrix.os }}"; exit 1;;
+          esac
+          zip "gemini-cli-desktop-web-${PLATFORM}.zip" gemini-cli-desktop-web
+
+      - name: Notarize `gemini-cli-desktop-web` archive (macOS)
+        if: startsWith(matrix.os, 'macos-')
+        env:
+          APPLE_API_ISSUER: ${{ env.APP_STORE_CONNECT_API_KEY_ISSUER }}
+          APPLE_API_KEY: ${{ env.APP_STORE_CONNECT_API_KEY_ID }}
+        run: |
+          cd target/release
+          case "${{ matrix.os }}" in
+            macos-15-intel) PLATFORM="macos-x64";;
+            macos-15) PLATFORM="macos-arm64";;
+            *) echo "Unsupported macOS: ${{ matrix.os }}"; exit 1;;
+          esac
+          xcrun notarytool submit "gemini-cli-desktop-web-${PLATFORM}.zip" \
+            --key "$APPLE_API_KEY_PATH" \
+            --key-id "$APPLE_API_KEY" \
+            --issuer "$APPLE_API_ISSUER" \
+            --wait
+
+      - name: Cleanup notarization archive for `gemini-cli-desktop-web` (macOS)
+        if: startsWith(matrix.os, 'macos-')
+        run: |
+          cd target/release
+          case "${{ matrix.os }}" in
+            macos-15-intel) PLATFORM="macos-x64";;
+            macos-15) PLATFORM="macos-arm64";;
+            *) echo "Unsupported macOS: ${{ matrix.os }}"; exit 1;;
+          esac
+          rm "gemini-cli-desktop-web-${PLATFORM}.zip"
+
+      - name: Cleanup code signing certificate (macOS)
+        if: always() && startsWith(matrix.os, 'macos-')
+        run: |
+          security delete-keychain $RUNNER_TEMP/app-signing.keychain-db || true
+          rm $RUNNER_TEMP/apple-api-key || true
+
+      - name: Decode Windows code signing certificate
+        if: startsWith(matrix.os, 'windows-')
+        run: |
+          $certBytes = [System.Convert]::FromBase64String("${{ env.WINDOWS_CODE_SIGNING_CERT }}")
+          [System.IO.File]::WriteAllBytes("piebald_llc.crt", $certBytes)
+
+      - name: Add SignTool to PATH
+        if: startsWith(matrix.os, 'windows-')
+        uses: kamaranl/add-signtool-action@v1
+
+      - name: Install Google Cloud KMS CNG provider
+        if: startsWith(matrix.os, 'windows-')
+        run: |
+          Invoke-WebRequest -Uri https://github.com/GoogleCloudPlatform/kms-integrations/releases/download/cng-v1.3/kmscng-1.3-windows-amd64.zip -OutFile kmscng.zip
+          Expand-Archive -Path kmscng.zip -DestinationPath .
+          $proc = Start-Process "msiexec" "/i kmscng-1.3-windows-amd64\kmscng.msi /qn" -NoNewWindow -PassThru -Wait
+          Remove-Item -Path kmscng.zip,kmscng-1.3-windows-amd64 -Recurse -Force
+          exit $proc.ExitCode
+
+      - name: Sign Windows executables
+        if: startsWith(matrix.os, 'windows-')
+        run: |
+          signtool sign `
+            /v /debug /fd sha256 `
+            /t http://timestamp.digicert.com `
+            /f piebald_llc.crt `
+            /csp "Google Cloud KMS Provider" `
+            /kc ${{ vars.GCP_KMS_KEY }} `
+            target/release/gemini-cli-desktop-web.exe
 
       - name: Archive `gemini-cli-desktop-web` executable (macOS/Linux)
         if: matrix.os != 'windows-2025'
@@ -71,14 +201,25 @@ jobs:
           tar -czf gemini-cli-desktop-web-${PLATFORM}.tar.gz gemini-cli-desktop-web
 
       - name: Archive `gemini-cli-desktop-web` executable (Windows)
-        if: matrix.os == 'windows-2025'
+        if: startsWith(matrix.os, 'windows-')
         run: |
           cd target/release
           7z a -tzip gemini-cli-desktop-web-windows-x64-msvc.zip gemini-cli-desktop-web.exe
 
       - name: Build Windows installer
-        if: matrix.os == 'windows-2025'
+        if: startsWith(matrix.os, 'windows-')
         run: iscc installer.iss
+
+      - name: Sign Windows installer
+        if: startsWith(matrix.os, 'windows-')
+        run: |
+          signtool sign `
+            /v /debug /fd sha256 `
+            /t http://timestamp.digicert.com `
+            /f piebald_llc.crt `
+            /csp "Google Cloud KMS Provider" `
+            /kc ${{ vars.GCP_KMS_KEY }} `
+            target/release/GeminiCLIDesktopSetup.exe
 
       - name: Remove spaces from installer names
         if: matrix.os != 'windows-2025'
