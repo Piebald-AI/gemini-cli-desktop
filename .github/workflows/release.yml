@@ -241,10 +241,11 @@ jobs:
           done
           ' _ {} + || true
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
         with:
-          files: |
+          name: gemini-cli-desktop-${{ matrix.os }}
+          path: |
             target/release/bundle/dmg/*.dmg
             target/release/bundle/deb/*.deb
             target/release/bundle/rpm/*.rpm
@@ -252,4 +253,23 @@ jobs:
             target/release/GeminiCLIDesktopSetup.exe
             target/release/gemini-cli-desktop-web-*.tar.gz
             target/release/gemini-cli-desktop-web-*.zip
+          if-no-files-found: ignore
+
+  publish-release:
+    name: Publish GitHub Release
+    runs-on: ubuntu-22.04
+    needs: release
+    permissions:
+      contents: write
+    steps:
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/**/*
           generate_release_notes: true
+          fail_on_unmatched_files: true
