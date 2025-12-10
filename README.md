@@ -1,3 +1,29 @@
+<div>
+<div align="right">
+<a href="https://piebald.ai"><img width="200" top="20" align="right" src="https://github.com/Piebald-AI/.github/raw/main/Wordmark.svg"></a>
+</div>
+
+<div align="left">
+
+### Announcement: Piebald is released!
+We've released **Piebald**, the ultimate agentic AI developer experience. \
+Download it and try it out for free!  **https://piebald.ai/**
+
+<sub>[Scroll down for Gemini CLI Desktop.](https://github.com/Piebald-AI/gemini-cli-desktop#gemini-cli-desktop) :point_down:</sub>
+
+</div>
+</div>
+
+<div align="left">
+<a href="https://piebald.ai">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/user-attachments/assets/79c18689-e2f0-4008-a13f-61c80756286a">
+  <source media="(prefers-color-scheme: light)" srcset="https://github.com/user-attachments/assets/25cb5df8-cf15-4cae-9c1e-e88645f06ee1">
+  <img alt="hero" src="https://github.com/user-attachments/assets/25cb5df8-cf15-4cae-9c1e-e88645f06ee1">
+</picture>
+</a>
+</div>
+
 # Gemini CLI Desktop
 
 [![CI](https://github.com/Piebald-AI/gemini-cli-desktop/workflows/CI/badge.svg)](https://github.com/Piebald-AI/gemini-cli-desktop/actions)
