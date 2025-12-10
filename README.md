@@ -19,7 +19,7 @@ Download it and try it out for free!  **https://piebald.ai/**
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://github.com/user-attachments/assets/79c18689-e2f0-4008-a13f-61c80756286a">
   <source media="(prefers-color-scheme: light)" srcset="https://github.com/user-attachments/assets/25cb5df8-cf15-4cae-9c1e-e88645f06ee1">
-  <img alt="hero" src="https://github.com/user-attachments/assets/25cb5df8-cf15-4cae-9c1e-e88645f06ee1">
+  <img alt="hero" width="600" src="https://github.com/user-attachments/assets/25cb5df8-cf15-4cae-9c1e-e88645f06ee1">
 </picture>
 </a>
 </div>
@@ -36,7 +36,7 @@ Download it and try it out for free!  **https://piebald.ai/**
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Built with Tauri](https://img.shields.io/badge/built%20with-Tauri-FFC131)](https://tauri.app/)
 
-A powerful **desktop** and **web** interface for **Gemini CLI** and **Qwen Code** with visual tool confirmation, real-time thought processes, code diff viewing, chat history management & search, a file tree browser, and file @-mentions. Built with Rust and React for performance and reliability.
+A powerful **desktop** and **web** interface for **Gemini CLI** and **Qwen Code** with visual tool confirmation, real-time thought processes, code diff viewing, chat history management & search, a file tree browser, and file @-mentions. Built with Rust and React for performance and reliability. From the team behind [<img src="https://github.com/Piebald-AI/piebald/raw/main/assets/logo.svg" width="15"> **Piebald.**](https://piebald.ai/)
 
 Use with **Gemini CLI:**
 
