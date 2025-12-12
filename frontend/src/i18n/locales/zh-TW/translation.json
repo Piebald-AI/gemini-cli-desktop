@@ -382,10 +382,12 @@
     "cloudShellAutomatic": "此方式在 Google Cloud Shell 環境中自動運作",
     "qwenConfiguration": "Qwen Code 配置",
     "geminiModels": {
+      "pro3": "Gemini 3 Pro（預覽版）",
       "pro": "Gemini 2.5 Pro",
       "flash": "Gemini 2.5 Flash",
       "flashLite": "Gemini 2.5 Flash-Lite"
     },
+    "gemini3ProRequirement": "需要 Gemini CLI 0.16.x 或更高版本",
     "stillWaiting": "仍在等待中...",
     "installMessage": "請安裝 {{backendName}} 並確保它在您的 PATH 中可用。",
     "installMessageGemini": "請安裝 {{backendName}} 並確保它在您的 PATH 中可用。您可以從 {{downloadUrl}} 安裝它。",
@@ -452,13 +454,13 @@
     "description": "一個強大、現代化的桌面和網頁 UI，適用於 **Gemini CLI** 和 **Qwen Code**。使用 Tauri 和網頁技術建構。跨平台、開源於",
     "github": "GitHub",
     "features": {
-      "geminiModels": "• 在 Gemini 模型中選擇（Gemini 2.5 Pro、Gemini 2.5 Flash、Gemini 2.5 Flash-Lite）",
+      "geminiModels": "• 在 Gemini 模型中選擇（Gemini 3 Pro、Gemini 2.5 Pro、Gemini 2.5 Flash、Gemini 2.5 Flash-Lite）",
       "qwenProviders": "• 使用 **Qwen.ai OAuth/自訂 OpenAI 相容提供者** 和 Qwen Code 模型",
       "messaging": "• 向/從 AI 發送訊息並接收回應；處理工具呼叫請求；支援 Markdown",
       "thoughtProcess": "• 觀察 Gemini 的**思考過程**",
       "fileDiffs": "• 檢視和處理編輯請求，並顯示清楚的檔案差異"
     },
-    "feature1": "在 Gemini 模型中選擇（Gemini 2.5 Pro、Gemini 2.5 Flash、Gemini 2.5 Flash-Lite）",
+    "feature1": "在 Gemini 模型中選擇（Gemini 3 Pro、Gemini 2.5 Pro、Gemini 2.5 Flash、Gemini 2.5 Flash-Lite）",
     "feature2": "使用 **Qwen.ai OAuth/自訂 OpenAI 相容提供者** 和 Qwen Code 模型",
     "feature3": "向/從 AI 發送訊息並接收回應；處理工具呼叫請求；支援 Markdown",
     "feature4": "觀察 Gemini 的**思考過程**",

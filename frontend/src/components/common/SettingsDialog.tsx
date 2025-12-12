@@ -31,7 +31,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, RefreshCw, ChevronsUpDown, Check } from "lucide-react";
+import {
+  AlertTriangle,
+  Info,
+  RefreshCw,
+  ChevronsUpDown,
+  Check,
+} from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -405,6 +411,19 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                     <SelectValue placeholder={t("conversations.selectModel")} />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="gemini-3-pro-preview">
+                      <div className="flex items-center gap-2">
+                        <span>{t("backend.geminiModels.pro3")}</span>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="h-4 w-4 text-blue-500" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{t("backend.gemini3ProRequirement")}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                    </SelectItem>
                     <SelectItem value="gemini-2.5-pro">
                       {t("backend.geminiModels.pro")}
                     </SelectItem>
@@ -755,7 +774,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                           : llxprtConfig.provider === "openrouter"
                             ? "anthropic/claude-sonnet-4.5"
                             : llxprtConfig.provider === "gemini"
-                              ? "gemini-2.0-flash-exp"
+                              ? "gemini-3-pro-preview"
                               : llxprtConfig.provider === "qwen"
                                 ? "qwen-max"
                                 : llxprtConfig.provider === "groq"
