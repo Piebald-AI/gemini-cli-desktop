@@ -393,10 +393,12 @@
     "cloudShellAutomatic": "This method works automatically in Google Cloud Shell environments",
     "qwenConfiguration": "Qwen Code Configuration",
     "geminiModels": {
+      "pro3": "Gemini 3 Pro (Preview)",
       "pro": "Gemini 2.5 Pro",
       "flash": "Gemini 2.5 Flash",
       "flashLite": "Gemini 2.5 Flash-Lite"
     },
+    "gemini3ProRequirement": "Requires Gemini CLI 0.16.x or later",
     "stillWaiting": "Still waitin'...",
     "installMessage": "Please install {{backendName}} and make sure it's available in your PATH.",
     "installMessageGemini": "Please install {{backendName}} and make sure it's available in your PATH. You can install it from {{downloadUrl}}.",
@@ -472,13 +474,13 @@
     "description": "A powerful, modern desktop and web UI for **Gemini CLI** and **Qwen Code**. Built with Tauri and web technologies. Cross-platform, open-source on",
     "github": "GitHub",
     "features": {
-      "geminiModels": "• Choose between Gemini models (Gemini 2.5 Pro, Gemini 2.5 Flash, Gemini 2.5 Flash-Lite)",
+      "geminiModels": "• Choose between Gemini models (Gemini 3 Pro, Gemini 2.5 Pro, Gemini 2.5 Flash, Gemini 2.5 Flash-Lite)",
       "qwenProviders": "• Use **Qwen.ai OAuth/custom OpenAI-compatible providers** and models with Qwen Code",
       "messaging": "• Send messages to/from AI and receive response; handle tool call requests; Markdown support",
       "thoughtProcess": "• Observe Gemini's **thought process**",
       "fileDiffs": "• View and handle edit requests with clear file diffs"
     },
-    "feature1": "Choose between Gemini models (Gemini 2.5 Pro, Gemini 2.5 Flash, Gemini 2.5 Flash-Lite)",
+    "feature1": "Choose between Gemini models (Gemini 3 Pro, Gemini 2.5 Pro, Gemini 2.5 Flash, Gemini 2.5 Flash-Lite)",
     "feature2": "Use **Qwen.ai OAuth/custom OpenAI-compatible providers** and models with Qwen Code",
     "feature3": "Send messages to/from AI and receive response; handle tool call requests; Markdown support",
     "feature4": "Observe Gemini's **thought process**",

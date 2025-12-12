@@ -9,7 +9,7 @@ export const defaultGeminiConfig: GeminiConfig = {
   type: "gemini",
   authMethod: "oauth-personal",
   apiKey: "",
-  models: ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.5-flash-lite"],
+  models: ["gemini-3-pro-preview", "gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.5-flash-lite"],
   defaultModel: "gemini-2.5-flash",
   vertexProject: "",
   vertexLocation: "us-central1",
@@ -61,7 +61,7 @@ export const llxprtProviderDefaults: Record<
   },
   gemini: {
     baseUrl: "",
-    modelPlaceholder: "gemini-2.0-flash-exp",
+    modelPlaceholder: "gemini-3-pro-preview",
   },
   qwen: {
     baseUrl: "",
