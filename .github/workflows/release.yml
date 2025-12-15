@@ -57,17 +57,19 @@ jobs:
 
       - uses: taiki-e/install-action@just
 
-      - name: Install build dependencies
+      - name: Install build dependencies (cached)
         if: matrix.os == 'ubuntu-22.04'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libgdk-pixbuf-2.0-dev \
-            libpango1.0-dev \
-            libjavascriptcoregtk-4.1-dev \
-            libatk1.0-dev \
-            libsoup-3.0-dev \
-            libwebkit2gtk-4.1-dev \
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: >-
+            libgdk-pixbuf-2.0-dev
+            libpango1.0-dev
+            libjavascriptcoregtk-4.1-dev
+            libatk1.0-dev
+            libsoup-3.0-dev
+            libwebkit2gtk-4.1-dev
             librsvg2-dev
+          version: 1.0
 
       - name: Install dependencies
         run: just deps
