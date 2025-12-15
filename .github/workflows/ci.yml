@@ -34,17 +34,20 @@ jobs:
 
       - uses: taiki-e/install-action@just
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libgdk-pixbuf-2.0-dev \
-            libpango1.0-dev \
-            libjavascriptcoregtk-4.1-dev \
-            libatk1.0-dev \
-            libsoup-3.0-dev \
+      - name: Install system dependencies (cached)
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: >-
+            libgdk-pixbuf-2.0-dev
+            libpango1.0-dev
+            libjavascriptcoregtk-4.1-dev
+            libatk1.0-dev
+            libsoup-3.0-dev
             libwebkit2gtk-4.1-dev
+          version: 1.0
 
-          just deps
+      - name: Install project dependencies
+        run: just deps
 
       - name: Lint project
         run: just lint-ci
