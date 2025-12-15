@@ -234,8 +234,8 @@ export function McpServersPage() {
   };
 
   return (
-    <div className="w-full">
-      <div className="mx-auto w-full max-w-4xl px-6 py-8 flex-1 flex flex-col">
+    <div className="w-full h-full overflow-y-auto">
+      <div className="mx-auto w-full max-w-4xl px-6 py-8 flex flex-col min-h-full">
         {/* Page Header */}
         <div className="mb-6">
           <button
@@ -252,7 +252,7 @@ export function McpServersPage() {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1">
           {isLoading ? (
             <div className="flex items-center justify-center p-8">
               <div className="text-sm text-muted-foreground">
