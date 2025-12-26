@@ -6,9 +6,10 @@ import LanguageDetector from "i18next-browser-languagedetector";
 import en from "./locales/en/translation.json";
 import zhCN from "./locales/zh-CN/translation.json";
 import zhTW from "./locales/zh-TW/translation.json";
+import ru from "./locales/ru/translation.json";
 
 // Define supported languages
-export const supportedLanguages = ["en", "zh-CN", "zh-TW"] as const;
+export const supportedLanguages = ["en", "zh-CN", "zh-TW", "ru"] as const;
 export type SupportedLanguage = (typeof supportedLanguages)[number];
 
 // Language names for display
@@ -16,6 +17,7 @@ export const languageNames: Record<SupportedLanguage, string> = {
   en: "English",
   "zh-CN": "简体中文",
   "zh-TW": "繁體中文",
+  ru: "Русский",
 };
 
 // Translation resources
@@ -28,6 +30,9 @@ const resources = {
   },
   "zh-TW": {
     translation: zhTW,
+  },
+  ru: {
+    translation: ru,
   },
 };
 
