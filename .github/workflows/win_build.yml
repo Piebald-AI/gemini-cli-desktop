@@ -1,0 +1,47 @@
+name: Windows Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.13.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: pnpm
+          cache-dependency-path: "frontend/pnpm-lock.yaml"
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Just
+        uses: taiki-e/install-action@just
+
+      - name: Install Dependencies
+        run: just deps
+
+      - name: Build Project
+        run: just build-all
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Gemini-CLI-Desktop-Windows
+          path: |
+            target/release/GeminiCLIDesktopSetup.exe
+            target/release/gemini-cli-desktop.exe
+          if-no-files-found: error
