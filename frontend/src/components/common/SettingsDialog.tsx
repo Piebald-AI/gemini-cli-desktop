@@ -424,6 +424,19 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                         </Tooltip>
                       </div>
                     </SelectItem>
+                    <SelectItem value="gemini-3-flash-preview">
+                      <div className="flex items-center gap-2">
+                        <span>{t("backend.geminiModels.flash3")}</span>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="h-4 w-4 text-blue-500" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{t("backend.gemini3ProRequirement")}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                    </SelectItem>
                     <SelectItem value="gemini-2.5-pro">
                       {t("backend.geminiModels.pro")}
                     </SelectItem>
@@ -774,7 +787,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                           : llxprtConfig.provider === "openrouter"
                             ? "anthropic/claude-sonnet-4.5"
                             : llxprtConfig.provider === "gemini"
-                              ? "gemini-3-pro-preview"
+                              ? "gemini-3-flash-preview"
                               : llxprtConfig.provider === "qwen"
                                 ? "qwen-max"
                                 : llxprtConfig.provider === "groq"
