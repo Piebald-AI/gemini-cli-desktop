@@ -6,8 +6,9 @@
 <div align="left">
 
 ### Check out Piebald
+
 We've released **Piebald**, the ultimate agentic AI developer experience. \
-Download it and try it out for free!  **https://piebald.ai/**
+Download it and try it out for free! **https://piebald.ai/**
 
 <a href="https://piebald.ai/discord"><img src="https://img.shields.io/badge/Join%20our%20Discord-5865F2?style=flat&logo=discord&logoColor=white" alt="Join our Discord"></a>
 <a href="https://x.com/PiebaldAI"><img src="https://img.shields.io/badge/Follow%20%40PiebaldAI-000000?style=flat&logo=x&logoColor=white" alt="X"></a>
@@ -61,7 +62,7 @@ Use with **Qwen Code:**
 
 ## Features
 
-- **Multi-model support** - Gemini 2.5 Pro/Flash, Qwen Code, custom OpenAI providers
+- **Multi-model support** - Gemini 3 Pro/Flash, Gemini 2.5 Pro/Flash, Qwen Code, custom OpenAI providers
 - **Visual tool confirmation** - Review and approve AI actions before execution
 - **Real-time thought process** - Watch AI reasoning unfold
 - **Code diff viewer** - Clear visualization of proposed changes

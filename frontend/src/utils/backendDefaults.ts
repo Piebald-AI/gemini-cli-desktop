@@ -67,7 +67,7 @@ export const llxprtProviderDefaults: Record<
   },
   gemini: {
     baseUrl: "",
-    modelPlaceholder: "gemini-3-pro-preview",
+    modelPlaceholder: "gemini-3-flash-preview",
   },
   qwen: {
     baseUrl: "",
