@@ -9,6 +9,7 @@ import {
 } from "../ui/dialog";
 import { Info } from "lucide-react";
 import { type ToolCall } from "../../utils/toolCallParser";
+import { CodeMirrorViewer } from "../common/CodeMirrorViewer";
 
 interface Message {
   id: string;
@@ -41,10 +42,12 @@ export const MessageActions: React.FC<MessageActionsProps> = ({ message }) => {
           <DialogHeader>
             <DialogTitle>Message Raw JSON</DialogTitle>
           </DialogHeader>
-          <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
-            <pre className="text-xs whitespace-pre-wrap break-all font-mono">
-              {JSON.stringify(message, null, 2)}
-            </pre>
+          <div className="rounded-lg overflow-hidden border border-border">
+            <CodeMirrorViewer
+              code={JSON.stringify(message, null, 2)}
+              language="json"
+              readOnly={true}
+            />
           </div>
         </DialogContent>
       </Dialog>
