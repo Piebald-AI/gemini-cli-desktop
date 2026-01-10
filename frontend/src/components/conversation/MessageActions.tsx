@@ -40,7 +40,7 @@ export const MessageActions: React.FC<MessageActionsProps> = ({ message }) => {
         </DialogTrigger>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Message Raw JSON</DialogTitle>
+            <DialogTitle>{t("dashboard.rawJsonTitle")}</DialogTitle>
           </DialogHeader>
           <div className="rounded-lg overflow-hidden border border-border">
             <CodeMirrorViewer
