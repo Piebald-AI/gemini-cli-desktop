@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "../ui/button";
 import {
   Dialog,
@@ -9,6 +10,7 @@ import {
 } from "../ui/dialog";
 import { Info } from "lucide-react";
 import { type ToolCall } from "../../utils/toolCallParser";
+import { CodeMirrorViewer } from "../common/CodeMirrorViewer";
 
 interface Message {
   id: string;
@@ -24,6 +26,8 @@ interface MessageActionsProps {
 }
 
 export const MessageActions: React.FC<MessageActionsProps> = ({ message }) => {
+  const { t } = useTranslation();
+
   return (
     <div className="mt-2 flex justify-start">
       <Dialog>
@@ -34,17 +38,19 @@ export const MessageActions: React.FC<MessageActionsProps> = ({ message }) => {
             className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
           >
             <Info className="h-3 w-3 mr-1" />
-            Raw JSON
+            {t("dashboard.rawJsonButton")}
           </Button>
         </DialogTrigger>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Message Raw JSON</DialogTitle>
+            <DialogTitle>{t("dashboard.rawJsonTitle")}</DialogTitle>
           </DialogHeader>
-          <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
-            <pre className="text-xs whitespace-pre-wrap break-all font-mono">
-              {JSON.stringify(message, null, 2)}
-            </pre>
+          <div className="rounded-lg overflow-hidden border border-border">
+            <CodeMirrorViewer
+              code={JSON.stringify(message, null, 2)}
+              language="json"
+              readOnly={true}
+            />
           </div>
         </DialogContent>
       </Dialog>
