@@ -7,6 +7,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogClose,
 } from "../ui/dialog";
 import { X, Clock, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -153,22 +154,19 @@ export function ProcessCard({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => {
-              /* Close dialog */
-            }}
-          >
-            {t("common.cancel")}
-          </Button>
-          <Button
-            variant="destructive"
-            onClick={() => {
-              onRemoveConversation(conversation.id);
-            }}
-          >
-            {t("common.delete")}
-          </Button>
+          <DialogClose asChild>
+            <Button variant="outline">{t("common.cancel")}</Button>
+          </DialogClose>
+          <DialogClose asChild>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                onRemoveConversation(conversation.id);
+              }}
+            >
+              {t("common.delete")}
+            </Button>
+          </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>
