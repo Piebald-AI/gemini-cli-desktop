@@ -14,15 +14,16 @@ import type { SupportedLanguage } from "./config";
 
 // Export language detection utility
 export const isValidLanguage = (lang: string): lang is SupportedLanguage => {
-  return ["en", "zh-CN", "zh-TW"].includes(lang);
+  return ["en", "zh-CN", "zh-TW", "ru"].includes(lang);
 };
 
 // Export language display utility
 export const getLanguageDisplayName = (lang: SupportedLanguage): string => {
-  const names = {
+  const names: Record<SupportedLanguage, string> = {
     en: "English",
     "zh-CN": "简体中文",
     "zh-TW": "繁體中文",
+    ru: "Русский",
   };
   return names[lang];
 };
