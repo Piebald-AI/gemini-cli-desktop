@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "../ui/button";
 import {
   Dialog,
@@ -25,6 +26,8 @@ interface MessageActionsProps {
 }
 
 export const MessageActions: React.FC<MessageActionsProps> = ({ message }) => {
+  const { t } = useTranslation();
+
   return (
     <div className="mt-2 flex justify-start">
       <Dialog>
@@ -35,7 +38,7 @@ export const MessageActions: React.FC<MessageActionsProps> = ({ message }) => {
             className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
           >
             <Info className="h-3 w-3 mr-1" />
-            Raw JSON
+            {t("dashboard.rawJsonButton")}
           </Button>
         </DialogTrigger>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
