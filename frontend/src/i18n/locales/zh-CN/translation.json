@@ -386,6 +386,7 @@
     "qwenConfiguration": "Qwen Code 配置",
     "geminiModels": {
       "pro3": "Gemini 3 Pro（预览版）",
+      "flash3": "Gemini 3 Flash（预览版）",
       "pro": "Gemini 2.5 Pro",
       "flash": "Gemini 2.5 Flash",
       "flashLite": "Gemini 2.5 Flash-Lite"
@@ -457,13 +458,13 @@
     "description": "一个强大、现代的 **Gemini CLI** 和 **Qwen Code** 桌面和网页 UI。使用 Tauri 和网页技术构建。跨平台，开源于",
     "github": "GitHub",
     "features": {
-      "geminiModels": "• 在 Gemini 模型中选择（Gemini 3 Pro、Gemini 2.5 Pro、Gemini 2.5 Flash、Gemini 2.5 Flash-Lite）",
+      "geminiModels": "• 在 Gemini 模型中选择（Gemini 3 Pro、Gemini 3 Flash、Gemini 2.5 Pro、Gemini 2.5 Flash、Gemini 2.5 Flash-Lite）",
       "qwenProviders": "• 使用 **Qwen.ai OAuth/自定义 OpenAI 兼容提供商** 和 Qwen Code 的模型",
       "messaging": "• 向/从 AI 发送消息并接收响应；处理工具调用请求；Markdown 支持",
       "thoughtProcess": "• 观察 Gemini 的 **思考过程**",
       "fileDiffs": "• 查看和处理带有清晰文件差异的编辑请求"
     },
-    "feature1": "在 Gemini 模型中选择（Gemini 3 Pro、Gemini 2.5 Pro、Gemini 2.5 Flash、Gemini 2.5 Flash-Lite）",
+    "feature1": "在 Gemini 模型中选择（Gemini 3 Pro、Gemini 3 Flash、Gemini 2.5 Pro、Gemini 2.5 Flash、Gemini 2.5 Flash-Lite）",
     "feature2": "使用 **Qwen.ai OAuth/自定义 OpenAI 兼容提供商** 和 Qwen Code 的模型",
     "feature3": "向/从 AI 发送消息并接收响应；处理工具调用请求；Markdown 支持",
     "feature4": "观察 Gemini 的**思考过程**",

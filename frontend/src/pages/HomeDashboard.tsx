@@ -25,6 +25,7 @@ import {
 } from "../components/ui/card";
 import { Info, UserRound, FolderKanban } from "lucide-react";
 import { ModelContextProtocol } from "../components/common/ModelContextProtocol";
+import { CodeMirrorViewer } from "../components/common/CodeMirrorViewer";
 import { getBackendText } from "../utils/backendText";
 import { useBackend } from "../contexts/BackendContext";
 import { GeminiMessagePart } from "../types";
@@ -192,10 +193,12 @@ ${part.thinking}`;
                               {t("dashboard.rawJsonTitle")}
                             </DialogTitle>
                           </DialogHeader>
-                          <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
-                            <pre className="text-xs whitespace-pre-wrap break-all font-mono">
-                              {JSON.stringify(message, null, 2)}
-                            </pre>
+                          <div className="rounded-lg overflow-hidden border border-border">
+                            <CodeMirrorViewer
+                              code={JSON.stringify(message, null, 2)}
+                              language="json"
+                              readOnly={true}
+                            />
                           </div>
                         </DialogContent>
                       </Dialog>

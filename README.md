@@ -5,11 +5,15 @@
 
 <div align="left">
 
-### Announcement: Piebald is released!
-We've released **Piebald**, the ultimate agentic AI developer experience. \
-Download it and try it out for free!  **https://piebald.ai/**
+### Check out Piebald
 
-<sub>[Scroll down for Gemini CLI Desktop.](https://github.com/Piebald-AI/gemini-cli-desktop#gemini-cli-desktop) :point_down:</sub>
+We've released **Piebald**, the ultimate agentic AI developer experience. \
+Download it and try it out for free! **https://piebald.ai/**
+
+<a href="https://piebald.ai/discord"><img src="https://img.shields.io/badge/Join%20our%20Discord-5865F2?style=flat&logo=discord&logoColor=white" alt="Join our Discord"></a>
+<a href="https://x.com/PiebaldAI"><img src="https://img.shields.io/badge/Follow%20%40PiebaldAI-000000?style=flat&logo=x&logoColor=white" alt="X"></a>
+
+<sub>[**Scroll down for Gemini CLI Desktop.**](#gemini-cli-desktop) :point_down:</sub>
 
 </div>
 </div>
@@ -17,9 +21,9 @@ Download it and try it out for free!  **https://piebald.ai/**
 <div align="left">
 <a href="https://piebald.ai">
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/user-attachments/assets/79c18689-e2f0-4008-a13f-61c80756286a">
-  <source media="(prefers-color-scheme: light)" srcset="https://github.com/user-attachments/assets/25cb5df8-cf15-4cae-9c1e-e88645f06ee1">
-  <img alt="hero" width="600" src="https://github.com/user-attachments/assets/25cb5df8-cf15-4cae-9c1e-e88645f06ee1">
+  <source media="(prefers-color-scheme: dark)" srcset="https://piebald.ai/screenshot-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="https://piebald.ai/screenshot-light.png">
+  <img alt="hero" width="800" src="https://piebald.ai/screenshot-light.png">
 </picture>
 </a>
 </div>
@@ -58,7 +62,7 @@ Use with **Qwen Code:**
 
 ## Features
 
-- **Multi-model support** - Gemini 2.5 Pro/Flash, Qwen Code, custom OpenAI providers
+- **Multi-model support** - Gemini 3 Pro/Flash, Gemini 2.5 Pro/Flash, Qwen Code, custom OpenAI providers
 - **Visual tool confirmation** - Review and approve AI actions before execution
 - **Real-time thought process** - Watch AI reasoning unfold
 - **Code diff viewer** - Clear visualization of proposed changes
