@@ -252,6 +252,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                 <SelectItem value="en">English</SelectItem>
                 <SelectItem value="zh-CN">简体中文</SelectItem>
                 <SelectItem value="zh-TW">繁體中文</SelectItem>
+                <SelectItem value="ru">Русский</SelectItem>
               </SelectContent>
             </Select>
           </div>

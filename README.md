@@ -70,7 +70,7 @@ Use with **Qwen Code:**
 - **Cross-platform** - Desktop app and web interface
 - **File @-mentions** - Reference files directly in conversations
 - **MCP server integration** - Model Context Protocol support
-- **Multi-language UI** - English, Chinese (Simplified & Traditional)
+- **Multi-language UI** - English, Chinese (Simplified & Traditional), Russian
 
 ## Development & Building
 

@@ -9,12 +9,12 @@ export {
 // Re-export commonly used react-i18next functions for convenience
 export { useTranslation, Trans, Translation } from "react-i18next";
 
-// Import the type for use in function definitions
-import type { SupportedLanguage } from "./config";
+// Import the type and constant for use in function definitions
+import { supportedLanguages, type SupportedLanguage } from "./config";
 
 // Export language detection utility
 export const isValidLanguage = (lang: string): lang is SupportedLanguage => {
-  return ["en", "zh-CN", "zh-TW", "ru"].includes(lang);
+  return supportedLanguages.includes(lang as SupportedLanguage);
 };
 
 // Export language display utility
