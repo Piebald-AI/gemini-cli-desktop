@@ -7,12 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
 - Add Gemini 3 Pro (#171) by @mike1858
-- Fix MCP servers page scrolling overflow (#173) by @mike1858
 - Add Gemini 3 Flash (#181) by @BreadCatV2
-- Fix #175 (#182) by @mike1858
 - Add JSON syntax highlighting to Raw Message JSON model (#183) by @mike1858
 - Add Russian translations (#177) by @vanja-san
+
+### Fixed
+
+- Fix MCP servers page scrolling overflow (#173) by @mike1858
+- Fix #175 (#182) by @mike1858
 
 ## [0.3.14] - 2025-11-23
 
