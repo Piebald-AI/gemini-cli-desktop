@@ -19,14 +19,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix MCP servers page scrolling overflow (#173) by @mike1858
 - Fix #175 (#182) by @mike1858
 
-## [0.3.14] - 2025-11-23
+## [0.3.14](https://github.com/Piebald-AI/gemini-cli-desktop/releases/tag/v0.3.14) - 2025-11-23
 
 ### Changed
 
 - Codesign the Windows executable (#166) by @signadou
 - Fix release notes duplication (#167) by @signadou
 
-## [0.3.13] - 2025-11-23
+## [0.3.13](https://github.com/Piebald-AI/gemini-cli-desktop/releases/tag/v0.3.13) - 2025-11-23
 
 ### Fixed
 
@@ -37,27 +37,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add codesigning for macOS and Windows releases (#164) by @signadou
 
-## [0.3.12] - 2025-11-04
+## [0.3.12](https://github.com/Piebald-AI/gemini-cli-desktop/releases/tag/v0.3.12) - 2025-11-04
 
 ### Changed
 
 - Polish user experience (#159) by @bl-ue
 - Update the macOS version in the CI (#161) by @signadou
 
-## [0.3.11] - 2025-10-30
+## [0.3.11](https://github.com/Piebald-AI/gemini-cli-desktop/releases/tag/v0.3.11) - 2025-10-30
 
 ### Fixed
 
 - Fix the Windows release workflow (#157) by @signadou
 
-## [0.3.10] - 2025-10-22
+## [0.3.10](https://github.com/Piebald-AI/gemini-cli-desktop/releases/tag/v0.3.10) - 2025-10-22
 
 ### Changed
 
 - Allow HTTP base URLs with warning instead of blocking (#154) by @bl-ue
 - Delegate validation to underlying CLIs (#155) by @bl-ue
 
-## [0.3.9] - 2025-10-22
+## [0.3.9](https://github.com/Piebald-AI/gemini-cli-desktop/releases/tag/v0.3.9) - 2025-10-22
 
 ### Added
 
@@ -67,7 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add YOLO mode for Qwen Code (in addition to Gemini CLI) (#151) by @bl-ue
 
-## [0.3.8] - 2025-09-30
+## [0.3.8](https://github.com/Piebald-AI/gemini-cli-desktop/releases/tag/v0.3.8) - 2025-09-30
 
 ### Changed
 
@@ -80,7 +80,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fix CI (#147) by @signadou
 
-## [0.3.7] - 2025-09-13
+## [0.3.7](https://github.com/Piebald-AI/gemini-cli-desktop/releases/tag/v0.3.7) - 2025-09-13
 
 ### Added
 
@@ -91,7 +91,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Prevent duplicate event listener setup with pending state tracking (#138) by @bl-ue
 - Prevent duplicate tool calls and remove fixed height constraint (#139) by @bl-ue
 
-## [0.3.6] - 2025-09-09
+## [0.3.6](https://github.com/Piebald-AI/gemini-cli-desktop/releases/tag/v0.3.6) - 2025-09-09
 
 ### Added
 
@@ -103,7 +103,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Show backend progress messages; fix listener lifecycle; seed initial progress (#131) by @bl-ue
 
-## [0.3.5] - 2025-09-09
+## [0.3.5](https://github.com/Piebald-AI/gemini-cli-desktop/releases/tag/v0.3.5) - 2025-09-09
 
 ### Added
 
@@ -117,7 +117,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Restore right-docked directory panel (#127) by @bl-ue
 
-## [0.3.4] - 2025-09-07
+## [0.3.4](https://github.com/Piebald-AI/gemini-cli-desktop/releases/tag/v0.3.4) - 2025-09-07
 
 ### Added
 
@@ -132,13 +132,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Resolve CLI hang on Windows by correcting line endings (#119) by @alanpeng
 
-## [0.3.3] - 2025-09-04
+## [0.3.3](https://github.com/Piebald-AI/gemini-cli-desktop/releases/tag/v0.3.3) - 2025-09-04
 
 ### Changed
 
 - Simplify MCP permission interface and enhance option handling (#114) by @bl-ue
 
-## [0.3.2] - 2025-09-03
+## [0.3.2](https://github.com/Piebald-AI/gemini-cli-desktop/releases/tag/v0.3.2) - 2025-09-03
 
 ### Changed
 
@@ -149,7 +149,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improve image display with proper sizing and centering (#111) by @bl-ue
 - Remove redundant file type handling for non-text files (#110) by @bl-ue
 
-## [0.3.1] - 2025-09-03
+## [0.3.1](https://github.com/Piebald-AI/gemini-cli-desktop/releases/tag/v0.3.1) - 2025-09-03
 
 ### Added
 
@@ -159,7 +159,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed the historical session loading problem and optimized the message box input prompt (#106) by @alanpeng
 
-## [0.3.0] - 2025-09-02
+## [0.3.0](https://github.com/Piebald-AI/gemini-cli-desktop/releases/tag/v0.3.0) - 2025-09-02
 
 ### Added
 
@@ -170,7 +170,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add conditional compilation for Windows-specific flags (#102) by @bl-ue
 - Remove timeout from JSON-RPC response reading (#101) by @bl-ue
 
-## [0.2.1] - 2025-09-01
+## [0.2.1](https://github.com/Piebald-AI/gemini-cli-desktop/releases/tag/v0.2.1) - 2025-09-01
 
 ### Added
 
@@ -188,7 +188,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Preserve scroll position in code blocks during content streaming (#95) by @bl-ue
 
-## [0.2.0] - 2025-08-28
+## [0.2.0](https://github.com/Piebald-AI/gemini-cli-desktop/releases/tag/v0.2.0) - 2025-08-28
 
 ### Added
 
@@ -227,7 +227,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix unnecessary API calls for @-mentioning (#79) by @bl-ue
 - Fix some layout issues and fix a translation (#65) by @signadou
 
-## [0.1.0] - 2025-08-22
+## [0.1.0](https://github.com/Piebald-AI/gemini-cli-desktop/releases/tag/v0.1.0) - 2025-08-22
 
 ### Added
 
