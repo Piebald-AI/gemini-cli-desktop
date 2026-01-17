@@ -160,4 +160,4 @@ Contributions are welcome! Please see the [contributing guide](CONTRIBUTING.md) 
 
 [MIT](./LICENSE)
 
-Copyright © 2025 [Piebald LLC.](https://piebald.ai)
+Copyright © 2026 [Piebald LLC.](https://piebald.ai)
