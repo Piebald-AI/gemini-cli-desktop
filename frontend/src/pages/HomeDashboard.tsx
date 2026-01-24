@@ -64,7 +64,7 @@ export const HomeDashboard: React.FC = () => {
                 >
                   <div className="w-full">
                     {/* Header with logo and timestamp */}
-                    <div className="flex items-center gap-2 mb-4">
+                    <div className="flex items-center gap-2 mb-2">
                       {message.sender === "assistant" ? (
                         <div>
                           <SmartLogo />
@@ -91,6 +91,33 @@ export const HomeDashboard: React.FC = () => {
                           minute: "2-digit",
                         })}
                       </span>
+                      {/* Info button for raw JSON */}
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-[unset] mt-0 py-1 text-xs text-muted-foreground hover:text-foreground"
+                          >
+                            <Info className="size-3" />
+                            {t("dashboard.rawJsonButton")}
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                          <DialogHeader>
+                            <DialogTitle>
+                              {t("dashboard.rawJsonTitle")}
+                            </DialogTitle>
+                          </DialogHeader>
+                          <div className="rounded-lg overflow-hidden border border-border">
+                            <CodeMirrorViewer
+                              code={JSON.stringify(message, null, 2)}
+                              language="json"
+                              readOnly={true}
+                            />
+                          </div>
+                        </DialogContent>
+                      </Dialog>
                     </div>
 
                     <>
@@ -99,7 +126,7 @@ export const HomeDashboard: React.FC = () => {
                           return message.parts.map((msgPart, partIndex) => (
                             <div
                               key={partIndex}
-                              className="text-sm text-gray-900 dark:text-gray-100 mb-2"
+                              className="text-sm text-gray-900 dark:text-gray-100"
                             >
                               <MessageContent content={msgPart.text} />
                             </div>
@@ -130,7 +157,7 @@ ${part.thinking}`;
                             {msgPart.type === "thinking" ? (
                               <ThinkingBlock thinking={msgPart.thinking} />
                             ) : msgPart.type === "text" ? (
-                              <div className="text-sm text-gray-900 dark:text-gray-100 mb-2">
+                              <div className="text-sm text-gray-900 dark:text-gray-100">
                                 <MessageContent content={msgPart.text} />
                               </div>
                             ) : msgPart.type === "toolCall" ? (
@@ -173,36 +200,6 @@ ${part.thinking}`;
                         ));
                       })()}
                     </>
-
-                    {/* Info button for raw JSON */}
-                    <div className="mt-2 flex justify-start">
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
-                          >
-                            <Info className="h-3 w-3 mr-1" />
-                            {t("dashboard.rawJsonButton")}
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                          <DialogHeader>
-                            <DialogTitle>
-                              {t("dashboard.rawJsonTitle")}
-                            </DialogTitle>
-                          </DialogHeader>
-                          <div className="rounded-lg overflow-hidden border border-border">
-                            <CodeMirrorViewer
-                              code={JSON.stringify(message, null, 2)}
-                              language="json"
-                              readOnly={true}
-                            />
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
                   </div>
                 </div>
               ))}
