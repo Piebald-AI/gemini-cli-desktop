@@ -27,6 +27,7 @@ frontend/public/pdf.worker.min.mjs
 *.sw?
 
 target
+ratarget
 
 # Gemini CLI Desktop test artifacts
 .gemini-cli-desktop/
