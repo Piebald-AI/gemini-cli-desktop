@@ -35,7 +35,6 @@ export const HomeDashboard: React.FC = () => {
   const navigate = useNavigate();
   const {
     currentConversation,
-    messagesContainerRef,
     handleConfirmToolCall,
     confirmationRequests,
   } = useConversation();
@@ -46,6 +45,44 @@ export const HomeDashboard: React.FC = () => {
   const { selectedBackend } = useBackend();
   const backendText = getBackendText(selectedBackend);
 
+  // Use a local ref for auto-scrolling
+  const localContainerRef = React.useRef<HTMLDivElement>(null);
+
+  // Track if user is near bottom (for auto-scroll behavior)
+  const isNearBottomRef = React.useRef(true);
+
+  // Listen for scroll events to track user position
+  React.useEffect(() => {
+    const container = localContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const threshold = 100; // pixels from bottom
+      const position = container.scrollTop + container.clientHeight;
+      const height = container.scrollHeight;
+      isNearBottomRef.current = height - position < threshold;
+    };
+
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Auto-scroll to bottom when new messages arrive (only if user is near bottom)
+  React.useEffect(() => {
+    const container = localContainerRef.current;
+    if (container && currentConversation?.messages.length) {
+      // Use setTimeout with 0 to ensure DOM has fully rendered
+      setTimeout(() => {
+        if (container && isNearBottomRef.current) {
+          container.scrollTop = container.scrollHeight;
+        }
+      }, 0);
+    }
+  }, [
+    currentConversation?.messages.length,
+    currentConversation?.isStreaming
+  ]);
+
   return (
     <>
       {currentConversation ? (
@@ -53,7 +90,7 @@ export const HomeDashboard: React.FC = () => {
           <NewChatPlaceholder />
         ) : (
           <div
-            ref={messagesContainerRef as React.RefObject<HTMLDivElement>}
+            ref={localContainerRef}
             className="flex-1 min-h-0 overflow-y-auto p-6 relative"
           >
             <div className="space-y-8 pb-4">

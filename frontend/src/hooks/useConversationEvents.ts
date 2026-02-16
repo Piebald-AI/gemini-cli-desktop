@@ -2,6 +2,7 @@ import React, { useCallback, useRef } from "react";
 import type { TextMessagePart } from "../types";
 import { listen } from "@/lib/listen";
 import { getWebSocketManager } from "../lib/webApi";
+import { api } from "../lib/api";
 import { Conversation, Message, CliIO } from "../types";
 import { ToolCallConfirmationRequest } from "../utils/toolCallParser";
 import { type ToolCall } from "../utils/toolCallParser";
@@ -269,7 +270,8 @@ export const useConversationEvents = (
   updateConversation: (
     conversationId: string,
     updateFn: (conv: Conversation, lastMsg: Message) => void
-  ) => void
+  ) => void,
+  isYoloEnabled?: boolean
 ) => {
   // Buffer agent text chunks seen on CLI output in case the UI misses
   // ai-output streaming events (web WS race). Cleared on turn finish.
@@ -898,19 +900,42 @@ export const useConversationEvents = (
                 : [],
             };
 
-            setConfirmationRequests((prev) => {
-              const newMap = new Map(prev);
-              newMap.set(toolCallId, legacyConfirmationRequest);
+            // If yolo mode is enabled, auto-approve the tool call
+            if (isYoloEnabled) {
               console.log(
-                `✅ Stored confirmation request in Map for toolCallId:`,
-                toolCallId
+                `🤖 [YOLO] Auto-approving tool call: ${toolCallId}`
               );
-              console.log(
-                `✅ Total confirmation requests in Map:`,
-                newMap.size
+              // Find the "allow_always" or "allow_once" option and use it
+              const autoApproveOption = legacyConfirmationRequest.options?.find(
+                (opt) => opt.kind === "allow_always" || opt.kind === "allow_once"
               );
-              return newMap;
-            });
+              const outcome = autoApproveOption?.optionId || "proceed_always";
+
+              // Send approval response to backend
+              api.send_tool_call_confirmation_response({
+                sessionId: conversationId,
+                requestId: legacyConfirmationRequest.requestId,
+                toolCallId: toolCallId,
+                outcome: outcome,
+              }).catch((err) => {
+                console.error("Failed to send auto-approve response:", err);
+              });
+            } else {
+              // Only store confirmation request if yolo mode is disabled
+              setConfirmationRequests((prev) => {
+                const newMap = new Map(prev);
+                newMap.set(toolCallId, legacyConfirmationRequest);
+                console.log(
+                  `✅ Stored confirmation request in Map for toolCallId:`,
+                  toolCallId
+                );
+                console.log(
+                  `✅ Total confirmation requests in Map:`,
+                  newMap.size
+                );
+                return newMap;
+              });
+            }
           }
         );
         unlistenFunctions.push(unlistenAcpPermissionRequest);
@@ -981,7 +1006,7 @@ export const useConversationEvents = (
         sawAiOutputRef.current.delete(conversationId);
       };
     },
-    [setCliIOLogs, setConfirmationRequests, updateConversation]
+    [setCliIOLogs, setConfirmationRequests, updateConversation, isYoloEnabled]
   );
 
   return { setupEventListenerForConversation };
