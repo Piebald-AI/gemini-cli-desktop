@@ -262,6 +262,16 @@ function getOptionKind(
   }
 }
 
+/**
+ * Custom hook to set up event listeners for conversation events.
+ * Handles CLI I/O logging, tool call confirmations, and AI turn events.
+ * 
+ * @param setCliIOLogs - State setter for CLI input/output logs
+ * @param setConfirmationRequests - State setter for tool call confirmation requests
+ * @param updateConversation - Function to update conversation state
+ * @param isYoloEnabled - Optional flag to enable yolo mode (auto-approve tool calls)
+ * @returns Object with setupEventListenerForConversation function
+ */
 export const useConversationEvents = (
   setCliIOLogs: React.Dispatch<React.SetStateAction<CliIO[]>>,
   setConfirmationRequests: React.Dispatch<
@@ -277,7 +287,17 @@ export const useConversationEvents = (
   // ai-output streaming events (web WS race). Cleared on turn finish.
   const pendingAssistantTextRef = useRef<Map<string, string>>(new Map());
   const sawAiOutputRef = useRef<Map<string, boolean>>(new Map());
+  // Use ref to avoid re-creating listeners when yolo mode toggles
+  const isYoloEnabledRef = useRef<boolean>(isYoloEnabled ?? false);
+  isYoloEnabledRef.current = isYoloEnabled ?? false;
 
+  /**
+   * Sets up event listeners for a specific conversation.
+   * Listens for CLI I/O events, tool call confirmations, and AI turn events.
+   * 
+   * @param conversationId - The ID of the conversation to listen to
+   * @returns Cleanup function to remove all event listeners
+   */
   const setupEventListenerForConversation = useCallback(
     async (conversationId: string): Promise<() => void> => {
       // In web mode, ensure WebSocket connection is ready before registering listeners
@@ -901,7 +921,7 @@ export const useConversationEvents = (
             };
 
             // If yolo mode is enabled, auto-approve the tool call
-            if (isYoloEnabled) {
+            if (isYoloEnabledRef.current) {
               console.log(
                 `🤖 [YOLO] Auto-approving tool call: ${toolCallId}`
               );
@@ -1006,7 +1026,7 @@ export const useConversationEvents = (
         sawAiOutputRef.current.delete(conversationId);
       };
     },
-    [setCliIOLogs, setConfirmationRequests, updateConversation, isYoloEnabled]
+    [setCliIOLogs, setConfirmationRequests, updateConversation]
   );
 
   return { setupEventListenerForConversation };

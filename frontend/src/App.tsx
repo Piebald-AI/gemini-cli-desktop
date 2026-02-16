@@ -59,7 +59,6 @@ function RootLayoutContent() {
   const [selectedModel, setSelectedModel] =
     useState<string>("gemini-2.5-flash");
   const [cliIOLogs, setCliIOLogs] = useState<CliIO[]>([]);
-  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [directoryPanelOpen, setDirectoryPanelOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -458,7 +457,6 @@ function RootLayoutContent() {
       currentConversation,
       input,
       isCliInstalled,
-      messagesContainerRef,
       cliIOLogs,
       handleInputChange,
       handleSendMessage,
@@ -476,7 +474,6 @@ function RootLayoutContent() {
       currentConversation,
       input,
       isCliInstalled,
-      messagesContainerRef,
       cliIOLogs,
       handleInputChange,
       handleSendMessage,

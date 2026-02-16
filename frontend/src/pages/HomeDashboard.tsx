@@ -39,9 +39,6 @@ export const HomeDashboard: React.FC = () => {
     confirmationRequests,
   } = useConversation();
 
-  // Debug logging for currentConversation
-  console.log("🏠 HomeDashboard - currentConversation:", currentConversation);
-
   const { selectedBackend } = useBackend();
   const backendText = getBackendText(selectedBackend);
 
@@ -50,6 +47,8 @@ export const HomeDashboard: React.FC = () => {
 
   // Track if user is near bottom (for auto-scroll behavior)
   const isNearBottomRef = React.useRef(true);
+  // Track previous scroll height to detect content growth
+  const prevScrollHeightRef = React.useRef<number>(0);
 
   // Listen for scroll events to track user position
   React.useEffect(() => {
@@ -67,21 +66,37 @@ export const HomeDashboard: React.FC = () => {
     return () => container.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Auto-scroll to bottom when new messages arrive (only if user is near bottom)
+  // Auto-scroll to bottom when content grows (only if user is near bottom)
   React.useEffect(() => {
     const container = localContainerRef.current;
-    if (container && currentConversation?.messages.length) {
-      // Use setTimeout with 0 to ensure DOM has fully rendered
-      setTimeout(() => {
-        if (container && isNearBottomRef.current) {
+    if (!container || !currentConversation?.messages.length) return;
+
+    // Use ResizeObserver to detect when content height changes
+    const observer = new ResizeObserver(() => {
+      const newHeight = container.scrollHeight;
+      const prevHeight = prevScrollHeightRef.current;
+      
+      // Only scroll if content grew and user is near bottom
+      if (newHeight > prevHeight && isNearBottomRef.current) {
+        // Use requestAnimationFrame for smooth scrolling
+        requestAnimationFrame(() => {
           container.scrollTop = container.scrollHeight;
-        }
-      }, 0);
+        });
+      }
+      
+      prevScrollHeightRef.current = newHeight;
+    });
+
+    // Observe the content container (the div with space-y-8)
+    const contentContainer = container.firstElementChild;
+    if (contentContainer) {
+      observer.observe(contentContainer);
+      // Initial height capture
+      prevScrollHeightRef.current = container.scrollHeight;
     }
-  }, [
-    currentConversation?.messages.length,
-    currentConversation?.isStreaming
-  ]);
+
+    return () => observer.disconnect();
+  }, [currentConversation?.messages.length]);
 
   return (
     <>

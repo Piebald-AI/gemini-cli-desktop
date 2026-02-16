@@ -4,14 +4,16 @@ import { ToolCallConfirmationRequest } from "../utils/toolCallParser";
 import { ConversationHistoryEntry } from "../lib/webApi";
 import { SessionProgressPayload } from "../types/session";
 
-// Context for sharing conversation state with child routes
+/**
+ * Context type for sharing conversation state with child routes.
+ * Provides conversation management, message handling, and tool call confirmation.
+ */
 export interface ConversationContextType {
   conversations: Conversation[];
   activeConversation: string | null;
   currentConversation: Conversation | undefined;
   input: string;
   isCliInstalled: boolean | null;
-  messagesContainerRef: React.RefObject<HTMLDivElement | null>;
   cliIOLogs: CliIO[];
   handleInputChange: (
     _event: React.ChangeEvent<HTMLTextAreaElement> | null,
@@ -43,6 +45,11 @@ export const ConversationContext = createContext<
   ConversationContextType | undefined
 >(undefined);
 
+/**
+ * Custom hook to access the conversation context.
+ * @returns The conversation context value.
+ * @throws Error if used outside of a ConversationProvider.
+ */
 export const useConversation = () => {
   const context = useContext(ConversationContext);
   if (context === undefined) {
