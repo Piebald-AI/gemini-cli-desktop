@@ -926,11 +926,15 @@ export const useConversationEvents = (
                 `🤖 [YOLO] Auto-approving tool call: ${toolCallId}`,
                 legacyConfirmationRequest
               );
-              // Find the "allow_always" or "allow_once" option and use it
-              const autoApproveOption = legacyConfirmationRequest.options?.find(
-                (opt) =>
-                  opt.kind === "allow_always" || opt.kind === "allow_once"
-              );
+              // Find the best auto-approve option, preferring allow_always
+              // over allow_once so YOLO mode doesn't re-prompt for the same tool.
+              const autoApproveOption =
+                legacyConfirmationRequest.options?.find(
+                  (opt) => opt.kind === "allow_always"
+                ) ??
+                legacyConfirmationRequest.options?.find(
+                  (opt) => opt.kind === "allow_once"
+                );
               const outcome = autoApproveOption?.optionId || "proceed_always";
               if (!request.sessionId) {
                 console.error(
@@ -947,6 +951,17 @@ export const useConversationEvents = (
                   })
                   .catch((err) => {
                     console.error("Failed to send auto-approve response:", err);
+                    // Fall back to showing the confirmation dialog so the user
+                    // can manually approve and the call doesn't get stuck.
+                    setConfirmationRequests((prev) => {
+                      const newMap = new Map(prev);
+                      newMap.set(toolCallId, legacyConfirmationRequest);
+                      console.log(
+                        `⚠️ [YOLO] Auto-approve failed, falling back to manual confirmation for toolCallId:`,
+                        toolCallId
+                      );
+                      return newMap;
+                    });
                   });
               }
             } else {
