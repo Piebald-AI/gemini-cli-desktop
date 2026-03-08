@@ -265,7 +265,7 @@ function getOptionKind(
 /**
  * Custom hook to set up event listeners for conversation events.
  * Handles CLI I/O logging, tool call confirmations, and AI turn events.
- * 
+ *
  * @param setCliIOLogs - State setter for CLI input/output logs
  * @param setConfirmationRequests - State setter for tool call confirmation requests
  * @param updateConversation - Function to update conversation state
@@ -294,7 +294,7 @@ export const useConversationEvents = (
   /**
    * Sets up event listeners for a specific conversation.
    * Listens for CLI I/O events, tool call confirmations, and AI turn events.
-   * 
+   *
    * @param conversationId - The ID of the conversation to listen to
    * @returns Cleanup function to remove all event listeners
    */
@@ -922,24 +922,25 @@ export const useConversationEvents = (
 
             // If yolo mode is enabled, auto-approve the tool call
             if (isYoloEnabledRef.current) {
-              console.log(
-                `🤖 [YOLO] Auto-approving tool call: ${toolCallId}`
-              );
+              console.log(`🤖 [YOLO] Auto-approving tool call: ${toolCallId}`);
               // Find the "allow_always" or "allow_once" option and use it
               const autoApproveOption = legacyConfirmationRequest.options?.find(
-                (opt) => opt.kind === "allow_always" || opt.kind === "allow_once"
+                (opt) =>
+                  opt.kind === "allow_always" || opt.kind === "allow_once"
               );
               const outcome = autoApproveOption?.optionId || "proceed_always";
 
               // Send approval response to backend
-              api.send_tool_call_confirmation_response({
-                sessionId: conversationId,
-                requestId: legacyConfirmationRequest.requestId,
-                toolCallId: toolCallId,
-                outcome: outcome,
-              }).catch((err) => {
-                console.error("Failed to send auto-approve response:", err);
-              });
+              api
+                .send_tool_call_confirmation_response({
+                  sessionId: conversationId,
+                  requestId: legacyConfirmationRequest.requestId,
+                  toolCallId: toolCallId,
+                  outcome: outcome,
+                })
+                .catch((err) => {
+                  console.error("Failed to send auto-approve response:", err);
+                });
             } else {
               // Only store confirmation request if yolo mode is disabled
               setConfirmationRequests((prev) => {

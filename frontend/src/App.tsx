@@ -158,11 +158,12 @@ function RootLayoutContent() {
   });
 
   // Get yolo mode status from backend config
-  const isYoloEnabled = backendState.selectedBackend === "gemini"
-    ? backendState.configs.gemini.yolo
-    : backendState.selectedBackend === "qwen"
-      ? backendState.configs.qwen.yolo
-      : false;
+  const isYoloEnabled =
+    backendState.selectedBackend === "gemini"
+      ? backendState.configs.gemini.yolo
+      : backendState.selectedBackend === "qwen"
+        ? backendState.configs.qwen.yolo
+        : false;
 
   const { setupEventListenerForConversation } = useConversationEvents(
     setCliIOLogs,

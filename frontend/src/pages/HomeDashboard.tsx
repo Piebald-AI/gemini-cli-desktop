@@ -33,11 +33,8 @@ import { GeminiMessagePart } from "../types";
 export const HomeDashboard: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const {
-    currentConversation,
-    handleConfirmToolCall,
-    confirmationRequests,
-  } = useConversation();
+  const { currentConversation, handleConfirmToolCall, confirmationRequests } =
+    useConversation();
 
   const { selectedBackend } = useBackend();
   const backendText = getBackendText(selectedBackend);
@@ -62,8 +59,8 @@ export const HomeDashboard: React.FC = () => {
       isNearBottomRef.current = height - position < threshold;
     };
 
-    container.addEventListener('scroll', handleScroll, { passive: true });
-    return () => container.removeEventListener('scroll', handleScroll);
+    container.addEventListener("scroll", handleScroll, { passive: true });
+    return () => container.removeEventListener("scroll", handleScroll);
   }, []);
 
   // Auto-scroll to bottom when content grows (only if user is near bottom)
@@ -75,7 +72,7 @@ export const HomeDashboard: React.FC = () => {
     const observer = new ResizeObserver(() => {
       const newHeight = container.scrollHeight;
       const prevHeight = prevScrollHeightRef.current;
-      
+
       // Only scroll if content grew and user is near bottom
       if (newHeight > prevHeight && isNearBottomRef.current) {
         // Use requestAnimationFrame for smooth scrolling
@@ -83,7 +80,7 @@ export const HomeDashboard: React.FC = () => {
           container.scrollTop = container.scrollHeight;
         });
       }
-      
+
       prevScrollHeightRef.current = newHeight;
     });
 
