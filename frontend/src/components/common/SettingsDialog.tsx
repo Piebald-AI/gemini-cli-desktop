@@ -46,6 +46,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useBackend, useBackendConfig } from "@/contexts/BackendContext";
 import { GeminiAuthMethod, LLxprtProvider } from "@/types/backend";
+import { supportedLanguages, languageNames } from "@/i18n";
 
 interface OpenRouterModel {
   id: string;
@@ -249,10 +250,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                 <SelectValue placeholder={t("conversations.selectLanguage")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="en">English</SelectItem>
-                <SelectItem value="zh-CN">简体中文</SelectItem>
-                <SelectItem value="zh-TW">繁體中文</SelectItem>
-                <SelectItem value="ru">Русский</SelectItem>
+                {supportedLanguages.map((lang) => (
+                  <SelectItem key={lang} value={lang}>
+                    {languageNames[lang]}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
