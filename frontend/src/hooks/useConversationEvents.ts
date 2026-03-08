@@ -922,25 +922,33 @@ export const useConversationEvents = (
 
             // If yolo mode is enabled, auto-approve the tool call
             if (isYoloEnabledRef.current) {
-              console.log(`🤖 [YOLO] Auto-approving tool call: ${toolCallId}`);
+              console.log(
+                `🤖 [YOLO] Auto-approving tool call: ${toolCallId}`,
+                legacyConfirmationRequest
+              );
               // Find the "allow_always" or "allow_once" option and use it
               const autoApproveOption = legacyConfirmationRequest.options?.find(
                 (opt) =>
                   opt.kind === "allow_always" || opt.kind === "allow_once"
               );
               const outcome = autoApproveOption?.optionId || "proceed_always";
-
-              // Send approval response to backend
-              api
-                .send_tool_call_confirmation_response({
-                  sessionId: conversationId,
-                  requestId: legacyConfirmationRequest.requestId,
-                  toolCallId: toolCallId,
-                  outcome: outcome,
-                })
-                .catch((err) => {
-                  console.error("Failed to send auto-approve response:", err);
-                });
+              if (!request.sessionId) {
+                console.error(
+                  `🤖 [YOLO] No sessionId found for tool call: ${toolCallId}`
+                );
+              } else {
+                // Send approval response to backend
+                api
+                  .send_tool_call_confirmation_response({
+                    sessionId: request.sessionId,
+                    requestId: legacyConfirmationRequest.requestId,
+                    toolCallId: toolCallId,
+                    outcome: outcome,
+                  })
+                  .catch((err) => {
+                    console.error("Failed to send auto-approve response:", err);
+                  });
+              }
             } else {
               // Only store confirmation request if yolo mode is disabled
               setConfirmationRequests((prev) => {
