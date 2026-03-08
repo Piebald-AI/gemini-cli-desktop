@@ -1,7 +1,7 @@
 use anyhow::{Context, Error as AnyhowError};
 use include_dir::{Dir, include_dir};
 use rocket::{
-    Request, Response, Shutdown, State, get,
+    Request, Response, Shutdown, State, delete, get,
     http::{ContentType, Status},
     post,
     response::{self, Responder},
@@ -327,6 +327,12 @@ struct WriteFileContentRequest {
     content: String,
 }
 
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct DeleteProjectRequest {
+    project_id: String,
+}
+
 #[derive(Debug)]
 pub struct AnyhowResponder(pub AnyhowError);
 
@@ -505,6 +511,30 @@ async fn export_conversation_history(
         .await
         .context("Failed to export conversation history")
         .map_err(AnyhowResponder)
+}
+
+#[delete("/conversations/<chat_id>")]
+async fn delete_conversation(chat_id: String, state: &State<AppState>) -> AppResult<()> {
+    let decoded_chat_id = urlencoding::decode(&chat_id)
+        .map_err(|e| AnyhowError::msg(format!("Failed to decode chat ID: {}", e)))?;
+
+    let backend = state.backend.lock().await;
+    Ok(backend
+        .delete_conversation(&decoded_chat_id)
+        .await
+        .context("Failed to delete conversation")?)
+}
+
+#[post("/delete-project", data = "<request>")]
+async fn delete_project(
+    request: Json<DeleteProjectRequest>,
+    state: &State<AppState>,
+) -> AppResult<()> {
+    let backend = state.backend.lock().await;
+    Ok(backend
+        .delete_project(&request.project_id)
+        .await
+        .context("Failed to delete project")?)
 }
 
 #[get("/check-cli-installed")]
@@ -922,6 +952,8 @@ fn rocket() -> _ {
             get_project_discussions,
             get_detailed_conversation,
             export_conversation_history,
+            delete_conversation,
+            delete_project,
             read_file_content,
             read_binary_file_as_base64,
             get_canonical_path,
