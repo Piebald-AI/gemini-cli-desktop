@@ -33,18 +33,67 @@ import { GeminiMessagePart } from "../types";
 export const HomeDashboard: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const {
-    currentConversation,
-    messagesContainerRef,
-    handleConfirmToolCall,
-    confirmationRequests,
-  } = useConversation();
-
-  // Debug logging for currentConversation
-  console.log("🏠 HomeDashboard - currentConversation:", currentConversation);
+  const { currentConversation, handleConfirmToolCall, confirmationRequests } =
+    useConversation();
 
   const { selectedBackend } = useBackend();
   const backendText = getBackendText(selectedBackend);
+
+  // Use a local ref for auto-scrolling
+  const localContainerRef = React.useRef<HTMLDivElement>(null);
+
+  // Track if user is near bottom (for auto-scroll behavior)
+  const isNearBottomRef = React.useRef(true);
+  // Track previous scroll height to detect content growth
+  const prevScrollHeightRef = React.useRef<number>(0);
+
+  // Listen for scroll events to track user position
+  React.useEffect(() => {
+    const container = localContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const threshold = 100; // pixels from bottom
+      const position = container.scrollTop + container.clientHeight;
+      const height = container.scrollHeight;
+      isNearBottomRef.current = height - position < threshold;
+    };
+
+    container.addEventListener("scroll", handleScroll, { passive: true });
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Auto-scroll to bottom when content grows (only if user is near bottom)
+  React.useEffect(() => {
+    const container = localContainerRef.current;
+    if (!container || !currentConversation?.messages.length) return;
+
+    // Use ResizeObserver to detect when content height changes
+    const observer = new ResizeObserver(() => {
+      const newHeight = container.scrollHeight;
+      const prevHeight = prevScrollHeightRef.current;
+
+      // Only scroll if content grew and user is near bottom
+      if (newHeight > prevHeight && isNearBottomRef.current) {
+        // Use requestAnimationFrame for smooth scrolling
+        requestAnimationFrame(() => {
+          container.scrollTop = container.scrollHeight;
+        });
+      }
+
+      prevScrollHeightRef.current = newHeight;
+    });
+
+    // Observe the content container (the div with space-y-8)
+    const contentContainer = container.firstElementChild;
+    if (contentContainer) {
+      observer.observe(contentContainer);
+      // Initial height capture
+      prevScrollHeightRef.current = container.scrollHeight;
+    }
+
+    return () => observer.disconnect();
+  }, [currentConversation?.messages.length]);
 
   return (
     <>
@@ -53,7 +102,7 @@ export const HomeDashboard: React.FC = () => {
           <NewChatPlaceholder />
         ) : (
           <div
-            ref={messagesContainerRef as React.RefObject<HTMLDivElement>}
+            ref={localContainerRef}
             className="flex-1 min-h-0 overflow-y-auto p-6 relative"
           >
             <div className="space-y-8 pb-4">

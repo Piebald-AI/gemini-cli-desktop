@@ -2,6 +2,7 @@ import React, { useCallback, useRef } from "react";
 import type { TextMessagePart } from "../types";
 import { listen } from "@/lib/listen";
 import { getWebSocketManager } from "../lib/webApi";
+import { api } from "../lib/api";
 import { Conversation, Message, CliIO } from "../types";
 import { ToolCallConfirmationRequest } from "../utils/toolCallParser";
 import { type ToolCall } from "../utils/toolCallParser";
@@ -261,6 +262,16 @@ function getOptionKind(
   }
 }
 
+/**
+ * Custom hook to set up event listeners for conversation events.
+ * Handles CLI I/O logging, tool call confirmations, and AI turn events.
+ *
+ * @param setCliIOLogs - State setter for CLI input/output logs
+ * @param setConfirmationRequests - State setter for tool call confirmation requests
+ * @param updateConversation - Function to update conversation state
+ * @param isYoloEnabled - Optional flag to enable yolo mode (auto-approve tool calls)
+ * @returns Object with setupEventListenerForConversation function
+ */
 export const useConversationEvents = (
   setCliIOLogs: React.Dispatch<React.SetStateAction<CliIO[]>>,
   setConfirmationRequests: React.Dispatch<
@@ -269,13 +280,24 @@ export const useConversationEvents = (
   updateConversation: (
     conversationId: string,
     updateFn: (conv: Conversation, lastMsg: Message) => void
-  ) => void
+  ) => void,
+  isYoloEnabled?: boolean
 ) => {
   // Buffer agent text chunks seen on CLI output in case the UI misses
   // ai-output streaming events (web WS race). Cleared on turn finish.
   const pendingAssistantTextRef = useRef<Map<string, string>>(new Map());
   const sawAiOutputRef = useRef<Map<string, boolean>>(new Map());
+  // Use ref to avoid re-creating listeners when yolo mode toggles
+  const isYoloEnabledRef = useRef<boolean>(isYoloEnabled ?? false);
+  isYoloEnabledRef.current = isYoloEnabled ?? false;
 
+  /**
+   * Sets up event listeners for a specific conversation.
+   * Listens for CLI I/O events, tool call confirmations, and AI turn events.
+   *
+   * @param conversationId - The ID of the conversation to listen to
+   * @returns Cleanup function to remove all event listeners
+   */
   const setupEventListenerForConversation = useCallback(
     async (conversationId: string): Promise<() => void> => {
       // In web mode, ensure WebSocket connection is ready before registering listeners
@@ -898,19 +920,66 @@ export const useConversationEvents = (
                 : [],
             };
 
-            setConfirmationRequests((prev) => {
-              const newMap = new Map(prev);
-              newMap.set(toolCallId, legacyConfirmationRequest);
+            // If yolo mode is enabled, auto-approve the tool call
+            if (isYoloEnabledRef.current) {
               console.log(
-                `✅ Stored confirmation request in Map for toolCallId:`,
-                toolCallId
+                `🤖 [YOLO] Auto-approving tool call: ${toolCallId}`,
+                legacyConfirmationRequest
               );
-              console.log(
-                `✅ Total confirmation requests in Map:`,
-                newMap.size
-              );
-              return newMap;
-            });
+              // Find the best auto-approve option, preferring allow_always
+              // over allow_once so YOLO mode doesn't re-prompt for the same tool.
+              const autoApproveOption =
+                legacyConfirmationRequest.options?.find(
+                  (opt) => opt.kind === "allow_always"
+                ) ??
+                legacyConfirmationRequest.options?.find(
+                  (opt) => opt.kind === "allow_once"
+                );
+              const outcome = autoApproveOption?.optionId || "proceed_always";
+              if (!request.sessionId) {
+                console.error(
+                  `🤖 [YOLO] No sessionId found for tool call: ${toolCallId}`
+                );
+              } else {
+                // Send approval response to backend
+                api
+                  .send_tool_call_confirmation_response({
+                    sessionId: request.sessionId,
+                    requestId: legacyConfirmationRequest.requestId,
+                    toolCallId: toolCallId,
+                    outcome: outcome,
+                  })
+                  .catch((err) => {
+                    console.error("Failed to send auto-approve response:", err);
+                    // Fall back to showing the confirmation dialog so the user
+                    // can manually approve and the call doesn't get stuck.
+                    setConfirmationRequests((prev) => {
+                      const newMap = new Map(prev);
+                      newMap.set(toolCallId, legacyConfirmationRequest);
+                      console.log(
+                        `⚠️ [YOLO] Auto-approve failed, falling back to manual confirmation for toolCallId:`,
+                        toolCallId
+                      );
+                      return newMap;
+                    });
+                  });
+              }
+            } else {
+              // Only store confirmation request if yolo mode is disabled
+              setConfirmationRequests((prev) => {
+                const newMap = new Map(prev);
+                newMap.set(toolCallId, legacyConfirmationRequest);
+                console.log(
+                  `✅ Stored confirmation request in Map for toolCallId:`,
+                  toolCallId
+                );
+                console.log(
+                  `✅ Total confirmation requests in Map:`,
+                  newMap.size
+                );
+                return newMap;
+              });
+            }
           }
         );
         unlistenFunctions.push(unlistenAcpPermissionRequest);
