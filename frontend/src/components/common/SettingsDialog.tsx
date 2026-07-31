@@ -45,7 +45,16 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useBackend, useBackendConfig } from "@/contexts/BackendContext";
-import { GeminiAuthMethod, LLxprtProvider } from "@/types/backend";
+import {
+  GeminiAuthMethod,
+  LLxprtApiFormat,
+  LLxprtProvider,
+  LLxprtRegion,
+} from "@/types/backend";
+import {
+  getMiniMaxEndpoint,
+  MINIMAX_DEFAULT_MODEL,
+} from "@/utils/providerConfig";
 import { supportedLanguages, languageNames } from "@/i18n";
 
 interface OpenRouterModel {
@@ -73,6 +82,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     useBackendConfig("gemini");
   const { config: llxprtConfig, updateConfig: updateLLxprtConfig } =
     useBackendConfig("llxprt");
+  const minimaxApiFormat = llxprtConfig.apiFormat ?? "openai";
+  const minimaxRegion = llxprtConfig.region ?? "global";
 
   // State for OpenRouter model fetching
   const [openRouterModels, setOpenRouterModels] = useState<OpenRouterModel[]>(
@@ -626,7 +637,15 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                       provider: value as LLxprtProvider,
                     };
 
-                    if (value === "openrouter") {
+                    if (value === "minimax") {
+                      const apiFormat: LLxprtApiFormat = "openai";
+                      const region: LLxprtRegion = "global";
+                      updates.apiFormat = apiFormat;
+                      updates.region = region;
+                      updates.baseUrl = getMiniMaxEndpoint(region, apiFormat);
+                      updates.model = MINIMAX_DEFAULT_MODEL;
+                      onModelChange?.(MINIMAX_DEFAULT_MODEL);
+                    } else if (value === "openrouter") {
                       updates.baseUrl = "https://openrouter.ai/api/v1";
                     } else if (
                       [
@@ -662,6 +681,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                     <SelectItem value="groq">Groq</SelectItem>
                     <SelectItem value="together">Together AI</SelectItem>
                     <SelectItem value="xai">xAI (Grok)</SelectItem>
+                    <SelectItem value="minimax">MiniMax</SelectItem>
                     <SelectItem value="custom">
                       Custom OpenAI-compatible
                     </SelectItem>
@@ -685,6 +705,83 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                   placeholder="sk-..."
                 />
               </div>
+
+              {/* MiniMax endpoint configuration */}
+              {llxprtConfig.provider === "minimax" && (
+                <div className="space-y-3 rounded-md border border-gray-200 p-3 dark:border-gray-700">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
+                        API compatibility
+                      </label>
+                      <Select
+                        value={minimaxApiFormat}
+                        onValueChange={(value) => {
+                          const apiFormat = value as LLxprtApiFormat;
+                          updateLLxprtConfig({
+                            apiFormat,
+                            baseUrl: getMiniMaxEndpoint(
+                              minimaxRegion,
+                              apiFormat
+                            ),
+                          });
+                        }}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="openai">
+                            OpenAI-compatible
+                          </SelectItem>
+                          <SelectItem value="anthropic">
+                            Anthropic-compatible
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
+                        Region
+                      </label>
+                      <Select
+                        value={minimaxRegion}
+                        onValueChange={(value) => {
+                          const region = value as LLxprtRegion;
+                          updateLLxprtConfig({
+                            region,
+                            baseUrl: getMiniMaxEndpoint(
+                              region,
+                              minimaxApiFormat
+                            ),
+                          });
+                        }}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="global">Global</SelectItem>
+                          <SelectItem value="cn">China (CN)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
+                      Endpoint URL
+                    </label>
+                    <Input
+                      type="text"
+                      readOnly
+                      value={getMiniMaxEndpoint(
+                        minimaxRegion,
+                        minimaxApiFormat
+                      )}
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Model */}
               <div>
@@ -799,7 +896,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                                     ? "meta-llama/Llama-3-70b-chat-hf"
                                     : llxprtConfig.provider === "xai"
                                       ? "grok-beta"
-                                      : "model-name"
+                                      : llxprtConfig.provider === "minimax"
+                                        ? MINIMAX_DEFAULT_MODEL
+                                        : "model-name"
                     }
                   />
                 )}

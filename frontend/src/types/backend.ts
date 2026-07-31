@@ -38,7 +38,11 @@ export type LLxprtProvider =
   | "groq"
   | "together"
   | "xai"
+  | "minimax"
   | "custom";
+
+export type LLxprtApiFormat = "openai" | "anthropic";
+export type LLxprtRegion = "global" | "cn";
 
 export interface LLxprtConfig {
   type: "llxprt";
@@ -46,6 +50,8 @@ export interface LLxprtConfig {
   apiKey: string;
   model: string;
   baseUrl: string;
+  apiFormat?: LLxprtApiFormat;
+  region?: LLxprtRegion;
 }
 
 // Type guard for LLxprtConfig
@@ -59,6 +65,7 @@ export function isLLxprtConfig(config: unknown): config is LLxprtConfig {
     "groq",
     "together",
     "xai",
+    "minimax",
     "custom",
   ];
 

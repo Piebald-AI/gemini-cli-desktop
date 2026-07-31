@@ -4,6 +4,7 @@ import {
   QwenConfig,
   LLxprtConfig,
 } from "../types/backend";
+import { getMiniMaxEndpoint, MINIMAX_DEFAULT_MODEL } from "./providerConfig";
 
 export const defaultGeminiConfig: GeminiConfig = {
   type: "gemini",
@@ -84,6 +85,10 @@ export const llxprtProviderDefaults: Record<
   xai: {
     baseUrl: "",
     modelPlaceholder: "grok-beta",
+  },
+  minimax: {
+    baseUrl: getMiniMaxEndpoint(),
+    modelPlaceholder: MINIMAX_DEFAULT_MODEL,
   },
   custom: {
     baseUrl: "https://api.example.com/v1",
