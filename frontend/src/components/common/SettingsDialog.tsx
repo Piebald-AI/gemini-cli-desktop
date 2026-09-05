@@ -414,6 +414,19 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                     <SelectValue placeholder={t("conversations.selectModel")} />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="gemini-3.1-pro-preview">
+                      <div className="flex items-center gap-2">
+                        <span>{t("backend.geminiModels.pro3")}</span>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="h-4 w-4 text-blue-500" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{t("backend.gemini3ProRequirement")}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                    </SelectItem>
                     <SelectItem value="gemini-3-pro-preview">
                       <div className="flex items-center gap-2">
                         <span>{t("backend.geminiModels.pro3")}</span>

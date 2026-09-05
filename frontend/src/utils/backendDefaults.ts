@@ -10,6 +10,7 @@ export const defaultGeminiConfig: GeminiConfig = {
   authMethod: "oauth-personal",
   apiKey: "",
   models: [
+    "gemini-3.1-pro-preview",
     "gemini-3-pro-preview",
     "gemini-3-flash-preview",
     "gemini-2.5-pro",
@@ -67,7 +68,7 @@ export const llxprtProviderDefaults: Record<
   },
   gemini: {
     baseUrl: "",
-    modelPlaceholder: "gemini-3-flash-preview",
+    modelPlaceholder: "gemini-3.1-pro-preview",
   },
   qwen: {
     baseUrl: "",
