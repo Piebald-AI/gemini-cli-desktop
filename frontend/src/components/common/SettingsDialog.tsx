@@ -47,6 +47,7 @@ import { cn } from "@/lib/utils";
 import { useBackend, useBackendConfig } from "@/contexts/BackendContext";
 import { GeminiAuthMethod, LLxprtProvider } from "@/types/backend";
 import { supportedLanguages, languageNames } from "@/i18n";
+import { MODEL_PLACEHOLDERS } from "@/utils/providerConfig";
 
 interface OpenRouterModel {
   id: string;
@@ -416,10 +417,17 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                   <SelectContent>
                     <SelectItem value="gemini-3.1-pro-preview">
                       <div className="flex items-center gap-2">
-                        <span>{t("backend.geminiModels.pro3")}</span>
+                        <span>{t("backend.geminiModels.pro31")}</span>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Info className="h-4 w-4 text-blue-500" />
+                            <button
+                              type="button"
+                              aria-label={t("backend.gemini3ProRequirement")}
+                              className="inline-flex h-4 w-4 items-center justify-center rounded-sm text-blue-500 transition-colors hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                              onClick={(event) => event.preventDefault()}
+                            >
+                              <Info className="h-4 w-4" />
+                            </button>
                           </TooltipTrigger>
                           <TooltipContent>
                             <p>{t("backend.gemini3ProRequirement")}</p>
@@ -432,7 +440,14 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                         <span>{t("backend.geminiModels.pro3")}</span>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Info className="h-4 w-4 text-blue-500" />
+                            <button
+                              type="button"
+                              aria-label={t("backend.gemini3ProRequirement")}
+                              className="inline-flex h-4 w-4 items-center justify-center rounded-sm text-blue-500 transition-colors hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                              onClick={(event) => event.preventDefault()}
+                            >
+                              <Info className="h-4 w-4" />
+                            </button>
                           </TooltipTrigger>
                           <TooltipContent>
                             <p>{t("backend.gemini3ProRequirement")}</p>
@@ -445,7 +460,14 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                         <span>{t("backend.geminiModels.flash3")}</span>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Info className="h-4 w-4 text-blue-500" />
+                            <button
+                              type="button"
+                              aria-label={t("backend.gemini3ProRequirement")}
+                              className="inline-flex h-4 w-4 items-center justify-center rounded-sm text-blue-500 transition-colors hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                              onClick={(event) => event.preventDefault()}
+                            >
+                              <Info className="h-4 w-4" />
+                            </button>
                           </TooltipTrigger>
                           <TooltipContent>
                             <p>{t("backend.gemini3ProRequirement")}</p>
@@ -803,7 +825,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                           : llxprtConfig.provider === "openrouter"
                             ? "anthropic/claude-sonnet-4.5"
                             : llxprtConfig.provider === "gemini"
-                              ? "gemini-3-flash-preview"
+                              ? MODEL_PLACEHOLDERS.gemini
                               : llxprtConfig.provider === "qwen"
                                 ? "qwen-max"
                                 : llxprtConfig.provider === "groq"
