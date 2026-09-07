@@ -31,12 +31,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import {
-  Info,
-  RefreshCw,
-  ChevronsUpDown,
-  Check,
-} from "lucide-react";
+import { Info, RefreshCw, ChevronsUpDown, Check } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -412,7 +407,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                     }}
                   >
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder={t("conversations.selectModel")} />
+                      <SelectValue
+                        placeholder={t("conversations.selectModel")}
+                      />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="gemini-3.1-pro-preview">
@@ -435,22 +432,27 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                       </SelectItem>
                     </SelectContent>
                   </Select>
-                  {geminiConfig.defaultModel && ["gemini-3.1-pro-preview", "gemini-3-pro-preview", "gemini-3-flash-preview"].includes(geminiConfig.defaultModel) && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          type="button"
-                          aria-label={t("backend.gemini3ProRequirement")}
-                          className="inline-flex h-4 w-4 items-center justify-center rounded-sm text-blue-500 transition-colors hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-                        >
-                          <Info className="h-4 w-4" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>{t("backend.gemini3ProRequirement")}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  )}
+                  {geminiConfig.defaultModel &&
+                    [
+                      "gemini-3.1-pro-preview",
+                      "gemini-3-pro-preview",
+                      "gemini-3-flash-preview",
+                    ].includes(geminiConfig.defaultModel) && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            aria-label={t("backend.gemini3ProRequirement")}
+                            className="inline-flex h-4 w-4 items-center justify-center rounded-sm text-blue-500 transition-colors hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                          >
+                            <Info className="h-4 w-4" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{t("backend.gemini3ProRequirement")}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
                 </div>
               </div>
 
