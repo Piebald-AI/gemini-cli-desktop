@@ -2,6 +2,7 @@ import React, { useState, useCallback } from "react";
 import { api } from "../lib/api";
 import { Message, Conversation } from "../types";
 import { useBackend } from "../contexts/BackendContext";
+import { getMiniMaxEndpoint } from "../utils/providerConfig";
 
 interface UseMessageHandlerProps {
   activeConversation: string | null;
@@ -173,11 +174,23 @@ export const useMessageHandler = ({
           );
         } else if (selectedBackend === "llxprt") {
           const llxprtCfg = backendState.configs.llxprt;
+          const baseUrl =
+            llxprtCfg.provider === "minimax"
+              ? getMiniMaxEndpoint(
+                  llxprtCfg.region ?? "global",
+                  llxprtCfg.apiFormat ?? "openai"
+                )
+              : llxprtCfg.baseUrl || undefined;
+          const provider =
+            llxprtCfg.provider === "minimax" &&
+            (llxprtCfg.apiFormat ?? "openai") === "anthropic"
+              ? "minimax-anthropic"
+              : llxprtCfg.provider;
           llxprtConfig = {
-            provider: llxprtCfg.provider,
+            provider,
             api_key: llxprtCfg.apiKey,
             model: llxprtCfg.model,
-            base_url: llxprtCfg.baseUrl || undefined,
+            base_url: baseUrl,
           };
           console.log(
             "🔍 [useMessageHandler] Setting llxprt_config for LLxprt:",

@@ -65,10 +65,17 @@ impl SessionEnvironment {
         );
         println!("🔧 [HANDSHAKE] Using API key (security delegated to CLI)");
 
-        match config.provider.as_str() {
+        match llxprt_provider_name(config) {
             "anthropic" => {
                 guards.push(EnvVarGuard::new("ANTHROPIC_API_KEY", &config.api_key));
                 println!("🔧 [HANDSHAKE] Set ANTHROPIC_API_KEY");
+
+                if let Some(url) = &config.base_url
+                    && !url.trim().is_empty()
+                {
+                    guards.push(EnvVarGuard::new("ANTHROPIC_BASE_URL", url));
+                    println!("🔧 [HANDSHAKE] Set ANTHROPIC_BASE_URL");
+                }
             }
             "openai" | "openrouter" => {
                 guards.push(EnvVarGuard::new("OPENAI_API_KEY", &config.api_key));
@@ -194,6 +201,14 @@ pub struct LLxprtConfig {
     pub api_key: String,
     pub model: String,
     pub base_url: Option<String>, // For custom/self-hosted providers
+}
+
+fn llxprt_provider_name(config: &LLxprtConfig) -> &str {
+    match config.provider.as_str() {
+        "openrouter" | "minimax" => "openai",
+        "minimax-anthropic" => "anthropic",
+        provider => provider,
+    }
 }
 
 use crate::acp::{
@@ -634,12 +649,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
     // Build command based on backend type
     let mut cmd = {
         if let Some(config) = &llxprt_config {
-            // Map UI provider names to LLxprt provider names
-            // OpenRouter is actually "openai" provider with custom base URL
-            let llxprt_provider = match config.provider.as_str() {
-                "openrouter" => "openai",
-                other => other,
-            };
+            let llxprt_provider = llxprt_provider_name(config);
 
             // Build command with --provider and --model flags
             let has_base_url = config
@@ -2495,6 +2505,63 @@ mod tests {
         std::thread::sleep(std::time::Duration::from_millis(10));
         assert!(std::env::var(key_var).is_err());
         assert!(std::env::var(url_var).is_err());
+    }
+
+    #[test]
+    #[serial_test::serial]
+    fn test_session_environment_llxprt_minimax_endpoints() {
+        let cases = [
+            (
+                "minimax",
+                "openai",
+                "mm-open",
+                "https://api.minimaxi.com/v1",
+                "OPENAI_API_KEY",
+                "OPENAI_BASE_URL",
+                "ANTHROPIC_API_KEY",
+                "ANTHROPIC_BASE_URL",
+            ),
+            (
+                "minimax-anthropic",
+                "anthropic",
+                "mm-anth",
+                "https://api.minimaxi.com/anthropic",
+                "ANTHROPIC_API_KEY",
+                "ANTHROPIC_BASE_URL",
+                "OPENAI_API_KEY",
+                "OPENAI_BASE_URL",
+            ),
+        ];
+
+        for (provider, llxprt_provider, api_key, url, key_var, url_var, other_key, other_url) in
+            cases
+        {
+            unsafe {
+                std::env::remove_var(key_var);
+                std::env::remove_var(url_var);
+                std::env::remove_var(other_key);
+                std::env::remove_var(other_url);
+            }
+
+            let config = LLxprtConfig {
+                provider: provider.to_string(),
+                api_key: api_key.to_string(),
+                model: "MiniMax-M3".to_string(),
+                base_url: Some(url.to_string()),
+            };
+
+            assert_eq!(llxprt_provider_name(&config), llxprt_provider);
+            {
+                let _env = SessionEnvironment::setup_llxprt(&config).unwrap();
+                assert_eq!(std::env::var(key_var).unwrap(), api_key);
+                assert_eq!(std::env::var(url_var).unwrap(), url);
+                assert!(std::env::var(other_key).is_err());
+                assert!(std::env::var(other_url).is_err());
+            }
+
+            assert!(std::env::var(key_var).is_err());
+            assert!(std::env::var(url_var).is_err());
+        }
     }
 
     #[test]

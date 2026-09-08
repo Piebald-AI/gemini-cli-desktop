@@ -5,6 +5,34 @@
  * This file contains provider metadata, default values, and validation patterns.
  */
 
+import type { LLxprtApiFormat, LLxprtRegion } from "../types/backend";
+
+export const MINIMAX_DEFAULT_MODEL = "MiniMax-M3";
+
+export const MINIMAX_ENDPOINTS: Record<
+  LLxprtRegion,
+  Record<LLxprtApiFormat, string>
+> = {
+  global: {
+    openai: "https://api.minimax.io/v1",
+    anthropic: "https://api.minimax.io/anthropic",
+  },
+  cn: {
+    openai: "https://api.minimaxi.com/v1",
+    anthropic: "https://api.minimaxi.com/anthropic",
+  },
+};
+
+export function getMiniMaxEndpoint(
+  region: LLxprtRegion = "global",
+  apiFormat: LLxprtApiFormat = "openai"
+): string {
+  const normalizedRegion = region === "cn" ? "cn" : "global";
+  const normalizedApiFormat =
+    apiFormat === "anthropic" ? "anthropic" : "openai";
+  return MINIMAX_ENDPOINTS[normalizedRegion][normalizedApiFormat];
+}
+
 export interface ProviderConfig {
   name: string;
   description: string;
@@ -86,6 +114,13 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
     defaultModel: "grok-4-fast",
     getApiKeyUrl: "https://console.x.ai/",
   },
+  minimax: {
+    name: "MiniMax",
+    description: "MiniMax models through OpenAI- or Anthropic-compatible APIs",
+    requiresBaseUrl: true,
+    defaultBaseUrl: MINIMAX_ENDPOINTS.global.openai,
+    defaultModel: MINIMAX_DEFAULT_MODEL,
+  },
   custom: {
     name: "Custom OpenAI-compatible",
     description: "Use any OpenAI-compatible API endpoint",
@@ -164,5 +199,6 @@ export const MODEL_PLACEHOLDERS: Record<string, string> = {
   groq: "llama-3.3-70b-versatile",
   together: "meta-llama/Llama-3-70b-chat-hf",
   xai: "grok-4-fast",
+  minimax: MINIMAX_DEFAULT_MODEL,
   custom: "model-name",
 } as const;
