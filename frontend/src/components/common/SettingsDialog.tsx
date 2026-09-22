@@ -74,6 +74,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
   const [isFetchingModels, setIsFetchingModels] = useState(false);
   const [comboboxOpen, setComboboxOpen] = useState(false);
   const comboboxRef = useRef<HTMLDivElement>(null);
+  // Identifies the latest model fetch so a slow response for a previous
+  // provider or API key is discarded instead of being shown for the current one
+  const modelFetchIdRef = useRef(0);
+  const modelFetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Close combobox when clicking outside
   useEffect(() => {
@@ -119,6 +123,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
       toast.error(`Please enter your ${providerLabel} API key first`);
       return;
     }
+
+    const fetchId = ++modelFetchIdRef.current;
+    const isCurrentFetch = () => fetchId === modelFetchIdRef.current;
 
     // Check cache first (use key prefix to avoid exposing full key)
     const cacheKey = `${llxprtConfig.provider}:${llxprtConfig.apiKey.substring(0, 10)}`;
@@ -179,6 +186,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
       const data = await response.json();
       const modelArray = Array.isArray(data) ? data : data.data || [];
 
+      // Provider or API key changed while the request was in flight
+      if (!isCurrentFetch()) {
+        return;
+      }
+
       if (modelArray.length === 0) {
         toast.warning("No models found. This may be a temporary issue.");
         return;
@@ -211,6 +223,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
 
       toast.success(`Loaded ${models.length} models from ${providerLabel}`);
     } catch (error) {
+      if (!isCurrentFetch()) {
+        return;
+      }
+
       console.error(`Error fetching ${providerLabel} models:`, error);
 
       if (error instanceof Error) {
@@ -225,7 +241,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
         toast.error("Failed to fetch models. Please try again.");
       }
     } finally {
-      setIsFetchingModels(false);
+      if (isCurrentFetch()) {
+        setIsFetchingModels(false);
+      }
     }
   }, [
     llxprtConfig.provider,
@@ -237,14 +255,24 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
 
   // Debounce to prevent spam clicking
   const debouncedFetchModels = useMemo(() => {
-    let timeoutId: ReturnType<typeof setTimeout> | undefined;
     return () => {
-      if (timeoutId) clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => {
+      if (modelFetchTimerRef.current) clearTimeout(modelFetchTimerRef.current);
+      modelFetchTimerRef.current = setTimeout(() => {
         fetchProviderModels();
       }, 300);
     };
   }, [fetchProviderModels]);
+
+  // Drop pending and in flight model fetches when the provider or API key
+  // changes, and clear the debounce timer on unmount
+  useEffect(() => {
+    modelFetchIdRef.current++;
+    if (modelFetchTimerRef.current) clearTimeout(modelFetchTimerRef.current);
+    setIsFetchingModels(false);
+    return () => {
+      if (modelFetchTimerRef.current) clearTimeout(modelFetchTimerRef.current);
+    };
+  }, [llxprtConfig.provider, llxprtConfig.apiKey]);
 
   // Derive translations directly where needed; remove unused variable to satisfy TS
 
