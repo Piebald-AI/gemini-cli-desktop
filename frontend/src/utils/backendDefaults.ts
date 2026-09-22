@@ -66,6 +66,10 @@ export const llxprtProviderDefaults: Record<
     baseUrl: "https://openrouter.ai/api/v1",
     modelPlaceholder: "anthropic/claude-3.5-sonnet",
   },
+  requesty: {
+    baseUrl: "https://router.requesty.ai/v1",
+    modelPlaceholder: "openai/gpt-4o-mini",
+  },
   gemini: {
     baseUrl: "",
     modelPlaceholder: "gemini-3.1-pro-preview",

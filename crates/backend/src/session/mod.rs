@@ -70,7 +70,7 @@ impl SessionEnvironment {
                 guards.push(EnvVarGuard::new("ANTHROPIC_API_KEY", &config.api_key));
                 println!("🔧 [HANDSHAKE] Set ANTHROPIC_API_KEY");
             }
-            "openai" | "openrouter" => {
+            "openai" | "openrouter" | "requesty" => {
                 guards.push(EnvVarGuard::new("OPENAI_API_KEY", &config.api_key));
                 println!("🔧 [HANDSHAKE] Set OPENAI_API_KEY");
 
@@ -190,7 +190,7 @@ pub struct GeminiAuthConfig {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LLxprtConfig {
-    pub provider: String, // "openai", "anthropic", "gemini", "qwen", "openrouter", etc.
+    pub provider: String, // "openai", "anthropic", "gemini", "qwen", "openrouter", "requesty", etc.
     pub api_key: String,
     pub model: String,
     pub base_url: Option<String>, // For custom/self-hosted providers
@@ -635,9 +635,9 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
     let mut cmd = {
         if let Some(config) = &llxprt_config {
             // Map UI provider names to LLxprt provider names
-            // OpenRouter is actually "openai" provider with custom base URL
+            // OpenRouter and Requesty are actually "openai" provider with custom base URL
             let llxprt_provider = match config.provider.as_str() {
-                "openrouter" => "openai",
+                "openrouter" | "requesty" => "openai",
                 other => other,
             };
 
@@ -2489,6 +2489,39 @@ mod tests {
             assert_eq!(
                 std::env::var(url_var).unwrap(),
                 "https://openrouter.ai/api/v1"
+            );
+        }
+
+        std::thread::sleep(std::time::Duration::from_millis(10));
+        assert!(std::env::var(key_var).is_err());
+        assert!(std::env::var(url_var).is_err());
+    }
+
+    #[test]
+    #[serial_test::serial]
+    fn test_session_environment_llxprt_requesty_with_base_url() {
+        let key_var = "OPENAI_API_KEY";
+        let url_var = "OPENAI_BASE_URL";
+        unsafe {
+            std::env::remove_var(key_var);
+        }
+        unsafe {
+            std::env::remove_var(url_var);
+        }
+
+        let config = LLxprtConfig {
+            provider: "requesty".to_string(),
+            api_key: "sk-requesty-test".to_string(),
+            model: "openai/gpt-4o-mini".to_string(),
+            base_url: Some("https://router.requesty.ai/v1".to_string()),
+        };
+
+        {
+            let _env = SessionEnvironment::setup_llxprt(&config).unwrap();
+            assert_eq!(std::env::var(key_var).unwrap(), "sk-requesty-test");
+            assert_eq!(
+                std::env::var(url_var).unwrap(),
+                "https://router.requesty.ai/v1"
             );
         }
 

@@ -24,7 +24,7 @@ Gemini CLI Desktop is a powerful, cross-platform desktop and web application tha
 - **Dual deployment modes**: Native desktop app and web application
 - **Real-time communication**: WebSocket-based event system for live updates
 - **Tool call confirmation**: User approval workflow for AI agent actions
-- **Multi-backend support**: Gemini CLI, Qwen Code, and LLxprt Code integration with support for 9+ AI providers (Anthropic, OpenAI, OpenRouter, Gemini, Qwen, Groq, Together, xAI, and custom endpoints)
+- **Multi-backend support**: Gemini CLI, Qwen Code, and LLxprt Code integration with support for 10+ AI providers (Anthropic, OpenAI, OpenRouter, Requesty, Gemini, Qwen, Groq, Together, xAI, and custom endpoints)
 - **Project management**: Session-based workspace management with chat history
 - **Security-first design**: Comprehensive command filtering and permission system
 - **Internationalization**: Full i18n support with language switching for English, Chinese Simplified, and Traditional Chinese
@@ -51,7 +51,7 @@ The project is organized as a Rust workspace with three main crates:
   - Comprehensive test suite with property-based testing
 - **Session Management** (`session/mod.rs`) - CLI process orchestration
   - Multi-backend support: Gemini CLI, Qwen Code, and LLxprt Code
-  - LLxprt provider configuration for 9+ AI providers (Anthropic, OpenAI, OpenRouter, Gemini, Qwen, Groq, Together, xAI, custom)
+  - LLxprt provider configuration for 10+ AI providers (Anthropic, OpenAI, OpenRouter, Requesty, Gemini, Qwen, Groq, Together, xAI, custom)
   - Working directory context preservation
   - Process lifecycle management
   - Authentication handling (API keys, Vertex AI, OAuth)
@@ -774,7 +774,7 @@ interface QwenConfig {
 
 **LLxprt Configuration** (NEW):
 ```typescript
-type LLxprtProvider = "anthropic" | "openai" | "openrouter" | "gemini"
+type LLxprtProvider = "anthropic" | "openai" | "openrouter" | "requesty" | "gemini"
                     | "qwen" | "groq" | "together" | "xai" | "custom";
 
 interface LLxprtConfig {
@@ -790,6 +790,7 @@ interface LLxprtConfig {
 - **Anthropic**: `claude-3-5-sonnet-20241022`, API key format: `sk-ant-*`
 - **OpenAI**: `gpt-4o`, API key format: `sk-*`
 - **OpenRouter**: `anthropic/claude-3.5-sonnet`, base URL: `https://openrouter.ai/api/v1`
+- **Requesty**: `openai/gpt-4o-mini`, base URL: `https://router.requesty.ai/v1`
 - **Gemini** (via LLxprt): `gemini-2.0-flash-exp`
 - **Qwen** (via LLxprt): `qwen-max`
 - **Groq**: `llama-3.3-70b-versatile`
@@ -799,7 +800,7 @@ interface LLxprtConfig {
 
 #### Authentication
 - **API key storage** (encrypted/secure storage planned)
-- **Multiple provider support** (Gemini, Vertex AI, Qwen, Anthropic, OpenAI, OpenRouter, Groq, Together, xAI, custom)
+- **Multiple provider support** (Gemini, Vertex AI, Qwen, Anthropic, OpenAI, OpenRouter, Requesty, Groq, Together, xAI, custom)
 - **Session-based authentication** for web mode
 - **Unified backend configuration** with validation
 - **API key format validation** for supported providers

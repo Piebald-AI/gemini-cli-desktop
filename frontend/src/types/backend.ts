@@ -33,6 +33,7 @@ export type LLxprtProvider =
   | "anthropic"
   | "openai"
   | "openrouter"
+  | "requesty"
   | "gemini"
   | "qwen"
   | "groq"
@@ -54,6 +55,7 @@ export function isLLxprtConfig(config: unknown): config is LLxprtConfig {
     "anthropic",
     "openai",
     "openrouter",
+    "requesty",
     "gemini",
     "qwen",
     "groq",

@@ -41,9 +41,9 @@ import { cn } from "@/lib/utils";
 import { useBackend, useBackendConfig } from "@/contexts/BackendContext";
 import { GeminiAuthMethod, LLxprtProvider } from "@/types/backend";
 import { supportedLanguages, languageNames } from "@/i18n";
-import { MODEL_PLACEHOLDERS } from "@/utils/providerConfig";
+import { MODEL_PLACEHOLDERS, supportsModelFetch } from "@/utils/providerConfig";
 
-interface OpenRouterModel {
+interface ProviderModel {
   id: string;
   name: string;
   description: string;
@@ -69,10 +69,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
   const { config: llxprtConfig, updateConfig: updateLLxprtConfig } =
     useBackendConfig("llxprt");
 
-  // State for OpenRouter model fetching
-  const [openRouterModels, setOpenRouterModels] = useState<OpenRouterModel[]>(
-    []
-  );
+  // State for provider model fetching (OpenRouter, Requesty)
+  const [providerModels, setProviderModels] = useState<ProviderModel[]>([]);
   const [isFetchingModels, setIsFetchingModels] = useState(false);
   const [comboboxOpen, setComboboxOpen] = useState(false);
   const comboboxRef = useRef<HTMLDivElement>(null);
@@ -101,7 +99,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     Record<
       string,
       {
-        models: OpenRouterModel[];
+        models: ProviderModel[];
         fetchedAt: number;
       }
     >
@@ -110,18 +108,23 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
   const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
   const REQUEST_TIMEOUT = 10000; // 10 seconds
 
-  // Fetch models from OpenRouter API with enhanced error handling and caching
-  const fetchOpenRouterModels = useCallback(async () => {
+  const canFetchModels = supportsModelFetch(llxprtConfig.provider);
+
+  // Fetch models from the provider API with enhanced error handling and caching
+  const fetchProviderModels = useCallback(async () => {
+    const isRequesty = llxprtConfig.provider === "requesty";
+    const providerLabel = isRequesty ? "Requesty" : "OpenRouter";
+
     if (!llxprtConfig.apiKey) {
-      toast.error("Please enter your OpenRouter API key first");
+      toast.error(`Please enter your ${providerLabel} API key first`);
       return;
     }
 
     // Check cache first (use key prefix to avoid exposing full key)
-    const cacheKey = llxprtConfig.apiKey.substring(0, 10);
+    const cacheKey = `${llxprtConfig.provider}:${llxprtConfig.apiKey.substring(0, 10)}`;
     const cached = modelCache[cacheKey];
     if (cached && Date.now() - cached.fetchedAt < CACHE_DURATION) {
-      setOpenRouterModels(cached.models);
+      setProviderModels(cached.models);
       toast.success(`Loaded ${cached.models.length} models from cache`);
       return;
     }
@@ -133,19 +136,36 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
 
-      const response = await fetch("https://openrouter.ai/api/v1/models", {
-        headers: {
-          Authorization: `Bearer ${llxprtConfig.apiKey}`,
-        },
-        signal: controller.signal,
-      });
+      const headers = {
+        Authorization: `Bearer ${llxprtConfig.apiKey}`,
+      };
+
+      let response: Response;
+      if (isRequesty) {
+        // Curated managed policies first, full catalog as fallback
+        response = await fetch("https://router.requesty.ai/v1/models/managed", {
+          headers,
+          signal: controller.signal,
+        });
+        if (!response.ok) {
+          response = await fetch("https://router.requesty.ai/v1/models", {
+            headers,
+            signal: controller.signal,
+          });
+        }
+      } else {
+        response = await fetch("https://openrouter.ai/api/v1/models", {
+          headers,
+          signal: controller.signal,
+        });
+      }
 
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        if (response.status === 401) {
+        if (response.status === 401 || response.status === 403) {
           throw new Error(
-            "Invalid API key. Please check your OpenRouter API key."
+            `Invalid API key. Please check your ${providerLabel} API key.`
           );
         } else if (response.status === 429) {
           throw new Error(
@@ -164,9 +184,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
         return;
       }
 
-      const models: OpenRouterModel[] = modelArray.map(
+      const models: ProviderModel[] = modelArray.map(
         (
-          model: OpenRouterModel & {
+          model: ProviderModel & {
             id: string;
             name?: string;
             description?: string;
@@ -178,7 +198,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
         })
       );
 
-      setOpenRouterModels(models);
+      setProviderModels(models);
 
       // Update cache
       setModelCache((prev) => ({
@@ -189,9 +209,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
         },
       }));
 
-      toast.success(`Loaded ${models.length} models from OpenRouter`);
+      toast.success(`Loaded ${models.length} models from ${providerLabel}`);
     } catch (error) {
-      console.error("Error fetching OpenRouter models:", error);
+      console.error(`Error fetching ${providerLabel} models:`, error);
 
       if (error instanceof Error) {
         if (error.name === "AbortError") {
@@ -207,7 +227,13 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     } finally {
       setIsFetchingModels(false);
     }
-  }, [llxprtConfig.apiKey, modelCache, CACHE_DURATION, REQUEST_TIMEOUT]);
+  }, [
+    llxprtConfig.provider,
+    llxprtConfig.apiKey,
+    modelCache,
+    CACHE_DURATION,
+    REQUEST_TIMEOUT,
+  ]);
 
   // Debounce to prevent spam clicking
   const debouncedFetchModels = useMemo(() => {
@@ -215,10 +241,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
-        fetchOpenRouterModels();
+        fetchProviderModels();
       }, 300);
     };
-  }, [fetchOpenRouterModels]);
+  }, [fetchProviderModels]);
 
   // Derive translations directly where needed; remove unused variable to satisfy TS
 
@@ -621,6 +647,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
 
                     if (value === "openrouter") {
                       updates.baseUrl = "https://openrouter.ai/api/v1";
+                    } else if (value === "requesty") {
+                      updates.baseUrl = "https://router.requesty.ai/v1";
                     } else if (
                       [
                         "anthropic",
@@ -636,6 +664,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                       updates.baseUrl = "";
                     }
 
+                    // Fetched model lists are provider specific
+                    setProviderModels([]);
                     updateLLxprtConfig(updates);
                   }}
                 >
@@ -649,6 +679,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                     <SelectItem value="openai">OpenAI (GPT)</SelectItem>
                     <SelectItem value="openrouter">
                       OpenRouter (Multi-provider)
+                    </SelectItem>
+                    <SelectItem value="requesty">
+                      Requesty (Multi-provider)
                     </SelectItem>
                     <SelectItem value="gemini">Google Gemini</SelectItem>
                     <SelectItem value="qwen">Qwen/Alibaba Cloud</SelectItem>
@@ -685,7 +718,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                   <label className="text-xs font-medium text-gray-600 dark:text-gray-400">
                     {t("conversations.model")}
                   </label>
-                  {llxprtConfig.provider === "openrouter" && (
+                  {canFetchModels && (
                     <Button
                       type="button"
                       size="sm"
@@ -702,8 +735,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                   )}
                 </div>
 
-                {llxprtConfig.provider === "openrouter" &&
-                openRouterModels.length > 0 ? (
+                {canFetchModels && providerModels.length > 0 ? (
                   <div className="relative" ref={comboboxRef}>
                     <Button
                       type="button"
@@ -714,7 +746,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                       onClick={() => setComboboxOpen(!comboboxOpen)}
                     >
                       {llxprtConfig.model
-                        ? openRouterModels.find(
+                        ? providerModels.find(
                             (m) => m.id === llxprtConfig.model
                           )?.name || llxprtConfig.model
                         : "Select a model..."}
@@ -727,7 +759,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                           <CommandList>
                             <CommandEmpty>No model found.</CommandEmpty>
                             <CommandGroup>
-                              {openRouterModels.map((model) => (
+                              {providerModels.map((model) => (
                                 <CommandItem
                                   key={model.id}
                                   value={model.name}
@@ -782,17 +814,19 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                           ? "gpt-4o"
                           : llxprtConfig.provider === "openrouter"
                             ? "anthropic/claude-sonnet-4.5"
-                            : llxprtConfig.provider === "gemini"
-                              ? MODEL_PLACEHOLDERS.gemini
-                              : llxprtConfig.provider === "qwen"
-                                ? "qwen-max"
-                                : llxprtConfig.provider === "groq"
-                                  ? "llama-3.3-70b-versatile"
-                                  : llxprtConfig.provider === "together"
-                                    ? "meta-llama/Llama-3-70b-chat-hf"
-                                    : llxprtConfig.provider === "xai"
-                                      ? "grok-beta"
-                                      : "model-name"
+                            : llxprtConfig.provider === "requesty"
+                              ? MODEL_PLACEHOLDERS.requesty
+                              : llxprtConfig.provider === "gemini"
+                                ? MODEL_PLACEHOLDERS.gemini
+                                : llxprtConfig.provider === "qwen"
+                                  ? "qwen-max"
+                                  : llxprtConfig.provider === "groq"
+                                    ? "llama-3.3-70b-versatile"
+                                    : llxprtConfig.provider === "together"
+                                      ? "meta-llama/Llama-3-70b-chat-hf"
+                                      : llxprtConfig.provider === "xai"
+                                        ? "grok-beta"
+                                        : "model-name"
                     }
                   />
                 )}
