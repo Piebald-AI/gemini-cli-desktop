@@ -393,6 +393,7 @@
     "cloudShellAutomatic": "Этот метод автоматически работает в средах Google Cloud Shell",
     "qwenConfiguration": "Конфигурация Qwen Code",
     "geminiModels": {
+      "pro31": "Gemini 3.1 Pro (Preview)",
       "pro3": "Gemini 3 Pro (Preview)",
       "pro": "Gemini 2.5 Pro",
       "flash": "Gemini 2.5 Flash",

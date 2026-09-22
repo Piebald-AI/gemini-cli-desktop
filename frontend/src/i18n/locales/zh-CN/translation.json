@@ -385,6 +385,7 @@
     "cloudShellAutomatic": "此方法在 Google Cloud Shell 环境中自动工作",
     "qwenConfiguration": "Qwen Code 配置",
     "geminiModels": {
+      "pro31": "Gemini 3.1 Pro（预览版）",
       "pro3": "Gemini 3 Pro（预览版）",
       "flash3": "Gemini 3 Flash（预览版）",
       "pro": "Gemini 2.5 Pro",

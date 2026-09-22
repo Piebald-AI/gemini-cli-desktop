@@ -31,13 +31,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import {
-  AlertTriangle,
-  Info,
-  RefreshCw,
-  ChevronsUpDown,
-  Check,
-} from "lucide-react";
+import { Info, RefreshCw, ChevronsUpDown, Check } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -56,6 +50,7 @@ import {
   MINIMAX_DEFAULT_MODEL,
 } from "@/utils/providerConfig";
 import { supportedLanguages, languageNames } from "@/i18n";
+import { MODEL_PLACEHOLDERS } from "@/utils/providerConfig";
 
 interface OpenRouterModel {
   id: string;
@@ -414,64 +409,62 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
                   {t("conversations.model")}
                 </label>
-                <Select
-                  value={geminiConfig.defaultModel || "gemini-2.5-flash"}
-                  onValueChange={(value) => {
-                    updateGeminiConfig({ defaultModel: value });
-                    onModelChange?.(value);
-                  }}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder={t("conversations.selectModel")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="gemini-3-pro-preview">
-                      <div className="flex items-center gap-2">
-                        <span>{t("backend.geminiModels.pro3")}</span>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Info className="h-4 w-4 text-blue-500" />
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>{t("backend.gemini3ProRequirement")}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="gemini-3-flash-preview">
-                      <div className="flex items-center gap-2">
-                        <span>{t("backend.geminiModels.flash3")}</span>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Info className="h-4 w-4 text-blue-500" />
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>{t("backend.gemini3ProRequirement")}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="gemini-2.5-pro">
-                      {t("backend.geminiModels.pro")}
-                    </SelectItem>
-                    <SelectItem value="gemini-2.5-flash">
-                      {t("backend.geminiModels.flash")}
-                    </SelectItem>
-                    <SelectItem value="gemini-2.5-flash-lite">
-                      <div className="flex items-center gap-2">
-                        <span>{t("backend.geminiModels.flashLite")}</span>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <AlertTriangle className="h-4 w-4 text-yellow-500" />
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>{t("backend.stillWaiting")}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="flex items-center gap-2">
+                  <Select
+                    value={geminiConfig.defaultModel || "gemini-2.5-flash"}
+                    onValueChange={(value) => {
+                      updateGeminiConfig({ defaultModel: value });
+                      onModelChange?.(value);
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue
+                        placeholder={t("conversations.selectModel")}
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="gemini-3.1-pro-preview">
+                        {t("backend.geminiModels.pro31")}
+                      </SelectItem>
+                      <SelectItem value="gemini-3-pro-preview">
+                        {t("backend.geminiModels.pro3")}
+                      </SelectItem>
+                      <SelectItem value="gemini-3-flash-preview">
+                        {t("backend.geminiModels.flash3")}
+                      </SelectItem>
+                      <SelectItem value="gemini-2.5-pro">
+                        {t("backend.geminiModels.pro")}
+                      </SelectItem>
+                      <SelectItem value="gemini-2.5-flash">
+                        {t("backend.geminiModels.flash")}
+                      </SelectItem>
+                      <SelectItem value="gemini-2.5-flash-lite">
+                        {t("backend.geminiModels.flashLite")}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {geminiConfig.defaultModel &&
+                    [
+                      "gemini-3.1-pro-preview",
+                      "gemini-3-pro-preview",
+                      "gemini-3-flash-preview",
+                    ].includes(geminiConfig.defaultModel) && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            aria-label={t("backend.gemini3ProRequirement")}
+                            className="inline-flex h-4 w-4 items-center justify-center rounded-sm text-blue-500 transition-colors hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                          >
+                            <Info className="h-4 w-4" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{t("backend.gemini3ProRequirement")}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
+                </div>
               </div>
 
               {/* Gemini Authentication Configuration */}
@@ -887,7 +880,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                           : llxprtConfig.provider === "openrouter"
                             ? "anthropic/claude-sonnet-4.5"
                             : llxprtConfig.provider === "gemini"
-                              ? "gemini-3-flash-preview"
+                              ? MODEL_PLACEHOLDERS.gemini
                               : llxprtConfig.provider === "qwen"
                                 ? "qwen-max"
                                 : llxprtConfig.provider === "groq"
