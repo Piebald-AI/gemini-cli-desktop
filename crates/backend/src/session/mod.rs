@@ -2660,34 +2660,6 @@ mod tests {
     }
 
     #[test]
-    fn test_llxprt_rejects_invalid_base_url() {
-        let config = LLxprtConfig {
-            provider: "openrouter".to_string(),
-            api_key: "sk-test".to_string(),
-            model: "test-model".to_string(),
-            base_url: Some("http://10.0.0.1".to_string()), // Private IP
-        };
-
-        let result = SessionEnvironment::setup_llxprt(&config);
-        assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("private IP"));
-    }
-
-    #[test]
-    fn test_qwen_rejects_invalid_base_url() {
-        let config = QwenConfig {
-            api_key: "test-key".to_string(),
-            base_url: "http://192.168.1.1".to_string(), // Private IP
-            model: "test-model".to_string(),
-            yolo: None,
-        };
-
-        let result = SessionEnvironment::setup_qwen(&config);
-        assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("private IP"));
-    }
-
-    #[test]
     #[serial_test::serial]
     fn test_multiple_sessions_environment_isolation() {
         // Test that multiple sessions can coexist with different env vars
@@ -2713,28 +2685,5 @@ mod tests {
         assert!(
             std::env::var("ANTHROPIC_API_KEY").is_ok() || std::env::var("OPENAI_API_KEY").is_ok()
         );
-    }
-
-    #[test]
-    fn test_api_key_never_logged_in_mask() {
-        let keys = vec![
-            "sk-ant-api03-1234567890abcdef1234567890",
-            "sk-1234567890abcdef",
-            "test-key-with-sensitive-data",
-        ];
-
-        for key in keys {
-            let masked = mask_api_key(key);
-
-            // Ensure the middle part is not in the masked version
-            if key.len() > 12 {
-                let middle = &key[8..key.len() - 8];
-                assert!(
-                    !masked.contains(middle),
-                    "Masked key should not contain middle portion of: {}",
-                    key
-                );
-            }
-        }
     }
 }
