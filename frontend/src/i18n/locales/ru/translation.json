@@ -167,6 +167,13 @@
     "provider": "Провайдер",
     "qwenConfiguration": "Конфигурация Qwen Code",
     "llxprtConfiguration": "Конфигурация LLxprt Code",
+    "minimaxApiCompatibility": "Совместимость API",
+    "minimaxApiFormatOpenai": "Совместимый с OpenAI",
+    "minimaxApiFormatAnthropic": "Совместимый с Anthropic",
+    "minimaxRegion": "Регион",
+    "minimaxRegionGlobal": "Глобальный",
+    "minimaxRegionCn": "Китай (CN)",
+    "minimaxEndpointUrl": "URL конечной точки",
     "geminiApiKey": "Gemini API ключ",
     "enterGeminiApiKey": "Введите ваш Gemini API ключ",
     "getApiKeyFrom": "Получите ваш API ключ из",
@@ -540,6 +547,7 @@
 
   "accessibility": {
     "backToHome": "Вернуться на главную",
+    "selectGeminiModel": "Выберите модель Gemini",
     "backToProjects": "Вернуться к проектам",
     "goToParentDirectory": "Перейти к родительской директории",
     "goToHomeDirectory": "Перейти в домашнюю директорию",

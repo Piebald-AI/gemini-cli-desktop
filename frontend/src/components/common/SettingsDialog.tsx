@@ -417,7 +417,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                       onModelChange?.(value);
                     }}
                   >
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger
+                      className="w-full"
+                      aria-label={t("accessibility.selectGeminiModel")}
+                    >
                       <SelectValue
                         placeholder={t("conversations.selectModel")}
                       />
@@ -705,7 +708,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
                       <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
-                        API compatibility
+                        {t("conversations.minimaxApiCompatibility")}
                       </label>
                       <Select
                         value={minimaxApiFormat}
@@ -725,17 +728,17 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="openai">
-                            OpenAI-compatible
+                            {t("conversations.minimaxApiFormatOpenai")}
                           </SelectItem>
                           <SelectItem value="anthropic">
-                            Anthropic-compatible
+                            {t("conversations.minimaxApiFormatAnthropic")}
                           </SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     <div>
                       <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
-                        Region
+                        {t("conversations.minimaxRegion")}
                       </label>
                       <Select
                         value={minimaxRegion}
@@ -754,15 +757,19 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="global">Global</SelectItem>
-                          <SelectItem value="cn">China (CN)</SelectItem>
+                          <SelectItem value="global">
+                            {t("conversations.minimaxRegionGlobal")}
+                          </SelectItem>
+                          <SelectItem value="cn">
+                            {t("conversations.minimaxRegionCn")}
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                   </div>
                   <div>
                     <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">
-                      Endpoint URL
+                      {t("conversations.minimaxEndpointUrl")}
                     </label>
                     <Input
                       type="text"
