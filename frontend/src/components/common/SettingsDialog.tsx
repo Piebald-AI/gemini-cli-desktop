@@ -50,9 +50,9 @@ import {
   MINIMAX_DEFAULT_MODEL,
 } from "@/utils/providerConfig";
 import { supportedLanguages, languageNames } from "@/i18n";
-import { MODEL_PLACEHOLDERS } from "@/utils/providerConfig";
+import { MODEL_PLACEHOLDERS, supportsModelFetch } from "@/utils/providerConfig";
 
-interface OpenRouterModel {
+interface ProviderModel {
   id: string;
   name: string;
   description: string;
@@ -80,13 +80,15 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
   const minimaxApiFormat = llxprtConfig.apiFormat ?? "openai";
   const minimaxRegion = llxprtConfig.region ?? "global";
 
-  // State for OpenRouter model fetching
-  const [openRouterModels, setOpenRouterModels] = useState<OpenRouterModel[]>(
-    []
-  );
+  // State for provider model fetching (OpenRouter, Requesty)
+  const [providerModels, setProviderModels] = useState<ProviderModel[]>([]);
   const [isFetchingModels, setIsFetchingModels] = useState(false);
   const [comboboxOpen, setComboboxOpen] = useState(false);
   const comboboxRef = useRef<HTMLDivElement>(null);
+  // Identifies the latest model fetch so a slow response for a previous
+  // provider or API key is discarded instead of being shown for the current one
+  const modelFetchIdRef = useRef(0);
+  const modelFetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Close combobox when clicking outside
   useEffect(() => {
@@ -107,12 +109,14 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     }
   }, [comboboxOpen]);
 
-  // Model cache with timestamp
+  // Model cache with timestamp, keyed by provider. Each entry records the full
+  // API key it was fetched with so a different key never reuses its models.
   const [modelCache, setModelCache] = useState<
     Record<
       string,
       {
-        models: OpenRouterModel[];
+        apiKey: string;
+        models: ProviderModel[];
         fetchedAt: number;
       }
     >
@@ -121,18 +125,31 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
   const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
   const REQUEST_TIMEOUT = 10000; // 10 seconds
 
-  // Fetch models from OpenRouter API with enhanced error handling and caching
-  const fetchOpenRouterModels = useCallback(async () => {
+  const canFetchModels = supportsModelFetch(llxprtConfig.provider);
+
+  // Fetch models from the provider API with enhanced error handling and caching
+  const fetchProviderModels = useCallback(async () => {
+    const isRequesty = llxprtConfig.provider === "requesty";
+    const providerLabel = isRequesty ? "Requesty" : "OpenRouter";
+
     if (!llxprtConfig.apiKey) {
-      toast.error("Please enter your OpenRouter API key first");
+      toast.error(`Please enter your ${providerLabel} API key first`);
       return;
     }
 
-    // Check cache first (use key prefix to avoid exposing full key)
-    const cacheKey = llxprtConfig.apiKey.substring(0, 10);
+    const fetchId = ++modelFetchIdRef.current;
+    const isCurrentFetch = () => fetchId === modelFetchIdRef.current;
+
+    // Check cache first. Entries only match the exact API key they were
+    // fetched with.
+    const cacheKey = llxprtConfig.provider;
     const cached = modelCache[cacheKey];
-    if (cached && Date.now() - cached.fetchedAt < CACHE_DURATION) {
-      setOpenRouterModels(cached.models);
+    if (
+      cached &&
+      cached.apiKey === llxprtConfig.apiKey &&
+      Date.now() - cached.fetchedAt < CACHE_DURATION
+    ) {
+      setProviderModels(cached.models);
       toast.success(`Loaded ${cached.models.length} models from cache`);
       return;
     }
@@ -144,19 +161,36 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
 
-      const response = await fetch("https://openrouter.ai/api/v1/models", {
-        headers: {
-          Authorization: `Bearer ${llxprtConfig.apiKey}`,
-        },
-        signal: controller.signal,
-      });
+      const headers = {
+        Authorization: `Bearer ${llxprtConfig.apiKey}`,
+      };
+
+      let response: Response;
+      if (isRequesty) {
+        // Curated managed policies first, full catalog as fallback
+        response = await fetch("https://router.requesty.ai/v1/models/managed", {
+          headers,
+          signal: controller.signal,
+        });
+        if (!response.ok) {
+          response = await fetch("https://router.requesty.ai/v1/models", {
+            headers,
+            signal: controller.signal,
+          });
+        }
+      } else {
+        response = await fetch("https://openrouter.ai/api/v1/models", {
+          headers,
+          signal: controller.signal,
+        });
+      }
 
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        if (response.status === 401) {
+        if (response.status === 401 || response.status === 403) {
           throw new Error(
-            "Invalid API key. Please check your OpenRouter API key."
+            `Invalid API key. Please check your ${providerLabel} API key.`
           );
         } else if (response.status === 429) {
           throw new Error(
@@ -170,14 +204,19 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
       const data = await response.json();
       const modelArray = Array.isArray(data) ? data : data.data || [];
 
+      // Provider or API key changed while the request was in flight
+      if (!isCurrentFetch()) {
+        return;
+      }
+
       if (modelArray.length === 0) {
         toast.warning("No models found. This may be a temporary issue.");
         return;
       }
 
-      const models: OpenRouterModel[] = modelArray.map(
+      const models: ProviderModel[] = modelArray.map(
         (
-          model: OpenRouterModel & {
+          model: ProviderModel & {
             id: string;
             name?: string;
             description?: string;
@@ -189,20 +228,25 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
         })
       );
 
-      setOpenRouterModels(models);
+      setProviderModels(models);
 
       // Update cache
       setModelCache((prev) => ({
         ...prev,
         [cacheKey]: {
+          apiKey: llxprtConfig.apiKey,
           models,
           fetchedAt: Date.now(),
         },
       }));
 
-      toast.success(`Loaded ${models.length} models from OpenRouter`);
+      toast.success(`Loaded ${models.length} models from ${providerLabel}`);
     } catch (error) {
-      console.error("Error fetching OpenRouter models:", error);
+      if (!isCurrentFetch()) {
+        return;
+      }
+
+      console.error(`Error fetching ${providerLabel} models:`, error);
 
       if (error instanceof Error) {
         if (error.name === "AbortError") {
@@ -216,20 +260,41 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
         toast.error("Failed to fetch models. Please try again.");
       }
     } finally {
-      setIsFetchingModels(false);
+      if (isCurrentFetch()) {
+        setIsFetchingModels(false);
+      }
     }
-  }, [llxprtConfig.apiKey, modelCache, CACHE_DURATION, REQUEST_TIMEOUT]);
+  }, [
+    llxprtConfig.provider,
+    llxprtConfig.apiKey,
+    modelCache,
+    CACHE_DURATION,
+    REQUEST_TIMEOUT,
+  ]);
 
   // Debounce to prevent spam clicking
   const debouncedFetchModels = useMemo(() => {
-    let timeoutId: ReturnType<typeof setTimeout> | undefined;
     return () => {
-      if (timeoutId) clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => {
-        fetchOpenRouterModels();
+      if (modelFetchTimerRef.current) clearTimeout(modelFetchTimerRef.current);
+      modelFetchTimerRef.current = setTimeout(() => {
+        fetchProviderModels();
       }, 300);
     };
-  }, [fetchOpenRouterModels]);
+  }, [fetchProviderModels]);
+
+  // Drop pending and in flight model fetches when the provider or API key
+  // changes, discard models fetched with the previous credentials, and clear
+  // the debounce timer on unmount
+  useEffect(() => {
+    modelFetchIdRef.current++;
+    if (modelFetchTimerRef.current) clearTimeout(modelFetchTimerRef.current);
+    setIsFetchingModels(false);
+    setProviderModels([]);
+    setComboboxOpen(false);
+    return () => {
+      if (modelFetchTimerRef.current) clearTimeout(modelFetchTimerRef.current);
+    };
+  }, [llxprtConfig.provider, llxprtConfig.apiKey]);
 
   // Derive translations directly where needed; remove unused variable to satisfy TS
 
@@ -629,8 +694,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                   value={llxprtConfig.provider}
                   onValueChange={(value) => {
                     // Auto-fill base URL for providers that need it
+                    // Always clear the API key so the previous provider's
+                    // key is never sent to the new provider
                     const updates: Partial<typeof llxprtConfig> = {
                       provider: value as LLxprtProvider,
+                      apiKey: "",
                     };
 
                     if (value === "minimax") {
@@ -643,6 +711,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                       onModelChange?.(MINIMAX_DEFAULT_MODEL);
                     } else if (value === "openrouter") {
                       updates.baseUrl = "https://openrouter.ai/api/v1";
+                    } else if (value === "requesty") {
+                      updates.baseUrl = "https://router.requesty.ai/v1";
                     } else if (
                       [
                         "anthropic",
@@ -658,6 +728,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                       updates.baseUrl = "";
                     }
 
+                    // Fetched model lists are provider specific
+                    setProviderModels([]);
                     updateLLxprtConfig(updates);
                   }}
                 >
@@ -671,6 +743,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                     <SelectItem value="openai">OpenAI (GPT)</SelectItem>
                     <SelectItem value="openrouter">
                       OpenRouter (Multi-provider)
+                    </SelectItem>
+                    <SelectItem value="requesty">
+                      Requesty (Multi-provider)
                     </SelectItem>
                     <SelectItem value="gemini">Google Gemini</SelectItem>
                     <SelectItem value="qwen">Qwen/Alibaba Cloud</SelectItem>
@@ -789,7 +864,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                   <label className="text-xs font-medium text-gray-600 dark:text-gray-400">
                     {t("conversations.model")}
                   </label>
-                  {llxprtConfig.provider === "openrouter" && (
+                  {canFetchModels && (
                     <Button
                       type="button"
                       size="sm"
@@ -806,8 +881,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                   )}
                 </div>
 
-                {llxprtConfig.provider === "openrouter" &&
-                openRouterModels.length > 0 ? (
+                {canFetchModels && providerModels.length > 0 ? (
                   <div className="relative" ref={comboboxRef}>
                     <Button
                       type="button"
@@ -818,7 +892,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                       onClick={() => setComboboxOpen(!comboboxOpen)}
                     >
                       {llxprtConfig.model
-                        ? openRouterModels.find(
+                        ? providerModels.find(
                             (m) => m.id === llxprtConfig.model
                           )?.name || llxprtConfig.model
                         : "Select a model..."}
@@ -831,7 +905,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                           <CommandList>
                             <CommandEmpty>No model found.</CommandEmpty>
                             <CommandGroup>
-                              {openRouterModels.map((model) => (
+                              {providerModels.map((model) => (
                                 <CommandItem
                                   key={model.id}
                                   value={model.name}
@@ -886,19 +960,21 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                           ? "gpt-4o"
                           : llxprtConfig.provider === "openrouter"
                             ? "anthropic/claude-sonnet-4.5"
-                            : llxprtConfig.provider === "gemini"
-                              ? MODEL_PLACEHOLDERS.gemini
-                              : llxprtConfig.provider === "qwen"
-                                ? "qwen-max"
-                                : llxprtConfig.provider === "groq"
-                                  ? "llama-3.3-70b-versatile"
-                                  : llxprtConfig.provider === "together"
-                                    ? "meta-llama/Llama-3-70b-chat-hf"
-                                    : llxprtConfig.provider === "xai"
-                                      ? "grok-beta"
-                                      : llxprtConfig.provider === "minimax"
-                                        ? MINIMAX_DEFAULT_MODEL
-                                        : "model-name"
+                            : llxprtConfig.provider === "requesty"
+                              ? MODEL_PLACEHOLDERS.requesty
+                              : llxprtConfig.provider === "gemini"
+                                ? MODEL_PLACEHOLDERS.gemini
+                                : llxprtConfig.provider === "qwen"
+                                  ? "qwen-max"
+                                  : llxprtConfig.provider === "groq"
+                                    ? "llama-3.3-70b-versatile"
+                                    : llxprtConfig.provider === "together"
+                                      ? "meta-llama/Llama-3-70b-chat-hf"
+                                      : llxprtConfig.provider === "xai"
+                                        ? "grok-beta"
+                                        : llxprtConfig.provider === "minimax"
+                                          ? MINIMAX_DEFAULT_MODEL
+                                          : "model-name"
                     }
                   />
                 )}
