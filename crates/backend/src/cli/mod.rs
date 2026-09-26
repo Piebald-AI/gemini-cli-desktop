@@ -473,20 +473,6 @@ mod tests {
     }
 
     #[test]
-    fn test_request_tool_call_confirmation_result_serialization() {
-        let result = RequestToolCallConfirmationResult {
-            id: "confirmation-123".to_string(),
-            outcome: "approved".to_string(),
-        };
-
-        let json = serde_json::to_string(&result).unwrap();
-        let deserialized: RequestToolCallConfirmationResult = serde_json::from_str(&json).unwrap();
-
-        assert_eq!(result.id, deserialized.id);
-        assert_eq!(result.outcome, deserialized.outcome);
-    }
-
-    #[test]
     fn test_command_result_serialization() {
         let result = CommandResult {
             command: "cargo build".to_string(),

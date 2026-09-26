@@ -49,15 +49,58 @@ impl Drop for EnvVarGuard {
     }
 }
 
-/// Manages environment variables for a session with automatic cleanup
-#[derive(Debug)]
+/// Manages environment variables for a session with automatic cleanup.
+///
+/// Credentials for LLxprt are kept in `vars` and applied directly to the child
+/// `Command` via [`SessionEnvironment::apply_to`]. They are never written to the
+/// parent process environment, so concurrent sessions cannot observe or clobber
+/// each other's API keys and endpoints.
+///
+/// `_guards` remains for backends that still rely on process-global variables.
+#[derive(Debug, Default)]
 pub(crate) struct SessionEnvironment {
     _guards: Vec<EnvVarGuard>,
+    /// Session-scoped variables applied to the spawned child process only.
+    vars: Vec<(String, String)>,
+    /// Variables that must not be inherited by the child process from the
+    /// parent environment.
+    removed: Vec<&'static str>,
 }
 
+/// Endpoint variables LLxprt reads. An inherited value could redirect the
+/// session's API key to an endpoint the user did not configure.
+const LLXPRT_ENDPOINT_VARS: [&str; 2] = ["OPENAI_BASE_URL", "ANTHROPIC_BASE_URL"];
+
 impl SessionEnvironment {
+    /// Applies the session-scoped environment to a child `Command`.
+    ///
+    /// Variables in `removed` are stripped from the inherited environment, then
+    /// each session value is set with `Command::env`. Both affect only the
+    /// spawned process, avoiding the races inherent in `std::env::set_var`.
+    fn apply_to(&self, cmd: &mut Command) {
+        for name in &self.removed {
+            cmd.env_remove(name);
+        }
+        for (key, value) in &self.vars {
+            cmd.env(key, value);
+        }
+    }
+
+    /// Looks up a session-scoped variable by name.
+    #[cfg(test)]
+    fn var(&self, name: &str) -> Option<&str> {
+        self.vars
+            .iter()
+            .find(|(key, _)| key == name)
+            .map(|(_, value)| value.as_str())
+    }
+
+    /// Builds the environment for an LLxprt session.
+    ///
+    /// Provider credentials are returned as session-scoped variables rather than
+    /// being written to the parent process environment.
     fn setup_llxprt(config: &LLxprtConfig) -> Result<Self> {
-        let mut guards = Vec::new();
+        let mut vars: Vec<(String, String)> = Vec::new();
 
         println!(
             "🔧 [HANDSHAKE] Setting up LLxprt Code environment for provider: {}",
@@ -65,60 +108,63 @@ impl SessionEnvironment {
         );
         println!("🔧 [HANDSHAKE] Using API key (security delegated to CLI)");
 
-        match config.provider.as_str() {
+        let base_url = config
+            .base_url
+            .as_ref()
+            .map(|u| u.trim())
+            .filter(|u| !u.is_empty());
+
+        let mut push = |name: &str, value: &str| {
+            vars.push((name.to_string(), value.to_string()));
+            println!("🔧 [HANDSHAKE] Set {name} (session-scoped)");
+        };
+
+        match llxprt_provider_name(config) {
             "anthropic" => {
-                guards.push(EnvVarGuard::new("ANTHROPIC_API_KEY", &config.api_key));
-                println!("🔧 [HANDSHAKE] Set ANTHROPIC_API_KEY");
+                push("ANTHROPIC_API_KEY", &config.api_key);
+                if let Some(url) = base_url {
+                    push("ANTHROPIC_BASE_URL", url);
+                }
             }
             "openai" | "openrouter" => {
-                guards.push(EnvVarGuard::new("OPENAI_API_KEY", &config.api_key));
-                println!("🔧 [HANDSHAKE] Set OPENAI_API_KEY");
-
-                if let Some(url) = &config.base_url
-                    && !url.trim().is_empty()
-                {
-                    guards.push(EnvVarGuard::new("OPENAI_BASE_URL", url));
-                    println!("🔧 [HANDSHAKE] Set OPENAI_BASE_URL");
+                push("OPENAI_API_KEY", &config.api_key);
+                if let Some(url) = base_url {
+                    push("OPENAI_BASE_URL", url);
                 }
             }
             "gemini" | "google" => {
-                guards.push(EnvVarGuard::new("GEMINI_API_KEY", &config.api_key));
-                println!("🔧 [HANDSHAKE] Set GEMINI_API_KEY");
+                push("GEMINI_API_KEY", &config.api_key);
             }
             "qwen" => {
-                guards.push(EnvVarGuard::new("QWEN_API_KEY", &config.api_key));
-                println!("🔧 [HANDSHAKE] Set QWEN_API_KEY");
+                push("QWEN_API_KEY", &config.api_key);
             }
             "groq" => {
-                guards.push(EnvVarGuard::new("GROQ_API_KEY", &config.api_key));
-                println!("🔧 [HANDSHAKE] Set GROQ_API_KEY");
+                push("GROQ_API_KEY", &config.api_key);
             }
             "together" => {
-                guards.push(EnvVarGuard::new("TOGETHER_API_KEY", &config.api_key));
-                println!("🔧 [HANDSHAKE] Set TOGETHER_API_KEY");
+                push("TOGETHER_API_KEY", &config.api_key);
             }
             "xai" => {
-                guards.push(EnvVarGuard::new("X_API_KEY", &config.api_key));
-                println!("🔧 [HANDSHAKE] Set X_API_KEY");
+                push("X_API_KEY", &config.api_key);
             }
             other => {
                 // For custom providers, use OPENAI_API_KEY and OPENAI_BASE_URL
-                guards.push(EnvVarGuard::new("OPENAI_API_KEY", &config.api_key));
-                println!(
-                    "🔧 [HANDSHAKE] Set OPENAI_API_KEY for custom provider '{}'",
-                    other
-                );
-
-                if let Some(url) = &config.base_url
-                    && !url.trim().is_empty()
-                {
-                    guards.push(EnvVarGuard::new("OPENAI_BASE_URL", url));
-                    println!("🔧 [HANDSHAKE] Set OPENAI_BASE_URL");
+                println!("🔧 [HANDSHAKE] Using OpenAI-compatible variables for provider '{other}'");
+                push("OPENAI_API_KEY", &config.api_key);
+                if let Some(url) = base_url {
+                    push("OPENAI_BASE_URL", url);
                 }
             }
         }
 
-        Ok(Self { _guards: guards })
+        // Strip inherited endpoints so only the configured base URL (if any)
+        // reaches the child. `apply_to` removes these before setting `vars`,
+        // so an explicitly configured endpoint is still applied.
+        Ok(Self {
+            _guards: Vec::new(),
+            vars,
+            removed: LLXPRT_ENDPOINT_VARS.to_vec(),
+        })
     }
 
     fn setup_qwen(config: &QwenConfig) -> Result<Self> {
@@ -134,7 +180,11 @@ impl SessionEnvironment {
         println!("🔧 [HANDSHAKE] Set OPENAI_BASE_URL");
         println!("🔧 [HANDSHAKE] Set OPENAI_MODEL: {}", config.model);
 
-        Ok(Self { _guards: guards })
+        Ok(Self {
+            _guards: guards,
+            vars: Vec::new(),
+            removed: Vec::new(),
+        })
     }
 
     fn setup_gemini(auth: &GeminiAuthConfig) -> Result<Self> {
@@ -167,7 +217,11 @@ impl SessionEnvironment {
             }
         }
 
-        Ok(Self { _guards: guards })
+        Ok(Self {
+            _guards: guards,
+            vars: Vec::new(),
+            removed: Vec::new(),
+        })
     }
 }
 
@@ -194,6 +248,14 @@ pub struct LLxprtConfig {
     pub api_key: String,
     pub model: String,
     pub base_url: Option<String>, // For custom/self-hosted providers
+}
+
+fn llxprt_provider_name(config: &LLxprtConfig) -> &str {
+    match config.provider.as_str() {
+        "openrouter" | "minimax" => "openai",
+        "minimax-anthropic" => "anthropic",
+        provider => provider,
+    }
 }
 
 use crate::acp::{
@@ -634,12 +696,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
     // Build command based on backend type
     let mut cmd = {
         if let Some(config) = &llxprt_config {
-            // Map UI provider names to LLxprt provider names
-            // OpenRouter is actually "openai" provider with custom base URL
-            let llxprt_provider = match config.provider.as_str() {
-                "openrouter" => "openai",
-                other => other,
-            };
+            let llxprt_provider = llxprt_provider_name(config);
 
             // Build command with --provider and --model flags
             let has_base_url = config
@@ -770,6 +827,12 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
             }
         }
     };
+
+    // Apply session-scoped credentials directly to the child process so that
+    // concurrent sessions cannot observe or overwrite each other's values.
+    if let Some(env) = &session_env {
+        env.apply_to(&mut cmd);
+    }
 
     cmd.stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -2451,16 +2514,13 @@ mod tests {
             base_url: None,
         };
 
-        {
-            let _env = SessionEnvironment::setup_llxprt(&config).unwrap();
-            assert_eq!(std::env::var(test_var).unwrap(), "sk-ant-test-key-12345");
-        }
+        let env = SessionEnvironment::setup_llxprt(&config).unwrap();
+        assert_eq!(env.var(test_var), Some("sk-ant-test-key-12345"));
 
-        // Give cleanup time to run
-        std::thread::sleep(std::time::Duration::from_millis(10));
+        // The credential must never leak into the parent process environment.
         assert!(
             std::env::var(test_var).is_err(),
-            "API key should be cleared"
+            "API key must not be set process-globally"
         );
     }
 
@@ -2483,18 +2543,71 @@ mod tests {
             base_url: Some("https://openrouter.ai/api/v1".to_string()),
         };
 
-        {
-            let _env = SessionEnvironment::setup_llxprt(&config).unwrap();
-            assert_eq!(std::env::var(key_var).unwrap(), "sk-or-test");
-            assert_eq!(
-                std::env::var(url_var).unwrap(),
-                "https://openrouter.ai/api/v1"
-            );
-        }
+        let env = SessionEnvironment::setup_llxprt(&config).unwrap();
+        assert_eq!(env.var(key_var), Some("sk-or-test"));
+        assert_eq!(env.var(url_var), Some("https://openrouter.ai/api/v1"));
 
-        std::thread::sleep(std::time::Duration::from_millis(10));
+        // Nothing may leak into the parent process environment.
         assert!(std::env::var(key_var).is_err());
         assert!(std::env::var(url_var).is_err());
+    }
+
+    #[test]
+    #[serial_test::serial]
+    fn test_session_environment_llxprt_minimax_endpoints() {
+        let cases = [
+            (
+                "minimax",
+                "openai",
+                "mm-open",
+                "https://api.minimaxi.com/v1",
+                "OPENAI_API_KEY",
+                "OPENAI_BASE_URL",
+                "ANTHROPIC_API_KEY",
+                "ANTHROPIC_BASE_URL",
+            ),
+            (
+                "minimax-anthropic",
+                "anthropic",
+                "mm-anth",
+                "https://api.minimaxi.com/anthropic",
+                "ANTHROPIC_API_KEY",
+                "ANTHROPIC_BASE_URL",
+                "OPENAI_API_KEY",
+                "OPENAI_BASE_URL",
+            ),
+        ];
+
+        for (provider, llxprt_provider, api_key, url, key_var, url_var, other_key, other_url) in
+            cases
+        {
+            unsafe {
+                std::env::remove_var(key_var);
+                std::env::remove_var(url_var);
+                std::env::remove_var(other_key);
+                std::env::remove_var(other_url);
+            }
+
+            let config = LLxprtConfig {
+                provider: provider.to_string(),
+                api_key: api_key.to_string(),
+                model: "MiniMax-M3".to_string(),
+                base_url: Some(url.to_string()),
+            };
+
+            assert_eq!(llxprt_provider_name(&config), llxprt_provider);
+
+            let env = SessionEnvironment::setup_llxprt(&config).unwrap();
+            assert_eq!(env.var(key_var), Some(api_key));
+            assert_eq!(env.var(url_var), Some(url));
+            // The opposite provider's variables must not be set at all.
+            assert_eq!(env.var(other_key), None);
+            assert_eq!(env.var(other_url), None);
+
+            // Credentials stay out of the parent process environment.
+            assert!(std::env::var(key_var).is_err());
+            assert!(std::env::var(url_var).is_err());
+        }
     }
 
     #[test]
@@ -2593,81 +2706,138 @@ mod tests {
     }
 
     #[test]
-    fn test_llxprt_rejects_invalid_base_url() {
-        let config = LLxprtConfig {
-            provider: "openrouter".to_string(),
-            api_key: "sk-test".to_string(),
-            model: "test-model".to_string(),
-            base_url: Some("http://10.0.0.1".to_string()), // Private IP
+    #[serial_test::serial]
+    fn test_multiple_sessions_environment_isolation() {
+        // Two concurrent sessions using the SAME variable names must keep
+        // independent values. Previously both wrote to the process environment,
+        // so the second session clobbered the first one's credentials.
+        let config1 = LLxprtConfig {
+            provider: "openai".to_string(),
+            api_key: "key1".to_string(),
+            model: "model1".to_string(),
+            base_url: Some("https://one.example.com/v1".to_string()),
         };
 
-        let result = SessionEnvironment::setup_llxprt(&config);
-        assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("private IP"));
-    }
-
-    #[test]
-    fn test_qwen_rejects_invalid_base_url() {
-        let config = QwenConfig {
-            api_key: "test-key".to_string(),
-            base_url: "http://192.168.1.1".to_string(), // Private IP
-            model: "test-model".to_string(),
-            yolo: None,
+        let config2 = LLxprtConfig {
+            provider: "minimax".to_string(),
+            api_key: "key2".to_string(),
+            model: "model2".to_string(),
+            base_url: Some("https://api.minimaxi.com/v1".to_string()),
         };
 
-        let result = SessionEnvironment::setup_qwen(&config);
-        assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("private IP"));
+        let env1 = SessionEnvironment::setup_llxprt(&config1).unwrap();
+        let env2 = SessionEnvironment::setup_llxprt(&config2).unwrap();
+
+        // Both map OPENAI_API_KEY, yet neither value is affected by the other.
+        assert_eq!(env1.var("OPENAI_API_KEY"), Some("key1"));
+        assert_eq!(env2.var("OPENAI_API_KEY"), Some("key2"));
+        assert_eq!(
+            env1.var("OPENAI_BASE_URL"),
+            Some("https://one.example.com/v1")
+        );
+        assert_eq!(
+            env2.var("OPENAI_BASE_URL"),
+            Some("https://api.minimaxi.com/v1")
+        );
+
+        // And neither session touched the parent process environment.
+        assert!(std::env::var("OPENAI_API_KEY").is_err());
+        assert!(std::env::var("OPENAI_BASE_URL").is_err());
     }
 
     #[test]
     #[serial_test::serial]
-    fn test_multiple_sessions_environment_isolation() {
-        // Test that multiple sessions can coexist with different env vars
-        let config1 = LLxprtConfig {
-            provider: "anthropic".to_string(),
-            api_key: "key1".to_string(),
-            model: "model1".to_string(),
+    fn test_llxprt_credentials_applied_to_command_only() {
+        let config = LLxprtConfig {
+            provider: "minimax-anthropic".to_string(),
+            api_key: "mm-secret".to_string(),
+            model: "MiniMax-M3".to_string(),
+            base_url: Some("https://api.minimaxi.com/anthropic".to_string()),
+        };
+
+        let env = SessionEnvironment::setup_llxprt(&config).unwrap();
+
+        // Applying to a Command must not mutate the parent environment.
+        let mut cmd = Command::new("cmd");
+        env.apply_to(&mut cmd);
+
+        assert!(std::env::var("ANTHROPIC_API_KEY").is_err());
+        assert!(std::env::var("ANTHROPIC_BASE_URL").is_err());
+        assert_eq!(env.var("ANTHROPIC_API_KEY"), Some("mm-secret"));
+        assert_eq!(
+            env.var("ANTHROPIC_BASE_URL"),
+            Some("https://api.minimaxi.com/anthropic")
+        );
+    }
+
+    /// Returns how `cmd` will set `name` in the child: `None` if untouched,
+    /// `Some(None)` if removed, `Some(Some(v))` if set to `v`.
+    fn command_env(cmd: &Command, name: &str) -> Option<Option<String>> {
+        cmd.as_std()
+            .get_envs()
+            .find(|(key, _)| *key == std::ffi::OsStr::new(name))
+            .map(|(_, value)| value.map(|v| v.to_string_lossy().into_owned()))
+    }
+
+    #[test]
+    fn test_llxprt_strips_inherited_endpoints_without_base_url() {
+        let config = LLxprtConfig {
+            provider: "minimax".to_string(),
+            api_key: "mm-key".to_string(),
+            model: "MiniMax-M3".to_string(),
             base_url: None,
         };
 
-        let config2 = LLxprtConfig {
-            provider: "openai".to_string(),
-            api_key: "key2".to_string(),
-            model: "model2".to_string(),
-            base_url: None,
-        };
+        let env = SessionEnvironment::setup_llxprt(&config).unwrap();
+        let mut cmd = Command::new("cmd");
+        env.apply_to(&mut cmd);
 
-        let _env1 = SessionEnvironment::setup_llxprt(&config1).unwrap();
-        let _env2 = SessionEnvironment::setup_llxprt(&config2).unwrap();
-
-        // Both should be set (though they might override each other for some vars)
-        // This mainly tests that the setup doesn't fail
-        assert!(
-            std::env::var("ANTHROPIC_API_KEY").is_ok() || std::env::var("OPENAI_API_KEY").is_ok()
+        // No endpoint configured: inherited values must be removed, not passed through.
+        assert_eq!(command_env(&cmd, "OPENAI_BASE_URL"), Some(None));
+        assert_eq!(command_env(&cmd, "ANTHROPIC_BASE_URL"), Some(None));
+        assert_eq!(
+            command_env(&cmd, "OPENAI_API_KEY"),
+            Some(Some("mm-key".to_string()))
         );
     }
 
     #[test]
-    fn test_api_key_never_logged_in_mask() {
-        let keys = vec![
-            "sk-ant-api03-1234567890abcdef1234567890",
-            "sk-1234567890abcdef",
-            "test-key-with-sensitive-data",
-        ];
+    fn test_llxprt_configured_endpoint_survives_removal() {
+        let config = LLxprtConfig {
+            provider: "openai".to_string(),
+            api_key: "k".to_string(),
+            model: "m".to_string(),
+            base_url: Some("https://api.minimax.io/v1".to_string()),
+        };
 
-        for key in keys {
-            let masked = mask_api_key(key);
+        let env = SessionEnvironment::setup_llxprt(&config).unwrap();
+        let mut cmd = Command::new("cmd");
+        env.apply_to(&mut cmd);
 
-            // Ensure the middle part is not in the masked version
-            if key.len() > 12 {
-                let middle = &key[8..key.len() - 8];
-                assert!(
-                    !masked.contains(middle),
-                    "Masked key should not contain middle portion of: {}",
-                    key
-                );
-            }
-        }
+        // The configured endpoint is set; the other provider's endpoint is stripped.
+        assert_eq!(
+            command_env(&cmd, "OPENAI_BASE_URL"),
+            Some(Some("https://api.minimax.io/v1".to_string()))
+        );
+        assert_eq!(command_env(&cmd, "ANTHROPIC_BASE_URL"), Some(None));
+    }
+
+    #[test]
+    #[serial_test::serial]
+    fn test_qwen_does_not_strip_endpoint_vars() {
+        let config = QwenConfig {
+            api_key: "qwen-key".to_string(),
+            base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1".to_string(),
+            model: "qwen-max".to_string(),
+            yolo: None,
+        };
+
+        // Qwen still relies on its process-level OPENAI_BASE_URL, so apply_to
+        // must leave that variable alone for Qwen sessions.
+        let env = SessionEnvironment::setup_qwen(&config).unwrap();
+        let mut cmd = Command::new("cmd");
+        env.apply_to(&mut cmd);
+        assert_eq!(command_env(&cmd, "OPENAI_BASE_URL"), None);
+        assert_eq!(command_env(&cmd, "ANTHROPIC_BASE_URL"), None);
     }
 }

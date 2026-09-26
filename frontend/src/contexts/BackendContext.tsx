@@ -17,6 +17,7 @@ import {
   LLxprtConfig,
 } from "../types/backend";
 import { defaultBackendState } from "../utils/backendDefaults";
+import { getMiniMaxEndpoint } from "../utils/providerConfig";
 
 const BackendContext = createContext<BackendContextValue | undefined>(
   undefined
@@ -240,9 +241,16 @@ export const BackendProvider: React.FC<BackendProviderProps> = ({
         }
       } else if (state.selectedBackend === "llxprt") {
         const llxprtConfig = state.configs.llxprt;
+        const baseUrl =
+          llxprtConfig.provider === "minimax"
+            ? getMiniMaxEndpoint(
+                llxprtConfig.region ?? "global",
+                llxprtConfig.apiFormat ?? "openai"
+              )
+            : llxprtConfig.baseUrl || undefined;
         return {
           api_key: llxprtConfig.apiKey,
-          base_url: llxprtConfig.baseUrl || undefined,
+          base_url: baseUrl,
           model: llxprtConfig.model,
         };
       } else if (state.selectedBackend === "gemini") {

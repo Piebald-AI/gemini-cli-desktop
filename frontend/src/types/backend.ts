@@ -38,7 +38,11 @@ export type LLxprtProvider =
   | "groq"
   | "together"
   | "xai"
+  | "minimax"
   | "custom";
+
+export type LLxprtApiFormat = "openai" | "anthropic";
+export type LLxprtRegion = "global" | "cn";
 
 export interface LLxprtConfig {
   type: "llxprt";
@@ -46,6 +50,8 @@ export interface LLxprtConfig {
   apiKey: string;
   model: string;
   baseUrl: string;
+  apiFormat?: LLxprtApiFormat;
+  region?: LLxprtRegion;
 }
 
 // Type guard for LLxprtConfig
@@ -59,8 +65,15 @@ export function isLLxprtConfig(config: unknown): config is LLxprtConfig {
     "groq",
     "together",
     "xai",
+    "minimax",
     "custom",
   ];
+
+  const validApiFormats: LLxprtApiFormat[] = ["openai", "anthropic"];
+  const validRegions: LLxprtRegion[] = ["global", "cn"];
+
+  const apiFormat = (config as LLxprtConfig)?.apiFormat;
+  const region = (config as LLxprtConfig)?.region;
 
   return (
     typeof config === "object" &&
@@ -70,7 +83,9 @@ export function isLLxprtConfig(config: unknown): config is LLxprtConfig {
     typeof (config as LLxprtConfig).apiKey === "string" &&
     typeof (config as LLxprtConfig).model === "string" &&
     ((config as LLxprtConfig).baseUrl === undefined ||
-      typeof (config as LLxprtConfig).baseUrl === "string")
+      typeof (config as LLxprtConfig).baseUrl === "string") &&
+    (apiFormat === undefined || validApiFormats.includes(apiFormat)) &&
+    (region === undefined || validRegions.includes(region))
   );
 }
 
