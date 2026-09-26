@@ -109,11 +109,13 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     }
   }, [comboboxOpen]);
 
-  // Model cache with timestamp
+  // Model cache with timestamp, keyed by provider. Each entry records the full
+  // API key it was fetched with so a different key never reuses its models.
   const [modelCache, setModelCache] = useState<
     Record<
       string,
       {
+        apiKey: string;
         models: ProviderModel[];
         fetchedAt: number;
       }
@@ -138,10 +140,15 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     const fetchId = ++modelFetchIdRef.current;
     const isCurrentFetch = () => fetchId === modelFetchIdRef.current;
 
-    // Check cache first (use key prefix to avoid exposing full key)
-    const cacheKey = `${llxprtConfig.provider}:${llxprtConfig.apiKey.substring(0, 10)}`;
+    // Check cache first. Entries only match the exact API key they were
+    // fetched with.
+    const cacheKey = llxprtConfig.provider;
     const cached = modelCache[cacheKey];
-    if (cached && Date.now() - cached.fetchedAt < CACHE_DURATION) {
+    if (
+      cached &&
+      cached.apiKey === llxprtConfig.apiKey &&
+      Date.now() - cached.fetchedAt < CACHE_DURATION
+    ) {
       setProviderModels(cached.models);
       toast.success(`Loaded ${cached.models.length} models from cache`);
       return;
@@ -227,6 +234,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
       setModelCache((prev) => ({
         ...prev,
         [cacheKey]: {
+          apiKey: llxprtConfig.apiKey,
           models,
           fetchedAt: Date.now(),
         },
@@ -275,11 +283,14 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
   }, [fetchProviderModels]);
 
   // Drop pending and in flight model fetches when the provider or API key
-  // changes, and clear the debounce timer on unmount
+  // changes, discard models fetched with the previous credentials, and clear
+  // the debounce timer on unmount
   useEffect(() => {
     modelFetchIdRef.current++;
     if (modelFetchTimerRef.current) clearTimeout(modelFetchTimerRef.current);
     setIsFetchingModels(false);
+    setProviderModels([]);
+    setComboboxOpen(false);
     return () => {
       if (modelFetchTimerRef.current) clearTimeout(modelFetchTimerRef.current);
     };
@@ -683,8 +694,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                   value={llxprtConfig.provider}
                   onValueChange={(value) => {
                     // Auto-fill base URL for providers that need it
+                    // Always clear the API key so the previous provider's
+                    // key is never sent to the new provider
                     const updates: Partial<typeof llxprtConfig> = {
                       provider: value as LLxprtProvider,
+                      apiKey: "",
                     };
 
                     if (value === "minimax") {

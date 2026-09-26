@@ -2571,20 +2571,17 @@ mod tests {
             base_url: Some("https://router.requesty.ai/v1".to_string()),
         };
 
-        {
-            let _env = SessionEnvironment::setup_llxprt(&config).unwrap();
-            assert_eq!(std::env::var(key_var).unwrap(), "sk-requesty-test");
-            assert_eq!(
-                std::env::var(url_var).unwrap(),
-                "https://router.requesty.ai/v1"
-            );
-        }
+        let env = SessionEnvironment::setup_llxprt(&config).unwrap();
+        assert_eq!(env.var(key_var), Some("sk-requesty-test"));
+        assert_eq!(env.var(url_var), Some("https://router.requesty.ai/v1"));
 
-        std::thread::sleep(std::time::Duration::from_millis(10));
+        // Nothing may leak into the parent process environment.
         assert!(std::env::var(key_var).is_err());
         assert!(std::env::var(url_var).is_err());
     }
 
+    #[test]
+    #[serial_test::serial]
     fn test_session_environment_llxprt_minimax_endpoints() {
         let cases = [
             (
