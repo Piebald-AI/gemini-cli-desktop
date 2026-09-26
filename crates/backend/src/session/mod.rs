@@ -62,14 +62,25 @@ pub(crate) struct SessionEnvironment {
     _guards: Vec<EnvVarGuard>,
     /// Session-scoped variables applied to the spawned child process only.
     vars: Vec<(String, String)>,
+    /// Variables that must not be inherited by the child process from the
+    /// parent environment.
+    removed: Vec<&'static str>,
 }
 
+/// Endpoint variables LLxprt reads. An inherited value could redirect the
+/// session's API key to an endpoint the user did not configure.
+const LLXPRT_ENDPOINT_VARS: [&str; 2] = ["OPENAI_BASE_URL", "ANTHROPIC_BASE_URL"];
+
 impl SessionEnvironment {
-    /// Applies the session-scoped variables to a child `Command`.
+    /// Applies the session-scoped environment to a child `Command`.
     ///
-    /// Each value is set with `Command::env`, which affects only the spawned
-    /// process, avoiding the races inherent in `std::env::set_var`.
+    /// Variables in `removed` are stripped from the inherited environment, then
+    /// each session value is set with `Command::env`. Both affect only the
+    /// spawned process, avoiding the races inherent in `std::env::set_var`.
     fn apply_to(&self, cmd: &mut Command) {
+        for name in &self.removed {
+            cmd.env_remove(name);
+        }
         for (key, value) in &self.vars {
             cmd.env(key, value);
         }
@@ -146,9 +157,13 @@ impl SessionEnvironment {
             }
         }
 
+        // Strip inherited endpoints so only the configured base URL (if any)
+        // reaches the child. `apply_to` removes these before setting `vars`,
+        // so an explicitly configured endpoint is still applied.
         Ok(Self {
             _guards: Vec::new(),
             vars,
+            removed: LLXPRT_ENDPOINT_VARS.to_vec(),
         })
     }
 
@@ -168,6 +183,7 @@ impl SessionEnvironment {
         Ok(Self {
             _guards: guards,
             vars: Vec::new(),
+            removed: Vec::new(),
         })
     }
 
@@ -204,6 +220,7 @@ impl SessionEnvironment {
         Ok(Self {
             _guards: guards,
             vars: Vec::new(),
+            removed: Vec::new(),
         })
     }
 }
@@ -2751,5 +2768,76 @@ mod tests {
             env.var("ANTHROPIC_BASE_URL"),
             Some("https://api.minimaxi.com/anthropic")
         );
+    }
+
+    /// Returns how `cmd` will set `name` in the child: `None` if untouched,
+    /// `Some(None)` if removed, `Some(Some(v))` if set to `v`.
+    fn command_env(cmd: &Command, name: &str) -> Option<Option<String>> {
+        cmd.as_std()
+            .get_envs()
+            .find(|(key, _)| *key == std::ffi::OsStr::new(name))
+            .map(|(_, value)| value.map(|v| v.to_string_lossy().into_owned()))
+    }
+
+    #[test]
+    fn test_llxprt_strips_inherited_endpoints_without_base_url() {
+        let config = LLxprtConfig {
+            provider: "minimax".to_string(),
+            api_key: "mm-key".to_string(),
+            model: "MiniMax-M3".to_string(),
+            base_url: None,
+        };
+
+        let env = SessionEnvironment::setup_llxprt(&config).unwrap();
+        let mut cmd = Command::new("cmd");
+        env.apply_to(&mut cmd);
+
+        // No endpoint configured: inherited values must be removed, not passed through.
+        assert_eq!(command_env(&cmd, "OPENAI_BASE_URL"), Some(None));
+        assert_eq!(command_env(&cmd, "ANTHROPIC_BASE_URL"), Some(None));
+        assert_eq!(
+            command_env(&cmd, "OPENAI_API_KEY"),
+            Some(Some("mm-key".to_string()))
+        );
+    }
+
+    #[test]
+    fn test_llxprt_configured_endpoint_survives_removal() {
+        let config = LLxprtConfig {
+            provider: "openai".to_string(),
+            api_key: "k".to_string(),
+            model: "m".to_string(),
+            base_url: Some("https://api.minimax.io/v1".to_string()),
+        };
+
+        let env = SessionEnvironment::setup_llxprt(&config).unwrap();
+        let mut cmd = Command::new("cmd");
+        env.apply_to(&mut cmd);
+
+        // The configured endpoint is set; the other provider's endpoint is stripped.
+        assert_eq!(
+            command_env(&cmd, "OPENAI_BASE_URL"),
+            Some(Some("https://api.minimax.io/v1".to_string()))
+        );
+        assert_eq!(command_env(&cmd, "ANTHROPIC_BASE_URL"), Some(None));
+    }
+
+    #[test]
+    #[serial_test::serial]
+    fn test_qwen_does_not_strip_endpoint_vars() {
+        let config = QwenConfig {
+            api_key: "qwen-key".to_string(),
+            base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1".to_string(),
+            model: "qwen-max".to_string(),
+            yolo: None,
+        };
+
+        // Qwen still relies on its process-level OPENAI_BASE_URL, so apply_to
+        // must leave that variable alone for Qwen sessions.
+        let env = SessionEnvironment::setup_qwen(&config).unwrap();
+        let mut cmd = Command::new("cmd");
+        env.apply_to(&mut cmd);
+        assert_eq!(command_env(&cmd, "OPENAI_BASE_URL"), None);
+        assert_eq!(command_env(&cmd, "ANTHROPIC_BASE_URL"), None);
     }
 }
