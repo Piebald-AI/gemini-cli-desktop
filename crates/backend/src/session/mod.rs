@@ -126,7 +126,7 @@ impl SessionEnvironment {
                     push("ANTHROPIC_BASE_URL", url);
                 }
             }
-            "openai" | "openrouter" => {
+            "openai" | "openrouter" | "requesty" => {
                 push("OPENAI_API_KEY", &config.api_key);
                 if let Some(url) = base_url {
                     push("OPENAI_BASE_URL", url);
@@ -244,7 +244,7 @@ pub struct GeminiAuthConfig {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LLxprtConfig {
-    pub provider: String, // "openai", "anthropic", "gemini", "qwen", "openrouter", etc.
+    pub provider: String, // "openai", "anthropic", "gemini", "qwen", "openrouter", "requesty", etc.
     pub api_key: String,
     pub model: String,
     pub base_url: Option<String>, // For custom/self-hosted providers
@@ -252,7 +252,7 @@ pub struct LLxprtConfig {
 
 fn llxprt_provider_name(config: &LLxprtConfig) -> &str {
     match config.provider.as_str() {
-        "openrouter" | "minimax" => "openai",
+        "openrouter" | "minimax" | "requesty" => "openai",
         "minimax-anthropic" => "anthropic",
         provider => provider,
     }
@@ -2546,6 +2546,34 @@ mod tests {
         let env = SessionEnvironment::setup_llxprt(&config).unwrap();
         assert_eq!(env.var(key_var), Some("sk-or-test"));
         assert_eq!(env.var(url_var), Some("https://openrouter.ai/api/v1"));
+
+        // Nothing may leak into the parent process environment.
+        assert!(std::env::var(key_var).is_err());
+        assert!(std::env::var(url_var).is_err());
+    }
+
+    #[test]
+    #[serial_test::serial]
+    fn test_session_environment_llxprt_requesty_with_base_url() {
+        let key_var = "OPENAI_API_KEY";
+        let url_var = "OPENAI_BASE_URL";
+        unsafe {
+            std::env::remove_var(key_var);
+        }
+        unsafe {
+            std::env::remove_var(url_var);
+        }
+
+        let config = LLxprtConfig {
+            provider: "requesty".to_string(),
+            api_key: "sk-requesty-test".to_string(),
+            model: "openai/gpt-4o-mini".to_string(),
+            base_url: Some("https://router.requesty.ai/v1".to_string()),
+        };
+
+        let env = SessionEnvironment::setup_llxprt(&config).unwrap();
+        assert_eq!(env.var(key_var), Some("sk-requesty-test"));
+        assert_eq!(env.var(url_var), Some("https://router.requesty.ai/v1"));
 
         // Nothing may leak into the parent process environment.
         assert!(std::env::var(key_var).is_err());
