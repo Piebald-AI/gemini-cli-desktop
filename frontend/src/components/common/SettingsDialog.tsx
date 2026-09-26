@@ -893,8 +893,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                     >
                       {llxprtConfig.model
                         ? providerModels.find(
-                          (m) => m.id === llxprtConfig.model
-                        )?.name || llxprtConfig.model
+                            (m) => m.id === llxprtConfig.model
+                          )?.name || llxprtConfig.model
                         : "Select a model..."}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
