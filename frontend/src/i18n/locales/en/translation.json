@@ -167,6 +167,13 @@
     "provider": "Provider",
     "qwenConfiguration": "Qwen Code Configuration",
     "llxprtConfiguration": "LLxprt Code Configuration",
+    "minimaxApiCompatibility": "API compatibility",
+    "minimaxApiFormatOpenai": "OpenAI-compatible",
+    "minimaxApiFormatAnthropic": "Anthropic-compatible",
+    "minimaxRegion": "Region",
+    "minimaxRegionGlobal": "Global",
+    "minimaxRegionCn": "China (CN)",
+    "minimaxEndpointUrl": "Endpoint URL",
     "geminiApiKey": "Gemini API Key",
     "enterGeminiApiKey": "Enter your Gemini API key",
     "getApiKeyFrom": "Get your API key from",
@@ -541,6 +548,7 @@
 
   "accessibility": {
     "backToHome": "Back to home",
+    "selectGeminiModel": "Select Gemini model",
     "backToProjects": "Back to projects",
     "goToParentDirectory": "Go to parent directory",
     "goToHomeDirectory": "Go to home directory",

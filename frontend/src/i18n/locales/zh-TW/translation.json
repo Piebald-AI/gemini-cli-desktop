@@ -160,6 +160,13 @@
     "provider": "提供者",
     "qwenConfiguration": "Qwen Code 配置",
     "llxprtConfiguration": "LLxprt Code 配置",
+    "minimaxApiCompatibility": "API 相容性",
+    "minimaxApiFormatOpenai": "相容 OpenAI",
+    "minimaxApiFormatAnthropic": "相容 Anthropic",
+    "minimaxRegion": "區域",
+    "minimaxRegionGlobal": "全球",
+    "minimaxRegionCn": "中國（CN）",
+    "minimaxEndpointUrl": "端點網址",
     "geminiApiKey": "Gemini API 金鑰",
     "enterGeminiApiKey": "輸入您的 Gemini API 金鑰",
     "getApiKeyFrom": "從以下位置取得您的 API 金鑰",
@@ -520,6 +527,7 @@
 
   "accessibility": {
     "backToHome": "返回首頁",
+    "selectGeminiModel": "選擇 Gemini 模型",
     "backToProjects": "返回專案",
     "goToParentDirectory": "前往上層資料夾",
     "goToHomeDirectory": "前往主資料夾",
