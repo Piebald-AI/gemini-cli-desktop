@@ -71,6 +71,10 @@ export const llxprtProviderDefaults: Record<
     baseUrl: "https://router.requesty.ai/v1",
     modelPlaceholder: "openai/gpt-4o-mini",
   },
+  opper: {
+    baseUrl: "https://api.opper.ai/v3/compat",
+    modelPlaceholder: "claude-sonnet-4-6",
+  },
   gemini: {
     baseUrl: "",
     modelPlaceholder: "gemini-3.1-pro-preview",

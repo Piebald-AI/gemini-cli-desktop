@@ -126,7 +126,7 @@ impl SessionEnvironment {
                     push("ANTHROPIC_BASE_URL", url);
                 }
             }
-            "openai" | "openrouter" | "requesty" => {
+            "openai" | "openrouter" | "requesty" | "opper" => {
                 push("OPENAI_API_KEY", &config.api_key);
                 if let Some(url) = base_url {
                     push("OPENAI_BASE_URL", url);
@@ -252,7 +252,7 @@ pub struct LLxprtConfig {
 
 fn llxprt_provider_name(config: &LLxprtConfig) -> &str {
     match config.provider.as_str() {
-        "openrouter" | "minimax" | "requesty" => "openai",
+        "openrouter" | "minimax" | "requesty" | "opper" => "openai",
         "minimax-anthropic" => "anthropic",
         provider => provider,
     }
@@ -2574,6 +2574,34 @@ mod tests {
         let env = SessionEnvironment::setup_llxprt(&config).unwrap();
         assert_eq!(env.var(key_var), Some("sk-requesty-test"));
         assert_eq!(env.var(url_var), Some("https://router.requesty.ai/v1"));
+
+        // Nothing may leak into the parent process environment.
+        assert!(std::env::var(key_var).is_err());
+        assert!(std::env::var(url_var).is_err());
+    }
+
+    #[test]
+    #[serial_test::serial]
+    fn test_session_environment_llxprt_opper_with_base_url() {
+        let key_var = "OPENAI_API_KEY";
+        let url_var = "OPENAI_BASE_URL";
+        unsafe {
+            std::env::remove_var(key_var);
+        }
+        unsafe {
+            std::env::remove_var(url_var);
+        }
+
+        let config = LLxprtConfig {
+            provider: "opper".to_string(),
+            api_key: "op-test".to_string(),
+            model: "claude-sonnet-4-6".to_string(),
+            base_url: Some("https://api.opper.ai/v3/compat".to_string()),
+        };
+
+        let env = SessionEnvironment::setup_llxprt(&config).unwrap();
+        assert_eq!(env.var(key_var), Some("op-test"));
+        assert_eq!(env.var(url_var), Some("https://api.opper.ai/v3/compat"));
 
         // Nothing may leak into the parent process environment.
         assert!(std::env::var(key_var).is_err());
