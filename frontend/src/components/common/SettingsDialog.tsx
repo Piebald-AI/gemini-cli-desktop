@@ -50,7 +50,11 @@ import {
   MINIMAX_DEFAULT_MODEL,
 } from "@/utils/providerConfig";
 import { supportedLanguages, languageNames } from "@/i18n";
-import { MODEL_PLACEHOLDERS, supportsModelFetch } from "@/utils/providerConfig";
+import {
+  MODEL_PLACEHOLDERS,
+  OPPER_DEFAULT_MODEL,
+  supportsModelFetch,
+} from "@/utils/providerConfig";
 
 interface ProviderModel {
   id: string;
@@ -725,6 +729,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                       updates.baseUrl = "https://router.requesty.ai/v1";
                     } else if (value === "opper") {
                       updates.baseUrl = "https://api.opper.ai/v3/compat";
+                      updates.model = OPPER_DEFAULT_MODEL;
+                      onModelChange?.(OPPER_DEFAULT_MODEL);
                     } else if (
                       [
                         "anthropic",
