@@ -9,6 +9,8 @@ import type { LLxprtApiFormat, LLxprtRegion } from "../types/backend";
 
 export const MINIMAX_DEFAULT_MODEL = "MiniMax-M3";
 
+export const OPPER_DEFAULT_MODEL = "claude-sonnet-4-6";
+
 export const MINIMAX_ENDPOINTS: Record<
   LLxprtRegion,
   Record<LLxprtApiFormat, string>
@@ -85,6 +87,15 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
     apiKeyPrefix: "sk-",
     supportsModelFetch: true,
     getApiKeyUrl: "https://app.requesty.ai/api-keys",
+  },
+  opper: {
+    name: "Opper (Multi-provider)",
+    description: "EU-hosted gateway to models from many AI providers",
+    requiresBaseUrl: true,
+    defaultBaseUrl: "https://api.opper.ai/v3/compat",
+    defaultModel: OPPER_DEFAULT_MODEL,
+    supportsModelFetch: true,
+    getApiKeyUrl: "https://platform.opper.ai",
   },
   gemini: {
     name: "Google Gemini",
@@ -206,6 +217,7 @@ export const MODEL_PLACEHOLDERS: Record<string, string> = {
   openai: "gpt-5",
   openrouter: "anthropic/claude-sonnet-4-5",
   requesty: "openai/gpt-4o-mini",
+  opper: OPPER_DEFAULT_MODEL,
   gemini: "gemini-3.1-pro-preview",
   qwen: "qwen3-coder-plus",
   groq: "llama-3.3-70b-versatile",
