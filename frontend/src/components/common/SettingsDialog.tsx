@@ -53,8 +53,11 @@ import { supportedLanguages, languageNames } from "@/i18n";
 import {
   MODEL_PLACEHOLDERS,
   OPPER_DEFAULT_MODEL,
+  API_ROUTE_DEFAULT_MODEL,
   supportsModelFetch,
 } from "@/utils/providerConfig";
+
+import { isAPIRouteChatModel } from "@/utils/apiRouteModels";
 
 interface ProviderModel {
   id: string;
@@ -135,11 +138,14 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
   const fetchProviderModels = useCallback(async () => {
     const isRequesty = llxprtConfig.provider === "requesty";
     const isOpper = llxprtConfig.provider === "opper";
+    const isAPIRoute = llxprtConfig.provider === "api-route";
     const providerLabel = isRequesty
       ? "Requesty"
       : isOpper
         ? "Opper"
-        : "OpenRouter";
+        : isAPIRoute
+          ? "API Route"
+          : "OpenRouter";
 
     if (!llxprtConfig.apiKey) {
       toast.error(`Please enter your ${providerLabel} API key first`);
@@ -187,6 +193,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
             signal: controller.signal,
           });
         }
+      } else if (isAPIRoute) {
+        response = await fetch("https://global.api-route.com/v1/models", {
+          headers,
+          signal: controller.signal,
+        });
       } else if (isOpper) {
         response = await fetch("https://api.opper.ai/v3/compat/models", {
           headers,
@@ -216,7 +227,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
       }
 
       const data = await response.json();
-      const modelArray = Array.isArray(data) ? data : data.data || [];
+      const catalogue = Array.isArray(data) ? data : data.data || [];
+      // API Route also lists image/video models; only offer chat models here.
+      const modelArray = isAPIRoute
+        ? catalogue.filter(isAPIRouteChatModel)
+        : catalogue;
 
       // Provider or API key changed while the request was in flight
       if (!isCurrentFetch()) {
@@ -727,6 +742,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                       updates.baseUrl = "https://openrouter.ai/api/v1";
                     } else if (value === "requesty") {
                       updates.baseUrl = "https://router.requesty.ai/v1";
+                    } else if (value === "api-route") {
+                      updates.baseUrl = "https://global.api-route.com/v1";
+                      updates.model = API_ROUTE_DEFAULT_MODEL;
+                      onModelChange?.(API_ROUTE_DEFAULT_MODEL);
                     } else if (value === "opper") {
                       updates.baseUrl = "https://api.opper.ai/v3/compat";
                       updates.model = OPPER_DEFAULT_MODEL;
@@ -767,6 +786,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                     </SelectItem>
                     <SelectItem value="opper">
                       Opper (Multi-provider)
+                    </SelectItem>
+                    <SelectItem value="api-route">
+                      API Route (Multi-provider)
                     </SelectItem>
                     <SelectItem value="gemini">Google Gemini</SelectItem>
                     <SelectItem value="qwen">Qwen/Alibaba Cloud</SelectItem>
@@ -985,19 +1007,22 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                               ? MODEL_PLACEHOLDERS.requesty
                               : llxprtConfig.provider === "opper"
                                 ? MODEL_PLACEHOLDERS.opper
-                                : llxprtConfig.provider === "gemini"
-                                  ? MODEL_PLACEHOLDERS.gemini
-                                  : llxprtConfig.provider === "qwen"
-                                    ? "qwen-max"
-                                    : llxprtConfig.provider === "groq"
-                                      ? "llama-3.3-70b-versatile"
-                                      : llxprtConfig.provider === "together"
-                                        ? "meta-llama/Llama-3-70b-chat-hf"
-                                        : llxprtConfig.provider === "xai"
-                                          ? "grok-beta"
-                                          : llxprtConfig.provider === "minimax"
-                                            ? MINIMAX_DEFAULT_MODEL
-                                            : "model-name"
+                                : llxprtConfig.provider === "api-route"
+                                  ? MODEL_PLACEHOLDERS["api-route"]
+                                  : llxprtConfig.provider === "gemini"
+                                    ? MODEL_PLACEHOLDERS.gemini
+                                    : llxprtConfig.provider === "qwen"
+                                      ? "qwen-max"
+                                      : llxprtConfig.provider === "groq"
+                                        ? "llama-3.3-70b-versatile"
+                                        : llxprtConfig.provider === "together"
+                                          ? "meta-llama/Llama-3-70b-chat-hf"
+                                          : llxprtConfig.provider === "xai"
+                                            ? "grok-beta"
+                                            : llxprtConfig.provider ===
+                                                "minimax"
+                                              ? MINIMAX_DEFAULT_MODEL
+                                              : "model-name"
                     }
                   />
                 )}

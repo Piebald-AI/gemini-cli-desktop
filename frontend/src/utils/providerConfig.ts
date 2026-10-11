@@ -9,6 +9,8 @@ import type { LLxprtApiFormat, LLxprtRegion } from "../types/backend";
 
 export const MINIMAX_DEFAULT_MODEL = "MiniMax-M3";
 
+export const API_ROUTE_DEFAULT_MODEL = "gpt-6.1-sol";
+
 export const OPPER_DEFAULT_MODEL = "claude-sonnet-4-6";
 
 export const MINIMAX_ENDPOINTS: Record<
@@ -96,6 +98,15 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
     defaultModel: OPPER_DEFAULT_MODEL,
     supportsModelFetch: true,
     getApiKeyUrl: "https://platform.opper.ai",
+  },
+  "api-route": {
+    name: "API Route (Multi-provider)",
+    description: "OpenAI-compatible gateway to models from multiple providers",
+    requiresBaseUrl: true,
+    defaultBaseUrl: "https://global.api-route.com/v1",
+    defaultModel: API_ROUTE_DEFAULT_MODEL,
+    supportsModelFetch: true,
+    getApiKeyUrl: "https://www.api-route.com/api-keys",
   },
   gemini: {
     name: "Google Gemini",
@@ -218,6 +229,7 @@ export const MODEL_PLACEHOLDERS: Record<string, string> = {
   openrouter: "anthropic/claude-sonnet-4-5",
   requesty: "openai/gpt-4o-mini",
   opper: OPPER_DEFAULT_MODEL,
+  "api-route": API_ROUTE_DEFAULT_MODEL,
   gemini: "gemini-3.1-pro-preview",
   qwen: "qwen3-coder-plus",
   groq: "llama-3.3-70b-versatile",

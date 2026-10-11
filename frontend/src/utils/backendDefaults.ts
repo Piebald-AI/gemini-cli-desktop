@@ -4,7 +4,11 @@ import {
   QwenConfig,
   LLxprtConfig,
 } from "../types/backend";
-import { getMiniMaxEndpoint, MINIMAX_DEFAULT_MODEL } from "./providerConfig";
+import {
+  API_ROUTE_DEFAULT_MODEL,
+  getMiniMaxEndpoint,
+  MINIMAX_DEFAULT_MODEL,
+} from "./providerConfig";
 
 export const defaultGeminiConfig: GeminiConfig = {
   type: "gemini",
@@ -74,6 +78,10 @@ export const llxprtProviderDefaults: Record<
   opper: {
     baseUrl: "https://api.opper.ai/v3/compat",
     modelPlaceholder: "claude-sonnet-4-6",
+  },
+  "api-route": {
+    baseUrl: "https://global.api-route.com/v1",
+    modelPlaceholder: API_ROUTE_DEFAULT_MODEL,
   },
   gemini: {
     baseUrl: "",
