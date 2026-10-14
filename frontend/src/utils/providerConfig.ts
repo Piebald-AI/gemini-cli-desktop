@@ -11,6 +11,8 @@ export const MINIMAX_DEFAULT_MODEL = "MiniMax-M3";
 
 export const OPPER_DEFAULT_MODEL = "claude-sonnet-4-6";
 
+export const ATLASCLOUD_DEFAULT_MODEL = "deepseek-ai/deepseek-v4-flash";
+
 export const MINIMAX_ENDPOINTS: Record<
   LLxprtRegion,
   Record<LLxprtApiFormat, string>
@@ -96,6 +98,15 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
     defaultModel: OPPER_DEFAULT_MODEL,
     supportsModelFetch: true,
     getApiKeyUrl: "https://platform.opper.ai",
+  },
+  atlascloud: {
+    name: "Atlas Cloud (Multi-provider)",
+    description: "OpenAI-compatible gateway to open and frontier models",
+    requiresBaseUrl: true,
+    defaultBaseUrl: "https://api.atlascloud.ai/v1",
+    defaultModel: ATLASCLOUD_DEFAULT_MODEL,
+    supportsModelFetch: true,
+    getApiKeyUrl: "https://console.atlascloud.ai/api-keys",
   },
   gemini: {
     name: "Google Gemini",
@@ -218,6 +229,7 @@ export const MODEL_PLACEHOLDERS: Record<string, string> = {
   openrouter: "anthropic/claude-sonnet-4-5",
   requesty: "openai/gpt-4o-mini",
   opper: OPPER_DEFAULT_MODEL,
+  atlascloud: ATLASCLOUD_DEFAULT_MODEL,
   gemini: "gemini-3.1-pro-preview",
   qwen: "qwen3-coder-plus",
   groq: "llama-3.3-70b-versatile",

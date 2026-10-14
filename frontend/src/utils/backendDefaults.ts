@@ -75,6 +75,10 @@ export const llxprtProviderDefaults: Record<
     baseUrl: "https://api.opper.ai/v3/compat",
     modelPlaceholder: "claude-sonnet-4-6",
   },
+  atlascloud: {
+    baseUrl: "https://api.atlascloud.ai/v1",
+    modelPlaceholder: "deepseek-ai/deepseek-v4-flash",
+  },
   gemini: {
     baseUrl: "",
     modelPlaceholder: "gemini-3.1-pro-preview",

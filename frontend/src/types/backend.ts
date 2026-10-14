@@ -35,6 +35,7 @@ export type LLxprtProvider =
   | "openrouter"
   | "requesty"
   | "opper"
+  | "atlascloud"
   | "gemini"
   | "qwen"
   | "groq"
@@ -64,6 +65,7 @@ export function isLLxprtConfig(config: unknown): config is LLxprtConfig {
     "openrouter",
     "requesty",
     "opper",
+    "atlascloud",
     "gemini",
     "qwen",
     "groq",
