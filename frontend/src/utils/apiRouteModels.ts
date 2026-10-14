@@ -10,6 +10,16 @@ export function isAPIRouteChatModel(model: unknown): model is {
   if (typeof model.id !== "string" || !model.id.trim()) {
     return false;
   }
+  if (
+    ("name" in model &&
+      model.name !== undefined &&
+      typeof model.name !== "string") ||
+    ("description" in model &&
+      model.description !== undefined &&
+      typeof model.description !== "string")
+  ) {
+    return false;
+  }
   if ("supported_endpoint_types" in model) {
     const endpoints = model.supported_endpoint_types;
     if (
