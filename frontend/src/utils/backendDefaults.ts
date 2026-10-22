@@ -75,6 +75,10 @@ export const llxprtProviderDefaults: Record<
     baseUrl: "https://api.opper.ai/v3/compat",
     modelPlaceholder: "claude-sonnet-4-6",
   },
+  cheaperinference: {
+    baseUrl: "https://api.cheaperinference.com/v1",
+    modelPlaceholder: "gpt-5.4-mini",
+  },
   gemini: {
     baseUrl: "",
     modelPlaceholder: "gemini-3.1-pro-preview",
