@@ -148,8 +148,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
         : isAPIRoute
           ? "API Route"
           : isAtlasCloud
-          ? "Atlas Cloud"
-          : "OpenRouter";
+            ? "Atlas Cloud"
+            : "OpenRouter";
 
     if (!llxprtConfig.apiKey) {
       toast.error(`Please enter your ${providerLabel} API key first`);
@@ -1026,8 +1026,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                                 : llxprtConfig.provider === "api-route"
                                   ? MODEL_PLACEHOLDERS["api-route"]
                                   : llxprtConfig.provider === "atlascloud"
-                                  ? MODEL_PLACEHOLDERS.atlascloud
-                                  : llxprtConfig.provider === "gemini"
+                                    ? MODEL_PLACEHOLDERS.atlascloud
+                                    : llxprtConfig.provider === "gemini"
                                       ? MODEL_PLACEHOLDERS.gemini
                                       : llxprtConfig.provider === "qwen"
                                         ? "qwen-max"
@@ -1038,8 +1038,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                                             : llxprtConfig.provider === "xai"
                                               ? "grok-beta"
                                               : llxprtConfig.provider ===
-                                               
-                                                "minimax"
+                                                  "minimax"
                                                 ? MINIMAX_DEFAULT_MODEL
                                                 : "model-name"
                     }
