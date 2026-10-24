@@ -51,6 +51,7 @@ import {
 } from "@/utils/providerConfig";
 import { supportedLanguages, languageNames } from "@/i18n";
 import {
+  ATLASCLOUD_DEFAULT_MODEL,
   MODEL_PLACEHOLDERS,
   OPPER_DEFAULT_MODEL,
   API_ROUTE_DEFAULT_MODEL,
@@ -87,7 +88,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
   const minimaxApiFormat = llxprtConfig.apiFormat ?? "openai";
   const minimaxRegion = llxprtConfig.region ?? "global";
 
-  // State for provider model fetching (OpenRouter, Requesty, Opper)
+  // State for provider model fetching (OpenRouter, Requesty, Opper, Atlas Cloud)
   const [providerModels, setProviderModels] = useState<ProviderModel[]>([]);
   const [isFetchingModels, setIsFetchingModels] = useState(false);
   const [comboboxOpen, setComboboxOpen] = useState(false);
@@ -139,13 +140,16 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     const isRequesty = llxprtConfig.provider === "requesty";
     const isOpper = llxprtConfig.provider === "opper";
     const isAPIRoute = llxprtConfig.provider === "api-route";
+    const isAtlasCloud = llxprtConfig.provider === "atlascloud";
     const providerLabel = isRequesty
       ? "Requesty"
       : isOpper
         ? "Opper"
         : isAPIRoute
           ? "API Route"
-          : "OpenRouter";
+          : isAtlasCloud
+            ? "Atlas Cloud"
+            : "OpenRouter";
 
     if (!llxprtConfig.apiKey) {
       toast.error(`Please enter your ${providerLabel} API key first`);
@@ -200,6 +204,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
         });
       } else if (isOpper) {
         response = await fetch("https://api.opper.ai/v3/compat/models", {
+          headers,
+          signal: controller.signal,
+        });
+      } else if (isAtlasCloud) {
+        response = await fetch("https://api.atlascloud.ai/v1/models", {
           headers,
           signal: controller.signal,
         });
@@ -750,6 +759,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                       updates.baseUrl = "https://api.opper.ai/v3/compat";
                       updates.model = OPPER_DEFAULT_MODEL;
                       onModelChange?.(OPPER_DEFAULT_MODEL);
+                    } else if (value === "atlascloud") {
+                      updates.baseUrl = "https://api.atlascloud.ai/v1";
+                      updates.model = ATLASCLOUD_DEFAULT_MODEL;
+                      onModelChange?.(ATLASCLOUD_DEFAULT_MODEL);
                     } else if (
                       [
                         "anthropic",
@@ -789,6 +802,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                     </SelectItem>
                     <SelectItem value="api-route">
                       API Route (Multi-provider)
+                    </SelectItem>
+                    <SelectItem value="atlascloud">
+                      Atlas Cloud (Multi-provider)
                     </SelectItem>
                     <SelectItem value="gemini">Google Gemini</SelectItem>
                     <SelectItem value="qwen">Qwen/Alibaba Cloud</SelectItem>
@@ -1009,20 +1025,22 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                                 ? MODEL_PLACEHOLDERS.opper
                                 : llxprtConfig.provider === "api-route"
                                   ? MODEL_PLACEHOLDERS["api-route"]
-                                  : llxprtConfig.provider === "gemini"
-                                    ? MODEL_PLACEHOLDERS.gemini
-                                    : llxprtConfig.provider === "qwen"
-                                      ? "qwen-max"
-                                      : llxprtConfig.provider === "groq"
-                                        ? "llama-3.3-70b-versatile"
-                                        : llxprtConfig.provider === "together"
-                                          ? "meta-llama/Llama-3-70b-chat-hf"
-                                          : llxprtConfig.provider === "xai"
-                                            ? "grok-beta"
-                                            : llxprtConfig.provider ===
-                                                "minimax"
-                                              ? MINIMAX_DEFAULT_MODEL
-                                              : "model-name"
+                                  : llxprtConfig.provider === "atlascloud"
+                                    ? MODEL_PLACEHOLDERS.atlascloud
+                                    : llxprtConfig.provider === "gemini"
+                                      ? MODEL_PLACEHOLDERS.gemini
+                                      : llxprtConfig.provider === "qwen"
+                                        ? "qwen-max"
+                                        : llxprtConfig.provider === "groq"
+                                          ? "llama-3.3-70b-versatile"
+                                          : llxprtConfig.provider === "together"
+                                            ? "meta-llama/Llama-3-70b-chat-hf"
+                                            : llxprtConfig.provider === "xai"
+                                              ? "grok-beta"
+                                              : llxprtConfig.provider ===
+                                                  "minimax"
+                                                ? MINIMAX_DEFAULT_MODEL
+                                                : "model-name"
                     }
                   />
                 )}

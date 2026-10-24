@@ -83,6 +83,10 @@ export const llxprtProviderDefaults: Record<
     baseUrl: "https://global.api-route.com/v1",
     modelPlaceholder: API_ROUTE_DEFAULT_MODEL,
   },
+  atlascloud: {
+    baseUrl: "https://api.atlascloud.ai/v1",
+    modelPlaceholder: "deepseek-ai/deepseek-v4-flash",
+  },
   gemini: {
     baseUrl: "",
     modelPlaceholder: "gemini-3.1-pro-preview",
