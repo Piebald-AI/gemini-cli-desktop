@@ -46,8 +46,10 @@ import {
   LLxprtRegion,
 } from "@/types/backend";
 import {
+  filterProviderModels,
   getMiniMaxEndpoint,
   MINIMAX_DEFAULT_MODEL,
+  MINIMAX_MODELS,
 } from "@/utils/providerConfig";
 import { supportedLanguages, languageNames } from "@/i18n";
 import {
@@ -252,18 +254,15 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
         return;
       }
 
-      const models: ProviderModel[] = modelArray.map(
-        (
-          model: ProviderModel & {
-            id: string;
-            name?: string;
-            description?: string;
-          }
-        ) => ({
-          id: model.id,
-          name: model.name || model.id,
-          description: model.description || "",
-        })
+      const models: ProviderModel[] = filterProviderModels(
+        llxprtConfig.provider,
+        modelArray.map(
+          (model: { id: string; name?: string; description?: string }) => ({
+            id: model.id,
+            name: model.name || model.id,
+            description: model.description || "",
+          })
+        )
       );
 
       setProviderModels(models);
@@ -1007,6 +1006,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                   <Input
                     type="text"
                     value={llxprtConfig.model}
+                    list={
+                      llxprtConfig.provider === "minimax"
+                        ? "minimax-models"
+                        : undefined
+                    }
                     onChange={(e) => {
                       const value = e.target.value;
                       updateLLxprtConfig({ model: value });
@@ -1045,6 +1049,14 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                   />
                 )}
               </div>
+
+              {llxprtConfig.provider === "minimax" && (
+                <datalist id="minimax-models">
+                  {MINIMAX_MODELS.map((model) => (
+                    <option key={model} value={model} />
+                  ))}
+                </datalist>
+              )}
 
               {/* Base URL (only show for custom provider) */}
               {llxprtConfig.provider === "custom" && (

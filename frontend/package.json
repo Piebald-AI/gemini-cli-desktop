@@ -13,6 +13,7 @@
     "format": "pnpm prettier src --write",
     "format:check": "pnpm prettier src --check",
     "lint": "pnpm eslint src && pnpm tsc --noEmit",
+    "test:minimax": "node --test tests/minimax.test.cjs",
     "lint:ci": "pnpm eslint src --max-warnings=0 && pnpm tsc --noEmit"
   },
   "dependencies": {

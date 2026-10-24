@@ -51,6 +51,9 @@ jobs:
       - name: Install project dependencies
         run: just deps
 
+      - name: Test MiniMax configuration and requests
+        run: pnpm --dir frontend test:minimax
+
       - name: Lint project
         run: just lint-ci
 
