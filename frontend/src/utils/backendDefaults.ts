@@ -87,6 +87,10 @@ export const llxprtProviderDefaults: Record<
     baseUrl: "https://api.atlascloud.ai/v1",
     modelPlaceholder: "deepseek-ai/deepseek-v4-flash",
   },
+  runcrate: {
+    baseUrl: "https://api.runcrate.ai/v1",
+    modelPlaceholder: "deepseek-ai/DeepSeek-V4.1-Flash",
+  },
   gemini: {
     baseUrl: "",
     modelPlaceholder: "gemini-3.1-pro-preview",

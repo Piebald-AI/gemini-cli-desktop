@@ -15,6 +15,8 @@ export const OPPER_DEFAULT_MODEL = "claude-sonnet-4-6";
 
 export const ATLASCLOUD_DEFAULT_MODEL = "deepseek-ai/deepseek-v4-flash";
 
+export const RUNCRATE_DEFAULT_MODEL = "deepseek-ai/DeepSeek-V4.1-Flash";
+
 export const MINIMAX_ENDPOINTS: Record<
   LLxprtRegion,
   Record<LLxprtApiFormat, string>
@@ -118,6 +120,15 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
     defaultModel: ATLASCLOUD_DEFAULT_MODEL,
     supportsModelFetch: true,
     getApiKeyUrl: "https://console.atlascloud.ai/api-keys",
+  },
+  runcrate: {
+    name: "Runcrate (Open-weight models)",
+    description: "OpenAI-compatible inference for open-weight models",
+    requiresBaseUrl: true,
+    defaultBaseUrl: "https://api.runcrate.ai/v1",
+    defaultModel: RUNCRATE_DEFAULT_MODEL,
+    supportsModelFetch: true,
+    getApiKeyUrl: "https://runcrate.ai/dashboard/api-keys",
   },
   gemini: {
     name: "Google Gemini",
@@ -242,6 +253,7 @@ export const MODEL_PLACEHOLDERS: Record<string, string> = {
   opper: OPPER_DEFAULT_MODEL,
   "api-route": API_ROUTE_DEFAULT_MODEL,
   atlascloud: ATLASCLOUD_DEFAULT_MODEL,
+  runcrate: RUNCRATE_DEFAULT_MODEL,
   gemini: "gemini-3.1-pro-preview",
   qwen: "qwen3-coder-plus",
   groq: "llama-3.3-70b-versatile",
