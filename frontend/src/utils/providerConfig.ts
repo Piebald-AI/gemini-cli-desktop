@@ -15,6 +15,10 @@ export const OPPER_DEFAULT_MODEL = "claude-sonnet-4-6";
 
 export const ATLASCLOUD_DEFAULT_MODEL = "deepseek-ai/deepseek-v4-flash";
 
+// Routed model: each request goes to the cheapest enabled model that can
+// handle it, with automatic fallback. Pinned model ids come from /v1/models.
+export const STANDARDCOMPUTE_DEFAULT_MODEL = "StandardCompute";
+
 export const MINIMAX_ENDPOINTS: Record<
   LLxprtRegion,
   Record<LLxprtApiFormat, string>
@@ -118,6 +122,16 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
     defaultModel: ATLASCLOUD_DEFAULT_MODEL,
     supportsModelFetch: true,
     getApiKeyUrl: "https://console.atlascloud.ai/api-keys",
+  },
+  standardcompute: {
+    name: "Standard Compute (Multi-provider)",
+    description:
+      "OpenAI-compatible gateway that routes each request to a suitable model",
+    requiresBaseUrl: true,
+    defaultBaseUrl: "https://api.stdcmpt.com/v1",
+    defaultModel: STANDARDCOMPUTE_DEFAULT_MODEL,
+    supportsModelFetch: true,
+    getApiKeyUrl: "https://standardcompute.com",
   },
   gemini: {
     name: "Google Gemini",
@@ -242,6 +256,7 @@ export const MODEL_PLACEHOLDERS: Record<string, string> = {
   opper: OPPER_DEFAULT_MODEL,
   "api-route": API_ROUTE_DEFAULT_MODEL,
   atlascloud: ATLASCLOUD_DEFAULT_MODEL,
+  standardcompute: STANDARDCOMPUTE_DEFAULT_MODEL,
   gemini: "gemini-3.1-pro-preview",
   qwen: "qwen3-coder-plus",
   groq: "llama-3.3-70b-versatile",

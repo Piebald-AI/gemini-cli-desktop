@@ -55,6 +55,7 @@ import {
   MODEL_PLACEHOLDERS,
   OPPER_DEFAULT_MODEL,
   API_ROUTE_DEFAULT_MODEL,
+  STANDARDCOMPUTE_DEFAULT_MODEL,
   supportsModelFetch,
 } from "@/utils/providerConfig";
 
@@ -141,6 +142,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     const isOpper = llxprtConfig.provider === "opper";
     const isAPIRoute = llxprtConfig.provider === "api-route";
     const isAtlasCloud = llxprtConfig.provider === "atlascloud";
+    const isStandardCompute = llxprtConfig.provider === "standardcompute";
     const providerLabel = isRequesty
       ? "Requesty"
       : isOpper
@@ -149,7 +151,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
           ? "API Route"
           : isAtlasCloud
             ? "Atlas Cloud"
-            : "OpenRouter";
+            : isStandardCompute
+              ? "Standard Compute"
+              : "OpenRouter";
 
     if (!llxprtConfig.apiKey) {
       toast.error(`Please enter your ${providerLabel} API key first`);
@@ -209,6 +213,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
         });
       } else if (isAtlasCloud) {
         response = await fetch("https://api.atlascloud.ai/v1/models", {
+          headers,
+          signal: controller.signal,
+        });
+      } else if (isStandardCompute) {
+        response = await fetch("https://api.stdcmpt.com/v1/models", {
           headers,
           signal: controller.signal,
         });
@@ -763,6 +772,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                       updates.baseUrl = "https://api.atlascloud.ai/v1";
                       updates.model = ATLASCLOUD_DEFAULT_MODEL;
                       onModelChange?.(ATLASCLOUD_DEFAULT_MODEL);
+                    } else if (value === "standardcompute") {
+                      updates.baseUrl = "https://api.stdcmpt.com/v1";
+                      updates.model = STANDARDCOMPUTE_DEFAULT_MODEL;
+                      onModelChange?.(STANDARDCOMPUTE_DEFAULT_MODEL);
                     } else if (
                       [
                         "anthropic",
@@ -805,6 +818,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                     </SelectItem>
                     <SelectItem value="atlascloud">
                       Atlas Cloud (Multi-provider)
+                    </SelectItem>
+                    <SelectItem value="standardcompute">
+                      Standard Compute (Multi-provider)
                     </SelectItem>
                     <SelectItem value="gemini">Google Gemini</SelectItem>
                     <SelectItem value="qwen">Qwen/Alibaba Cloud</SelectItem>
@@ -1027,20 +1043,24 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                                   ? MODEL_PLACEHOLDERS["api-route"]
                                   : llxprtConfig.provider === "atlascloud"
                                     ? MODEL_PLACEHOLDERS.atlascloud
-                                    : llxprtConfig.provider === "gemini"
-                                      ? MODEL_PLACEHOLDERS.gemini
-                                      : llxprtConfig.provider === "qwen"
-                                        ? "qwen-max"
-                                        : llxprtConfig.provider === "groq"
-                                          ? "llama-3.3-70b-versatile"
-                                          : llxprtConfig.provider === "together"
-                                            ? "meta-llama/Llama-3-70b-chat-hf"
-                                            : llxprtConfig.provider === "xai"
-                                              ? "grok-beta"
-                                              : llxprtConfig.provider ===
-                                                  "minimax"
-                                                ? MINIMAX_DEFAULT_MODEL
-                                                : "model-name"
+                                    : llxprtConfig.provider ===
+                                        "standardcompute"
+                                      ? MODEL_PLACEHOLDERS.standardcompute
+                                      : llxprtConfig.provider === "gemini"
+                                        ? MODEL_PLACEHOLDERS.gemini
+                                        : llxprtConfig.provider === "qwen"
+                                          ? "qwen-max"
+                                          : llxprtConfig.provider === "groq"
+                                            ? "llama-3.3-70b-versatile"
+                                            : llxprtConfig.provider ===
+                                                "together"
+                                              ? "meta-llama/Llama-3-70b-chat-hf"
+                                              : llxprtConfig.provider === "xai"
+                                                ? "grok-beta"
+                                                : llxprtConfig.provider ===
+                                                    "minimax"
+                                                  ? MINIMAX_DEFAULT_MODEL
+                                                  : "model-name"
                     }
                   />
                 )}
