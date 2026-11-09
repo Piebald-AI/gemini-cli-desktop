@@ -114,6 +114,12 @@ impl SessionEnvironment {
             .map(|u| u.trim())
             .filter(|u| !u.is_empty());
 
+        // Standard Compute runs on LLxprt's openai provider, so without an endpoint
+        // the key would be sent to the openai default host. Refuse to start instead.
+        if config.provider == "standardcompute" && base_url.is_none() {
+            anyhow::bail!("Standard Compute requires a base URL (https://api.stdcmpt.com/v1)");
+        }
+
         let mut push = |name: &str, value: &str| {
             vars.push((name.to_string(), value.to_string()));
             println!("🔧 [HANDSHAKE] Set {name} (session-scoped)");
@@ -2706,6 +2712,19 @@ mod tests {
         // Nothing may leak into the parent process environment.
         assert!(std::env::var(key_var).is_err());
         assert!(std::env::var(url_var).is_err());
+    }
+
+    #[test]
+    fn test_session_environment_llxprt_standardcompute_requires_base_url() {
+        for base_url in [None, Some("   ".to_string())] {
+            let config = LLxprtConfig {
+                provider: "standardcompute".to_string(),
+                api_key: "standardcompute-test-key".to_string(),
+                model: "StandardCompute".to_string(),
+                base_url,
+            };
+            assert!(SessionEnvironment::setup_llxprt(&config).is_err());
+        }
     }
 
     #[test]
