@@ -670,6 +670,21 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
         println!("🚀 [HANDSHAKE] Auth method: {}", auth.method);
     }
 
+    // Setup environment variables with automatic cleanup. This runs before the
+    // first progress event so a rejected config (e.g. a Standard Compute
+    // session without a base URL) fails without leaving startup progress shown.
+    let session_env = {
+        if let Some(config) = &llxprt_config {
+            Some(SessionEnvironment::setup_llxprt(config)?)
+        } else if let Some(config) = &backend_config {
+            Some(SessionEnvironment::setup_qwen(config)?)
+        } else if let Some(auth) = &gemini_auth {
+            Some(SessionEnvironment::setup_gemini(auth)?)
+        } else {
+            None
+        }
+    };
+
     // Emit starting progress
     let _ = event_tx.send(InternalEvent::SessionProgress {
         session_id: session_id.clone(),
@@ -697,19 +712,6 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
         };
 
     let (message_tx, message_rx) = mpsc::unbounded_channel::<String>();
-
-    // Setup environment variables with automatic cleanup
-    let session_env = {
-        if let Some(config) = &llxprt_config {
-            Some(SessionEnvironment::setup_llxprt(config)?)
-        } else if let Some(config) = &backend_config {
-            Some(SessionEnvironment::setup_qwen(config)?)
-        } else if let Some(auth) = &gemini_auth {
-            Some(SessionEnvironment::setup_gemini(auth)?)
-        } else {
-            None
-        }
-    };
 
     // Build command based on backend type
     let mut cmd = {
