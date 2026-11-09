@@ -37,6 +37,7 @@ export type LLxprtProvider =
   | "opper"
   | "api-route"
   | "atlascloud"
+  | "standardcompute"
   | "gemini"
   | "qwen"
   | "groq"
@@ -68,6 +69,7 @@ export function isLLxprtConfig(config: unknown): config is LLxprtConfig {
     "opper",
     "api-route",
     "atlascloud",
+    "standardcompute",
     "gemini",
     "qwen",
     "groq",
