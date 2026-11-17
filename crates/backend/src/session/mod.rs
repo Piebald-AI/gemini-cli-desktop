@@ -120,6 +120,13 @@ impl SessionEnvironment {
             anyhow::bail!("Standard Compute requires a base URL (https://api.stdcmpt.com/v1)");
         }
 
+        // The LLxprt command line runs through `sh -lc` / `cmd.exe /C`, so a base
+        // URL with shell syntax could start other commands with the key in their
+        // environment. Refuse it before anything is launched.
+        if let Some(c) = base_url.and_then(shell_metachar_in) {
+            anyhow::bail!("Base URL contains an unsupported character: {c:?}");
+        }
+
         let mut push = |name: &str, value: &str| {
             vars.push((name.to_string(), value.to_string()));
             println!("🔧 [HANDSHAKE] Set {name} (session-scoped)");
@@ -260,6 +267,16 @@ pub struct LLxprtConfig {
     pub api_key: String,
     pub model: String,
     pub base_url: Option<String>, // For custom/self-hosted providers
+}
+
+/// Characters that `sh -lc` or `cmd.exe /C` would interpret in the LLxprt command line.
+fn is_shell_metachar(c: char) -> bool {
+    c.is_whitespace() || c.is_control() || "`$&|;<>()\"'\\^%!*?[]{}".contains(c)
+}
+
+/// The first character in `value` that the shell would interpret, if any.
+fn shell_metachar_in(value: &str) -> Option<char> {
+    value.chars().find(|&c| is_shell_metachar(c))
 }
 
 fn llxprt_provider_name(config: &LLxprtConfig) -> &str {
@@ -726,7 +743,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
                 .unwrap_or(false);
 
             let llxprt_args = if has_base_url {
-                let base_url = config.base_url.as_ref().unwrap();
+                let base_url = config.base_url.as_ref().unwrap().trim();
                 println!("🔧 [HANDSHAKE] Using base URL (validated)");
                 format!(
                     "llxprt --experimental-acp --provider {} --model {} --baseurl {}",
@@ -2727,6 +2744,37 @@ mod tests {
             };
             assert!(SessionEnvironment::setup_llxprt(&config).is_err());
         }
+    }
+
+    #[test]
+    fn test_session_environment_llxprt_rejects_shell_syntax_in_base_url() {
+        for base_url in [
+            "https://api.stdcmpt.com/v1&touch /tmp/sc",
+            "https://api.stdcmpt.com/v1;id",
+            "https://$(id).example.com/v1",
+            "https://api.stdcmpt.com/`id`",
+            "https://api.stdcmpt.com/v1|cat",
+            "https://api.stdcmpt.com/%PATH%",
+        ] {
+            let config = LLxprtConfig {
+                provider: "standardcompute".to_string(),
+                api_key: "standardcompute-test-key".to_string(),
+                model: "StandardCompute".to_string(),
+                base_url: Some(base_url.to_string()),
+            };
+            assert!(
+                SessionEnvironment::setup_llxprt(&config).is_err(),
+                "{base_url} should be rejected"
+            );
+        }
+
+        let config = LLxprtConfig {
+            provider: "openrouter".to_string(),
+            api_key: "openrouter-test-key".to_string(),
+            model: "openai/gpt-5.5".to_string(),
+            base_url: Some(" https://openrouter.ai/api/v1 ".to_string()),
+        };
+        assert!(SessionEnvironment::setup_llxprt(&config).is_ok());
     }
 
     #[test]
