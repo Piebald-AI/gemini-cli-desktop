@@ -7,9 +7,40 @@
 
 import type { LLxprtApiFormat, LLxprtRegion } from "../types/backend";
 
-export const MINIMAX_DEFAULT_MODEL = "MiniMax-M3";
+export const MINIMAX_MODELS = ["MiniMax-M3.1-Flash", "MiniMax-M3"] as const;
+export const MINIMAX_DEFAULT_MODEL = MINIMAX_MODELS[0];
+
+const OPENROUTER_MINIMAX_MODELS = [
+  "minimax/minimax-m3.1-flash:free",
+  "minimax/minimax-m3",
+];
+
+/** Filter suggestions only; saved and manually entered IDs remain valid. */
+export function filterProviderModels<T extends { id: string }>(
+  provider: string,
+  models: T[]
+): T[] {
+  if (provider !== "openrouter") return models;
+
+  const isMiniMaxText = (id: string) =>
+    /^minimax\/(?:minimax-m\d|(?:minimax-)?text-|minimax-01)/i.test(id);
+  const rank = (id: string) => {
+    const index = OPENROUTER_MINIMAX_MODELS.indexOf(id);
+    return index < 0 ? OPENROUTER_MINIMAX_MODELS.length : index;
+  };
+
+  return models
+    .filter(
+      ({ id }) => !isMiniMaxText(id) || OPENROUTER_MINIMAX_MODELS.includes(id)
+    )
+    .sort((a, b) => rank(a.id) - rank(b.id));
+}
+
+export const API_ROUTE_DEFAULT_MODEL = "gpt-6.1-sol";
 
 export const OPPER_DEFAULT_MODEL = "claude-sonnet-4-6";
+
+export const ATLASCLOUD_DEFAULT_MODEL = "deepseek-ai/deepseek-v4-flash";
 
 export const CHEAPER_INFERENCE_DEFAULT_MODEL = "gpt-5.4-mini";
 
@@ -98,6 +129,24 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
     defaultModel: OPPER_DEFAULT_MODEL,
     supportsModelFetch: true,
     getApiKeyUrl: "https://platform.opper.ai",
+  },
+  "api-route": {
+    name: "API Route (Multi-provider)",
+    description: "OpenAI-compatible gateway to models from multiple providers",
+    requiresBaseUrl: true,
+    defaultBaseUrl: "https://global.api-route.com/v1",
+    defaultModel: API_ROUTE_DEFAULT_MODEL,
+    supportsModelFetch: true,
+    getApiKeyUrl: "https://www.api-route.com/api-keys",
+  },
+  atlascloud: {
+    name: "Atlas Cloud (Multi-provider)",
+    description: "OpenAI-compatible gateway to open and frontier models",
+    requiresBaseUrl: true,
+    defaultBaseUrl: "https://api.atlascloud.ai/v1",
+    defaultModel: ATLASCLOUD_DEFAULT_MODEL,
+    supportsModelFetch: true,
+    getApiKeyUrl: "https://console.atlascloud.ai/api-keys",
   },
   cheaperinference: {
     name: "Cheaper Inference (Multi-provider)",
@@ -229,6 +278,8 @@ export const MODEL_PLACEHOLDERS: Record<string, string> = {
   openrouter: "anthropic/claude-sonnet-4-5",
   requesty: "openai/gpt-4o-mini",
   opper: OPPER_DEFAULT_MODEL,
+  "api-route": API_ROUTE_DEFAULT_MODEL,
+  atlascloud: ATLASCLOUD_DEFAULT_MODEL,
   cheaperinference: CHEAPER_INFERENCE_DEFAULT_MODEL,
   gemini: "gemini-3.1-pro-preview",
   qwen: "qwen3-coder-plus",
