@@ -7,9 +7,10 @@ import en from "./locales/en/translation.json";
 import zhCN from "./locales/zh-CN/translation.json";
 import zhTW from "./locales/zh-TW/translation.json";
 import ru from "./locales/ru/translation.json";
+import es from "./locales/es/translation.json";
 
 // Define supported languages
-export const supportedLanguages = ["en", "zh-CN", "zh-TW", "ru"] as const;
+export const supportedLanguages = ["en", "zh-CN", "zh-TW", "ru", "es"] as const;
 export type SupportedLanguage = (typeof supportedLanguages)[number];
 
 // Language names for display
@@ -18,6 +19,7 @@ export const languageNames: Record<SupportedLanguage, string> = {
   "zh-CN": "简体中文",
   "zh-TW": "繁體中文",
   ru: "Русский",
+  es: "Español",
 };
 
 // Translation resources
@@ -33,6 +35,9 @@ const resources = {
   },
   ru: {
     translation: ru,
+  },
+  es: {
+    translation: es,
   },
 };
 
