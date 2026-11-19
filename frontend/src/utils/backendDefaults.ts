@@ -8,6 +8,7 @@ import {
   API_ROUTE_DEFAULT_MODEL,
   getMiniMaxEndpoint,
   MINIMAX_DEFAULT_MODEL,
+  STANDARDCOMPUTE_DEFAULT_MODEL,
 } from "./providerConfig";
 
 export const defaultGeminiConfig: GeminiConfig = {
@@ -86,6 +87,10 @@ export const llxprtProviderDefaults: Record<
   atlascloud: {
     baseUrl: "https://api.atlascloud.ai/v1",
     modelPlaceholder: "deepseek-ai/deepseek-v4-flash",
+  },
+  standardcompute: {
+    baseUrl: "https://api.stdcmpt.com/v1",
+    modelPlaceholder: STANDARDCOMPUTE_DEFAULT_MODEL,
   },
   gemini: {
     baseUrl: "",

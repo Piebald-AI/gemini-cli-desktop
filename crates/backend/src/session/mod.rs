@@ -114,6 +114,19 @@ impl SessionEnvironment {
             .map(|u| u.trim())
             .filter(|u| !u.is_empty());
 
+        // Standard Compute runs on LLxprt's openai provider, so without an endpoint
+        // the key would be sent to the openai default host. Refuse to start instead.
+        if config.provider == "standardcompute" && base_url.is_none() {
+            anyhow::bail!("Standard Compute requires a base URL (https://api.stdcmpt.com/v1)");
+        }
+
+        // The LLxprt command line runs through `sh -lc` / `cmd.exe /C`, so a base
+        // URL with shell syntax could start other commands with the key in their
+        // environment. Refuse it before anything is launched.
+        if let Some(c) = base_url.and_then(shell_metachar_in) {
+            anyhow::bail!("Base URL contains an unsupported character: {c:?}");
+        }
+
         let mut push = |name: &str, value: &str| {
             vars.push((name.to_string(), value.to_string()));
             println!("🔧 [HANDSHAKE] Set {name} (session-scoped)");
@@ -126,7 +139,13 @@ impl SessionEnvironment {
                     push("ANTHROPIC_BASE_URL", url);
                 }
             }
-            "openai" | "openrouter" | "requesty" | "opper" | "api-route" | "atlascloud" => {
+            "openai"
+            | "openrouter"
+            | "requesty"
+            | "opper"
+            | "api-route"
+            | "atlascloud"
+            | "standardcompute" => {
                 push("OPENAI_API_KEY", &config.api_key);
                 if let Some(url) = base_url {
                     push("OPENAI_BASE_URL", url);
@@ -250,9 +269,25 @@ pub struct LLxprtConfig {
     pub base_url: Option<String>, // For custom/self-hosted providers
 }
 
+/// Characters that `sh -lc` or `cmd.exe /C` would interpret in the LLxprt command line.
+fn is_shell_metachar(c: char) -> bool {
+    c.is_whitespace() || c.is_control() || "`$&|;<>()\"'\\^%!*?[]{}".contains(c)
+}
+
+/// The first character in `value` that the shell would interpret, if any.
+fn shell_metachar_in(value: &str) -> Option<char> {
+    value.chars().find(|&c| is_shell_metachar(c))
+}
+
 fn llxprt_provider_name(config: &LLxprtConfig) -> &str {
     match config.provider.as_str() {
-        "openrouter" | "minimax" | "requesty" | "opper" | "api-route" | "atlascloud" => "openai",
+        "openrouter"
+        | "minimax"
+        | "requesty"
+        | "opper"
+        | "api-route"
+        | "atlascloud"
+        | "standardcompute" => "openai",
         "minimax-anthropic" => "anthropic",
         provider => provider,
     }
@@ -652,6 +687,21 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
         println!("🚀 [HANDSHAKE] Auth method: {}", auth.method);
     }
 
+    // Setup environment variables with automatic cleanup. This runs before the
+    // first progress event so a rejected config (e.g. a Standard Compute
+    // session without a base URL) fails without leaving startup progress shown.
+    let session_env = {
+        if let Some(config) = &llxprt_config {
+            Some(SessionEnvironment::setup_llxprt(config)?)
+        } else if let Some(config) = &backend_config {
+            Some(SessionEnvironment::setup_qwen(config)?)
+        } else if let Some(auth) = &gemini_auth {
+            Some(SessionEnvironment::setup_gemini(auth)?)
+        } else {
+            None
+        }
+    };
+
     // Emit starting progress
     let _ = event_tx.send(InternalEvent::SessionProgress {
         session_id: session_id.clone(),
@@ -680,19 +730,6 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
 
     let (message_tx, message_rx) = mpsc::unbounded_channel::<String>();
 
-    // Setup environment variables with automatic cleanup
-    let session_env = {
-        if let Some(config) = &llxprt_config {
-            Some(SessionEnvironment::setup_llxprt(config)?)
-        } else if let Some(config) = &backend_config {
-            Some(SessionEnvironment::setup_qwen(config)?)
-        } else if let Some(auth) = &gemini_auth {
-            Some(SessionEnvironment::setup_gemini(auth)?)
-        } else {
-            None
-        }
-    };
-
     // Build command based on backend type
     let mut cmd = {
         if let Some(config) = &llxprt_config {
@@ -706,7 +743,7 @@ pub async fn initialize_session<E: EventEmitter + 'static>(
                 .unwrap_or(false);
 
             let llxprt_args = if has_base_url {
-                let base_url = config.base_url.as_ref().unwrap();
+                let base_url = config.base_url.as_ref().unwrap().trim();
                 println!("🔧 [HANDSHAKE] Using base URL (validated)");
                 format!(
                     "llxprt --experimental-acp --provider {} --model {} --baseurl {}",
@@ -2664,6 +2701,80 @@ mod tests {
         // Nothing may leak into the parent process environment.
         assert!(std::env::var(key_var).is_err());
         assert!(std::env::var(url_var).is_err());
+    }
+
+    #[test]
+    #[serial_test::serial]
+    fn test_session_environment_llxprt_standardcompute_with_base_url() {
+        let key_var = "OPENAI_API_KEY";
+        let url_var = "OPENAI_BASE_URL";
+        unsafe {
+            std::env::remove_var(key_var);
+        }
+        unsafe {
+            std::env::remove_var(url_var);
+        }
+
+        let config = LLxprtConfig {
+            provider: "standardcompute".to_string(),
+            api_key: "standardcompute-test-key".to_string(),
+            model: "StandardCompute".to_string(),
+            base_url: Some("https://api.stdcmpt.com/v1".to_string()),
+        };
+
+        assert_eq!(llxprt_provider_name(&config), "openai");
+
+        let env = SessionEnvironment::setup_llxprt(&config).unwrap();
+        assert_eq!(env.var(key_var), Some("standardcompute-test-key"));
+        assert_eq!(env.var(url_var), Some("https://api.stdcmpt.com/v1"));
+
+        // Nothing may leak into the parent process environment.
+        assert!(std::env::var(key_var).is_err());
+        assert!(std::env::var(url_var).is_err());
+    }
+
+    #[test]
+    fn test_session_environment_llxprt_standardcompute_requires_base_url() {
+        for base_url in [None, Some("   ".to_string())] {
+            let config = LLxprtConfig {
+                provider: "standardcompute".to_string(),
+                api_key: "standardcompute-test-key".to_string(),
+                model: "StandardCompute".to_string(),
+                base_url,
+            };
+            assert!(SessionEnvironment::setup_llxprt(&config).is_err());
+        }
+    }
+
+    #[test]
+    fn test_session_environment_llxprt_rejects_shell_syntax_in_base_url() {
+        for base_url in [
+            "https://api.stdcmpt.com/v1&touch /tmp/sc",
+            "https://api.stdcmpt.com/v1;id",
+            "https://$(id).example.com/v1",
+            "https://api.stdcmpt.com/`id`",
+            "https://api.stdcmpt.com/v1|cat",
+            "https://api.stdcmpt.com/%PATH%",
+        ] {
+            let config = LLxprtConfig {
+                provider: "standardcompute".to_string(),
+                api_key: "standardcompute-test-key".to_string(),
+                model: "StandardCompute".to_string(),
+                base_url: Some(base_url.to_string()),
+            };
+            assert!(
+                SessionEnvironment::setup_llxprt(&config).is_err(),
+                "{base_url} should be rejected"
+            );
+        }
+
+        let config = LLxprtConfig {
+            provider: "openrouter".to_string(),
+            api_key: "openrouter-test-key".to_string(),
+            model: "openai/gpt-5.5".to_string(),
+            base_url: Some(" https://openrouter.ai/api/v1 ".to_string()),
+        };
+        assert!(SessionEnvironment::setup_llxprt(&config).is_ok());
     }
 
     #[test]
