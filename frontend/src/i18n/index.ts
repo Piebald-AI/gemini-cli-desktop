@@ -24,6 +24,7 @@ export const getLanguageDisplayName = (lang: SupportedLanguage): string => {
     "zh-CN": "简体中文",
     "zh-TW": "繁體中文",
     ru: "Русский",
+    es: "Español",
   };
   return names[lang];
 };
