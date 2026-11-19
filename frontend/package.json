@@ -4,6 +4,7 @@
   "version": "0.3.15",
   "type": "module",
   "scripts": {
+    "test:api-route-models": "node --experimental-strip-types --test src/utils/apiRouteModels.test.ts",
     "dev": "npm run copy-pdf-worker && vite",
     "build": "npm run copy-pdf-worker && tsc && vite build",
     "copy-pdf-worker": "copyfiles -f node_modules/pdfjs-dist/build/pdf.worker.min.mjs public",
