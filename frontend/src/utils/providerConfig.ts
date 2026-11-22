@@ -83,7 +83,7 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
     name: "Anthropic (Claude)",
     description: "Claude models for advanced reasoning and coding",
     requiresBaseUrl: false,
-    defaultModel: "claude-4-5-sonnet-20250929",
+    defaultModel: "claude-sonnet-5-5",
     apiKeyFormat: /^sk-ant-/,
     apiKeyPrefix: "sk-ant-",
     getApiKeyUrl: "https://console.anthropic.com/settings/keys",
@@ -262,7 +262,7 @@ export function getAllProviders(): ProviderName[] {
  * Model placeholders for different providers (used in UI)
  */
 export const MODEL_PLACEHOLDERS: Record<string, string> = {
-  anthropic: "claude-sonnet-4-5-20250929",
+  anthropic: "claude-sonnet-5-5",
   openai: "gpt-5",
   openrouter: "anthropic/claude-sonnet-4-5",
   requesty: "openai/gpt-4o-mini",

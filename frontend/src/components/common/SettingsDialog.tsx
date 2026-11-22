@@ -1014,11 +1014,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                     onChange={(e) => {
                       const value = e.target.value;
                       updateLLxprtConfig({ model: value });
-                      onModelChange?.(value || "claude-3-5-sonnet-20241022");
+                      onModelChange?.(value || "claude-sonnet-5-5");
                     }}
                     placeholder={
                       llxprtConfig.provider === "anthropic"
-                        ? "claude-3-5-sonnet-20241022"
+                        ? "claude-sonnet-5-5"
                         : llxprtConfig.provider === "openai"
                           ? "gpt-4o"
                           : llxprtConfig.provider === "openrouter"
