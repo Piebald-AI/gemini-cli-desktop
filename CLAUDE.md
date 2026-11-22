@@ -787,7 +787,7 @@ interface LLxprtConfig {
 ```
 
 **Provider-Specific Defaults** (defined in `frontend/src/utils/providerConfig.ts`):
-- **Anthropic**: `claude-3-5-sonnet-20241022`, API key format: `sk-ant-*`
+- **Anthropic**: `claude-sonnet-5-5`, API key format: `sk-ant-*`
 - **OpenAI**: `gpt-4o`, API key format: `sk-*`
 - **OpenRouter**: `anthropic/claude-3.5-sonnet`, base URL: `https://openrouter.ai/api/v1`
 - **Requesty**: `openai/gpt-4o-mini`, base URL: `https://router.requesty.ai/v1`

@@ -39,7 +39,7 @@ export const defaultLLxprtConfig: LLxprtConfig = {
   type: "llxprt",
   provider: "anthropic",
   apiKey: "",
-  model: "claude-3-5-sonnet-20241022",
+  model: "claude-sonnet-5-5",
   baseUrl: "",
 };
 
@@ -61,7 +61,7 @@ export const llxprtProviderDefaults: Record<
 > = {
   anthropic: {
     baseUrl: "",
-    modelPlaceholder: "claude-3-5-sonnet-20241022",
+    modelPlaceholder: "claude-sonnet-5-5",
   },
   openai: {
     baseUrl: "",
