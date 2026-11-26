@@ -54,6 +54,7 @@ import {
 import { supportedLanguages, languageNames } from "@/i18n";
 import {
   ATLASCLOUD_DEFAULT_MODEL,
+  RUNCRATE_DEFAULT_MODEL,
   MODEL_PLACEHOLDERS,
   OPPER_DEFAULT_MODEL,
   API_ROUTE_DEFAULT_MODEL,
@@ -91,7 +92,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
   const minimaxApiFormat = llxprtConfig.apiFormat ?? "openai";
   const minimaxRegion = llxprtConfig.region ?? "global";
 
-  // State for provider model fetching (OpenRouter, Requesty, Opper, Atlas Cloud)
+  // State for provider model fetching (OpenRouter, Requesty, Opper, Atlas Cloud, Runcrate)
   const [providerModels, setProviderModels] = useState<ProviderModel[]>([]);
   const [isFetchingModels, setIsFetchingModels] = useState(false);
   const [comboboxOpen, setComboboxOpen] = useState(false);
@@ -145,6 +146,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     const isAPIRoute = llxprtConfig.provider === "api-route";
     const isAtlasCloud = llxprtConfig.provider === "atlascloud";
     const isCheaperInference = llxprtConfig.provider === "cheaperinference";
+    const isRuncrate = llxprtConfig.provider === "runcrate";
     const providerLabel = isRequesty
       ? "Requesty"
       : isOpper
@@ -155,6 +157,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
             ? "Atlas Cloud"
             : isCheaperInference
               ? "Cheaper Inference"
+              : isRuncrate
+              ? "Runcrate"
               : "OpenRouter";
 
     if (!llxprtConfig.apiKey) {
@@ -223,6 +227,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
           headers,
           signal: controller.signal,
         });
+      } else if (isRuncrate) {
+        response = await fetch("https://api.runcrate.ai/v1/models", {
+          headers,
+          signal: controller.signal,
+        });
       } else {
         response = await fetch("https://openrouter.ai/api/v1/models", {
           headers,
@@ -248,10 +257,17 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
 
       const data = await response.json();
       const catalogue = Array.isArray(data) ? data : data.data || [];
-      // API Route also lists image/video models; only offer chat models here.
+      // API Route and Runcrate also list image/video/embedding models; only
+      // offer chat models here.
       const modelArray = isAPIRoute
         ? catalogue.filter(isAPIRouteChatModel)
-        : catalogue;
+        : isRuncrate
+          ? catalogue.filter(
+              (model: { output_modalities?: unknown }) =>
+                !Array.isArray(model.output_modalities) ||
+                model.output_modalities.includes("text")
+            )
+          : catalogue;
 
       // Provider or API key changed while the request was in flight
       if (!isCurrentFetch()) {
@@ -775,6 +791,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                       updates.baseUrl = "https://api.cheaperinference.com/v1";
                       updates.model = CHEAPER_INFERENCE_DEFAULT_MODEL;
                       onModelChange?.(CHEAPER_INFERENCE_DEFAULT_MODEL);
+                    } else if (value === "runcrate") {
+                      updates.baseUrl = "https://api.runcrate.ai/v1";
+                      updates.model = RUNCRATE_DEFAULT_MODEL;
+                      onModelChange?.(RUNCRATE_DEFAULT_MODEL);
                     } else if (
                       [
                         "anthropic",
@@ -820,6 +840,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                     </SelectItem>
                     <SelectItem value="cheaperinference">
                       Cheaper Inference (Multi-provider)
+                    </SelectItem>
+                    <SelectItem value="runcrate">
+                      Runcrate (Open-weight models)
                     </SelectItem>
                     <SelectItem value="gemini">Google Gemini</SelectItem>
                     <SelectItem value="qwen">Qwen/Alibaba Cloud</SelectItem>
@@ -1050,21 +1073,24 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                                     : llxprtConfig.provider ===
                                         "cheaperinference"
                                       ? MODEL_PLACEHOLDERS.cheaperinference
+                                      : llxprtConfig.provider === "runcrate"
+                                      ? MODEL_PLACEHOLDERS.runcrate
                                       : llxprtConfig.provider === "gemini"
-                                        ? MODEL_PLACEHOLDERS.gemini
-                                        : llxprtConfig.provider === "qwen"
-                                          ? "qwen-max"
-                                          : llxprtConfig.provider === "groq"
-                                            ? "llama-3.3-70b-versatile"
-                                            : llxprtConfig.provider ===
+                                          ? MODEL_PLACEHOLDERS.gemini
+                                          : llxprtConfig.provider === "qwen"
+                                            ? "qwen-max"
+                                            : llxprtConfig.provider === "groq"
+                                              ? "llama-3.3-70b-versatile"
+                                              : llxprtConfig.provider ===
+                                               
                                                 "together"
-                                              ? "meta-llama/Llama-3-70b-chat-hf"
-                                              : llxprtConfig.provider === "xai"
-                                                ? "grok-beta"
-                                                : llxprtConfig.provider ===
-                                                    "minimax"
-                                                  ? MINIMAX_DEFAULT_MODEL
-                                                  : "model-name"
+                                                ? "meta-llama/Llama-3-70b-chat-hf"
+                                                : llxprtConfig.provider === "xai"
+                                                  ? "grok-beta"
+                                                  : llxprtConfig.provider ===
+                                                      "minimax"
+                                                    ? MINIMAX_DEFAULT_MODEL
+                                                    : "model-name"
                     }
                   />
                 )}

@@ -38,6 +38,7 @@ export type LLxprtProvider =
   | "api-route"
   | "atlascloud"
   | "cheaperinference"
+  | "runcrate"
   | "gemini"
   | "qwen"
   | "groq"
@@ -70,6 +71,7 @@ export function isLLxprtConfig(config: unknown): config is LLxprtConfig {
     "api-route",
     "atlascloud",
     "cheaperinference",
+    "runcrate",
     "gemini",
     "qwen",
     "groq",
