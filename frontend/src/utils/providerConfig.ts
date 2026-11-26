@@ -7,13 +7,42 @@
 
 import type { LLxprtApiFormat, LLxprtRegion } from "../types/backend";
 
-export const MINIMAX_DEFAULT_MODEL = "MiniMax-M3";
+export const MINIMAX_MODELS = ["MiniMax-M3.1-Flash", "MiniMax-M3"] as const;
+export const MINIMAX_DEFAULT_MODEL = MINIMAX_MODELS[0];
+
+const OPENROUTER_MINIMAX_MODELS = [
+  "minimax/minimax-m3.1-flash:free",
+  "minimax/minimax-m3",
+];
+
+/** Filter suggestions only; saved and manually entered IDs remain valid. */
+export function filterProviderModels<T extends { id: string }>(
+  provider: string,
+  models: T[]
+): T[] {
+  if (provider !== "openrouter") return models;
+
+  const isMiniMaxText = (id: string) =>
+    /^minimax\/(?:minimax-m\d|(?:minimax-)?text-|minimax-01)/i.test(id);
+  const rank = (id: string) => {
+    const index = OPENROUTER_MINIMAX_MODELS.indexOf(id);
+    return index < 0 ? OPENROUTER_MINIMAX_MODELS.length : index;
+  };
+
+  return models
+    .filter(
+      ({ id }) => !isMiniMaxText(id) || OPENROUTER_MINIMAX_MODELS.includes(id)
+    )
+    .sort((a, b) => rank(a.id) - rank(b.id));
+}
 
 export const API_ROUTE_DEFAULT_MODEL = "gpt-6.1-sol";
 
 export const OPPER_DEFAULT_MODEL = "claude-sonnet-4-6";
 
 export const ATLASCLOUD_DEFAULT_MODEL = "deepseek-ai/deepseek-v4-flash";
+
+export const CHEAPER_INFERENCE_DEFAULT_MODEL = "gpt-5.4-mini";
 
 export const RUNCRATE_DEFAULT_MODEL = "deepseek-ai/DeepSeek-V4.1-Flash";
 
@@ -120,6 +149,15 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
     defaultModel: ATLASCLOUD_DEFAULT_MODEL,
     supportsModelFetch: true,
     getApiKeyUrl: "https://console.atlascloud.ai/api-keys",
+  },
+  cheaperinference: {
+    name: "Cheaper Inference (Multi-provider)",
+    description: "Gateway to models from many AI providers",
+    requiresBaseUrl: true,
+    defaultBaseUrl: "https://api.cheaperinference.com/v1",
+    defaultModel: CHEAPER_INFERENCE_DEFAULT_MODEL,
+    supportsModelFetch: true,
+    getApiKeyUrl: "https://cheaperinference.com/signup",
   },
   runcrate: {
     name: "Runcrate (Open-weight models)",
@@ -253,6 +291,7 @@ export const MODEL_PLACEHOLDERS: Record<string, string> = {
   opper: OPPER_DEFAULT_MODEL,
   "api-route": API_ROUTE_DEFAULT_MODEL,
   atlascloud: ATLASCLOUD_DEFAULT_MODEL,
+  cheaperinference: CHEAPER_INFERENCE_DEFAULT_MODEL,
   runcrate: RUNCRATE_DEFAULT_MODEL,
   gemini: "gemini-3.1-pro-preview",
   qwen: "qwen3-coder-plus",

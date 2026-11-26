@@ -46,8 +46,10 @@ import {
   LLxprtRegion,
 } from "@/types/backend";
 import {
+  filterProviderModels,
   getMiniMaxEndpoint,
   MINIMAX_DEFAULT_MODEL,
+  MINIMAX_MODELS,
 } from "@/utils/providerConfig";
 import { supportedLanguages, languageNames } from "@/i18n";
 import {
@@ -56,6 +58,7 @@ import {
   MODEL_PLACEHOLDERS,
   OPPER_DEFAULT_MODEL,
   API_ROUTE_DEFAULT_MODEL,
+  CHEAPER_INFERENCE_DEFAULT_MODEL,
   supportsModelFetch,
 } from "@/utils/providerConfig";
 
@@ -142,6 +145,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     const isOpper = llxprtConfig.provider === "opper";
     const isAPIRoute = llxprtConfig.provider === "api-route";
     const isAtlasCloud = llxprtConfig.provider === "atlascloud";
+    const isCheaperInference = llxprtConfig.provider === "cheaperinference";
     const isRuncrate = llxprtConfig.provider === "runcrate";
     const providerLabel = isRequesty
       ? "Requesty"
@@ -151,7 +155,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
           ? "API Route"
           : isAtlasCloud
             ? "Atlas Cloud"
-            : isRuncrate
+            : isCheaperInference
+              ? "Cheaper Inference"
+              : isRuncrate
               ? "Runcrate"
               : "OpenRouter";
 
@@ -216,6 +222,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
           headers,
           signal: controller.signal,
         });
+      } else if (isCheaperInference) {
+        response = await fetch("https://api.cheaperinference.com/v1/models", {
+          headers,
+          signal: controller.signal,
+        });
       } else if (isRuncrate) {
         response = await fetch("https://api.runcrate.ai/v1/models", {
           headers,
@@ -268,18 +279,15 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
         return;
       }
 
-      const models: ProviderModel[] = modelArray.map(
-        (
-          model: ProviderModel & {
-            id: string;
-            name?: string;
-            description?: string;
-          }
-        ) => ({
-          id: model.id,
-          name: model.name || model.id,
-          description: model.description || "",
-        })
+      const models: ProviderModel[] = filterProviderModels(
+        llxprtConfig.provider,
+        modelArray.map(
+          (model: { id: string; name?: string; description?: string }) => ({
+            id: model.id,
+            name: model.name || model.id,
+            description: model.description || "",
+          })
+        )
       );
 
       setProviderModels(models);
@@ -779,6 +787,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                       updates.baseUrl = "https://api.atlascloud.ai/v1";
                       updates.model = ATLASCLOUD_DEFAULT_MODEL;
                       onModelChange?.(ATLASCLOUD_DEFAULT_MODEL);
+                    } else if (value === "cheaperinference") {
+                      updates.baseUrl = "https://api.cheaperinference.com/v1";
+                      updates.model = CHEAPER_INFERENCE_DEFAULT_MODEL;
+                      onModelChange?.(CHEAPER_INFERENCE_DEFAULT_MODEL);
                     } else if (value === "runcrate") {
                       updates.baseUrl = "https://api.runcrate.ai/v1";
                       updates.model = RUNCRATE_DEFAULT_MODEL;
@@ -825,6 +837,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                     </SelectItem>
                     <SelectItem value="atlascloud">
                       Atlas Cloud (Multi-provider)
+                    </SelectItem>
+                    <SelectItem value="cheaperinference">
+                      Cheaper Inference (Multi-provider)
                     </SelectItem>
                     <SelectItem value="runcrate">
                       Runcrate (Open-weight models)
@@ -1030,6 +1045,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                   <Input
                     type="text"
                     value={llxprtConfig.model}
+                    list={
+                      llxprtConfig.provider === "minimax"
+                        ? "minimax-models"
+                        : undefined
+                    }
                     onChange={(e) => {
                       const value = e.target.value;
                       updateLLxprtConfig({ model: value });
@@ -1050,27 +1070,39 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                                   ? MODEL_PLACEHOLDERS["api-route"]
                                   : llxprtConfig.provider === "atlascloud"
                                     ? MODEL_PLACEHOLDERS.atlascloud
-                                    : llxprtConfig.provider === "runcrate"
+                                    : llxprtConfig.provider ===
+                                        "cheaperinference"
+                                      ? MODEL_PLACEHOLDERS.cheaperinference
+                                      : llxprtConfig.provider === "runcrate"
                                       ? MODEL_PLACEHOLDERS.runcrate
                                       : llxprtConfig.provider === "gemini"
-                                        ? MODEL_PLACEHOLDERS.gemini
-                                        : llxprtConfig.provider === "qwen"
-                                          ? "qwen-max"
-                                          : llxprtConfig.provider === "groq"
-                                            ? "llama-3.3-70b-versatile"
-                                            : llxprtConfig.provider ===
+                                          ? MODEL_PLACEHOLDERS.gemini
+                                          : llxprtConfig.provider === "qwen"
+                                            ? "qwen-max"
+                                            : llxprtConfig.provider === "groq"
+                                              ? "llama-3.3-70b-versatile"
+                                              : llxprtConfig.provider ===
+                                               
                                                 "together"
-                                              ? "meta-llama/Llama-3-70b-chat-hf"
-                                              : llxprtConfig.provider === "xai"
-                                                ? "grok-beta"
-                                                : llxprtConfig.provider ===
-                                                    "minimax"
-                                                  ? MINIMAX_DEFAULT_MODEL
-                                                  : "model-name"
+                                                ? "meta-llama/Llama-3-70b-chat-hf"
+                                                : llxprtConfig.provider === "xai"
+                                                  ? "grok-beta"
+                                                  : llxprtConfig.provider ===
+                                                      "minimax"
+                                                    ? MINIMAX_DEFAULT_MODEL
+                                                    : "model-name"
                     }
                   />
                 )}
               </div>
+
+              {llxprtConfig.provider === "minimax" && (
+                <datalist id="minimax-models">
+                  {MINIMAX_MODELS.map((model) => (
+                    <option key={model} value={model} />
+                  ))}
+                </datalist>
+              )}
 
               {/* Base URL (only show for custom provider) */}
               {llxprtConfig.provider === "custom" && (

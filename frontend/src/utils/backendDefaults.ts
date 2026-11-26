@@ -87,6 +87,10 @@ export const llxprtProviderDefaults: Record<
     baseUrl: "https://api.atlascloud.ai/v1",
     modelPlaceholder: "deepseek-ai/deepseek-v4-flash",
   },
+  cheaperinference: {
+    baseUrl: "https://api.cheaperinference.com/v1",
+    modelPlaceholder: "gpt-5.4-mini",
+  },
   runcrate: {
     baseUrl: "https://api.runcrate.ai/v1",
     modelPlaceholder: "deepseek-ai/DeepSeek-V4.1-Flash",
