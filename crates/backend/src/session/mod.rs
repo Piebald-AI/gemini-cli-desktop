@@ -126,7 +126,8 @@ impl SessionEnvironment {
                     push("ANTHROPIC_BASE_URL", url);
                 }
             }
-            "openai" | "openrouter" | "requesty" | "opper" | "api-route" | "atlascloud" | "cheaperinference" => {
+            "openai" | "openrouter" | "requesty" | "opper" | "api-route" | "atlascloud"
+            | "cheaperinference" => {
                 push("OPENAI_API_KEY", &config.api_key);
                 if let Some(url) = base_url {
                     push("OPENAI_BASE_URL", url);
@@ -252,7 +253,8 @@ pub struct LLxprtConfig {
 
 fn llxprt_provider_name(config: &LLxprtConfig) -> &str {
     match config.provider.as_str() {
-        "openrouter" | "minimax" | "requesty" | "opper" | "api-route" | "atlascloud" | "cheaperinference" => "openai",
+        "openrouter" | "minimax" | "requesty" | "opper" | "api-route" | "atlascloud"
+        | "cheaperinference" => "openai",
         "minimax-anthropic" => "anthropic",
         provider => provider,
     }

@@ -154,8 +154,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
           : isAtlasCloud
             ? "Atlas Cloud"
             : isCheaperInference
-          ? "Cheaper Inference"
-          : "OpenRouter";
+              ? "Cheaper Inference"
+              : "OpenRouter";
 
     if (!llxprtConfig.apiKey) {
       toast.error(`Please enter your ${providerLabel} API key first`);
@@ -1047,21 +1047,22 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                                   ? MODEL_PLACEHOLDERS["api-route"]
                                   : llxprtConfig.provider === "atlascloud"
                                     ? MODEL_PLACEHOLDERS.atlascloud
-                                    : llxprtConfig.provider === "cheaperinference"
-                                  ? MODEL_PLACEHOLDERS.cheaperinference
-                                  : llxprtConfig.provider === "gemini"
+                                    : llxprtConfig.provider ===
+                                        "cheaperinference"
+                                      ? MODEL_PLACEHOLDERS.cheaperinference
+                                      : llxprtConfig.provider === "gemini"
                                         ? MODEL_PLACEHOLDERS.gemini
                                         : llxprtConfig.provider === "qwen"
                                           ? "qwen-max"
                                           : llxprtConfig.provider === "groq"
                                             ? "llama-3.3-70b-versatile"
-                                            : llxprtConfig.provider === "together"
+                                            : llxprtConfig.provider ===
+                                                "together"
                                               ? "meta-llama/Llama-3-70b-chat-hf"
                                               : llxprtConfig.provider === "xai"
                                                 ? "grok-beta"
                                                 : llxprtConfig.provider ===
-                                                 
-                                                "minimax"
+                                                    "minimax"
                                                   ? MINIMAX_DEFAULT_MODEL
                                                   : "model-name"
                     }
